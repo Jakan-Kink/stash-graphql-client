@@ -51,3 +51,12 @@ jobs:
         with:
           command: test
           args: --severity-threshold=high
+
+      - name: Snyk Code Scan
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: code test
+          args: --sarif-file-output=snyk-code.sarif
