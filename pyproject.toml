@@ -1,0 +1,277 @@
+[project]
+name = "stash-graphql-client"
+version = "0.1.0"
+description = "Async Python client for Stash GraphQL API"
+authors = [
+    {name = "Jakan",email = "github@jakan.co"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "gql[httpx,websockets] (>=4.0.0)",
+    "websocket-client (>=1.8.0)",
+    "httpx[http2] (>=0.28.1)",
+    "websockets (>=15.0.0)",
+    "httpx-retries (>=0.4.3)",
+    "pydantic (>=2.6.4)",
+    "pydantic-extra-types (>=2.10.6)",
+    "multidict (>=6.7.0)"
+]
+
+[dependency-groups]
+dev = [
+    "pytest (>=8.3)",
+    "pytest-cov (>=6.0.0)",
+    "pytest-asyncio (>=0.26.0)",
+    "pytest-timeout (>=2.3.1)",
+    "pytest-randomly (>=3.16.0)",
+    "pytest-xdist (>=3.6.1)",
+    "coverage[toml] (>=7.8)",
+    "ruff (>=0.14.2)",
+    "bandit[toml] (>=1.8.0)",
+    "pre-commit (>=4.0.1)",
+    "mypy (>=1.11.0)",
+    "factory-boy (>=3.3.3)",
+    "respx (>=0.22.0)",
+    "keyrings-codeartifact (>=2.1.2,<3.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Set the maximum line length to 88 (Black compatible)
+line-length = 88
+target-version = "py312"
+
+# Exclude directories from linting and formatting
+exclude = [
+    ".git",
+    ".pytest_cache",
+    "__pycache__",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "htmlcov",
+    ".coverage",
+    "migrations",
+]
+
+[tool.ruff.lint]
+# Enable comprehensive rule set matching mymember.site standards
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # Pyflakes
+    "I",     # isort
+    "C90",   # McCabe complexity
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "A",     # flake8-builtins
+    "COM",   # flake8-commas
+    "C4",    # flake8-comprehensions
+    "DTZ",   # flake8-datetimez
+    "ISC",   # flake8-implicit-str-concat
+    "ICN",   # flake8-import-conventions
+    "G",     # flake8-logging-format
+    "PIE",   # flake8-pie
+    "T20",   # flake8-print
+    "PT",    # flake8-pytest-style
+    "Q",     # flake8-quotes
+    "RSE",   # flake8-raise
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "TID",   # flake8-tidy-imports
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+    "ERA",   # eradicate
+    "PL",    # Pylint
+    "PERF",  # Perflint
+    "RUF",   # Ruff-specific rules
+]
+
+# Ignore rules - matching mymember.site patterns with pyLoyalFans-specific additions
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    # Additional ignores for practical Python development
+    "COM812", # trailing comma missing (conflicts with formatter)
+    "ISC001", # implicit string concatenation (conflicts with formatter)
+    "T201",   # print found (we use print in scripts)
+    "ERA001", # commented-out code (sometimes needed)
+    "PLR0913", # too many arguments
+    "PLR0912", # too many branches
+    "PLR2004", # magic value used in comparison
+    "PLR0911", # too many return statements
+    "PLR0915", # too many statements
+    "C901",   # McCabe complexity (we set our own threshold)
+    # "B008",   # function calls in argument defaults (FastAPI uses this)
+    "ARG001", # unused function argument (common in callbacks)
+    "ARG002", # unused method argument (common in abstract methods)
+    "ARG003", # unused class method argument (common in abstract methods)
+    "ARG004", # unused static method argument (common in abstract methods)
+    "ARG005", # unused lambda argument (common pattern)
+    "PTH123", # pathlib open() (not always better) - TODO: convert incrementally
+    "PTH100", # pathlib Path() for os.path.abspath (not always better) - TODO: convert incrementally
+    "PTH104", # os.rename (not always better than pathlib) - TODO: convert incrementally
+    "PTH108", # os.unlink (not always better than pathlib) - TODO: convert incrementally
+    "PTH109", # os.getcwd (not always better than pathlib) - TODO: convert incrementally
+    "PTH110", # os.path.exists (not always better than pathlib) - TODO: convert incrementally
+    "PTH202", # os.path.getsize (not always better than pathlib) - TODO: convert incrementally
+    "PTH204", # os.path.getmtime (not always better than pathlib) - TODO: convert incrementally
+    "G004",   # logging f-string (we use this extensively with loguru) - KEEP: intentional pattern
+    "PLC0415", # import outside top-level (intentional for error handling patterns) - KEEP: architectural choice
+    "PLW0603", # global statement (used intentionally for module state) - KEEP: intentional pattern
+    "B904",   # raise without from inside except (sometimes intentional) - TODO: review and fix
+    "RUF006", # asyncio dangling task (tracked manually) - TODO: review and fix
+    # pyLoyalFans-specific ignores (risky transformations)
+    "TC001",   # typing-only-first-party-import (risky, broke some imports in mymember.site)
+]
+
+# Allow fix for all enabled rules (when `--fix` is provided)
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+# Root __init__.py uses categorized __all__ for readability
+"stash_graphql_client/__init__.py" = ["RUF022"]
+# Types must match Stash GraphQL schema naming conventions (mixedCase/camelCase)
+# A002: 'id' shadows builtin - standard GraphQL field name
+# N815: mixedCase variables in class scope - matches GraphQL schema
+# RUF012: Mutable class attributes (intentional for tracking metadata)
+"stash_graphql_client/types/**/*.py" = ["N815", "A002", "RUF012"]
+"stash_graphql_client/types/*.py" = ["N815", "A002", "RUF012"]
+# Client code uses relative imports for internal module organization
+# TID252: relative imports from parent - acceptable for internal package structure
+# N802: function names match GraphQL schema (querySQL, execSQL, etc.)
+"stash_graphql_client/client/**/*.py" = ["TID252", "N815", "A002", "N802"]
+"stash_graphql_client/client/*.py" = ["TID252", "N815", "A002", "N802"]
+# Context and fragments also match schema conventions
+"stash_graphql_client/context.py" = ["N815", "A002"]
+"stash_graphql_client/fragments.py" = ["N815"]
+# Test fixtures
+"tests/conftest.py" = ["F403", "F405"]  # Star imports and undefined names from star imports
+"tests/**/test_*.py" = ["N815", "A002"]  # Tests use schema-matching names
+"tests/fixtures/__init__.py" = ["F401", "F403", "F405", "RUF022"]  # Unused imports, star imports, undefined names, categorized __all__
+"tests/fixtures/*.py" = ["RUF022", "N815"]  # Allow categorized __all__ lists for readability
+"tests/fixtures/stash/graphql_responses.py" = ["N815", "A002"]  # mixed-case for GraphQL
+"tests/fixtures/stash_server/__init__.py" = ["F401", "F403", "F405", "RUF022"]  # Star imports + categorized __all__
+"tests/fixtures/stash_server/*.py" = ["SIM105", "N815"]  # try/except cleanup in fixtures is clearer than contextlib
+"tests/fixtures/stash_types/**/*.py" = ["N815", "A002"]  # mixed-case for GraphQL
+[tool.ruff.lint.mccabe]
+# Set max complexity to 14 (prefer ≤12)
+max-complexity = 14
+
+[tool.ruff.lint.isort]
+# Use Black-compatible isort settings
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+# Use Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+    "--cov=.",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-config=pyproject.toml",
+]
+timeout = 60
+timeout_method = "thread"
+timeout_func_only = true
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+xfail_strict = true
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: marks tests as unit tests",
+    "integration: marks tests as integration tests",
+    "slow: marks tests as slow",
+]
+[tool.coverage.run]
+branch = true
+source = ["."]
+data_file = ".coverage"
+omit = [
+    "*/venv/*",
+    "*/venv_test/*",
+    "*/__pycache__/*",
+    "*/tests/*",
+    "docs/*",
+    "*/migrations/*",
+    "*/.pytest_cache/*",
+    "*/.git/*",
+    "*/.github/*",
+    "*/htmlcov/*",
+    "stash/example.py"  # Example code, not production code
+]
+command_line = "-m pytest discover -s tests/"
+parallel = true
+concurrency = ["multiprocessing"]
+disable_warnings = [
+    "no-data-collected",
+    "module-not-imported",
+    "couldnt-parse",
+]
+# Fix for Mock serialization issues in parallel mode
+sigterm = true
+
+[tool.coverage.report]
+exclude_also = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "pass",
+    "\\.\\.\\.$",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if False:",
+    "if TESTING:"
+]
+ignore_errors = true
+skip_empty = true
+skip_covered = true
+precision = 2
+show_missing = true
+fail_under = 70
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "Coverage Report"
+show_contexts = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+package_depth = 2
+
+# AWS CodeArtifact private package repository (for publishing)
+[[tool.poetry.source]]
+name = "codeartifact"
+url = "https://stash-tools-024848464090.d.codeartifact.us-east-2.amazonaws.com/pypi/python-packages/simple/"
+priority = "supplemental"
