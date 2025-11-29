@@ -1,0 +1,63 @@
+# Claude Code Action workflow
+# AI-powered PR reviews and issue assistance
+# https://github.com/anthropics/claude-code-action
+
+name: Claude Code
+
+on:
+  # Respond to @claude mentions in comments
+  issue_comment:
+    types: [created]
+
+  # Respond to @claude mentions in PR review comments
+  pull_request_review_comment:
+    types: [created]
+
+  # Auto-review new PRs and PR updates
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  # Handle issues assigned to Claude
+  issues:
+    types: [opened, assigned]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  claude:
+    # Skip if the comment is from a bot (prevents infinite loops)
+    if: |
+      (github.event_name != 'issue_comment' && github.event_name != 'pull_request_review_comment') ||
+      !contains(github.event.comment.user.login, '[bot]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # Use the automatically provided GITHUB_TOKEN
+          # For enhanced permissions, use a GitHub App token instead
+
+          # Model configuration (optional - defaults to latest Claude)
+          # model: "claude-sonnet-4-20250514"
+
+          # Enable progress tracking for visibility
+          track_progress: true
+
+          # Allowed tools for Claude (security boundaries)
+          allowed_tools: "Read,Glob,Grep,WebFetch"
+
+          # Custom instructions for Claude (optional)
+          # custom_instructions: |
+          #   This is the stash-graphql-client library.
+          #   Focus on async Python patterns, GraphQL best practices,
+          #   and Pydantic model validation.
