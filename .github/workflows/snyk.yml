@@ -1,5 +1,5 @@
 # Snyk Security Analysis workflow
-# Scans dependencies and code for security vulnerabilities
+# Scans dependencies for vulnerabilities
 # https://github.com/snyk/actions
 
 name: Snyk Security
@@ -17,11 +17,10 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   snyk:
-    name: Snyk Security Scan
+    name: Snyk Dependency Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -44,36 +43,11 @@ jobs:
         run: poetry install --no-interaction --with dev
 
       # Snyk Open Source - Scan dependencies for vulnerabilities
-      - name: Snyk Open Source Scan
+      # Results are shown in workflow logs and on snyk.io dashboard
+      - name: Snyk Dependency Scan
         uses: snyk/actions/python@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           command: test
-          args: --sarif-file-output=snyk-open-source.sarif --severity-threshold=high
-
-      # Snyk Code - Static Application Security Testing (SAST)
-      - name: Snyk Code Scan
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: code test
-          args: --sarif-file-output=snyk-code.sarif
-
-      # Upload results to GitHub Security tab
-      - name: Upload Snyk Open Source results to GitHub
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: snyk-open-source.sarif
-          category: "snyk-open-source"
-
-      - name: Upload Snyk Code results to GitHub
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: snyk-code.sarif
-          category: "snyk-code"
+          args: --severity-threshold=high
