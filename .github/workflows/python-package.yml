@@ -90,6 +90,7 @@ jobs:
           poetry run pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
+        if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
