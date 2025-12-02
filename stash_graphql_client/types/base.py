@@ -8,13 +8,14 @@ ImageFile, etc.
 We use this interface to provide common functionality for these types, even
 though the schema doesn't explicitly define an interface for them.
 
-Note: created_at and updated_at are handled by Stash internally and not
-included in this interface.
+All StashObject types include created_at and updated_at timestamp fields
+which are managed by Stash but returned in API responses.
 """
 
 from __future__ import annotations
 
 import inspect
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pydantic import BaseModel, ConfigDict
@@ -31,17 +32,17 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="StashObject")
 
 
-class BulkUpdateStrings(BaseModel):
-    """Input for bulk string updates."""
-
-    values: list[str]  # [String!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
 class BulkUpdateIds(BaseModel):
     """Input for bulk ID updates."""
 
     ids: list[str]  # [ID!]!
+    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
+
+
+class BulkUpdateStrings(BaseModel):
+    """Input for bulk string updates."""
+
+    values: list[str]  # [String!]!
     mode: BulkUpdateIdMode  # BulkUpdateIdMode!
 
 
@@ -54,7 +55,8 @@ class StashObject(BaseModel):
 
     Common fields (matching schema pattern):
     - id: Unique identifier (ID!)
-    Note: created_at and updated_at are handled by Stash internally
+    - created_at: When the object was created (Time!) - managed by Stash
+    - updated_at: When the object was last updated (Time!) - managed by Stash
 
     Common functionality provided:
     - find_by_id: Find object by ID
@@ -98,7 +100,14 @@ class StashObject(BaseModel):
 
     # Note: _snapshot stored in __pydantic_private__ (not serialized)
 
-    id: str  # Only required field - Stash handles created_at/updated_at internally
+    # Required field
+    id: str  # ID!
+
+    # Timestamp fields - managed by Stash, returned in API responses
+    # These are optional because they may not be present in all API responses
+    # (e.g., when creating a new object before it's saved)
+    created_at: datetime | None = None  # Time!
+    updated_at: datetime | None = None  # Time!
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize object with kwargs.

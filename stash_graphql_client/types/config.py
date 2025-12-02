@@ -26,16 +26,66 @@ if TYPE_CHECKING:
     )
 
 
-class SetupInput(BaseModel):
-    """Input for initial setup."""
+class ConfigDLNAInput(BaseModel):
+    """Input for DLNA configuration."""
 
-    config_location: str  # String!
-    stashes: list[StashConfigInput]  # [StashConfigInput!]!
-    database_file: str  # String!
-    generated_location: str  # String!
-    cache_location: str  # String!
-    store_blobs_in_database: bool  # Boolean!
-    blobs_location: str  # String!
+    server_name: str | None = None  # String
+    enabled: bool | None = None  # Boolean
+    port: int | None = None  # Int
+    whitelisted_ips: list[str] | None = None  # [String!]
+    interfaces: list[str] | None = None  # [String!]
+    video_sort_order: str | None = None  # String
+
+
+class ConfigDLNAResult(BaseModel):
+    """Result type for DLNA configuration."""
+
+    server_name: str  # String!
+    enabled: bool  # Boolean!
+    port: int  # Int!
+    whitelisted_ips: list[str]  # [String!]!
+    interfaces: list[str]  # [String!]!
+    video_sort_order: str  # String!
+
+
+class ConfigDefaultSettingsInput(BaseModel):
+    """Input for default settings configuration."""
+
+    scan: ScanMetadataInput | None = None  # ScanMetadataInput
+    autoTag: AutoTagMetadataInput | None = None  # AutoTagMetadataInput
+    generate: GenerateMetadataInput | None = None  # GenerateMetadataInput
+    deleteFile: bool | None = None  # Boolean
+    deleteGenerated: bool | None = None  # Boolean
+
+
+class ConfigDefaultSettingsResult(BaseModel):
+    """Result type for default settings configuration."""
+
+    scan: ScanMetadataOptions  # ScanMetadataOptions
+    autoTag: AutoTagMetadataOptions  # AutoTagMetadataOptions
+    generate: GenerateMetadataOptions  # GenerateMetadataOptions
+    deleteFile: (
+        bool  # Boolean (If true, delete file checkbox will be checked by default)
+    )
+    deleteGenerated: bool  # Boolean (If true, delete generated supporting files checkbox will be checked by default)
+
+
+class ConfigDisableDropdownCreate(BaseModel):
+    """Result type for disable dropdown create."""
+
+    performer: bool  # Boolean!
+    tag: bool  # Boolean!
+    studio: bool  # Boolean!
+    movie: bool  # Boolean!
+
+
+class ConfigDisableDropdownCreateInput(BaseModel):
+    """Input for disabling dropdown create."""
+
+    performer: bool | None = None  # Boolean
+    tag: bool | None = None  # Boolean
+    studio: bool | None = None  # Boolean
+    movie: bool | None = None  # Boolean
 
 
 class ConfigGeneralInput(BaseModel):
@@ -142,15 +192,6 @@ class ConfigGeneralResult(BaseModel):
     custom_performer_image_location: str | None = None  # String
 
 
-class ConfigDisableDropdownCreateInput(BaseModel):
-    """Input for disabling dropdown create."""
-
-    performer: bool | None = None  # Boolean
-    tag: bool | None = None  # Boolean
-    studio: bool | None = None  # Boolean
-    movie: bool | None = None  # Boolean
-
-
 class ConfigImageLightboxInput(BaseModel):
     """Input for image lightbox configuration."""
 
@@ -204,15 +245,6 @@ class ConfigInterfaceInput(BaseModel):
     notifications_enabled: bool | None = None  # Boolean
 
 
-class ConfigDisableDropdownCreate(BaseModel):
-    """Result type for disable dropdown create."""
-
-    performer: bool  # Boolean!
-    tag: bool  # Boolean!
-    studio: bool  # Boolean!
-    movie: bool  # Boolean!
-
-
 class ConfigInterfaceResult(BaseModel):
     """Result type for interface configuration."""
 
@@ -242,50 +274,6 @@ class ConfigInterfaceResult(BaseModel):
     use_stash_hosted_funscript: bool | None = None  # Boolean
 
 
-class ConfigDLNAInput(BaseModel):
-    """Input for DLNA configuration."""
-
-    server_name: str | None = None  # String
-    enabled: bool | None = None  # Boolean
-    port: int | None = None  # Int
-    whitelisted_ips: list[str] | None = None  # [String!]
-    interfaces: list[str] | None = None  # [String!]
-    video_sort_order: str | None = None  # String
-
-
-class ConfigDLNAResult(BaseModel):
-    """Result type for DLNA configuration."""
-
-    server_name: str  # String!
-    enabled: bool  # Boolean!
-    port: int  # Int!
-    whitelisted_ips: list[str]  # [String!]!
-    interfaces: list[str]  # [String!]!
-    video_sort_order: str  # String!
-
-
-class ConfigDefaultSettingsResult(BaseModel):
-    """Result type for default settings configuration."""
-
-    scan: ScanMetadataOptions  # ScanMetadataOptions
-    autoTag: AutoTagMetadataOptions  # AutoTagMetadataOptions
-    generate: GenerateMetadataOptions  # GenerateMetadataOptions
-    deleteFile: (
-        bool  # Boolean (If true, delete file checkbox will be checked by default)
-    )
-    deleteGenerated: bool  # Boolean (If true, delete generated supporting files checkbox will be checked by default)
-
-
-class ConfigDefaultSettingsInput(BaseModel):
-    """Input for default settings configuration."""
-
-    scan: ScanMetadataInput | None = None  # ScanMetadataInput
-    autoTag: AutoTagMetadataInput | None = None  # AutoTagMetadataInput
-    generate: GenerateMetadataInput | None = None  # GenerateMetadataInput
-    deleteFile: bool | None = None  # Boolean
-    deleteGenerated: bool | None = None  # Boolean
-
-
 class ConfigResult(BaseModel):
     """Result type for all configuration."""
 
@@ -308,6 +296,22 @@ class ConfigResult(BaseModel):
         return {}
 
 
+class DLNAIP(BaseModel):
+    """DLNA IP address with expiration from schema/types/dlna.graphql."""
+
+    ipAddress: str  # String!
+    until: str | None = None  # Time
+
+
+class DLNAStatus(BaseModel):
+    """DLNA status from schema/types/dlna.graphql."""
+
+    running: bool  # Boolean!
+    until: str | None = None  # Time
+    recentIPAddresses: list[str]  # [String!]!
+    allowedIPAddresses: list[DLNAIP]  # [DLNAIP!]!
+
+
 class Directory(BaseModel):
     """Directory structure of a path."""
 
@@ -316,12 +320,38 @@ class Directory(BaseModel):
     directories: list[str]  # [String!]!
 
 
-class StashConfigInput(BaseModel):
-    """Input for stash configuration."""
+class GenerateAPIKeyInput(BaseModel):
+    """Input for generating API key."""
 
-    path: str  # String!
-    excludeVideo: bool  # Boolean!
-    excludeImage: bool  # Boolean!
+    clear: bool | None = None  # Boolean
+
+
+class SetupInput(BaseModel):
+    """Input for initial setup."""
+
+    config_location: str  # String!
+    stashes: list[StashConfigInput]  # [StashConfigInput!]!
+    database_file: str  # String!
+    generated_location: str  # String!
+    cache_location: str  # String!
+    store_blobs_in_database: bool  # Boolean!
+    blobs_location: str  # String!
+
+
+class StashBox(BaseModel):
+    """StashBox configuration from schema/types/stash-box.graphql."""
+
+    endpoint: str  # String!
+    api_key: str  # String!
+    name: str  # String!
+    max_requests_per_minute: int  # Int!
+
+
+class StashBoxValidationResult(BaseModel):
+    """Result of stash-box validation from schema/types/config.graphql."""
+
+    valid: bool  # Boolean!
+    status: str  # String!
 
 
 class StashConfig(BaseModel):
@@ -332,7 +362,9 @@ class StashConfig(BaseModel):
     excludeImage: bool  # Boolean!
 
 
-class GenerateAPIKeyInput(BaseModel):
-    """Input for generating API key."""
+class StashConfigInput(BaseModel):
+    """Input for stash configuration."""
 
-    clear: bool | None = None  # Boolean
+    path: str  # String!
+    excludeVideo: bool  # Boolean!
+    excludeImage: bool  # Boolean!

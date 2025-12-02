@@ -7,7 +7,7 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "gql[httpx,websockets] (>=4.0.0)",
     "websocket-client (>=1.8.0)",
@@ -16,7 +16,7 @@ dependencies = [
     "httpx-retries (>=0.4.3)",
     "pydantic (>=2.6.4)",
     "pydantic-extra-types (>=2.10.6)",
-    "multidict (>=6.7.0)"
+    "multidict (>=6.7.0)",
 ]
 
 [dependency-groups]

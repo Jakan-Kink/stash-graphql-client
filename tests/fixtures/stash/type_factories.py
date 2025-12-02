@@ -359,6 +359,7 @@ class ImageFileFactory(Factory):
             id="8001",
             path="/path/to/image.jpg",
             basename="image.jpg",
+            format="jpeg",
             width=1920,
             height=1080
         )
@@ -382,6 +383,7 @@ class ImageFileFactory(Factory):
     zip_file_id = None
 
     # ImageFile specific required fields
+    format = "jpeg"  # String! (e.g., "jpeg", "png", "gif", "webp")
     width = 1920
     height = 1080
 
@@ -582,12 +584,14 @@ def mock_image_file():
     Example:
         def test_something(mock_image_file):
             assert mock_image_file.path == "/path/to/image.jpg"
+            assert mock_image_file.format == "jpeg"
             assert mock_image_file.width == 1920
     """
     return ImageFileFactory(
         id="123",
         path="/path/to/image.jpg",
         basename="image.jpg",
+        format="jpeg",
         size=12345,
         width=1920,
         height=1080,

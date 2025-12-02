@@ -19,6 +19,20 @@ class JobStatus(str, Enum):
     FAILED = "FAILED"
 
 
+class JobStatusUpdateType(str, Enum):
+    """Job status update type enum from schema/types/job.graphql."""
+
+    ADD = "ADD"
+    REMOVE = "REMOVE"
+    UPDATE = "UPDATE"
+
+
+class FindJobInput(BaseModel):
+    """Input for finding jobs from schema/types/job.graphql."""
+
+    id: str  # ID!
+
+
 class Job(BaseModel):
     """Job type from schema/types/job.graphql."""
 
@@ -31,20 +45,6 @@ class Job(BaseModel):
     endTime: datetime | None = None  # Time
     addTime: datetime  # Time!
     error: str | None = None  # String
-
-
-class FindJobInput(BaseModel):
-    """Input for finding jobs from schema/types/job.graphql."""
-
-    id: str  # ID!
-
-
-class JobStatusUpdateType(str, Enum):
-    """Job status update type enum from schema/types/job.graphql."""
-
-    ADD = "ADD"
-    REMOVE = "REMOVE"
-    UPDATE = "UPDATE"
 
 
 class JobStatusUpdate(BaseModel):

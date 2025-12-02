@@ -3,7 +3,6 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
 from ...types import FindPerformersResultType, Performer
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
@@ -12,7 +11,6 @@ from ..utils import sanitize_model_data
 class PerformerClientMixin(StashClientProtocol):
     """Mixin for performer-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_performer(
         self,
         performer: int | str | dict,
@@ -134,7 +132,6 @@ class PerformerClientMixin(StashClientProtocol):
             self.log.error(f"Failed to find performer {performer}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_performers(
         self,
         filter_: dict[str, Any] | None = None,
@@ -318,9 +315,6 @@ class PerformerClientMixin(StashClientProtocol):
                 self.log.info(
                     f"Performer '{performer.name}' already exists. Fetching existing performer."
                 )
-                # Clear both performer caches since we have a new performer
-                self.find_performer.cache_clear()
-                self.find_performers.cache_clear()
                 # Try to find the existing performer with exact name match
                 result = await self.find_performers(
                     performer_filter={

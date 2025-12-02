@@ -3,7 +3,6 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
 from ...types import FindSceneMarkersResultType, SceneMarker
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
@@ -12,7 +11,6 @@ from ..utils import sanitize_model_data
 class MarkerClientMixin(StashClientProtocol):
     """Mixin for marker-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_marker(self, id: str) -> SceneMarker | None:
         """Find a scene marker by its ID.
 
@@ -36,7 +34,6 @@ class MarkerClientMixin(StashClientProtocol):
             self.log.error(f"Failed to find marker {id}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_markers(
         self,
         filter_: dict[str, Any] | None = None,
@@ -98,11 +95,7 @@ class MarkerClientMixin(StashClientProtocol):
             result = await self.execute(
                 fragments.CREATE_MARKER_MUTATION,
                 {"input": input_data},
-            )
-            # Clear caches since we've modified markers
-            self.find_marker.cache_clear()
-            self.find_markers.cache_clear()
-            # Sanitize model data before creating SceneMarker
+            )  # Sanitize model data before creating SceneMarker
             clean_data = sanitize_model_data(result["sceneMarkerCreate"])
             return SceneMarker(**clean_data)
         except Exception as e:
@@ -152,11 +145,7 @@ class MarkerClientMixin(StashClientProtocol):
             result = await self.execute(
                 fragments.UPDATE_MARKER_MUTATION,
                 {"input": input_data},
-            )
-            # Clear caches since we've modified a marker
-            self.find_marker.cache_clear()
-            self.find_markers.cache_clear()
-            # Sanitize model data before creating SceneMarker
+            )  # Sanitize model data before creating SceneMarker
             clean_data = sanitize_model_data(result["sceneMarkerUpdate"])
             return SceneMarker(**clean_data)
         except Exception as e:

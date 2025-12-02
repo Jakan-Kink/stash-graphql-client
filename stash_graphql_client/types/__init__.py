@@ -7,6 +7,7 @@ from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
 
 # Support types
 from .config import (
+    DLNAIP,
     ConfigDefaultSettingsInput,
     ConfigDefaultSettingsResult,
     ConfigDisableDropdownCreate,
@@ -21,8 +22,11 @@ from .config import (
     ConfigInterfaceResult,
     ConfigResult,
     Directory,
+    DLNAStatus,
     GenerateAPIKeyInput,
     SetupInput,
+    StashBox,
+    StashBoxValidationResult,
     StashConfig,
     StashConfigInput,
 )
@@ -34,8 +38,11 @@ from .enums import (
     FilterMode,
     GenderEnum,
     HashAlgorithm,
+    IdentifyFieldStrategy,
     ImageLightboxDisplayMode,
     ImageLightboxScrollMode,
+    ImportDuplicateEnum,
+    ImportMissingRefEnum,
     OnMultipleMatch,
     OrientationEnum,
     PackageType,
@@ -47,6 +54,7 @@ from .enums import (
 from .files import (
     AssignSceneFileInput,
     BaseFile,
+    BasicFile,
     FileSetFingerprintsInput,
     FindFilesResultType,
     FindFoldersResultType,
@@ -55,9 +63,9 @@ from .files import (
     GalleryFile,
     ImageFile,
     MoveFilesInput,
-    SceneHashInput,
     SetFingerprintsInput,
     StashID,
+    StashIDInput,
     VideoFile,
     VisualFile,
 )
@@ -126,16 +134,19 @@ from .group import (
     ReorderSubGroupsInput,
 )
 from .image import (
+    BulkImageUpdateInput,
     FindImagesResultType,
     Image,
     ImageDestroyInput,
     ImageFileType,
     ImagePathsType,
     ImagesDestroyInput,
+    ImageUpdateInput,
 )
-from .job import FindJobInput, Job, JobStatus
+from .job import FindJobInput, Job, JobStatus, JobStatusUpdate, JobStatusUpdateType
 from .logging import LogEntry, LogLevel
 from .markers import (
+    BulkSceneMarkerUpdateInput,
     FindSceneMarkersResultType,
     MarkerStringsResultType,
     SceneMarker,
@@ -168,19 +179,12 @@ from .metadata import (
     ScanMetadataOptions,
     SystemStatus,
 )
-from .not_implemented import (
-    DLNAStatus,
-    JobStatusUpdate,
-    LatestVersion,
-    SQLExecResult,
-    SQLQueryResult,
-    StashBoxValidationResult,
-    Version,
-)
 from .performer import (
+    BulkPerformerUpdateInput,
     FindPerformersResultType,
     Performer,
     PerformerCreateInput,
+    PerformerDestroyInput,
     PerformerUpdateInput,
 )
 from .scalars import Any, BoolMap, Int64, Map, PluginConfigMap, Time, Timestamp
@@ -196,6 +200,7 @@ from .scene import (
     SceneFileType,
     SceneGroup,
     SceneGroupInput,
+    SceneHashInput,
     SceneMergeInput,
     SceneMovieID,
     SceneMovieInput,
@@ -205,8 +210,11 @@ from .scene import (
     ScenesDestroyInput,
     SceneStreamEndpoint,
     SceneUpdateInput,
+    VideoCaption,
 )
+from .sql import SQLExecResult, SQLQueryResult
 from .studio import (
+    BulkStudioUpdateInput,
     FindStudiosResultType,
     Studio,
     StudioCreateInput,
@@ -222,9 +230,11 @@ from .tag import (
     TagsMergeInput,
     TagUpdateInput,
 )
+from .version import LatestVersion, Version
 
 
 __all__: list[str] = [
+    "DLNAIP",
     # Metadata types
     "AnonymiseDatabaseInput",
     # Scalar types
@@ -236,6 +246,8 @@ __all__: list[str] = [
     "BackupDatabaseInput",
     # File types
     "BaseFile",
+    # New types added
+    "BasicFile",
     # Enum types
     "BlobsStorageType",
     "BoolMap",
@@ -243,7 +255,11 @@ __all__: list[str] = [
     "BulkGalleryUpdateInput",
     # Group types
     "BulkGroupUpdateInput",
+    "BulkImageUpdateInput",
+    "BulkPerformerUpdateInput",
+    "BulkSceneMarkerUpdateInput",
     "BulkSceneUpdateInput",
+    "BulkStudioUpdateInput",
     # Tag types
     "BulkTagUpdateInput",
     "BulkUpdateGroupDescriptionsInput",
@@ -273,7 +289,7 @@ __all__: list[str] = [
     "CriterionModifier",
     "CustomFieldCriterionInput",
     "CustomFieldsInput",
-    # Not Implemented types
+    # DLNA types
     "DLNAStatus",
     "DateCriterionInput",
     "DestroyFilterInput",
@@ -338,6 +354,7 @@ __all__: list[str] = [
     "HistoryMutationResult",
     "IdentifyFieldOptions",
     "IdentifyFieldOptionsInput",
+    "IdentifyFieldStrategy",
     "IdentifyMetadataOptions",
     "IdentifyMetadataOptionsInput",
     "Image",
@@ -348,14 +365,17 @@ __all__: list[str] = [
     "ImageLightboxDisplayMode",
     "ImageLightboxScrollMode",
     "ImagePathsType",
+    "ImageUpdateInput",
     "ImagesDestroyInput",
+    "ImportDuplicateEnum",
+    "ImportMissingRefEnum",
     "ImportObjectsInput",
     "Int64",
     "IntCriterionInput",
     "Job",
     "JobStatus",
     "JobStatusUpdate",
-    "JobStatusUpdate",
+    "JobStatusUpdateType",
     "LatestVersion",
     # Log types
     "LogEntry",
@@ -374,6 +394,7 @@ __all__: list[str] = [
     "ParseSceneFilenamesResult",
     "Performer",
     "PerformerCreateInput",
+    "PerformerDestroyInput",
     "PerformerFilterType",
     "PerformerUpdateInput",
     "PhashDistanceCriterionInput",
@@ -417,11 +438,13 @@ __all__: list[str] = [
     "SetFingerprintsInput",
     "SetupInput",
     "SortDirectionEnum",
+    "StashBox",
     "StashBoxValidationResult",
     "StashConfig",
     "StashConfigInput",
     "StashID",
     "StashIDCriterionInput",
+    "StashIDInput",
     "StashObject",
     "StreamingResolutionEnum",
     "StringCriterionInput",
@@ -441,6 +464,7 @@ __all__: list[str] = [
     "Timestamp",
     "TimestampCriterionInput",
     "Version",
+    "VideoCaption",
     "VideoFile",
     "VisualFile",
 ]

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
-from .base import StashObject
+from .base import BulkUpdateIds, StashObject
 
 
 if TYPE_CHECKING:
@@ -14,13 +14,28 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class SceneMarkerTag(BaseModel):
-    """Scene marker tag type from schema/types/scene-marker-tag.graphql."""
+class BulkSceneMarkerUpdateInput(BaseModel):
+    """Input for bulk updating scene markers from schema/types/scene-marker.graphql."""
 
-    tag: Tag  # Tag! (from schema/types/scene-marker-tag.graphql)
-    scene_markers: list[SceneMarker] = Field(
-        default_factory=list
-    )  # [SceneMarker!]! (from schema/types/scene-marker-tag.graphql)
+    ids: list[str] | None = None  # [ID!]
+    title: str | None = None  # String
+    primary_tag_id: str | None = None  # ID
+    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+
+
+class FindSceneMarkersResultType(BaseModel):
+    """Result type for finding scene markers from schema/types/scene-marker.graphql."""
+
+    count: int  # Int!
+    scene_markers: list[SceneMarker]  # [SceneMarker!]!
+
+
+class MarkerStringsResultType(BaseModel):
+    """Result type for marker strings from schema/types/scene-marker.graphql."""
+
+    count: int  # Int!
+    id: str  # ID!
+    title: str  # String!
 
 
 class SceneMarkerCreateInput(BaseModel):
@@ -101,16 +116,10 @@ class SceneMarker(StashObject):
     }
 
 
-class FindSceneMarkersResultType(BaseModel):
-    """Result type for finding scene markers from schema/types/scene-marker.graphql."""
+class SceneMarkerTag(BaseModel):
+    """Scene marker tag type from schema/types/scene-marker-tag.graphql."""
 
-    count: int  # Int!
-    scene_markers: list[SceneMarker]  # [SceneMarker!]!
-
-
-class MarkerStringsResultType(BaseModel):
-    """Result type for marker strings from schema/types/scene-marker.graphql."""
-
-    count: int  # Int!
-    id: str  # ID!
-    title: str  # String!
+    tag: Tag  # Tag! (from schema/types/scene-marker-tag.graphql)
+    scene_markers: list[SceneMarker] = Field(
+        default_factory=list
+    )  # [SceneMarker!]! (from schema/types/scene-marker-tag.graphql)

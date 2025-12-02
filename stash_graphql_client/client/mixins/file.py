@@ -1,9 +1,8 @@
 """File-related client functionality."""
 
-from typing import Any, ClassVar
+from typing import Any
 
 from ... import fragments
-from ...client_helpers import AsyncCachedFunction, async_lru_cache
 from ...types import (
     AssignSceneFileInput,
     BaseFile,
@@ -18,10 +17,6 @@ from ..utils import sanitize_model_data
 class FileClientMixin(StashClientProtocol):
     """Mixin for file-related client methods."""
 
-    # Type hints for cached methods
-    _find_file_cache: ClassVar[AsyncCachedFunction]
-
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_file(
         self,
         id: str | None = None,

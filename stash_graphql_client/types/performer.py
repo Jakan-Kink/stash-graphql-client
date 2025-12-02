@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, Field
 
-from .base import StashObject
+from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
 from .enums import CircumisedEnum, GenderEnum
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
@@ -30,6 +30,44 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 T = TypeVar("T", bound="Performer")
+
+
+class BulkPerformerUpdateInput(BaseModel):
+    """Input for bulk updating performers from schema/types/performer.graphql."""
+
+    ids: list[str] | None = None  # [ID!]
+    disambiguation: str | None = None  # String
+    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
+    gender: GenderEnum | None = None  # GenderEnum
+    birthdate: str | None = None  # String
+    ethnicity: str | None = None  # String
+    country: str | None = None  # String
+    eye_color: str | None = None  # String
+    height_cm: int | None = None  # Int
+    measurements: str | None = None  # String
+    fake_tits: str | None = None  # String
+    penis_length: float | None = None  # Float
+    circumcised: CircumisedEnum | None = None  # CircumisedEnum
+    career_length: str | None = None  # String
+    tattoos: str | None = None  # String
+    piercings: str | None = None  # String
+    alias_list: BulkUpdateStrings | None = None  # BulkUpdateStrings
+    favorite: bool | None = None  # Boolean
+    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    rating100: int | None = None  # Int (1-100)
+    details: str | None = None  # String
+    death_date: str | None = None  # String
+    hair_color: str | None = None  # String
+    weight: int | None = None  # Int
+    ignore_auto_tag: bool | None = None  # Boolean
+    custom_fields: CustomFieldsInput | None = None  # CustomFieldsInput
+
+
+class FindPerformersResultType(BaseModel):
+    """Result type for finding performers from schema/types/performer.graphql."""
+
+    count: int  # Int!
+    performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
 
 
 class PerformerCreateInput(BaseModel):
@@ -142,6 +180,9 @@ class Performer(StashObject):
         "death_date",  # PerformerCreateInput/PerformerUpdateInput
         "hair_color",  # PerformerCreateInput/PerformerUpdateInput
         "weight",  # PerformerCreateInput/PerformerUpdateInput
+        "favorite",  # PerformerCreateInput/PerformerUpdateInput
+        "ignore_auto_tag",  # PerformerCreateInput/PerformerUpdateInput
+        "rating100",  # PerformerCreateInput/PerformerUpdateInput
     }
 
     # Required fields from schema
@@ -151,6 +192,10 @@ class Performer(StashObject):
     stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
     scenes: list[Scene] = Field(default_factory=list)  # [Scene!]!
     groups: list[Group] = Field(default_factory=list)  # [Group!]!
+
+    # Required boolean fields from schema
+    favorite: bool = False  # Boolean!
+    ignore_auto_tag: bool = False  # Boolean!
 
     # Optional fields from schema
     disambiguation: str | None = None  # String
@@ -173,6 +218,8 @@ class Performer(StashObject):
     death_date: str | None = None  # String
     hair_color: str | None = None  # String
     weight: int | None = None  # Int
+    rating100: int | None = None  # Int (1-100 rating)
+    custom_fields: dict[str, Any] = Field(default_factory=dict)  # Map!
 
     async def update_avatar(
         self, client: StashClient, image_path: str | Path
@@ -209,48 +256,6 @@ class Performer(StashObject):
         except Exception as e:
             raise ValueError(f"Failed to update avatar: {e}") from e
 
-    # @classmethod
-    # def from_account(cls, account: "Account") -> "Performer":
-    #     """Create performer from account.
-
-    #     Args:
-    #         account: Account to convert
-
-    #     Returns:
-    #         New performer instance
-    #     """
-    #     # Ensure we have a name (fallback to "Unknown" if all are None)
-    #     performer_name = (
-    #         account.display_name or account.username or account.screen_name or "Unknown"
-    #     )
-
-    #     # Handle alias list with proper None checking
-    #     alias_list = []
-    #     if (
-    #         account.display_name is not None
-    #         and account.username is not None
-    #         and account.display_name.lower() != account.username.lower()
-    #     ):
-    #         alias_list = [account.username]
-
-    #     # Build URLs list - Account objects don't have direct URLs
-    #     urls: list[str] = []
-
-    #     return cls(
-    #         id="new",  # Will be replaced on save
-    #         name=performer_name,
-    #         alias_list=alias_list,  # Only add username as alias if using display_name and it's different (case-insensitive)
-    #         urls=urls,
-    #         country="",
-    #         details=account.bio or "",
-    #         gender=GenderEnum.FEMALE,  # Default assumption for missF content creators
-    #         # Required fields with defaults
-    #         tags=[],  # Empty list of tags to start
-    #         scenes=[],
-    #         groups=[],  # Required relationship
-    #         stash_ids=[],  # Required relationship
-    #     )
-
     # Field definitions with their conversion functions
     __field_conversions__ = {
         "name": str,
@@ -283,7 +288,9 @@ class Performer(StashObject):
         "stash_ids": (
             "stash_ids",
             True,
-            lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+            lambda s: StashIDInput(
+                endpoint=s.endpoint, stash_id=s.stash_id, updated_at=s.updated_at
+            ),
         ),
     }
 
@@ -321,8 +328,7 @@ class Performer(StashObject):
             return None
 
 
-class FindPerformersResultType(BaseModel):
-    """Result type for finding performers from schema/types/performer.graphql."""
+class PerformerDestroyInput(BaseModel):
+    """Input for destroying a performer from schema/types/performer.graphql."""
 
-    count: int  # Int!
-    performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
+    id: str  # ID!

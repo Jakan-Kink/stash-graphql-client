@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, Field, model_validator
 
 from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
+from .files import ImageFile, VideoFile, VisualFile
 
 
 if TYPE_CHECKING:
@@ -17,21 +18,32 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class ImageFileType(BaseModel):
-    """Image file type from schema/types/image.graphql."""
+class BulkImageUpdateInput(BaseModel):
+    """Input for bulk updating images."""
 
-    mod_time: datetime  # Time!
-    size: int  # Int!
-    width: int  # Int!
-    height: int  # Int!
+    # Optional fields
+    client_mutation_id: str | None = None  # String
+    ids: list[str]  # [ID!]
+    rating100: int | None = None  # Int (1-100)
+    organized: bool | None = None  # Boolean
+    url: str | None = None  # String @deprecated
+    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
+    date: str | None = None  # String
+    details: str | None = None  # String
+    photographer: str | None = None  # String
+    studio_id: str | None = None  # ID
+    performer_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    gallery_ids: BulkUpdateIds | None = None  # BulkUpdateIds
 
 
-class ImagePathsType(BaseModel):
-    """Image paths type from schema/types/image.graphql."""
+class FindImagesResultType(BaseModel):
+    """Result type for finding images from schema/types/image.graphql."""
 
-    thumbnail: str | None = None  # String (Resolver)
-    preview: str | None = None  # String (Resolver)
-    image: str | None = None  # String (Resolver)
+    count: int  # Int!
+    megapixels: float  # Float! (Total megapixels of the images)
+    filesize: float  # Float! (Total file size in bytes)
+    images: list[Image] = Field(default_factory=list)  # [Image!]!
 
 
 class ImageUpdateInput(BaseModel):
@@ -86,17 +98,19 @@ class Image(StashObject):
     date: str | None = None  # String
     details: str | None = None  # String
     photographer: str | None = None  # String
+    rating100: int | None = None  # Int
+    o_counter: int | None = None  # Int
     studio: Studio | None = None  # Studio
 
     # Required fields
     urls: list[str] = Field(default_factory=list)  # [String!]!
     organized: bool = False  # Boolean!
-    visual_files: list[Any] = Field(
+    # NOTE: VisualFile is a union type (VideoFile | ImageFile)
+    # GIF images are returned as VideoFile since they contain animation/video data
+    visual_files: list[VisualFile] = Field(
         default_factory=list
     )  # [VisualFile!]! - The image files (replaces deprecated 'files' field)
-    paths: ImagePathsType = Field(
-        default_factory=ImagePathsType
-    )  # ImagePathsType! (Resolver)
+    # Note: paths field removed - use ImageDetail for lazy-loaded path URLs
     galleries: list[Gallery] = Field(default_factory=list)  # [Gallery!]!
     tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
     performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
@@ -132,38 +146,48 @@ class Image(StashObject):
     @model_validator(mode="before")
     @classmethod
     def convert_files_to_visual_files(cls, data: Any) -> Any:
-        """Convert deprecated 'files' field to 'visual_files'.
+        """Convert file data to proper VisualFile types.
 
-        The GraphQL schema uses 'files' but we use 'visual_files' internally.
-        This validator handles the conversion when data comes from the API.
+        Handles two cases:
+        1. Deprecated 'files' field → convert to 'visual_files'
+        2. Raw dict data in 'visual_files' → convert to ImageFile/VideoFile objects
+
+        The discriminator for union type is the presence of 'duration' field:
+        - If 'duration' is present → VideoFile (used for GIFs and animated images)
+        - If 'duration' is absent → ImageFile (used for static images)
 
         Args:
             data: Input data (dict or object)
 
         Returns:
-            Modified data with files converted to visual_files
+            Modified data with proper VisualFile objects
         """
-        # Handle dict input
-        if isinstance(data, dict) and "files" in data:
-            from .files import ImageFile, VideoFile
+        if not isinstance(data, dict):
+            return data
 
-            files = data.pop("files")
-            visual_files: list[Any] = []
-
-            for file_data in files if isinstance(files, list) else [files]:
+        # Helper function to convert file dict to proper type
+        def convert_file(file_data: Any) -> Any:
+            if isinstance(file_data, dict):
                 # Determine if it's an ImageFile or VideoFile based on presence of duration
-                if isinstance(file_data, dict):
-                    if "duration" in file_data:
-                        visual_files.append(VideoFile(**file_data))
-                    else:
-                        visual_files.append(ImageFile(**file_data))
-                else:
-                    # Already a VisualFile object
-                    visual_files.append(file_data)
+                # GIF images are returned as VideoFile since they contain animation/video data
+                if "duration" in file_data:
+                    return VideoFile(**file_data)
+                return ImageFile(**file_data)
+            # Already a VisualFile object
+            return file_data
 
-            # Set visual_files if not already set
+        # Handle deprecated 'files' field
+        if "files" in data:
+            files = data.pop("files")
             if "visual_files" not in data:
-                data["visual_files"] = visual_files
+                data["visual_files"] = [
+                    convert_file(f)
+                    for f in (files if isinstance(files, list) else [files])
+                ]
+
+        # Handle visual_files containing raw dicts (from GraphQL response)
+        if "visual_files" in data and isinstance(data["visual_files"], list):
+            data["visual_files"] = [convert_file(f) for f in data["visual_files"]]
 
         return data
 
@@ -176,37 +200,26 @@ class ImageDestroyInput(BaseModel):
     delete_generated: bool | None = None  # Boolean
 
 
+class ImageFileType(BaseModel):
+    """Image file type from schema/types/image.graphql."""
+
+    mod_time: datetime  # Time!
+    size: int  # Int!
+    width: int  # Int!
+    height: int  # Int!
+
+
+class ImagePathsType(BaseModel):
+    """Image paths type from schema/types/image.graphql."""
+
+    thumbnail: str | None = None  # String (Resolver)
+    preview: str | None = None  # String (Resolver)
+    image: str | None = None  # String (Resolver)
+
+
 class ImagesDestroyInput(BaseModel):
     """Input for destroying multiple images from schema/types/image.graphql."""
 
     ids: list[str]  # [ID!]!
     delete_file: bool | None = None  # Boolean
     delete_generated: bool | None = None  # Boolean
-
-
-class BulkImageUpdateInput(BaseModel):
-    """Input for bulk updating images."""
-
-    # Optional fields
-    client_mutation_id: str | None = None  # String
-    ids: list[str]  # [ID!]
-    rating100: int | None = None  # Int (1-100)
-    organized: bool | None = None  # Boolean
-    url: str | None = None  # String @deprecated
-    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
-    date: str | None = None  # String
-    details: str | None = None  # String
-    photographer: str | None = None  # String
-    studio_id: str | None = None  # ID
-    performer_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    gallery_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-
-
-class FindImagesResultType(BaseModel):
-    """Result type for finding images from schema/types/image.graphql."""
-
-    count: int  # Int!
-    megapixels: float  # Float! (Total megapixels of the images)
-    filesize: float  # Float! (Total file size in bytes)
-    images: list[Image] = Field(default_factory=list)  # [Image!]!

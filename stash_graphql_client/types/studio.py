@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, model_validator
 
-from .base import StashObject
+from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
 from .files import StashID, StashIDInput
 
 
@@ -23,13 +23,34 @@ if TYPE_CHECKING:
     Account = Any
 
 
-class StudioCreateInput(BaseModel):
-    """Input for creating studios."""
+class BulkStudioUpdateInput(BaseModel):
+    """Input for bulk updating studios from schema/types/studio.graphql."""
+
+    ids: list[str]  # [ID!]!
+    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
+    parent_id: str | None = None  # ID
+    rating100: int | None = None  # Int (1-100)
+    favorite: bool | None = None  # Boolean
+    details: str | None = None  # String
+    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    ignore_auto_tag: bool | None = None  # Boolean
+
+
+class FindStudiosResultType(BaseModel):
+    """Result type for finding studios from schema/types/studio.graphql."""
+
+    count: int  # Int!
+    studios: list[Studio]  # [Studio!]!
+
+
+class StudioUpdateInput(BaseModel):
+    """Input for updating studios."""
 
     # Required fields
-    name: str  # String!
+    id: str  # ID!
 
     # Optional fields
+    name: str | None = None  # String
     urls: list[str] | None = None  # [String!]
     parent_id: str | None = None  # ID
     image: str | None = None  # String (URL or base64)
@@ -42,14 +63,13 @@ class StudioCreateInput(BaseModel):
     ignore_auto_tag: bool | None = None  # Boolean
 
 
-class StudioUpdateInput(BaseModel):
-    """Input for updating studios."""
+class StudioCreateInput(BaseModel):
+    """Input for creating studios."""
 
     # Required fields
-    id: str  # ID!
+    name: str  # String!
 
     # Optional fields
-    name: str | None = None  # String
     urls: list[str] | None = None  # [String!]
     parent_id: str | None = None  # ID
     image: str | None = None  # String (URL or base64)
@@ -78,6 +98,9 @@ class Studio(StashObject):
         "urls",  # StudioCreateInput/StudioUpdateInput
         "parent_studio",  # mapped to parent_id
         "details",  # StudioCreateInput/StudioUpdateInput
+        "favorite",  # StudioCreateInput/StudioUpdateInput
+        "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
+        "rating100",  # StudioCreateInput/StudioUpdateInput
     }
 
     # Required fields
@@ -86,10 +109,13 @@ class Studio(StashObject):
     tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
     stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
     urls: list[str] = Field(default_factory=list)  # [String!]!
+    favorite: bool = False  # Boolean!
+    ignore_auto_tag: bool = False  # Boolean!
 
     # Optional fields
     parent_studio: Studio | None = None  # Studio
     details: str | None = None  # String
+    rating100: int | None = None  # Int
     image_path: str | None = None  # String (Resolver)
 
     @model_validator(mode="before")
@@ -171,7 +197,9 @@ class Studio(StashObject):
         "stash_ids": (
             "stash_ids",
             True,
-            lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+            lambda s: StashIDInput(
+                endpoint=s.endpoint, stash_id=s.stash_id, updated_at=s.updated_at
+            ),
         ),
     }
 
@@ -180,10 +208,3 @@ class StudioDestroyInput(BaseModel):
     """Input for destroying a studio from schema/types/studio.graphql."""
 
     id: str  # ID!
-
-
-class FindStudiosResultType(BaseModel):
-    """Result type for finding studios from schema/types/studio.graphql."""
-
-    count: int  # Int!
-    studios: list[Studio]  # [Studio!]!

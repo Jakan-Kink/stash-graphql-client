@@ -3,7 +3,6 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
 from ...types import FindStudiosResultType, Studio
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
@@ -12,7 +11,6 @@ from ..utils import sanitize_model_data
 class StudioClientMixin(StashClientProtocol):
     """Mixin for studio-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_studio(self, id: str) -> Studio | None:
         """Find a studio by its ID.
 
@@ -36,7 +34,6 @@ class StudioClientMixin(StashClientProtocol):
             self.log.error(f"Failed to find studio {id}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_studios(
         self,
         filter_: dict[str, Any] | None = None,
@@ -96,11 +93,7 @@ class StudioClientMixin(StashClientProtocol):
             result = await self.execute(
                 fragments.CREATE_STUDIO_MUTATION,
                 {"input": input_data},
-            )
-            # Clear caches since we've modified studios
-            self.find_studio.cache_clear()
-            self.find_studios.cache_clear()
-            # Sanitize model data before creating Studio
+            )  # Sanitize model data before creating Studio
             clean_data = sanitize_model_data(result["studioCreate"])
             return Studio(**clean_data)
         except Exception as e:
@@ -128,11 +121,7 @@ class StudioClientMixin(StashClientProtocol):
             result = await self.execute(
                 fragments.UPDATE_STUDIO_MUTATION,
                 {"input": input_data},
-            )
-            # Clear caches since we've modified a studio
-            self.find_studio.cache_clear()
-            self.find_studios.cache_clear()
-            # Sanitize model data before creating Studio
+            )  # Sanitize model data before creating Studio
             clean_data = sanitize_model_data(result["studioUpdate"])
             return Studio(**clean_data)
         except Exception as e:

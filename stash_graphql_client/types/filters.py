@@ -17,6 +17,35 @@ from .enums import (
 )
 
 
+class CircumcisionCriterionInput(BaseModel):
+    """Input for circumcision criterion."""
+
+    value: list[CircumisedEnum]  # [CircumisedEnum!]!
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class CustomFieldCriterionInput(BaseModel):
+    """Input for custom field criterion."""
+
+    field: str  # String!
+    value: list[Any] | None = None  # [Any!]
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class DateCriterionInput(BaseModel):
+    """Input for date criterion."""
+
+    value: str  # String!
+    value2: str | None = None  # String
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class DestroyFilterInput(BaseModel):
+    """Input for destroying filter."""
+
+    id: str  # ID!
+
+
 class FindFilterType(BaseModel):
     """Input for find filter."""
 
@@ -27,21 +56,153 @@ class FindFilterType(BaseModel):
     direction: SortDirectionEnum | None = None  # SortDirectionEnum
 
 
-class SavedFindFilterType(BaseModel):
-    """Saved find filter type."""
+class FloatCriterionInput(BaseModel):
+    """Input for float criterion."""
 
-    q: str | None = None  # String
-    page: int | None = None  # Int
-    per_page: int | None = None  # Int (-1 for all, default 25)
-    sort: str | None = None  # String
-    direction: SortDirectionEnum | None = None  # SortDirectionEnum
-
-
-class ResolutionCriterionInput(BaseModel):
-    """Input for resolution criterion."""
-
-    value: ResolutionEnum  # ResolutionEnum!
+    value: float  # Float!
+    value2: float | None = None  # Float
     modifier: CriterionModifier  # CriterionModifier!
+
+
+class GalleryFilterType(BaseModel):
+    """Input for gallery filter."""
+
+    AND: GalleryFilterType | None = None
+    OR: GalleryFilterType | None = None
+    NOT: GalleryFilterType | None = None
+    id: IntCriterionInput | None = None
+    title: StringCriterionInput | None = None
+    details: StringCriterionInput | None = None
+    checksum: StringCriterionInput | None = None
+    path: StringCriterionInput | None = None
+    file_count: IntCriterionInput | None = None
+    is_missing: str | None = None
+    is_zip: bool | None = None
+    rating100: IntCriterionInput | None = None
+    organized: bool | None = None
+    average_resolution: ResolutionCriterionInput | None = None
+    has_chapters: str | None = None
+    scenes: MultiCriterionInput | None = None
+    studios: HierarchicalMultiCriterionInput | None = None
+    tags: HierarchicalMultiCriterionInput | None = None
+    tag_count: IntCriterionInput | None = None
+    performer_tags: HierarchicalMultiCriterionInput | None = None
+    performers: MultiCriterionInput | None = None
+    performer_count: IntCriterionInput | None = None
+    performer_favorite: bool | None = None
+    performer_age: IntCriterionInput | None = None
+    image_count: IntCriterionInput | None = None
+    url: StringCriterionInput | None = None
+    date: DateCriterionInput | None = None
+    created_at: TimestampCriterionInput | None = None
+    updated_at: TimestampCriterionInput | None = None
+    code: StringCriterionInput | None = None
+    photographer: StringCriterionInput | None = None
+    scenes_filter: SceneFilterType | None = None
+    images_filter: ImageFilterType | None = None
+    performers_filter: PerformerFilterType | None = None
+    studios_filter: StudioFilterType | None = None
+    tags_filter: TagFilterType | None = None
+
+
+class GenderCriterionInput(BaseModel):
+    """Input for gender criterion."""
+
+    value: GenderEnum | None = None  # GenderEnum
+    value_list: list[GenderEnum] | None = None  # [GenderEnum!]
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class GroupFilterType(BaseModel):
+    """Input for group filter."""
+
+    AND: GroupFilterType | None = None
+    OR: GroupFilterType | None = None
+    NOT: GroupFilterType | None = None
+    name: StringCriterionInput | None = None
+    director: StringCriterionInput | None = None
+    synopsis: StringCriterionInput | None = None
+    duration: IntCriterionInput | None = None
+    rating100: IntCriterionInput | None = None
+    studios: HierarchicalMultiCriterionInput | None = None
+    is_missing: str | None = None
+    url: StringCriterionInput | None = None
+    performers: MultiCriterionInput | None = None
+    tags: HierarchicalMultiCriterionInput | None = None
+    tag_count: IntCriterionInput | None = None
+    date: DateCriterionInput | None = None
+    created_at: TimestampCriterionInput | None = None
+    updated_at: TimestampCriterionInput | None = None
+    containing_groups: HierarchicalMultiCriterionInput | None = None
+    sub_groups: HierarchicalMultiCriterionInput | None = None
+    containing_group_count: IntCriterionInput | None = None
+    sub_group_count: IntCriterionInput | None = None
+    scenes_filter: SceneFilterType | None = None
+    studios_filter: StudioFilterType | None = None
+
+
+class HierarchicalMultiCriterionInput(BaseModel):
+    """Input for hierarchical multi criterion."""
+
+    value: list[str]  # [ID!]!
+    modifier: CriterionModifier  # CriterionModifier!
+    depth: int | None = None  # Int
+    excludes: list[str] | None = None  # [ID!]
+
+
+class ImageFilterType(BaseModel):
+    """Input for image filter."""
+
+    AND: ImageFilterType | None = None
+    OR: ImageFilterType | None = None
+    NOT: ImageFilterType | None = None
+    title: StringCriterionInput | None = None
+    details: StringCriterionInput | None = None
+    id: IntCriterionInput | None = None
+    checksum: StringCriterionInput | None = None
+    path: StringCriterionInput | None = None
+    file_count: IntCriterionInput | None = None
+    rating100: IntCriterionInput | None = None
+    date: DateCriterionInput | None = None
+    url: StringCriterionInput | None = None
+    organized: bool | None = None
+    o_counter: IntCriterionInput | None = None
+    resolution: ResolutionCriterionInput | None = None
+    orientation: OrientationCriterionInput | None = None
+    is_missing: str | None = None
+    studios: HierarchicalMultiCriterionInput | None = None
+    tags: HierarchicalMultiCriterionInput | None = None
+    tag_count: IntCriterionInput | None = None
+    performer_tags: HierarchicalMultiCriterionInput | None = None
+    performers: MultiCriterionInput | None = None
+    performer_count: IntCriterionInput | None = None
+    performer_favorite: bool | None = None
+    performer_age: IntCriterionInput | None = None
+    galleries: MultiCriterionInput | None = None
+    created_at: TimestampCriterionInput | None = None
+    updated_at: TimestampCriterionInput | None = None
+    code: StringCriterionInput | None = None
+    photographer: StringCriterionInput | None = None
+    galleries_filter: GalleryFilterType | None = None
+    performers_filter: PerformerFilterType | None = None
+    studios_filter: StudioFilterType | None = None
+    tags_filter: TagFilterType | None = None
+
+
+class IntCriterionInput(BaseModel):
+    """Input for integer criterion."""
+
+    value: int  # Int!
+    value2: int | None = None  # Int
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class MultiCriterionInput(BaseModel):
+    """Input for multi criterion."""
+
+    value: list[str] | None = None  # [ID!]
+    modifier: CriterionModifier  # CriterionModifier!
+    excludes: list[str] | None = None  # [ID!]
 
 
 class OrientationCriterionInput(BaseModel):
@@ -55,141 +216,6 @@ class PHashDuplicationCriterionInput(BaseModel):
 
     duplicated: bool | None = None  # Boolean
     distance: int | None = None  # Int
-
-
-class StashIDCriterionInput(BaseModel):
-    """Input for StashID criterion."""
-
-    endpoint: str | None = None  # String
-    stash_id: str | None = None  # String
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class CustomFieldCriterionInput(BaseModel):
-    """Input for custom field criterion."""
-
-    field: str  # String!
-    value: list[Any] | None = None  # [Any!]
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class StringCriterionInput(BaseModel):
-    """Input for string criterion."""
-
-    value: str  # String!
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class IntCriterionInput(BaseModel):
-    """Input for integer criterion."""
-
-    value: int  # Int!
-    value2: int | None = None  # Int
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class FloatCriterionInput(BaseModel):
-    """Input for float criterion."""
-
-    value: float  # Float!
-    value2: float | None = None  # Float
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class MultiCriterionInput(BaseModel):
-    """Input for multi criterion."""
-
-    value: list[str] | None = None  # [ID!]
-    modifier: CriterionModifier  # CriterionModifier!
-    excludes: list[str] | None = None  # [ID!]
-
-
-class GenderCriterionInput(BaseModel):
-    """Input for gender criterion."""
-
-    value: GenderEnum | None = None  # GenderEnum
-    value_list: list[GenderEnum] | None = None  # [GenderEnum!]
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class CircumcisionCriterionInput(BaseModel):
-    """Input for circumcision criterion."""
-
-    value: list[CircumisedEnum]  # [CircumisedEnum!]!
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class HierarchicalMultiCriterionInput(BaseModel):
-    """Input for hierarchical multi criterion."""
-
-    value: list[str]  # [ID!]!
-    modifier: CriterionModifier  # CriterionModifier!
-    depth: int | None = None  # Int
-    excludes: list[str] | None = None  # [ID!]
-
-
-class DateCriterionInput(BaseModel):
-    """Input for date criterion."""
-
-    value: str  # String!
-    value2: str | None = None  # String
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class TimestampCriterionInput(BaseModel):
-    """Input for timestamp criterion."""
-
-    value: str  # String!
-    value2: str | None = None  # String
-    modifier: CriterionModifier  # CriterionModifier!
-
-
-class PhashDistanceCriterionInput(BaseModel):
-    """Input for phash distance criterion."""
-
-    value: str  # String!
-    modifier: CriterionModifier  # CriterionModifier!
-    distance: int | None = None  # Int
-
-
-class SavedFilter(BaseModel):
-    """Saved filter type."""
-
-    id: str  # ID!
-    mode: FilterMode  # FilterMode!
-    name: str  # String!
-    find_filter: SavedFindFilterType | None = None  # SavedFindFilterType
-    object_filter: dict[str, Any] | None = None  # Map
-    ui_options: dict[str, Any] | None = None  # Map
-
-
-class SaveFilterInput(BaseModel):
-    """Input for saving filter."""
-
-    id: str | None = None  # ID
-    mode: FilterMode  # FilterMode!
-    name: str  # String!
-    find_filter: FindFilterType | None = None  # FindFilterType
-    object_filter: dict[str, Any] | None = None  # Map
-    ui_options: dict[str, Any] | None = None  # Map
-
-
-class DestroyFilterInput(BaseModel):
-    """Input for destroying filter."""
-
-    id: str  # ID!
-
-
-class SetDefaultFilterInput(BaseModel):
-    """Input for setting default filter."""
-
-    mode: FilterMode  # FilterMode!
-    find_filter: FindFilterType | None = None  # FindFilterType
-    object_filter: dict[str, Any] | None = None  # Map
-    ui_options: dict[str, Any] | None = None  # Map
-
-
-# Core filter types
 
 
 class PerformerFilterType(BaseModel):
@@ -245,20 +271,51 @@ class PerformerFilterType(BaseModel):
     custom_fields: list[CustomFieldCriterionInput] | None = None
 
 
-class SceneMarkerFilterType(BaseModel):
-    """Input for scene marker filter."""
+class PhashDistanceCriterionInput(BaseModel):
+    """Input for phash distance criterion."""
 
-    tags: HierarchicalMultiCriterionInput | None = None
-    scene_tags: HierarchicalMultiCriterionInput | None = None
-    performers: MultiCriterionInput | None = None
-    scenes: MultiCriterionInput | None = None
-    duration: FloatCriterionInput | None = None
-    created_at: TimestampCriterionInput | None = None
-    updated_at: TimestampCriterionInput | None = None
-    scene_date: DateCriterionInput | None = None
-    scene_created_at: TimestampCriterionInput | None = None
-    scene_updated_at: TimestampCriterionInput | None = None
-    scene_filter: SceneFilterType | None = None
+    value: str  # String!
+    modifier: CriterionModifier  # CriterionModifier!
+    distance: int | None = None  # Int
+
+
+class ResolutionCriterionInput(BaseModel):
+    """Input for resolution criterion."""
+
+    value: ResolutionEnum  # ResolutionEnum!
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class SaveFilterInput(BaseModel):
+    """Input for saving filter."""
+
+    id: str | None = None  # ID
+    mode: FilterMode  # FilterMode!
+    name: str  # String!
+    find_filter: FindFilterType | None = None  # FindFilterType
+    object_filter: dict[str, Any] | None = None  # Map
+    ui_options: dict[str, Any] | None = None  # Map
+
+
+class SavedFilter(BaseModel):
+    """Saved filter type."""
+
+    id: str  # ID!
+    mode: FilterMode  # FilterMode!
+    name: str  # String!
+    find_filter: SavedFindFilterType | None = None  # SavedFindFilterType
+    object_filter: dict[str, Any] | None = None  # Map
+    ui_options: dict[str, Any] | None = None  # Map
+
+
+class SavedFindFilterType(BaseModel):
+    """Saved find filter type."""
+
+    q: str | None = None  # String
+    page: int | None = None  # Int
+    per_page: int | None = None  # Int (-1 for all, default 25)
+    sort: str | None = None  # String
+    direction: SortDirectionEnum | None = None  # SortDirectionEnum
 
 
 class SceneFilterType(BaseModel):
@@ -320,32 +377,47 @@ class SceneFilterType(BaseModel):
     markers_filter: SceneMarkerFilterType | None = None
 
 
-class GroupFilterType(BaseModel):
-    """Input for group filter."""
+class SceneMarkerFilterType(BaseModel):
+    """Input for scene marker filter."""
 
-    AND: GroupFilterType | None = None
-    OR: GroupFilterType | None = None
-    NOT: GroupFilterType | None = None
-    name: StringCriterionInput | None = None
-    director: StringCriterionInput | None = None
-    synopsis: StringCriterionInput | None = None
-    duration: IntCriterionInput | None = None
-    rating100: IntCriterionInput | None = None
-    studios: HierarchicalMultiCriterionInput | None = None
-    is_missing: str | None = None
-    url: StringCriterionInput | None = None
-    performers: MultiCriterionInput | None = None
     tags: HierarchicalMultiCriterionInput | None = None
-    tag_count: IntCriterionInput | None = None
-    date: DateCriterionInput | None = None
+    scene_tags: HierarchicalMultiCriterionInput | None = None
+    performers: MultiCriterionInput | None = None
+    scenes: MultiCriterionInput | None = None
+    duration: FloatCriterionInput | None = None
     created_at: TimestampCriterionInput | None = None
     updated_at: TimestampCriterionInput | None = None
-    containing_groups: HierarchicalMultiCriterionInput | None = None
-    sub_groups: HierarchicalMultiCriterionInput | None = None
-    containing_group_count: IntCriterionInput | None = None
-    sub_group_count: IntCriterionInput | None = None
-    scenes_filter: SceneFilterType | None = None
-    studios_filter: StudioFilterType | None = None
+    scene_date: DateCriterionInput | None = None
+    scene_created_at: TimestampCriterionInput | None = None
+    scene_updated_at: TimestampCriterionInput | None = None
+    scene_filter: SceneFilterType | None = None
+
+
+class SetDefaultFilterInput(BaseModel):
+    """Input for setting default filter."""
+
+    mode: FilterMode  # FilterMode!
+    find_filter: FindFilterType | None = None  # FindFilterType
+    object_filter: dict[str, Any] | None = None  # Map
+    ui_options: dict[str, Any] | None = None  # Map
+
+
+# Core filter types
+
+
+class StashIDCriterionInput(BaseModel):
+    """Input for StashID criterion."""
+
+    endpoint: str | None = None  # String
+    stash_id: str | None = None  # String
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class StringCriterionInput(BaseModel):
+    """Input for string criterion."""
+
+    value: str  # String!
+    modifier: CriterionModifier  # CriterionModifier!
 
 
 class StudioFilterType(BaseModel):
@@ -375,47 +447,6 @@ class StudioFilterType(BaseModel):
     galleries_filter: GalleryFilterType | None = None
     created_at: TimestampCriterionInput | None = None
     updated_at: TimestampCriterionInput | None = None
-
-
-class GalleryFilterType(BaseModel):
-    """Input for gallery filter."""
-
-    AND: GalleryFilterType | None = None
-    OR: GalleryFilterType | None = None
-    NOT: GalleryFilterType | None = None
-    id: IntCriterionInput | None = None
-    title: StringCriterionInput | None = None
-    details: StringCriterionInput | None = None
-    checksum: StringCriterionInput | None = None
-    path: StringCriterionInput | None = None
-    file_count: IntCriterionInput | None = None
-    is_missing: str | None = None
-    is_zip: bool | None = None
-    rating100: IntCriterionInput | None = None
-    organized: bool | None = None
-    average_resolution: ResolutionCriterionInput | None = None
-    has_chapters: str | None = None
-    scenes: MultiCriterionInput | None = None
-    studios: HierarchicalMultiCriterionInput | None = None
-    tags: HierarchicalMultiCriterionInput | None = None
-    tag_count: IntCriterionInput | None = None
-    performer_tags: HierarchicalMultiCriterionInput | None = None
-    performers: MultiCriterionInput | None = None
-    performer_count: IntCriterionInput | None = None
-    performer_favorite: bool | None = None
-    performer_age: IntCriterionInput | None = None
-    image_count: IntCriterionInput | None = None
-    url: StringCriterionInput | None = None
-    date: DateCriterionInput | None = None
-    created_at: TimestampCriterionInput | None = None
-    updated_at: TimestampCriterionInput | None = None
-    code: StringCriterionInput | None = None
-    photographer: StringCriterionInput | None = None
-    scenes_filter: SceneFilterType | None = None
-    images_filter: ImageFilterType | None = None
-    performers_filter: PerformerFilterType | None = None
-    studios_filter: StudioFilterType | None = None
-    tags_filter: TagFilterType | None = None
 
 
 class TagFilterType(BaseModel):
@@ -448,40 +479,9 @@ class TagFilterType(BaseModel):
     updated_at: TimestampCriterionInput | None = None
 
 
-class ImageFilterType(BaseModel):
-    """Input for image filter."""
+class TimestampCriterionInput(BaseModel):
+    """Input for timestamp criterion."""
 
-    AND: ImageFilterType | None = None
-    OR: ImageFilterType | None = None
-    NOT: ImageFilterType | None = None
-    title: StringCriterionInput | None = None
-    details: StringCriterionInput | None = None
-    id: IntCriterionInput | None = None
-    checksum: StringCriterionInput | None = None
-    path: StringCriterionInput | None = None
-    file_count: IntCriterionInput | None = None
-    rating100: IntCriterionInput | None = None
-    date: DateCriterionInput | None = None
-    url: StringCriterionInput | None = None
-    organized: bool | None = None
-    o_counter: IntCriterionInput | None = None
-    resolution: ResolutionCriterionInput | None = None
-    orientation: OrientationCriterionInput | None = None
-    is_missing: str | None = None
-    studios: HierarchicalMultiCriterionInput | None = None
-    tags: HierarchicalMultiCriterionInput | None = None
-    tag_count: IntCriterionInput | None = None
-    performer_tags: HierarchicalMultiCriterionInput | None = None
-    performers: MultiCriterionInput | None = None
-    performer_count: IntCriterionInput | None = None
-    performer_favorite: bool | None = None
-    performer_age: IntCriterionInput | None = None
-    galleries: MultiCriterionInput | None = None
-    created_at: TimestampCriterionInput | None = None
-    updated_at: TimestampCriterionInput | None = None
-    code: StringCriterionInput | None = None
-    photographer: StringCriterionInput | None = None
-    galleries_filter: GalleryFilterType | None = None
-    performers_filter: PerformerFilterType | None = None
-    studios_filter: StudioFilterType | None = None
-    tags_filter: TagFilterType | None = None
+    value: str  # String!
+    value2: str | None = None  # String
+    modifier: CriterionModifier  # CriterionModifier!

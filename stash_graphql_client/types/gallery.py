@@ -20,67 +20,45 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class GalleryPathsType(BaseModel):
-    """Gallery paths type from schema/types/gallery.graphql."""
+class BulkGalleryUpdateInput(BaseModel):
+    """Input for bulk updating galleries."""
 
-    cover: str = ""  # String!
-    preview: str = ""  # String! # Resolver
-
-    @classmethod
-    def create_default(cls) -> GalleryPathsType:
-        """Create a default instance with empty strings."""
-        return cls()
-
-
-class GalleryChapterCreateInput(BaseModel):
-    """Input for creating gallery chapters."""
-
-    gallery_id: str  # ID!
-    title: str  # String!
-    image_index: int  # Int!
-
-
-class GalleryChapterUpdateInput(BaseModel):
-    """Input for updating gallery chapters."""
-
-    id: str  # ID!
-    gallery_id: str | None = None  # ID
-    title: str | None = None  # String
-    image_index: int | None = None  # Int
+    # Optional fields
+    client_mutation_id: str | None = None  # String
+    ids: list[str]  # [ID!]!
+    code: str | None = None  # String
+    url: str | None = None  # String @deprecated
+    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
+    date: str | None = None  # String
+    details: str | None = None  # String
+    photographer: str | None = None  # String
+    rating100: int | None = None  # Int (1-100)
+    organized: bool | None = None  # Boolean
+    scene_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    studio_id: str | None = None  # ID
+    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    performer_ids: BulkUpdateIds | None = None  # BulkUpdateIds
 
 
-class GalleryChapter(StashObject):
-    """Gallery chapter type from schema/types/gallery-chapter.graphql.
+class BulkUpdateIds(BaseModel):
+    """Input for bulk ID updates."""
 
-    Note: Inherits from StashObject since it has id, created_at, and updated_at
-    fields in the schema, matching the common pattern."""
+    ids: list[str]  # [ID!]!
+    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
 
-    __type_name__ = "GalleryChapter"
-    __update_input_type__ = GalleryChapterUpdateInput
-    __create_input_type__ = GalleryChapterCreateInput
 
-    # Fields to track for changes
-    __tracked_fields__: ClassVar[set[str]] = {
-        "gallery",
-        "title",
-        "image_index",
-    }
+class BulkUpdateStrings(BaseModel):
+    """Input for bulk string updates."""
 
-    # Required fields
-    gallery: Gallery  # Gallery!
-    title: str  # String!
-    image_index: int  # Int!
+    values: list[str]  # [String!]!
+    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
 
-    # Field definitions with their conversion functions
-    __field_conversions__: ClassVar[dict] = {
-        "title": str,
-        "image_index": int,
-    }
 
-    __relationships__: ClassVar[dict] = {
-        # Standard ID relationships
-        "gallery": ("gallery_id", False, None),  # (target_field, is_list, transform)
-    }
+class FindGalleriesResultType(BaseModel):
+    """Result type for finding galleries."""
+
+    count: int  # Int!
+    galleries: list[Gallery]  # [Gallery!]!
 
 
 class FindGalleryChaptersResultType(BaseModel):
@@ -179,10 +157,10 @@ class Gallery(StashObject):
     files: list[GalleryFile] = Field(default_factory=list)
     chapters: list[GalleryChapter] = Field(default_factory=list)
     scenes: list[Scene] = Field(default_factory=list)
-    image_count: int = 0
+    # Note: image_count is a resolver field - use GalleryDetail for lazy-loaded counts
     tags: list[Tag] = Field(default_factory=list)
     performers: list[Performer] = Field(default_factory=list)
-    paths: GalleryPathsType = Field(default_factory=GalleryPathsType.create_default)
+    # Note: paths field removed - use GalleryDetail for lazy-loaded path URLs
 
     async def image(self, index: int) -> Image:
         """Get image at index."""
@@ -226,20 +204,6 @@ class Gallery(StashObject):
     }
 
 
-class BulkUpdateStrings(BaseModel):
-    """Input for bulk string updates."""
-
-    values: list[str]  # [String!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
-class BulkUpdateIds(BaseModel):
-    """Input for bulk ID updates."""
-
-    ids: list[str]  # [ID!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
 class GalleryAddInput(BaseModel):
     """Input for adding images to gallery."""
 
@@ -247,24 +211,55 @@ class GalleryAddInput(BaseModel):
     image_ids: list[str]  # [ID!]!
 
 
-class GalleryRemoveInput(BaseModel):
-    """Input for removing images from gallery."""
+class GalleryChapterCreateInput(BaseModel):
+    """Input for creating gallery chapters."""
 
     gallery_id: str  # ID!
-    image_ids: list[str]  # [ID!]!
+    title: str  # String!
+    image_index: int  # Int!
 
 
-class GallerySetCoverInput(BaseModel):
-    """Input for setting gallery cover."""
+class GalleryChapterUpdateInput(BaseModel):
+    """Input for updating gallery chapters."""
 
-    gallery_id: str  # ID!
-    cover_image_id: str  # ID!
+    id: str  # ID!
+    gallery_id: str | None = None  # ID
+    title: str | None = None  # String
+    image_index: int | None = None  # Int
 
 
-class GalleryResetCoverInput(BaseModel):
-    """Input for resetting gallery cover."""
+class GalleryChapter(StashObject):
+    """Gallery chapter type from schema/types/gallery-chapter.graphql.
 
-    gallery_id: str  # ID!
+    Note: Inherits from StashObject since it has id, created_at, and updated_at
+    fields in the schema, matching the common pattern."""
+
+    __type_name__ = "GalleryChapter"
+    __update_input_type__ = GalleryChapterUpdateInput
+    __create_input_type__ = GalleryChapterCreateInput
+
+    # Fields to track for changes
+    __tracked_fields__: ClassVar[set[str]] = {
+        "gallery",
+        "title",
+        "image_index",
+    }
+
+    # Required fields
+    gallery: Gallery  # Gallery!
+    title: str  # String!
+    image_index: int  # Int!
+
+    # Field definitions with their conversion functions
+    __field_conversions__: ClassVar[dict] = {
+        "title": str,
+        "image_index": int,
+    }
+
+    __relationships__: ClassVar[dict] = {
+        # Standard ID relationships
+        "gallery": ("gallery_id", False, None),  # (target_field, is_list, transform)
+    }
 
 
 class GalleryDestroyInput(BaseModel):
@@ -279,28 +274,33 @@ class GalleryDestroyInput(BaseModel):
     delete_generated: bool | None = None  # Boolean
 
 
-class BulkGalleryUpdateInput(BaseModel):
-    """Input for bulk updating galleries."""
+class GalleryPathsType(BaseModel):
+    """Gallery paths type from schema/types/gallery.graphql."""
 
-    # Optional fields
-    client_mutation_id: str | None = None  # String
-    ids: list[str]  # [ID!]!
-    code: str | None = None  # String
-    url: str | None = None  # String @deprecated
-    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
-    date: str | None = None  # String
-    details: str | None = None  # String
-    photographer: str | None = None  # String
-    rating100: int | None = None  # Int (1-100)
-    organized: bool | None = None  # Boolean
-    scene_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    studio_id: str | None = None  # ID
-    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    performer_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    cover: str = ""  # String!
+    preview: str = ""  # String! # Resolver
+
+    @classmethod
+    def create_default(cls) -> GalleryPathsType:
+        """Create a default instance with empty strings."""
+        return cls()
 
 
-class FindGalleriesResultType(BaseModel):
-    """Result type for finding galleries."""
+class GalleryRemoveInput(BaseModel):
+    """Input for removing images from gallery."""
 
-    count: int  # Int!
-    galleries: list[Gallery]  # [Gallery!]!
+    gallery_id: str  # ID!
+    image_ids: list[str]  # [ID!]!
+
+
+class GalleryResetCoverInput(BaseModel):
+    """Input for resetting gallery cover."""
+
+    gallery_id: str  # ID!
+
+
+class GallerySetCoverInput(BaseModel):
+    """Input for setting gallery cover."""
+
+    gallery_id: str  # ID!
+    cover_image_id: str  # ID!

@@ -1,9 +1,8 @@
 """Scene-related client functionality."""
 
-from typing import Any, ClassVar
+from typing import Any
 
 from ... import fragments
-from ...client_helpers import AsyncCachedFunction, async_lru_cache
 from ...errors import StashIntegrationError
 from ...types import FindScenesResultType, Scene, SceneHashInput
 from ..protocols import StashClientProtocol
@@ -13,11 +12,6 @@ from ..utils import sanitize_model_data
 class SceneClientMixin(StashClientProtocol):
     """Mixin for scene-related client methods."""
 
-    # Type hints for cached methods
-    _find_scene_cache: ClassVar[AsyncCachedFunction]
-    _find_scenes_cache: ClassVar[AsyncCachedFunction]
-
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_scene(self, id: str) -> Scene | None:
         """Find a scene by its ID.
 
@@ -34,6 +28,7 @@ class SceneClientMixin(StashClientProtocol):
             Find a scene and check its title:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 print(f"Found scene: {scene.title}")
             ```
@@ -41,6 +36,7 @@ class SceneClientMixin(StashClientProtocol):
             Access scene relationships:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Get performer names
                 performers = [p.name for p in scene.performers]
@@ -53,6 +49,7 @@ class SceneClientMixin(StashClientProtocol):
             Check scene paths:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Get streaming URL
                 stream_url = scene.paths.stream
@@ -69,16 +66,19 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.FIND_SCENE_QUERY,
                 {"id": id},
             )
+
             if result and result.get("findScene"):
                 # Sanitize model data before creating Scene
                 clean_data = sanitize_model_data(result["findScene"])
+
                 return Scene(**clean_data)
+
             return None
         except Exception as e:
             self.log.error(f"Failed to find scene {id}: {e}")
+
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_scenes(
         self,
         filter_: dict[str, Any] | None = None,
@@ -178,9 +178,11 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.FIND_SCENES_QUERY,
                 {"filter": filter_, "scene_filter": scene_filter},
             )
+
             return FindScenesResultType(**result["findScenes"])
         except Exception as e:
             self.log.error(f"Failed to find scenes: {e}")
+
             return FindScenesResultType(count=0, duration=0, filesize=0, scenes=[])
 
     async def create_scene(self, scene: Scene) -> Scene:
@@ -247,12 +249,9 @@ class SceneClientMixin(StashClientProtocol):
             result = await self.execute(
                 fragments.CREATE_SCENE_MUTATION,
                 {"input": input_data},
-            )
-            # Clear caches since we've modified scenes
-            self.find_scene.cache_clear()
-            self.find_scenes.cache_clear()
-            # Sanitize model data before creating Scene
+            )  # Sanitize model data before creating Scene
             clean_data = sanitize_model_data(result["sceneCreate"])
+
             return Scene(**clean_data)
         except Exception as e:
             self.log.error(f"Failed to create scene: {e}")
@@ -278,6 +277,7 @@ class SceneClientMixin(StashClientProtocol):
             Update scene title and rating:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 scene.title = "New Title"
                 scene.rating100 = 90
@@ -288,6 +288,7 @@ class SceneClientMixin(StashClientProtocol):
             Update scene relationships:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Add new performers
                 scene.performers.extend([new_performer1, new_performer2])
@@ -301,6 +302,7 @@ class SceneClientMixin(StashClientProtocol):
             Update scene metadata:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Update metadata
                 scene.details = "New description"
@@ -313,6 +315,7 @@ class SceneClientMixin(StashClientProtocol):
             Update scene URLs:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Replace URLs
                 scene.urls = [
@@ -324,6 +327,7 @@ class SceneClientMixin(StashClientProtocol):
             Remove scene relationships:
             ```python
             scene = await client.find_scene("123")
+
             if scene:
                 # Clear studio
                 scene.studio = None
@@ -338,19 +342,6 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.UPDATE_SCENE_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified a scene
-            self.find_scene.cache_clear()
-            self.find_scenes.cache_clear()
-
-            # Check if the scene is in the cache and remove it
-            if (
-                hasattr(scene, "id")
-                and scene.id is not None
-                and hasattr(self, "scene_cache")
-                and scene.id in self.scene_cache
-            ):
-                del self.scene_cache[scene.id]
-
             # Create a Scene instance from the result
             # Sanitize model data before creating Scene
             clean_data = sanitize_model_data(result["sceneUpdate"])
@@ -388,12 +379,14 @@ class SceneClientMixin(StashClientProtocol):
                     "duration_diff": duration_diff,
                 },
             )
+
             return [
                 [Scene(**sanitize_model_data(scene)) for scene in group]
                 for group in result["findDuplicateScenes"]
             ]
         except Exception as e:
             self.log.error(f"Failed to find duplicate scenes: {e}")
+
             return []
 
     async def parse_scene_filenames(
@@ -421,9 +414,11 @@ class SceneClientMixin(StashClientProtocol):
                     "config": config,
                 },
             )
+
             return dict(result["parseSceneFilenames"])
         except Exception as e:
             self.log.error(f"Failed to parse scene filenames: {e}")
+
             return {}
 
     async def scene_wall(self, q: str | None = None) -> list[Scene]:
@@ -440,11 +435,13 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.SCENE_WALL_QUERY,
                 {"q": q},
             )
+
             return [
                 Scene(**sanitize_model_data(scene)) for scene in result["sceneWall"]
             ]
         except Exception as e:
             self.log.error(f"Failed to get scene wall: {e}")
+
             return []
 
     async def bulk_scene_update(self, input_data: dict[str, Any]) -> list[Scene]:
@@ -463,9 +460,6 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.BULK_SCENE_UPDATE_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified scenes
-            self._find_scene_cache.cache_clear()
-            self._find_scenes_cache.cache_clear()
             return [
                 Scene(**sanitize_model_data(scene))
                 for scene in result["bulkSceneUpdate"]
@@ -488,20 +482,6 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.SCENES_UPDATE_MUTATION,
                 {"input": [await scene.to_input() for scene in scenes]},
             )
-            # Clear caches since we've modified scenes
-            if hasattr(self, "find_scene") and hasattr(self.find_scene, "cache_clear"):
-                self.find_scene.cache_clear()
-
-            if hasattr(self, "find_scenes") and hasattr(
-                self.find_scenes, "cache_clear"
-            ):
-                self.find_scenes.cache_clear()
-
-            # Clear each scene from the scene_cache
-            if hasattr(self, "scene_cache"):
-                for scene in scenes:
-                    if hasattr(scene, "id") and scene.id in self.scene_cache:
-                        del self.scene_cache[scene.id]
 
             return [
                 Scene(**sanitize_model_data(scene)) for scene in result["scenesUpdate"]
@@ -533,21 +513,10 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.SCENE_GENERATE_SCREENSHOT_MUTATION,
                 {"id": id, "at": at},
             )
-            # Clear scene cache since screenshot generation modifies the scene
-            if hasattr(self, "scene_cache") and id in self.scene_cache:
-                del self.scene_cache[id]
-
-            if hasattr(self, "find_scene") and hasattr(self.find_scene, "cache_clear"):
-                self.find_scene.cache_clear()
-
-            if hasattr(self, "find_scenes") and hasattr(
-                self.find_scenes, "cache_clear"
-            ):
-                self.find_scenes.cache_clear()
-
             if result and "sceneGenerateScreenshot" in result:
                 # Explicitly convert to string to match return type
                 return str(result["sceneGenerateScreenshot"])
+
             return ""
         except Exception as e:
             self.log.error(f"Failed to generate screenshot for scene {id}: {e}")
@@ -575,6 +544,7 @@ class SceneClientMixin(StashClientProtocol):
             scene = await client.find_scene_by_hash({
                 "checksum": "abc123def456..."
             })
+
             if scene:
                 print(f"Found scene: {scene.title}")
             ```
@@ -605,10 +575,14 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.FIND_SCENE_BY_HASH_QUERY,
                 {"input": input_dict},
             )
+
             if result and result.get("findSceneByHash"):
                 clean_data = sanitize_model_data(result["findSceneByHash"])
+
                 return Scene(**clean_data)
+
             return None
         except Exception as e:
             self.log.error(f"Failed to find scene by hash: {e}")
+
             return None

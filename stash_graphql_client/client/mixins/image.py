@@ -3,7 +3,6 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
 from ...types import FindImagesResultType, Image
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
@@ -12,7 +11,6 @@ from ..utils import sanitize_model_data
 class ImageClientMixin(StashClientProtocol):
     """Mixin for image-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_image(self, id: str) -> Image | None:
         """Find an image by its ID.
 
@@ -36,7 +34,6 @@ class ImageClientMixin(StashClientProtocol):
             self.log.error(f"Failed to find image {id}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_images(
         self,
         filter_: dict[str, Any] | None = None,
@@ -107,9 +104,6 @@ class ImageClientMixin(StashClientProtocol):
                 fragments.CREATE_IMAGE_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified images
-            self.find_image.cache_clear()
-            self.find_images.cache_clear()
             # Sanitize model data before creating Image
             clean_data = sanitize_model_data(result["imageCreate"])
             return Image(**clean_data)
@@ -139,9 +133,6 @@ class ImageClientMixin(StashClientProtocol):
                 fragments.UPDATE_IMAGE_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified an image
-            self.find_image.cache_clear()
-            self.find_images.cache_clear()
             # Sanitize model data before creating Image
             clean_data = sanitize_model_data(result["imageUpdate"])
             return Image(**clean_data)

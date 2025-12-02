@@ -5,23 +5,11 @@ from __future__ import annotations
 from enum import Enum
 
 
-# Core enums
-class GenderEnum(str, Enum):
-    """Gender enum from schema."""
+class BlobsStorageType(str, Enum):
+    """Blobs storage type enum from schema."""
 
-    MALE = "MALE"
-    FEMALE = "FEMALE"
-    TRANSGENDER_MALE = "TRANSGENDER_MALE"
-    TRANSGENDER_FEMALE = "TRANSGENDER_FEMALE"
-    INTERSEX = "INTERSEX"
-    NON_BINARY = "NON_BINARY"
-
-
-class CircumisedEnum(str, Enum):
-    """Circumcision enum from schema."""
-
-    CUT = "CUT"
-    UNCUT = "UNCUT"
+    DATABASE = "DATABASE"  # Database
+    FILESYSTEM = "FILESYSTEM"  # Filesystem
 
 
 class BulkUpdateIdMode(str, Enum):
@@ -32,39 +20,11 @@ class BulkUpdateIdMode(str, Enum):
     REMOVE = "REMOVE"
 
 
-# Filter enums
-class SortDirectionEnum(str, Enum):
-    """Sort direction enum from schema."""
+class CircumisedEnum(str, Enum):
+    """Circumcision enum from schema."""
 
-    ASC = "ASC"
-    DESC = "DESC"
-
-
-class ResolutionEnum(str, Enum):
-    """Resolution enum from schema."""
-
-    VERY_LOW = "VERY_LOW"  # 144p
-    LOW = "LOW"  # 240p
-    R360P = "R360P"  # 360p
-    STANDARD = "STANDARD"  # 480p
-    WEB_HD = "WEB_HD"  # 540p
-    STANDARD_HD = "STANDARD_HD"  # 720p
-    FULL_HD = "FULL_HD"  # 1080p
-    QUAD_HD = "QUAD_HD"  # 1440p
-    FOUR_K = "FOUR_K"  # 4K
-    FIVE_K = "FIVE_K"  # 5K
-    SIX_K = "SIX_K"  # 6K
-    SEVEN_K = "SEVEN_K"  # 7K
-    EIGHT_K = "EIGHT_K"  # 8K
-    HUGE = "HUGE"  # 8K+
-
-
-class OrientationEnum(str, Enum):
-    """Orientation enum from schema."""
-
-    LANDSCAPE = "LANDSCAPE"
-    PORTRAIT = "PORTRAIT"
-    SQUARE = "SQUARE"
+    CUT = "CUT"
+    UNCUT = "UNCUT"
 
 
 class CriterionModifier(str, Enum):
@@ -99,28 +59,15 @@ class FilterMode(str, Enum):
     IMAGES = "IMAGES"
 
 
-# Config enums
-class StreamingResolutionEnum(str, Enum):
-    """Streaming resolution enum from schema."""
+class GenderEnum(str, Enum):
+    """Gender enum from schema."""
 
-    LOW = "LOW"  # 240p
-    STANDARD = "STANDARD"  # 480p
-    STANDARD_HD = "STANDARD_HD"  # 720p
-    FULL_HD = "FULL_HD"  # 1080p
-    FOUR_K = "FOUR_K"  # 4k
-    ORIGINAL = "ORIGINAL"  # Original
-
-
-class PreviewPreset(str, Enum):
-    """Preview preset enum from schema."""
-
-    ULTRAFAST = "ultrafast"  # X264_ULTRAFAST
-    VERYFAST = "veryfast"  # X264_VERYFAST
-    FAST = "fast"  # X264_FAST
-    MEDIUM = "medium"  # X264_MEDIUM
-    SLOW = "slow"  # X264_SLOW
-    SLOWER = "slower"  # X264_SLOWER
-    VERYSLOW = "veryslow"  # X264_VERYSLOW
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    TRANSGENDER_MALE = "TRANSGENDER_MALE"
+    TRANSGENDER_FEMALE = "TRANSGENDER_FEMALE"
+    INTERSEX = "INTERSEX"
+    NON_BINARY = "NON_BINARY"
 
 
 class HashAlgorithm(str, Enum):
@@ -130,11 +77,12 @@ class HashAlgorithm(str, Enum):
     OSHASH = "OSHASH"  # oshash
 
 
-class BlobsStorageType(str, Enum):
-    """Blobs storage type enum from schema."""
+class IdentifyFieldStrategy(str, Enum):
+    """Strategy for identifying fields from schema/types/metadata.graphql."""
 
-    DATABASE = "DATABASE"  # Database
-    FILESYSTEM = "FILESYSTEM"  # Filesystem
+    IGNORE = "IGNORE"  # Never sets the field value
+    MERGE = "MERGE"  # For multi-value fields, merge with existing. For single-value fields, ignore if already set
+    OVERWRITE = "OVERWRITE"  # Always replaces the value if a value is found
 
 
 class ImageLightboxDisplayMode(str, Enum):
@@ -150,15 +98,6 @@ class ImageLightboxScrollMode(str, Enum):
 
     ZOOM = "ZOOM"
     PAN_Y = "PAN_Y"
-
-
-# Metadata enums
-class IdentifyFieldStrategy(str, Enum):
-    """Strategy for identifying fields from schema/types/metadata.graphql."""
-
-    IGNORE = "IGNORE"  # Never sets the field value
-    MERGE = "MERGE"  # For multi-value fields, merge with existing. For single-value fields, ignore if already set
-    OVERWRITE = "OVERWRITE"  # Always replaces the value if a value is found
 
 
 class ImportDuplicateEnum(str, Enum):
@@ -177,15 +116,20 @@ class ImportMissingRefEnum(str, Enum):
     CREATE = "CREATE"
 
 
-class SystemStatusEnum(str, Enum):
-    """System status enum from schema/types/metadata.graphql."""
-
-    SETUP = "SETUP"
-    NEEDS_MIGRATION = "NEEDS_MIGRATION"
-    OK = "OK"
+class OnMultipleMatch(Enum):
+    RETURN_NONE = 0
+    RETURN_LIST = 1
+    RETURN_FIRST = 2
 
 
-# Package enums
+class OrientationEnum(str, Enum):
+    """Orientation enum from schema."""
+
+    LANDSCAPE = "LANDSCAPE"
+    PORTRAIT = "PORTRAIT"
+    SQUARE = "SQUARE"
+
+
 class PackageType(str, Enum):
     """Package type enum from schema."""
 
@@ -193,7 +137,58 @@ class PackageType(str, Enum):
     PLUGIN = "Plugin"
 
 
-class OnMultipleMatch(Enum):
-    RETURN_NONE = 0
-    RETURN_LIST = 1
-    RETURN_FIRST = 2
+class PreviewPreset(str, Enum):
+    """Preview preset enum from schema."""
+
+    ULTRAFAST = "ultrafast"  # X264_ULTRAFAST
+    VERYFAST = "veryfast"  # X264_VERYFAST
+    FAST = "fast"  # X264_FAST
+    MEDIUM = "medium"  # X264_MEDIUM
+    SLOW = "slow"  # X264_SLOW
+    SLOWER = "slower"  # X264_SLOWER
+    VERYSLOW = "veryslow"  # X264_VERYSLOW
+
+
+class ResolutionEnum(str, Enum):
+    """Resolution enum from schema."""
+
+    VERY_LOW = "VERY_LOW"  # 144p
+    LOW = "LOW"  # 240p
+    R360P = "R360P"  # 360p
+    STANDARD = "STANDARD"  # 480p
+    WEB_HD = "WEB_HD"  # 540p
+    STANDARD_HD = "STANDARD_HD"  # 720p
+    FULL_HD = "FULL_HD"  # 1080p
+    QUAD_HD = "QUAD_HD"  # 1440p
+    FOUR_K = "FOUR_K"  # 4K
+    FIVE_K = "FIVE_K"  # 5K
+    SIX_K = "SIX_K"  # 6K
+    SEVEN_K = "SEVEN_K"  # 7K
+    EIGHT_K = "EIGHT_K"  # 8K
+    HUGE = "HUGE"  # 8K+
+
+
+class SortDirectionEnum(str, Enum):
+    """Sort direction enum from schema."""
+
+    ASC = "ASC"
+    DESC = "DESC"
+
+
+class StreamingResolutionEnum(str, Enum):
+    """Streaming resolution enum from schema."""
+
+    LOW = "LOW"  # 240p
+    STANDARD = "STANDARD"  # 480p
+    STANDARD_HD = "STANDARD_HD"  # 720p
+    FULL_HD = "FULL_HD"  # 1080p
+    FOUR_K = "FOUR_K"  # 4k
+    ORIGINAL = "ORIGINAL"  # Original
+
+
+class SystemStatusEnum(str, Enum):
+    """System status enum from schema/types/metadata.graphql."""
+
+    SETUP = "SETUP"
+    NEEDS_MIGRATION = "NEEDS_MIGRATION"
+    OK = "OK"

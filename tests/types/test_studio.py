@@ -103,6 +103,9 @@ def test_studio_class_variables() -> None:
         "urls",
         "parent_studio",
         "details",
+        "favorite",
+        "ignore_auto_tag",
+        "rating100",
     }
     assert Studio.__tracked_fields__ == expected_tracked_fields
 
@@ -252,51 +255,3 @@ def test_studio_stash_id_relationship() -> None:
     assert stash_ids_mapping[0] == "stash_ids"  # target field
     assert stash_ids_mapping[1] is True  # is_list
     assert stash_ids_mapping[2] is not None  # has transformation function
-
-
-# @pytest.mark.unit
-# async def test_studio_from_account_method() -> None:
-#     """Test Studio.from_account method creates studio from account."""
-
-#     # Create mock account
-# !!!!!    mock_account = Mock()
-# !!!!!    mock_account.display_name = "Test Display Name"
-# !!!!!    mock_account.username = "testuser"
-# !!!!!    mock_account.bio = "Test bio description"
-# !!!!!    mock_account.site_url = "https://example.mymember.site"
-# !!!!!    mock_account.studio_name = "ExampleStudio"  # This should come from site config
-
-#     # Call the method
-#     studio = await Studio.from_account(mock_account)
-
-#     # Verify the result
-#     assert studio.id == "new"
-#     assert studio.name == "ExampleStudio"  # Should use studio_name from site config
-#     assert studio.url == "https://example.mymember.site"
-#     assert studio.details == "Test bio description"
-
-
-# @pytest.mark.unit
-# async def test_studio_from_account_fallback_name() -> None:
-#     """Test Studio.from_account handles missing display_name."""
-
-#     # Create mock account with no display_name
-# !!!!!    mock_account = Mock(spec=["display_name", "username", "bio", "site_url"])
-# !!!!!    mock_account.display_name = None
-# !!!!!    mock_account.username = "testuser"
-# !!!!!    mock_account.bio = "Test bio"
-# !!!!!    mock_account.site_url = None  # Explicitly set site_url to None
-#     # No studio_name attribute, should fall back to username
-
-#     # Call the method
-#     studio = await Studio.from_account(mock_account)
-
-#     # Should fallback to username
-#     assert studio.name == "testuser"
-
-#     # Test with no username either
-#     mock_account.username = None
-#     studio = await Studio.from_account(mock_account)
-
-#     # Should fallback to "Unknown"
-#     assert studio.name == "Unknown"

@@ -99,6 +99,8 @@ FILE_FIELDS = """fragment FileFields on BaseFile {
     }
     size
     mod_time
+    created_at
+    updated_at
     fingerprints {
         type
         value
@@ -119,6 +121,7 @@ VIDEO_FILE_FIELDS = """fragment VideoFileFields on VideoFile {
 
 IMAGE_FILE_FIELDS = """fragment ImageFileFields on ImageFile {
     ...FileFields
+    format
     width
     height
 }"""
@@ -130,6 +133,8 @@ GALLERY_FILE_FIELDS = """fragment GalleryFileFields on GalleryFile {
 # Scene fragments
 SCENE_FIELDS = """
     id
+    created_at
+    updated_at
     title
     code
     details
@@ -142,10 +147,6 @@ SCENE_FIELDS = """
     }
     files {
         ...VideoFileFields
-    }
-    paths {
-        screenshot
-        preview
     }
     studio {
         id
@@ -170,6 +171,8 @@ SCENE_FIELDS = """
 # Performer fragments
 PERFORMER_FIELDS = """
     id
+    created_at
+    updated_at
     name
     disambiguation
     urls
@@ -206,6 +209,8 @@ PERFORMER_FIELDS = """
 # Studio fragments
 STUDIO_FIELDS = """
     id
+    created_at
+    updated_at
     name
     urls
     image_path
@@ -222,10 +227,16 @@ STUDIO_FIELDS = """
 # Tag fragments
 TAG_FIELDS = """
     id
+    created_at
+    updated_at
     name
     description
     aliases
     image_path
+    stash_ids {
+        endpoint
+        stash_id
+    }
     parents {
         id
     }
@@ -443,6 +454,8 @@ mutation UpdateTag($input: TagUpdateInput!) {{
 # Gallery fragments
 GALLERY_FIELDS = """
     id
+    created_at
+    updated_at
     title
     code
     date
@@ -591,8 +604,12 @@ mutation AddGalleryImages($input: GalleryAddInput!) {
 """
 
 # Image fragments
+# NOTE: visual_files is a union type (VisualFile = VideoFile | ImageFile)
+# GIF images are returned as VideoFile since they contain animation/video data
 IMAGE_FIELDS = """
     id
+    created_at
+    updated_at
     title
     code
     organized
@@ -614,19 +631,21 @@ IMAGE_FIELDS = """
         id
     }
     visual_files {
-        ...ImageFileFields
-    }
-    paths {
-        thumbnail
-        preview
-        image
+        ... on ImageFile {
+            ...ImageFileFields
+        }
+        ... on VideoFile {
+            ...VideoFileFields
+        }
     }
 """
 
 # Image query templates
+# NOTE: Must include VIDEO_FILE_FIELDS because visual_files can contain VideoFile (for GIFs)
 IMAGE_QUERY_FRAGMENTS = f"""
 {FILE_FIELDS}
 {IMAGE_FILE_FIELDS}
+{VIDEO_FILE_FIELDS}
 fragment ImageFragment on Image {{
     {IMAGE_FIELDS}
 }}
@@ -676,6 +695,8 @@ mutation UpdateImage($input: ImageUpdateInput!) {{
 # Marker fragments
 MARKER_FIELDS = """
     id
+    created_at
+    updated_at
     title
     seconds
     scene {

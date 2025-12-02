@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from stash_graphql_client.logging import processing_logger as logger
 
 from .base import StashObject
+from .files import StashID, StashIDInput
 
 
 if TYPE_CHECKING:
@@ -20,6 +21,25 @@ T = TypeVar("T", bound="Tag")
 # from metadata import Hashtag
 
 
+class BulkTagUpdateInput(BaseModel):
+    """Input for bulk updating tags from schema/types/tag.graphql."""
+
+    ids: list[str]  # [ID!]!
+    description: str | None = None  # String
+    aliases: list[str] | None = None  # [String!]
+    ignore_auto_tag: bool | None = None  # Boolean
+    favorite: bool | None = None  # Boolean
+    parent_ids: list[str] | None = None  # [ID!]
+    child_ids: list[str] | None = None  # [ID!]
+
+
+class FindTagsResultType(BaseModel):
+    """Result type for finding tags from schema/types/tag.graphql."""
+
+    count: int  # Int!
+    tags: list[Tag]  # [Tag!]!
+
+
 class TagCreateInput(BaseModel):
     """Input for creating tags."""
 
@@ -27,10 +47,13 @@ class TagCreateInput(BaseModel):
     name: str  # String!
 
     # Optional fields
+    sort_name: str | None = None  # String (sorting override)
     description: str | None = None  # String
     aliases: list[str] | None = None  # [String!]
     ignore_auto_tag: bool | None = None  # Boolean
+    favorite: bool | None = None  # Boolean
     image: str | None = None  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
     parent_ids: list[str] | None = None  # [ID!]
     child_ids: list[str] | None = None  # [ID!]
 
@@ -43,10 +66,13 @@ class TagUpdateInput(BaseModel):
 
     # Optional fields
     name: str | None = None  # String
+    sort_name: str | None = None  # String (sorting override)
     description: str | None = None  # String
     aliases: list[str] | None = None  # [String!]
     ignore_auto_tag: bool | None = None  # Boolean
+    favorite: bool | None = None  # Boolean
     image: str | None = None  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
     parent_ids: list[str] | None = None  # [ID!]
     child_ids: list[str] | None = None  # [ID!]
 
@@ -61,8 +87,11 @@ class Tag(StashObject):
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
         "name",  # TagCreateInput/TagUpdateInput
+        "sort_name",  # TagUpdateInput
         "aliases",  # TagCreateInput/TagUpdateInput
         "description",  # TagCreateInput/TagUpdateInput
+        "favorite",  # TagUpdateInput
+        "ignore_auto_tag",  # TagCreateInput/TagUpdateInput
         "parents",  # mapped to parent_ids
         "children",  # mapped to child_ids
     }
@@ -70,18 +99,25 @@ class Tag(StashObject):
     # Required fields
     name: str  # String!
     aliases: list[str] = Field(default_factory=list)  # [String!]!
+    stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
     parents: list[Tag] = Field(default_factory=list)  # [Tag!]!
     children: list[Tag] = Field(default_factory=list)  # [Tag!]!
 
     # Optional fields
+    sort_name: str | None = None  # String (sorting override)
     description: str | None = None  # String
+    favorite: bool = False  # Boolean!
+    ignore_auto_tag: bool = False  # Boolean!
     image_path: str | None = None  # String (Resolver)
 
     # Field definitions with their conversion functions
     __field_conversions__ = {
         "name": str,
+        "sort_name": str,
         "description": str,
         "aliases": list,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
     }
 
     @classmethod
@@ -150,6 +186,14 @@ class Tag(StashObject):
         # Standard ID relationships
         "parents": ("parent_ids", True, None),  # (target_field, is_list, transform)
         "children": ("child_ids", True, None),
+        # Special case with custom transform
+        "stash_ids": (
+            "stash_ids",
+            True,
+            lambda s: StashIDInput(
+                endpoint=s.endpoint, stash_id=s.stash_id, updated_at=s.updated_at
+            ),
+        ),
     }
 
 
@@ -164,22 +208,3 @@ class TagsMergeInput(BaseModel):
 
     source: list[str]  # [ID!]!
     destination: str  # ID!
-
-
-class BulkTagUpdateInput(BaseModel):
-    """Input for bulk updating tags from schema/types/tag.graphql."""
-
-    ids: list[str]  # [ID!]!
-    description: str | None = None  # String
-    aliases: list[str] | None = None  # [String!]
-    ignore_auto_tag: bool | None = None  # Boolean
-    favorite: bool | None = None  # Boolean
-    parent_ids: list[str] | None = None  # [ID!]
-    child_ids: list[str] | None = None  # [ID!]
-
-
-class FindTagsResultType(BaseModel):
-    """Result type for finding tags from schema/types/tag.graphql."""
-
-    count: int  # Int!
-    tags: list[Tag]  # [Tag!]!

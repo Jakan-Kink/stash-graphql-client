@@ -16,11 +16,36 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class GroupDescription(BaseModel):
-    """Group description type from schema."""
+class BulkGroupUpdateInput(BaseModel):
+    """Input for bulk updating groups."""
 
-    group: Group  # Group!
-    description: str | None = None  # String
+    client_mutation_id: str | None = None  # String
+    ids: list[str]  # [ID!]
+    rating100: int | None = None  # Int
+    studio_id: str | None = None  # ID
+    director: str | None = None  # String
+    urls: list[str] | None = None  # BulkUpdateStrings
+    tag_ids: list[str] | None = None  # BulkUpdateIds
+    containing_groups: BulkUpdateGroupDescriptionsInput | None = (
+        None  # BulkUpdateGroupDescriptionsInput
+    )
+    sub_groups: BulkUpdateGroupDescriptionsInput | None = (
+        None  # BulkUpdateGroupDescriptionsInput
+    )
+
+
+class BulkUpdateGroupDescriptionsInput(BaseModel):
+    """Input for bulk updating group descriptions."""
+
+    groups: list[GroupDescriptionInput]  # [GroupDescriptionInput!]!
+    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
+
+
+class FindGroupsResultType(BaseModel):
+    """Result type for finding groups."""
+
+    count: int  # Int!
+    groups: list[Group]  # [Group!]!
 
 
 class GroupCreateInput(BaseModel):
@@ -89,6 +114,7 @@ class Group(StashObject):
         "aliases",  # GroupCreateInput/GroupUpdateInput
         "duration",  # GroupCreateInput/GroupUpdateInput
         "date",  # GroupCreateInput/GroupUpdateInput
+        "rating100",  # GroupCreateInput/GroupUpdateInput
         "studio",  # mapped to studio_id
         "director",  # GroupCreateInput/GroupUpdateInput
         "synopsis",  # GroupCreateInput/GroupUpdateInput
@@ -110,6 +136,7 @@ class Group(StashObject):
     aliases: str | None = None  # String
     duration: int | None = None  # Int (in seconds)
     date: str | None = None  # String
+    rating100: int | None = None  # Int (1-100 rating)
     studio: Studio | None = None  # Studio
     director: str | None = None  # String
     synopsis: str | None = None  # String
@@ -152,6 +179,13 @@ class Group(StashObject):
     }
 
 
+class GroupDescription(BaseModel):
+    """Group description type from schema."""
+
+    group: Group  # Group!
+    description: str | None = None  # String
+
+
 class GroupDescriptionInput(BaseModel):
     """Input for group description."""
 
@@ -159,59 +193,10 @@ class GroupDescriptionInput(BaseModel):
     description: str | None = None  # String
 
 
-class BulkUpdateGroupDescriptionsInput(BaseModel):
-    """Input for bulk updating group descriptions."""
-
-    groups: list[GroupDescriptionInput]  # [GroupDescriptionInput!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
-class BulkGroupUpdateInput(BaseModel):
-    """Input for bulk updating groups."""
-
-    client_mutation_id: str | None = None  # String
-    ids: list[str]  # [ID!]
-    rating100: int | None = None  # Int
-    studio_id: str | None = None  # ID
-    director: str | None = None  # String
-    urls: list[str] | None = None  # BulkUpdateStrings
-    tag_ids: list[str] | None = None  # BulkUpdateIds
-    containing_groups: BulkUpdateGroupDescriptionsInput | None = (
-        None  # BulkUpdateGroupDescriptionsInput
-    )
-    sub_groups: BulkUpdateGroupDescriptionsInput | None = (
-        None  # BulkUpdateGroupDescriptionsInput
-    )
-
-
 class GroupDestroyInput(BaseModel):
     """Input for destroying groups."""
 
     id: str  # ID!
-
-
-class ReorderSubGroupsInput(BaseModel):
-    """Input for reordering sub groups from schema/types/group.graphql.
-
-    Fields:
-        group_id: str of the group to reorder sub groups for
-        sub_group_ids: strs of the sub groups to reorder. These must be a subset of the current sub groups.
-            Sub groups will be inserted in this order at the insert_index.
-        insert_at_id: The sub-group ID at which to insert the sub groups
-        insert_after: If true, the sub groups will be inserted after the insert_index,
-            otherwise they will be inserted before"""
-
-    group_id: str  # ID!
-    sub_group_ids: list[str]  # [ID!]!
-    insert_at_id: str  # ID!
-    insert_after: bool  # Boolean
-
-
-class FindGroupsResultType(BaseModel):
-    """Result type for finding groups."""
-
-    count: int  # Int!
-    groups: list[Group]  # [Group!]!
 
 
 class GroupSubGroupAddInput(BaseModel):
@@ -233,3 +218,20 @@ class GroupSubGroupRemoveInput(BaseModel):
 
     containing_group_id: str  # ID!
     sub_group_ids: list[str]  # [ID!]!
+
+
+class ReorderSubGroupsInput(BaseModel):
+    """Input for reordering sub groups from schema/types/group.graphql.
+
+    Fields:
+        group_id: str of the group to reorder sub groups for
+        sub_group_ids: strs of the sub groups to reorder. These must be a subset of the current sub groups.
+            Sub groups will be inserted in this order at the insert_index.
+        insert_at_id: The sub-group ID at which to insert the sub groups
+        insert_after: If true, the sub groups will be inserted after the insert_index,
+            otherwise they will be inserted before"""
+
+    group_id: str  # ID!
+    sub_group_ids: list[str]  # [ID!]!
+    insert_at_id: str  # ID!
+    insert_after: bool  # Boolean

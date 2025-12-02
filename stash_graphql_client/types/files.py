@@ -27,34 +27,11 @@ def fingerprint_resolver(parent: BaseFile, type: str) -> str:
     return ""  # Return empty string instead of None to match GraphQL schema
 
 
-class SetFingerprintsInput(BaseModel):
-    """Input for setting fingerprints."""
+class AssignSceneFileInput(BaseModel):
+    """Input for assigning a file to a scene."""
 
-    type_: str = Field(alias="type")  # String! - aliased to avoid built-in conflict
-    value: str | None = None  # String
-
-
-class FileSetFingerprintsInput(BaseModel):
-    """Input for setting file fingerprints."""
-
-    id: str  # ID!
-    fingerprints: list[SetFingerprintsInput]  # [SetFingerprintsInput!]!
-
-
-class MoveFilesInput(BaseModel):
-    """Input for moving files."""
-
-    ids: list[str]  # [ID!]!
-    destination_folder: str | None = None  # String
-    destination_folder_id: str | None = None  # ID
-    destination_basename: str | None = None  # String
-
-
-class Fingerprint(BaseModel):
-    """Fingerprint type from schema/types/file.graphql."""
-
-    type_: str = Field(alias="type")  # String! - aliased to avoid built-in conflict
-    value: str  # String!
+    scene_id: str  # ID!
+    file_id: str  # ID!
 
 
 class BaseFile(StashObject):
@@ -148,82 +125,35 @@ class BasicFile(BaseFile):
     __type_name__ = "BasicFile"
 
 
-class ImageFile(BaseFile):
-    """Image file type from schema/types/file.graphql.
+class FileSetFingerprintsInput(BaseModel):
+    """Input for setting file fingerprints."""
 
-    Implements BaseFile and inherits StashObject through it."""
-
-    __type_name__ = "ImageFile"
-
-    # Required fields
-    width: int  # Int!
-    height: int  # Int!
+    id: str  # ID!
+    fingerprints: list[SetFingerprintsInput]  # [SetFingerprintsInput!]!
 
 
-class VideoFile(BaseFile):
-    """Video file type from schema/types/file.graphql.
+class FindFilesResultType(BaseModel):
+    """Result type for finding files from schema/types/file.graphql."""
 
-    Implements BaseFile and inherits StashObject through it."""
-
-    __type_name__ = "VideoFile"
-
-    # Required fields
-    format: str  # String!
-    width: int  # Int!
-    height: int  # Int!
+    count: int  # Int!
+    megapixels: float  # Float!
     duration: float  # Float!
-    video_codec: str  # String!
-    audio_codec: str  # String!
-    frame_rate: float  # Float!  # frame_rate in schema
-    bit_rate: int  # Int!  # bit_rate in schema
+    size: int  # Int!
+    files: list[BaseFile]  # [BaseFile!]!
 
 
-# Union type for VisualFile (VideoFile or ImageFile)
-VisualFile = VideoFile | ImageFile
+class FindFoldersResultType(BaseModel):
+    """Result type for finding folders from schema/types/file.graphql."""
+
+    count: int  # Int!
+    folders: list[Folder]  # [Folder!]!
 
 
-class GalleryFile(BaseFile):
-    """Gallery file type from schema/types/file.graphql.
+class Fingerprint(BaseModel):
+    """Fingerprint type from schema/types/file.graphql."""
 
-    Implements BaseFile with no additional fields and inherits StashObject through it.
-    """
-
-    __type_name__ = "GalleryFile"
-
-
-class ScenePathsType(BaseModel):
-    """Scene paths type from schema/types/scene.graphql."""
-
-    screenshot: str | None = None  # String (Resolver)
-    preview: str | None = None  # String (Resolver)
-    stream: str | None = None  # String (Resolver)
-    webp: str | None = None  # String (Resolver)
-    vtt: str | None = None  # String (Resolver)
-    sprite: str | None = None  # String (Resolver)
-    funscript: str | None = None  # String (Resolver)
-    interactive_heatmap: str | None = None  # String (Resolver)
-    caption: str | None = None  # String (Resolver)
-
-
-class StashIDInput(BaseModel):
-    """Input for StashID from schema/types/stash-box.graphql."""
-
-    endpoint: str  # String!
-    stash_id: str  # String!
-
-
-class StashID(BaseModel):
-    """StashID type from schema/types/stash-box.graphql."""
-
-    endpoint: str  # String!
-    stash_id: str  # String!
-
-
-class VideoCaption(BaseModel):
-    """Video caption type from schema/types/scene.graphql."""
-
-    language_code: str  # String!
-    caption_type: str  # String!
+    type_: str = Field(alias="type")  # String! - aliased to avoid built-in conflict
+    value: str  # String!
 
 
 class Folder(StashObject):
@@ -307,32 +237,77 @@ class Folder(StashObject):
         raise ValueError("Folder must have an ID")
 
 
-class AssignSceneFileInput(BaseModel):
-    """Input for assigning a file to a scene."""
+class GalleryFile(BaseFile):
+    """Gallery file type from schema/types/file.graphql.
 
-    scene_id: str  # ID!
-    file_id: str  # ID!
+    Implements BaseFile with no additional fields and inherits StashObject through it.
+    """
 
-
-class SceneHashInput(BaseModel):
-    """Input for finding a scene by hash."""
-
-    checksum: str | None = None  # String
-    oshash: str | None = None  # String
+    __type_name__ = "GalleryFile"
 
 
-class FindFilesResultType(BaseModel):
-    """Result type for finding files from schema/types/file.graphql."""
+class ImageFile(BaseFile):
+    """Image file type from schema/types/file.graphql.
 
-    count: int  # Int!
-    megapixels: float  # Float!
+    Implements BaseFile and inherits StashObject through it."""
+
+    __type_name__ = "ImageFile"
+
+    # Required fields
+    format: str  # String! (e.g., "jpeg", "png", "gif", "webp")
+    width: int  # Int!
+    height: int  # Int!
+
+
+class MoveFilesInput(BaseModel):
+    """Input for moving files."""
+
+    ids: list[str]  # [ID!]!
+    destination_folder: str | None = None  # String
+    destination_folder_id: str | None = None  # ID
+    destination_basename: str | None = None  # String
+
+
+class SetFingerprintsInput(BaseModel):
+    """Input for setting fingerprints."""
+
+    type_: str = Field(alias="type")  # String! - aliased to avoid built-in conflict
+    value: str | None = None  # String
+
+
+class StashID(BaseModel):
+    """StashID type from schema/types/stash-box.graphql."""
+
+    endpoint: str  # String!
+    stash_id: str  # String!
+    updated_at: datetime  # Time!
+
+
+class StashIDInput(BaseModel):
+    """Input for StashID from schema/types/stash-box.graphql."""
+
+    endpoint: str  # String!
+    stash_id: str  # String!
+    updated_at: datetime | None = None  # Time
+
+
+class VideoFile(BaseFile):
+    """Video file type from schema/types/file.graphql.
+
+    Implements BaseFile and inherits StashObject through it."""
+
+    __type_name__ = "VideoFile"
+
+    # Required fields
+    format: str  # String!
+    width: int  # Int!
+    height: int  # Int!
     duration: float  # Float!
-    size: int  # Int!
-    files: list[BaseFile]  # [BaseFile!]!
+    video_codec: str  # String!
+    audio_codec: str  # String!
+    frame_rate: float  # Float!  # frame_rate in schema
+    bit_rate: int  # Int!  # bit_rate in schema
 
 
-class FindFoldersResultType(BaseModel):
-    """Result type for finding folders from schema/types/file.graphql."""
-
-    count: int  # Int!
-    folders: list[Folder]  # [Folder!]!
+# Union type for VisualFile (VideoFile or ImageFile)
+VisualFile = VideoFile | ImageFile
