@@ -2,48 +2,27 @@
 
 from typing import Any
 
+from ... import fragments
 from ...types import (
     DLNAStatus,
     Gallery,
     Image,
     JobStatusUpdate,
     LatestVersion,
-    Performer,
-    Scene,
     SQLExecResult,
     SQLQueryResult,
     StashBoxValidationResult,
     Version,
 )
+from ..utils import sanitize_model_data
 
 
 class NotImplementedClientMixin:
     """Mixin for methods that are not yet implemented."""
 
-    # File Operations
-    async def delete_files(self, ids: list[str]) -> bool:
-        """Delete files by ID."""
-        raise NotImplementedError("File operations not implemented")
-
     # Configuration
-    async def configure_general(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure general settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_interface(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure interface settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_dlna(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure DLNA settings."""
-        raise NotImplementedError("Configuration not implemented")
-
     async def configure_scraping(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """Configure scraping settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_defaults(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure default settings."""
         raise NotImplementedError("Configuration not implemented")
 
     async def configure_plugin(
@@ -52,31 +31,7 @@ class NotImplementedClientMixin:
         """Configure plugin settings."""
         raise NotImplementedError("Configuration not implemented")
 
-    async def configure_ui(
-        self,
-        input_data: dict[str, Any] | None = None,
-        partial: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Configure UI settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_ui_setting(self, key: str, value: Any) -> dict[str, Any]:
-        """Configure a single UI setting."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def generate_api_key(self, input_data: dict[str, Any]) -> str:
-        """Generate a new API key."""
-        raise NotImplementedError("Configuration not implemented")
-
     # Import/Export
-    async def export_objects(self, input_data: dict[str, Any]) -> str:
-        """Export objects to a file."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def import_objects(self, input_data: dict[str, Any]) -> str:
-        """Import objects from a file."""
-        raise NotImplementedError("Import/Export not implemented")
-
     async def metadata_import(self) -> str:
         """Import metadata."""
         raise NotImplementedError("Import/Export not implemented")
@@ -91,14 +46,6 @@ class NotImplementedClientMixin:
 
     async def metadata_identify(self, input_data: dict[str, Any]) -> str:
         """Identify metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_clean(self, input_data: dict[str, Any]) -> str:
-        """Clean metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_clean_generated(self, input_data: dict[str, Any]) -> str:
-        """Clean generated files."""
         raise NotImplementedError("Import/Export not implemented")
 
     # Queries
@@ -125,18 +72,6 @@ class NotImplementedClientMixin:
         raise NotImplementedError("Logs not implemented")
 
     # Scene Mutations
-    async def scene_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a scene."""
-        raise NotImplementedError("Scene deletion not implemented")
-
-    async def scene_merge(self, input_data: dict[str, Any]) -> Scene:
-        """Merge scenes."""
-        raise NotImplementedError("Scene merging not implemented")
-
-    async def scenes_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple scenes."""
-        raise NotImplementedError("Scene deletion not implemented")
-
     async def scene_add_o(
         self, id: str, times: list[str] | None = None
     ) -> dict[str, Any]:
@@ -193,23 +128,7 @@ class NotImplementedClientMixin:
         """Update a scene marker."""
         raise NotImplementedError("Scene markers not implemented")
 
-    async def scene_marker_destroy(self, id: str) -> bool:
-        """Delete a scene marker."""
-        raise NotImplementedError("Scene markers not implemented")
-
-    async def scene_markers_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple scene markers."""
-        raise NotImplementedError("Scene markers not implemented")
-
     # Image Mutations
-    async def bulk_image_update(self, input_data: dict[str, Any]) -> list[Image]:
-        """Update multiple images."""
-        raise NotImplementedError("Bulk image update not implemented")
-
-    async def images_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete multiple images."""
-        raise NotImplementedError("Image deletion not implemented")
-
     async def images_update(self, input_data: list[dict[str, Any]]) -> list[Image]:
         """Update multiple images."""
         raise NotImplementedError("Image updates not implemented")
@@ -232,37 +151,10 @@ class NotImplementedClientMixin:
         raise NotImplementedError("Bulk gallery update not implemented")
 
     # Performer Mutations
-    async def performer_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a performer."""
-        raise NotImplementedError("Performer deletion not implemented")
-
-    async def performers_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple performers."""
-        raise NotImplementedError("Performer deletion not implemented")
-
-    async def bulk_performer_update(
-        self, input_data: dict[str, Any]
-    ) -> list[Performer]:
-        """Update multiple performers."""
-        raise NotImplementedError("Bulk performer update not implemented")
 
     # Studio Mutations
-    async def studio_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a studio."""
-        raise NotImplementedError("Studio deletion not implemented")
-
-    async def studios_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple studios."""
-        raise NotImplementedError("Studio deletion not implemented")
 
     # Tag Mutations
-    async def tag_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a tag."""
-        raise NotImplementedError("Tag deletion not implemented")
-
-    async def tags_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple tags."""
-        raise NotImplementedError("Tag deletion not implemented")
 
     # SQL Operations
     async def querySQL(self, sql: str, args: list[Any] | None = None) -> SQLQueryResult:
@@ -292,9 +184,48 @@ class NotImplementedClientMixin:
 
     # Version Operations
     async def version(self) -> Version:
-        """Get version information."""
-        raise NotImplementedError("Version info not implemented")
+        """Get version information.
+
+        Returns:
+            Version object containing:
+                - version: Version string (optional)
+                - hash: Git commit hash
+                - build_time: Build timestamp
+
+        Examples:
+            Get current version:
+            ```python
+            version = await client.version()
+            print(f"Stash version: {version.version}")
+            print(f"Git hash: {version.hash}")
+            print(f"Built at: {version.build_time}")
+            ```
+        """
+        result = await self.execute(fragments.VERSION_QUERY)
+        clean_data = sanitize_model_data(result["version"])
+        return Version(**clean_data)
 
     async def latestversion(self) -> LatestVersion:
-        """Get latest version information."""
-        raise NotImplementedError("Latest version info not implemented")
+        """Get latest version information.
+
+        Returns:
+            LatestVersion object containing:
+                - version: Latest version string
+                - shorthash: Short git commit hash
+                - release_date: Release date
+                - url: Download URL
+
+        Examples:
+            Check for updates:
+            ```python
+            latest = await client.latestversion()
+            current = await client.version()
+
+            print(f"Latest version: {latest.version}")
+            print(f"Current version: {current.version}")
+            print(f"Download URL: {latest.url}")
+            ```
+        """
+        result = await self.execute(fragments.LATEST_VERSION_QUERY)
+        clean_data = sanitize_model_data(result["latestversion"])
+        return LatestVersion(**clean_data)

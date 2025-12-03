@@ -98,6 +98,7 @@ def create_tag_dict(
     children: list[dict] | None = None,
     description: str | None = None,
     image_path: str | None = None,
+    **kwargs,
 ) -> dict[str, Any]:
     """Create a Tag dict matching the Tag type schema.
 
@@ -109,6 +110,7 @@ def create_tag_dict(
         children: List of child tag dicts (recursive)
         description: Tag description
         image_path: Path to tag image
+        **kwargs: Additional tag fields (sort_name, favorite, ignore_auto_tag, stash_ids)
 
     Returns:
         Dict matching Tag type
@@ -118,10 +120,12 @@ def create_tag_dict(
             id="123",
             name="test_tag",
             aliases=["alias1", "alias2"],
-            description="A test tag"
+            description="A test tag",
+            favorite=True,
+            ignore_auto_tag=False,
         )
     """
-    return {
+    base = {
         "id": id,
         "name": name,
         "aliases": aliases or [],
@@ -130,6 +134,8 @@ def create_tag_dict(
         "description": description,
         "image_path": image_path,
     }
+    base.update(kwargs)
+    return base
 
 
 def create_tag_create_result(tag: dict[str, Any]) -> dict[str, Any]:
@@ -226,38 +232,42 @@ def create_find_studios_result(
 def create_studio_dict(
     id: str,
     name: str,
-    url: str | None = None,
+    urls: list[str] | None = None,
     parent_studio: dict | None = None,
     aliases: list[str] | None = None,
     tags: list[dict] | None = None,
     stash_ids: list[dict] | None = None,
     details: str | None = None,
+    **kwargs,
 ) -> dict[str, Any]:
     """Create a Studio dict matching the Studio type schema.
 
     Args:
         id: Studio ID
         name: Studio name
-        url: Studio URL (will be converted to urls list)
+        urls: List of studio URLs
         parent_studio: Parent studio dict (recursive)
         aliases: List of alias strings
         tags: List of tag dicts
         stash_ids: List of StashID dicts
         details: Studio details
+        **kwargs: Additional studio fields (child_studios, groups, rating100, favorite, ignore_auto_tag)
 
     Returns:
         Dict matching Studio type
     """
-    return {
+    base = {
         "id": id,
         "name": name,
-        "urls": [url] if url else [],  # Studio expects 'urls' (plural, list)
+        "urls": urls or [],
         "parent_studio": parent_studio,
         "aliases": aliases or [],
         "tags": tags or [],
         "stash_ids": stash_ids or [],
         "details": details,
     }
+    base.update(kwargs)
+    return base
 
 
 def create_find_scenes_result(
@@ -457,19 +467,615 @@ def create_gallery_dict(
     return base
 
 
+def create_version_dict(
+    version: str | None = None,
+    hash: str = "abcdef1234567890",
+    build_time: str = "2024-01-15T10:30:00Z",
+) -> dict[str, Any]:
+    """Create a Version dict matching the Version type schema.
+
+    Args:
+        version: Version string (optional, can be None)
+        hash: Git commit hash (required)
+        build_time: Build timestamp (required)
+
+    Returns:
+        Dict matching Version type
+
+    Example:
+        version = create_version_dict(
+            version="v0.26.2",
+            hash="abc123",
+            build_time="2024-01-15T10:30:00Z"
+        )
+    """
+    return {
+        "version": version,
+        "hash": hash,
+        "build_time": build_time,
+    }
+
+
+def create_latestversion_dict(
+    version: str = "v0.27.0",
+    shorthash: str = "abc123",
+    release_date: str = "2024-02-01",
+    url: str = "https://github.com/stashapp/stash/releases/tag/v0.27.0",
+) -> dict[str, Any]:
+    """Create a LatestVersion dict matching the LatestVersion type schema.
+
+    Args:
+        version: Latest version string (required)
+        shorthash: Short git commit hash (required)
+        release_date: Release date (required)
+        url: Download URL (required)
+
+    Returns:
+        Dict matching LatestVersion type
+
+    Example:
+        latest = create_latestversion_dict(
+            version="v0.27.0",
+            shorthash="abc123",
+            release_date="2024-02-01",
+            url="https://github.com/stashapp/stash/releases"
+        )
+    """
+    return {
+        "version": version,
+        "shorthash": shorthash,
+        "release_date": release_date,
+        "url": url,
+    }
+
+
+def create_find_markers_result(
+    count: int = 0, scene_markers: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """Create a findSceneMarkers query result matching FindSceneMarkersResultType.
+
+    Args:
+        count: Total number of scene markers
+        scene_markers: List of scene marker dicts
+
+    Returns:
+        Dict matching FindSceneMarkersResultType schema
+    """
+    if scene_markers is None:
+        scene_markers = []
+
+    return {"count": count, "scene_markers": scene_markers}
+
+
+def create_marker_dict(
+    id: str,
+    title: str,
+    seconds: float = 0.0,
+    scene: dict | None = None,
+    primary_tag: dict | None = None,
+    tags: list[dict] | None = None,
+    stream: str = "/stream/marker",
+    preview: str = "/preview/marker.jpg",
+    screenshot: str = "/screenshot/marker.jpg",
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a SceneMarker dict matching the SceneMarker type schema.
+
+    Args:
+        id: Marker ID
+        title: Marker title
+        seconds: Time in seconds where the marker occurs
+        scene: Scene dict (required - SceneMarker.scene is not optional)
+        primary_tag: Primary tag dict (required - SceneMarker.primary_tag is not optional)
+        tags: List of tag dicts
+        stream: Path to stream marker (required)
+        preview: Path to preview image (required)
+        screenshot: Path to screenshot image (required)
+        **kwargs: Additional marker fields
+
+    Returns:
+        Dict matching SceneMarker type
+
+    Example:
+        marker = create_marker_dict(
+            id="123",
+            title="Chapter 1",
+            seconds=30.5,
+            scene={"id": "scene_1", "title": "Test Scene"},
+            primary_tag={"id": "tag_1", "name": "Intro"},
+        )
+    """
+    # Provide defaults for required nested objects if not provided
+    if scene is None:
+        scene = {
+            "id": f"scene_for_{id}",
+            "title": "Default Scene",
+            "performers": [],
+            "tags": [],
+            "files": [],
+            "urls": [],
+            "stash_ids": [],
+            "groups": [],
+            "galleries": [],
+            "scene_markers": [],
+            "sceneStreams": [],
+            "captions": [],
+            "organized": False,
+        }
+    if primary_tag is None:
+        primary_tag = {
+            "id": f"tag_for_{id}",
+            "name": "Default Tag",
+            "aliases": [],
+            "parents": [],
+            "children": [],
+        }
+
+    base = {
+        "id": id,
+        "title": title,
+        "seconds": seconds,
+        "scene": scene,
+        "primary_tag": primary_tag,
+        "tags": tags or [],
+        "screenshot": screenshot,
+        "stream": stream,
+        "preview": preview,
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_find_files_result(
+    count: int = 0,
+    files: list[dict[str, Any]] | None = None,
+    megapixels: float = 0.0,
+    duration: float = 0.0,
+    size: int = 0,
+) -> dict[str, Any]:
+    """Create a findFiles query result matching FindFilesResultType.
+
+    Args:
+        count: Total number of files
+        files: List of file dicts
+        megapixels: Total megapixels of image files
+        duration: Total duration of video files in seconds
+        size: Total size of all files in bytes
+
+    Returns:
+        Dict matching FindFilesResultType schema
+    """
+    if files is None:
+        files = []
+
+    return {
+        "count": count,
+        "files": files,
+        "megapixels": megapixels,
+        "duration": duration,
+        "size": size,
+    }
+
+
+def create_file_dict(
+    id: str,
+    path: str,
+    basename: str | None = None,
+    size: int = 1024,
+    mod_time: str = "2024-01-15T10:30:00Z",
+    parent_folder: dict | None = None,
+    fingerprints: list[dict] | None = None,
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a BaseFile dict matching the BaseFile type schema.
+
+    Args:
+        id: File ID
+        path: Full file path
+        basename: File basename (auto-derived from path if not provided)
+        size: File size in bytes
+        mod_time: Modification time as ISO string
+        parent_folder: Parent folder dict
+        fingerprints: List of fingerprint dicts
+        **kwargs: Additional file fields (width, height, duration for video/image files)
+
+    Returns:
+        Dict matching BaseFile type
+
+    Example:
+        file = create_file_dict(
+            id="123",
+            path="/videos/scene.mp4",
+            size=1024000000,
+        )
+    """
+    if basename is None:
+        basename = path.split("/")[-1] if "/" in path else path
+
+    if parent_folder is None:
+        parent_path = "/".join(path.split("/")[:-1]) or "/"
+        parent_folder = {
+            "id": f"folder_for_{id}",
+            "path": parent_path,
+            "mod_time": mod_time,  # Folder requires mod_time
+        }
+
+    base = {
+        "id": id,
+        "path": path,
+        "basename": basename,
+        "size": size,
+        "mod_time": mod_time,
+        "parent_folder": parent_folder,
+        "fingerprints": fingerprints or [],
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_folder_dict(
+    id: str,
+    path: str = "/default/path",
+    mod_time: str = "2024-01-15T10:30:00Z",
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a Folder dict matching the Folder type schema.
+
+    Args:
+        id: Folder ID
+        path: Folder path
+        mod_time: Modification time
+        **kwargs: Additional folder fields
+
+    Returns:
+        Dict matching Folder type
+    """
+    base = {
+        "id": id,
+        "path": path,
+        "mod_time": mod_time,
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_find_folders_result(
+    count: int = 0,
+    folders: list[dict] | None = None,
+) -> dict[str, Any]:
+    """Create a FindFoldersResultType dict.
+
+    Args:
+        count: Total number of folders
+        folders: List of folder dicts
+
+    Returns:
+        Dict matching FindFoldersResultType schema
+    """
+    if folders is None:
+        folders = []
+
+    return {"count": count, "folders": folders}
+
+
+# =============================================================================
+# Configuration fixtures
+# =============================================================================
+
+
+def create_config_general_result(
+    database_path: str = "/root/.stash/stash-go.sqlite",
+    generated_path: str = "/root/.stash/generated",
+    metadata_path: str = "/root/.stash/metadata",
+    cache_path: str = "/root/.stash/cache",
+    blobs_path: str = "/root/.stash/blobs",
+    config_file_path: str = "/root/.stash/config.yml",
+    backup_directory_path: str = "/root/.stash/backups",
+    ffmpeg_path: str = "/usr/bin/ffmpeg",
+    ffprobe_path: str = "/usr/bin/ffprobe",
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a ConfigGeneralResult dict.
+
+    Args:
+        database_path: Path to database file
+        generated_path: Path to generated files
+        metadata_path: Path to metadata
+        cache_path: Path to cache
+        blobs_path: Path to blobs storage
+        config_file_path: Path to config file
+        backup_directory_path: Path to backup directory
+        ffmpeg_path: Path to ffmpeg binary
+        ffprobe_path: Path to ffprobe binary
+        **kwargs: Additional config fields
+
+    Returns:
+        Dict matching ConfigGeneralResult type
+    """
+    base = {
+        "database_path": database_path,
+        "parallel_tasks": 1,
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_config_interface_result(
+    language: str = "en-US",
+    css_enabled: bool = False,
+    javascript_enabled: bool = False,
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a ConfigInterfaceResult dict.
+
+    Args:
+        language: Interface language
+        css_enabled: Whether custom CSS is enabled
+        javascript_enabled: Whether custom JavaScript is enabled
+        **kwargs: Additional interface config fields
+
+    Returns:
+        Dict matching ConfigInterfaceResult type
+    """
+    base = {
+        "menu_items": None,
+        "sound_on_preview": True,
+        "wall_show_title": True,
+        "wall_playback": "video",
+        "show_scrubber": True,
+        "maximum_loop_duration": 0,
+        "no_browser": False,
+        "notifications_enabled": True,
+        "autostart_video": False,
+        "autostart_video_on_play_selected": True,
+        "continue_playlist_default": False,
+        "show_studio_as_text": False,
+        "css": None,
+        "css_enabled": css_enabled,
+        "javascript": None,
+        "javascript_enabled": javascript_enabled,
+        "custom_locales": None,
+        "custom_locales_enabled": False,
+        "language": language,
+        "image_lightbox": {
+            "slideshowDelay": 5000,
+            "displayMode": "FIT_XY",
+            "scaleUp": False,
+            "resetZoomOnNav": True,
+            "scrollMode": "ZOOM",
+            "scrollAttemptsBeforeChange": 3,
+        },
+        "disable_dropdown_create": {
+            "performer": False,
+            "tag": False,
+            "studio": False,
+            "movie": False,
+        },
+        "handy_key": None,
+        "funscript_offset": None,
+        "use_stash_hosted_funscript": False,
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_config_dlna_result(
+    enabled: bool = False,
+    server_name: str = "stash",
+    port: int = 1338,
+    whitelisted_ips: list[str] | None = None,
+    interfaces: list[str] | None = None,
+    video_sort_order: str = "title",
+) -> dict[str, Any]:
+    """Create a ConfigDLNAResult dict.
+
+    Args:
+        enabled: Whether DLNA is enabled
+        server_name: DLNA server name
+        port: DLNA port
+        whitelisted_ips: List of whitelisted IPs
+        interfaces: List of network interfaces
+        video_sort_order: Video sort order
+
+    Returns:
+        Dict matching ConfigDLNAResult type
+    """
+    return {
+        "enabled": enabled,
+        "server_name": server_name,
+        "port": port,
+        "whitelisted_ips": whitelisted_ips or [],
+        "interfaces": interfaces or [],
+        "video_sort_order": video_sort_order,
+    }
+
+
+def create_config_defaults_result(
+    delete_file: bool = False,
+    delete_generated: bool = True,
+) -> dict[str, Any]:
+    """Create a ConfigDefaultSettingsResult dict.
+
+    Args:
+        delete_file: Default delete file checkbox value
+        delete_generated: Default delete generated checkbox value
+
+    Returns:
+        Dict matching ConfigDefaultSettingsResult type
+    """
+    return {
+        "scan": {
+            "rescan": False,
+            "scanGenerateCovers": False,
+            "scanGeneratePreviews": False,
+            "scanGenerateImagePreviews": False,
+            "scanGenerateSprites": False,
+            "scanGeneratePhashes": False,
+            "scanGenerateThumbnails": False,
+            "scanGenerateClipPreviews": False,
+        },
+        "autoTag": {
+            "performers": None,
+            "studios": None,
+            "tags": None,
+        },
+        "generate": {
+            "covers": False,
+            "sprites": False,
+            "previews": False,
+            "imagePreviews": False,
+            "previewOptions": None,
+            "markers": False,
+            "markerImagePreviews": False,
+            "markerScreenshots": False,
+            "transcodes": False,
+            "phashes": False,
+            "interactiveHeatmapsSpeeds": False,
+            "imageThumbnails": False,
+            "clipPreviews": False,
+        },
+        "deleteFile": delete_file,
+        "deleteGenerated": delete_generated,
+    }
+
+
+# =============================================================================
+# Group fixtures (Step 11)
+# =============================================================================
+
+
+def create_group_dict(
+    id: str,
+    name: str,
+    urls: list[str] | None = None,
+    aliases: str | None = None,
+    duration: int | None = None,
+    date: str | None = None,
+    rating100: int | None = None,
+    studio: dict | None = None,
+    director: str | None = None,
+    synopsis: str | None = None,
+    front_image_path: str | None = None,
+    back_image_path: str | None = None,
+    tags: list[dict] | None = None,
+    scenes: list[dict] | None = None,
+    containing_groups: list[dict] | None = None,
+    sub_groups: list[dict] | None = None,
+    **kwargs,
+) -> dict[str, Any]:
+    """Create a Group dict for GraphQL responses.
+
+    Args:
+        id: Group ID
+        name: Group name (required)
+        urls: List of URLs associated with the group
+        aliases: Comma-separated aliases
+        duration: Duration in seconds
+        date: Date string (YYYY-MM-DD)
+        rating100: Rating (1-100)
+        studio: Studio dict with at least id field
+        director: Director name
+        synopsis: Synopsis/description
+        front_image_path: Path to front cover image
+        back_image_path: Path to back cover image
+        tags: List of tag dicts
+        scenes: List of scene dicts
+        containing_groups: List of group description dicts (parent groups)
+        sub_groups: List of group description dicts (child groups)
+        **kwargs: Additional fields to include
+
+    Returns:
+        Dict matching Group GraphQL type
+    """
+    base = {
+        "id": id,
+        "name": name,
+        "urls": urls or [],
+        "aliases": aliases,
+        "duration": duration,
+        "date": date,
+        "rating100": rating100,
+        "studio": studio,
+        "director": director,
+        "synopsis": synopsis,
+        "front_image_path": front_image_path,
+        "back_image_path": back_image_path,
+        "tags": tags or [],
+        "scenes": scenes or [],
+        "containing_groups": containing_groups or [],
+        "sub_groups": sub_groups or [],
+    }
+    base.update(kwargs)
+    return base
+
+
+def create_find_groups_result(
+    count: int = 0, groups: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
+    """Create a findGroups query result matching FindGroupsResultType.
+
+    Args:
+        count: Total number of groups
+        groups: List of group dicts
+
+    Returns:
+        Dict matching FindGroupsResultType schema
+    """
+    if groups is None:
+        groups = []
+
+    return {"count": count, "groups": groups}
+
+
+def create_group_description_dict(
+    group: dict[str, Any],
+    description: str | None = None,
+) -> dict[str, Any]:
+    """Create a GroupDescription dict for sub_groups and containing_groups.
+
+    Args:
+        group: Group dict with at least id field
+        description: Optional description for this group relationship
+
+    Returns:
+        Dict matching GroupDescription GraphQL type
+    """
+    return {
+        "group": group,
+        "description": description,
+    }
+
+
 __all__ = [
+    # Config fixtures
+    "create_config_defaults_result",
+    "create_config_dlna_result",
+    "create_config_general_result",
+    "create_config_interface_result",
+    # Entity fixtures
+    "create_file_dict",
+    "create_find_files_result",
+    "create_find_folders_result",
     "create_find_galleries_result",
+    "create_find_groups_result",
     "create_find_images_result",
+    "create_find_markers_result",
     "create_find_performers_result",
     "create_find_scenes_result",
     "create_find_studios_result",
     "create_find_tags_result",
+    "create_folder_dict",
     "create_gallery_dict",
     "create_graphql_response",
+    "create_group_description_dict",
+    "create_group_dict",
     "create_image_dict",
+    "create_latestversion_dict",
+    "create_marker_dict",
     "create_performer_dict",
     "create_scene_dict",
     "create_studio_dict",
     "create_tag_create_result",
     "create_tag_dict",
+    "create_version_dict",
 ]

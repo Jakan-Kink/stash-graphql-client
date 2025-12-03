@@ -343,6 +343,15 @@ mutation SceneGenerateScreenshot($id: ID!, $at: Float) {
 }
 """
 
+SCENE_MERGE_MUTATION = f"""
+{SCENE_QUERY_FRAGMENTS}
+mutation SceneMerge($input: SceneMergeInput!) {{
+    sceneMerge(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
 # Performer query templates
 FIND_PERFORMER_QUERY = f"""
 query FindPerformer($id: ID!) {{
@@ -784,6 +793,136 @@ mutation MetadataGenerate($input: GenerateMetadataInput!) {
 }
 """
 
+METADATA_CLEAN_MUTATION = """
+mutation MetadataClean($input: CleanMetadataInput!) {
+    metadataClean(input: $input)
+}
+"""
+
+METADATA_CLEAN_GENERATED_MUTATION = """
+mutation MetadataCleanGenerated($input: CleanGeneratedInput!) {
+    metadataCleanGenerated(input: $input)
+}
+"""
+
+EXPORT_OBJECTS_MUTATION = """
+mutation ExportObjects($input: ExportObjectsInput!) {
+    exportObjects(input: $input)
+}
+"""
+
+IMPORT_OBJECTS_MUTATION = """
+mutation ImportObjects($input: ImportObjectsInput!) {
+    importObjects(input: $input)
+}
+"""
+
+BACKUP_DATABASE_MUTATION = """
+mutation BackupDatabase($input: BackupDatabaseInput!) {
+    backupDatabase(input: $input)
+}
+"""
+
+ANONYMISE_DATABASE_MUTATION = """
+mutation AnonymiseDatabase($input: AnonymiseDatabaseInput!) {
+    anonymiseDatabase(input: $input)
+}
+"""
+
+# Migration mutations
+MIGRATE_MUTATION = """
+mutation Migrate($input: MigrateInput!) {
+    migrate(input: $input)
+}
+"""
+
+MIGRATE_HASH_NAMING_MUTATION = """
+mutation MigrateHashNaming {
+    migrateHashNaming
+}
+"""
+
+MIGRATE_SCENE_SCREENSHOTS_MUTATION = """
+mutation MigrateSceneScreenshots($input: MigrateSceneScreenshotsInput!) {
+    migrateSceneScreenshots(input: $input)
+}
+"""
+
+MIGRATE_BLOBS_MUTATION = """
+mutation MigrateBlobs($input: MigrateBlobsInput!) {
+    migrateBlobs(input: $input)
+}
+"""
+
+# Configuration mutations
+CONFIGURE_GENERAL_MUTATION = """
+mutation ConfigureGeneral($input: ConfigGeneralInput!) {
+    configureGeneral(input: $input) {
+        databasePath
+        parallelTasks
+    }
+}
+"""
+
+CONFIGURE_INTERFACE_MUTATION = """
+mutation ConfigureInterface($input: ConfigInterfaceInput!) {
+    configureInterface(input: $input) {
+        menuItems
+        soundOnPreview
+        wallShowTitle
+        wallPlayback
+        maximumLoopDuration
+        autostartVideo
+        autostartVideoOnPlaySelected
+        continuePlaylistDefault
+        showStudioAsText
+        noBrowser
+        notificationsEnabled
+        language
+    }
+}
+"""
+
+CONFIGURE_DLNA_MUTATION = """
+mutation ConfigureDLNA($input: ConfigDLNAInput!) {
+    configureDLNA(input: $input) {
+        serverName
+        enabled
+        port
+        whitelistedIPs
+        interfaces
+        videoSortOrder
+    }
+}
+"""
+
+CONFIGURE_DEFAULTS_MUTATION = """
+mutation ConfigureDefaults($input: ConfigDefaultSettingsInput!) {
+    configureDefaults(input: $input) {
+        deleteFile
+        deleteGenerated
+    }
+}
+"""
+
+CONFIGURE_UI_MUTATION = """
+mutation ConfigureUI($input: Map, $partial: Map) {
+    configureUI(input: $input, partial: $partial)
+}
+"""
+
+CONFIGURE_UI_SETTING_MUTATION = """
+mutation ConfigureUISetting($key: String!, $value: Any) {
+    configureUISetting(key: $key, value: $value)
+}
+"""
+
+GENERATE_API_KEY_MUTATION = """
+mutation GenerateAPIKey($input: GenerateAPIKeyInput!) {
+    generateAPIKey(input: $input)
+}
+"""
+
 # System status query
 SYSTEM_STATUS_FIELDS = """
     databaseSchema
@@ -879,6 +1018,179 @@ FIND_SCENE_BY_HASH_QUERY = f"""
 query FindSceneByHash($input: SceneHashInput!) {{
     findSceneByHash(input: $input) {{
         ...SceneFragment
+    }}
+}}
+"""
+
+# Version query templates
+VERSION_QUERY = """
+query Version {
+    version {
+        version
+        hash
+        build_time
+    }
+}
+"""
+
+LATEST_VERSION_QUERY = """
+query LatestVersion {
+    latestversion {
+        version
+        shorthash
+        release_date
+        url
+    }
+}
+"""
+
+# Deletion mutations
+# Scene deletions
+SCENE_DESTROY_MUTATION = """
+mutation SceneDestroy($input: SceneDestroyInput!) {
+    sceneDestroy(input: $input)
+}
+"""
+
+SCENES_DESTROY_MUTATION = """
+mutation ScenesDestroy($input: ScenesDestroyInput!) {
+    scenesDestroy(input: $input)
+}
+"""
+
+# Image deletions
+IMAGE_DESTROY_MUTATION = """
+mutation ImageDestroy($input: ImageDestroyInput!) {
+    imageDestroy(input: $input)
+}
+"""
+
+IMAGES_DESTROY_MUTATION = """
+mutation ImagesDestroy($input: ImagesDestroyInput!) {
+    imagesDestroy(input: $input)
+}
+"""
+
+# Performer deletions
+PERFORMER_DESTROY_MUTATION = """
+mutation PerformerDestroy($input: PerformerDestroyInput!) {
+    performerDestroy(input: $input)
+}
+"""
+
+PERFORMERS_DESTROY_MUTATION = """
+mutation PerformersDestroy($ids: [ID!]!) {
+    performersDestroy(ids: $ids)
+}
+"""
+
+# Studio deletions
+STUDIO_DESTROY_MUTATION = """
+mutation StudioDestroy($input: StudioDestroyInput!) {
+    studioDestroy(input: $input)
+}
+"""
+
+STUDIOS_DESTROY_MUTATION = """
+mutation StudiosDestroy($ids: [ID!]!) {
+    studiosDestroy(ids: $ids)
+}
+"""
+
+# Tag deletions
+TAG_DESTROY_MUTATION = """
+mutation TagDestroy($input: TagDestroyInput!) {
+    tagDestroy(input: $input)
+}
+"""
+
+TAGS_DESTROY_MUTATION = """
+mutation TagsDestroy($ids: [ID!]!) {
+    tagsDestroy(ids: $ids)
+}
+"""
+
+# Scene Marker deletions
+SCENE_MARKER_DESTROY_MUTATION = """
+mutation SceneMarkerDestroy($id: ID!) {
+    sceneMarkerDestroy(id: $id)
+}
+"""
+
+SCENE_MARKERS_DESTROY_MUTATION = """
+mutation SceneMarkersDestroy($ids: [ID!]!) {
+    sceneMarkersDestroy(ids: $ids)
+}
+"""
+
+# File deletion
+DELETE_FILES_MUTATION = """
+mutation DeleteFiles($ids: [ID!]!) {
+    deleteFiles(ids: $ids)
+}
+"""
+
+# Bulk update mutations
+BULK_PERFORMER_UPDATE_MUTATION = f"""
+mutation BulkPerformerUpdate($input: BulkPerformerUpdateInput!) {{
+    bulkPerformerUpdate(input: $input) {{
+        {PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+BULK_STUDIO_UPDATE_MUTATION = f"""
+mutation BulkStudioUpdate($input: BulkStudioUpdateInput!) {{
+    bulkStudioUpdate(input: $input) {{
+        {STUDIO_FIELDS}
+    }}
+}}
+"""
+
+BULK_IMAGE_UPDATE_MUTATION = f"""
+mutation BulkImageUpdate($input: BulkImageUpdateInput!) {{
+    bulkImageUpdate(input: $input) {{
+        {IMAGE_FIELDS}
+    }}
+}}
+"""
+
+BULK_SCENE_MARKER_UPDATE_MUTATION = f"""
+mutation BulkSceneMarkerUpdate($input: BulkSceneMarkerUpdateInput!) {{
+    bulkSceneMarkerUpdate(input: $input) {{
+        {MARKER_FIELDS}
+    }}
+}}
+"""
+
+# Folder fragments and queries
+FOLDER_FIELDS = """fragment FolderFields on Folder {
+    id
+    path
+    parent_folder_id
+    zip_file_id
+    mod_time
+    created_at
+    updated_at
+}"""
+
+FIND_FOLDER_QUERY = f"""
+{FOLDER_FIELDS}
+query FindFolder($id: ID, $path: String) {{
+    findFolder(id: $id, path: $path) {{
+        ...FolderFields
+    }}
+}}
+"""
+
+FIND_FOLDERS_QUERY = f"""
+{FOLDER_FIELDS}
+query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $ids: [ID!]) {{
+    findFolders(folder_filter: $folder_filter, filter: $filter, ids: $ids) {{
+        count
+        folders {{
+            ...FolderFields
+        }}
     }}
 }}
 """

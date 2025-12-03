@@ -479,6 +479,81 @@ class TagFilterType(BaseModel):
     updated_at: TimestampCriterionInput | None = None
 
 
+class FingerprintFilterInput(BaseModel):
+    """Input for fingerprint filter."""
+
+    type: str  # String!
+    value: str  # String!
+    distance: int | None = None  # Int (Hamming distance - defaults to 0)
+
+
+class VideoFileFilterInput(BaseModel):
+    """Input for video file filter."""
+
+    resolution: ResolutionCriterionInput | None = None
+    orientation: OrientationCriterionInput | None = None
+    framerate: IntCriterionInput | None = None
+    bitrate: IntCriterionInput | None = None
+    format: StringCriterionInput | None = None
+    video_codec: StringCriterionInput | None = None
+    audio_codec: StringCriterionInput | None = None
+    duration: IntCriterionInput | None = None  # in seconds
+    captions: StringCriterionInput | None = None
+    interactive: bool | None = None  # Boolean
+    interactive_speed: IntCriterionInput | None = None
+
+
+class ImageFileFilterInput(BaseModel):
+    """Input for image file filter."""
+
+    format: StringCriterionInput | None = None
+    resolution: ResolutionCriterionInput | None = None
+    orientation: OrientationCriterionInput | None = None
+
+
+class FileFilterType(BaseModel):
+    """Input for file filter."""
+
+    AND: FileFilterType | None = None
+    OR: FileFilterType | None = None
+    NOT: FileFilterType | None = None
+    path: StringCriterionInput | None = None
+    basename: StringCriterionInput | None = None
+    dir: StringCriterionInput | None = None
+    parent_folder: HierarchicalMultiCriterionInput | None = None
+    zip_file: MultiCriterionInput | None = None
+    mod_time: TimestampCriterionInput | None = None
+    duplicated: PHashDuplicationCriterionInput | None = None
+    hashes: list[FingerprintFilterInput] | None = None  # [FingerprintFilterInput!]
+    video_file_filter: VideoFileFilterInput | None = None
+    image_file_filter: ImageFileFilterInput | None = None
+    scene_count: IntCriterionInput | None = None
+    image_count: IntCriterionInput | None = None
+    gallery_count: IntCriterionInput | None = None
+    scenes_filter: SceneFilterType | None = None
+    images_filter: ImageFilterType | None = None
+    galleries_filter: GalleryFilterType | None = None
+    created_at: TimestampCriterionInput | None = None
+    updated_at: TimestampCriterionInput | None = None
+
+
+class FolderFilterType(BaseModel):
+    """Input for folder filter."""
+
+    AND: FolderFilterType | None = None
+    OR: FolderFilterType | None = None
+    NOT: FolderFilterType | None = None
+    path: StringCriterionInput | None = None
+    parent_folder: HierarchicalMultiCriterionInput | None = None
+    zip_file: MultiCriterionInput | None = None
+    mod_time: TimestampCriterionInput | None = None
+    gallery_count: IntCriterionInput | None = None
+    files_filter: FileFilterType | None = None
+    galleries_filter: GalleryFilterType | None = None
+    created_at: TimestampCriterionInput | None = None
+    updated_at: TimestampCriterionInput | None = None
+
+
 class TimestampCriterionInput(BaseModel):
     """Input for timestamp criterion."""
 

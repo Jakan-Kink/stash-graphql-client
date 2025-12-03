@@ -74,12 +74,16 @@ from .filters import (
     CustomFieldCriterionInput,
     DateCriterionInput,
     DestroyFilterInput,
+    FileFilterType,
     FindFilterType,
+    FingerprintFilterInput,
     FloatCriterionInput,
+    FolderFilterType,
     GalleryFilterType,
     GenderCriterionInput,
     GroupFilterType,
     HierarchicalMultiCriterionInput,
+    ImageFileFilterInput,
     ImageFilterType,
     IntCriterionInput,
     MultiCriterionInput,
@@ -99,6 +103,7 @@ from .filters import (
     StudioFilterType,
     TagFilterType,
     TimestampCriterionInput,
+    VideoFileFilterInput,
 )
 
 # Core types
@@ -173,7 +178,9 @@ from .metadata import (
     IdentifyMetadataOptions,
     IdentifyMetadataOptionsInput,
     ImportObjectsInput,
+    MigrateBlobsInput,
     MigrateInput,
+    MigrateSceneScreenshotsInput,
     ScanMetaDataFilterInput,
     ScanMetadataInput,
     ScanMetadataOptions,
@@ -296,11 +303,13 @@ __all__: list[str] = [
     "Directory",
     "ExportObjectTypeInput",
     "ExportObjectsInput",
+    "FileFilterType",
     "FileSetFingerprintsInput",
     "FilterMode",
     "FindFilesResultType",
     "FindFilterType",
     "FindFoldersResultType",
+    "FingerprintFilterInput",
     "FindGalleriesResultType",
     "FindGalleryChaptersResultType",
     "FindGroupsResultType",
@@ -319,6 +328,7 @@ __all__: list[str] = [
     "Fingerprint",
     "FloatCriterionInput",
     "Folder",
+    "FolderFilterType",
     "Gallery",
     "GalleryAddInput",
     "GalleryChapter",
@@ -360,6 +370,7 @@ __all__: list[str] = [
     "Image",
     "ImageDestroyInput",
     "ImageFile",
+    "ImageFileFilterInput",
     "ImageFileType",
     "ImageFilterType",
     "ImageLightboxDisplayMode",
@@ -382,7 +393,9 @@ __all__: list[str] = [
     "LogLevel",
     "Map",
     "MarkerStringsResultType",
+    "MigrateBlobsInput",
     "MigrateInput",
+    "MigrateSceneScreenshotsInput",
     "MoveFilesInput",
     "MultiCriterionInput",
     "OnMultipleMatch",
@@ -466,6 +479,7 @@ __all__: list[str] = [
     "Version",
     "VideoCaption",
     "VideoFile",
+    "VideoFileFilterInput",
     "VisualFile",
 ]
 
@@ -533,6 +547,14 @@ StudioCreateInput.model_rebuild()
 TagUpdateInput.model_rebuild()
 TagCreateInput.model_rebuild()
 
+# Config input types (have forward references to nested types)
+ConfigGeneralInput.model_rebuild()
+ConfigInterfaceInput.model_rebuild()
+ConfigDefaultSettingsInput.model_rebuild()
+ConfigImageLightboxInput.model_rebuild()
+ConfigDisableDropdownCreateInput.model_rebuild()
+StashConfigInput.model_rebuild()
+
 # Result types (contain lists of domain types)
 FindFilesResultType.model_rebuild()
 FindFoldersResultType.model_rebuild()
@@ -547,6 +569,11 @@ FindTagsResultType.model_rebuild()
 FindSceneMarkersResultType.model_rebuild()
 
 # Filter types (reference domain types)
+FingerprintFilterInput.model_rebuild()
+VideoFileFilterInput.model_rebuild()
+ImageFileFilterInput.model_rebuild()
+FileFilterType.model_rebuild()
+FolderFilterType.model_rebuild()
 SceneFilterType.model_rebuild()
 PerformerFilterType.model_rebuild()
 GalleryFilterType.model_rebuild()

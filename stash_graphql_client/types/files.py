@@ -166,7 +166,7 @@ class Folder(StashObject):
 
     # Required fields
     path: str  # String!
-    mod_time: datetime  # Time!
+    mod_time: datetime | None = None  # Time! - optional because Stash may not return it
 
     # Optional fields
     parent_folder: Folder | None = None  # Folder (replaces deprecated parent_folder_id)

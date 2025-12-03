@@ -3,7 +3,12 @@
 from typing import Any
 
 from ... import fragments
-from ...types import FindPerformersResultType, Performer
+from ...types import (
+    BulkPerformerUpdateInput,
+    FindPerformersResultType,
+    Performer,
+    PerformerDestroyInput,
+)
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 
@@ -64,6 +69,7 @@ class PerformerClientMixin(StashClientProtocol):
         try:
             # Parse input to handle different types
             parsed_input = self._parse_obj_for_ID(performer)
+            result = None  # Initialize to avoid unbound variable warning
 
             if isinstance(parsed_input, dict):
                 # If it's a name filter, try name then alias
@@ -73,24 +79,8 @@ class PerformerClientMixin(StashClientProtocol):
                     result = await self.find_performers(
                         performer_filter={"name": {"value": name, "modifier": "EQUALS"}}
                     )
-                    if (
-                        hasattr(result, "count")
-                        and result.count > 0
-                        and hasattr(result, "performers")
-                    ):
-                        perf = result.performers[0]
-                        if isinstance(perf, Performer):
-                            return perf
-                        return Performer(**sanitize_model_data(perf))
-                    if (
-                        isinstance(result, dict)
-                        and result.get("count", 0) > 0
-                        and "performers" in result
-                    ):
-                        perf = result["performers"][0]
-                        if isinstance(perf, Performer):
-                            return perf
-                        return Performer(**sanitize_model_data(perf))
+                    if result.count > 0:
+                        return result.performers[0]
 
                     # Try by alias
                     result = await self.find_performers(
@@ -98,24 +88,9 @@ class PerformerClientMixin(StashClientProtocol):
                             "aliases": {"value": name, "modifier": "INCLUDES"}
                         }
                     )
-                    if (
-                        hasattr(result, "count")
-                        and result.count > 0
-                        and hasattr(result, "performers")
-                    ):
-                        perf = result.performers[0]
-                        if isinstance(perf, Performer):
-                            return perf
-                        return Performer(**sanitize_model_data(perf))
-                    if (
-                        isinstance(result, dict)
-                        and result.get("count", 0) > 0
-                        and "performers" in result
-                    ):
-                        perf = result["performers"][0]
-                        if isinstance(perf, Performer):
-                            return perf
-                        return Performer(**sanitize_model_data(perf))
+                    if result.count > 0:
+                        return result.performers[0]
+
                     return None
             else:
                 # If it's an ID, use direct lookup
@@ -321,25 +296,8 @@ class PerformerClientMixin(StashClientProtocol):
                         "name": {"value": performer.name, "modifier": "EQUALS"}
                     },
                 )
-                # Check if result is a dictionary or an object with count attribute
-                if hasattr(result, "count") and result.count > 0:
-                    # Access performers as attribute on the class
-                    performers = getattr(result, "performers", [])
-                    if performers:
-                        # performers[0] might already be a Performer object
-                        if isinstance(performers[0], Performer):
-                            return performers[0]
-                        return Performer(**sanitize_model_data(performers[0]))
-                    raise  # Re-raise if we couldn't find the performer
-                if isinstance(result, dict) and result.get("count", 0) > 0:
-                    # Access performers as dictionary key
-                    performers = result.get("performers", [])
-                    if performers:
-                        # performers[0] might already be a Performer object
-                        if isinstance(performers[0], Performer):
-                            return performers[0]
-                        return Performer(**sanitize_model_data(performers[0]))
-                    raise  # Re-raise if we couldn't find the performer
+                if result.count > 0:
+                    return result.performers[0]
                 raise  # Re-raise if we couldn't find the performer
 
             self.log.error(f"Failed to create performer: {e}")
@@ -462,4 +420,136 @@ class PerformerClientMixin(StashClientProtocol):
             return Performer(**sanitize_model_data(result["performerUpdate"]))
         except Exception as e:
             self.log.error(f"Failed to update performer image: {e}")
+            raise
+
+    async def performer_destroy(
+        self,
+        input_data: PerformerDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete a performer.
+
+        Args:
+            input_data: PerformerDestroyInput object or dictionary containing:
+                - id: Performer ID to delete (required)
+
+        Returns:
+            True if the performer was successfully deleted
+
+        Raises:
+            ValueError: If the performer ID is invalid
+            gql.TransportError: If the request fails
+
+        Examples:
+            Delete a performer:
+            ```python
+            result = await client.performer_destroy({"id": "123"})
+            print(f"Performer deleted: {result}")
+            ```
+
+            Using the input type:
+            ```python
+            from ...types import PerformerDestroyInput
+
+            input_data = PerformerDestroyInput(id="123")
+            result = await client.performer_destroy(input_data)
+            ```
+        """
+        try:
+            # Convert PerformerDestroyInput to dict if needed
+            if isinstance(input_data, PerformerDestroyInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.PERFORMER_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("performerDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete performer: {e}")
+            raise
+
+    async def performers_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple performers.
+
+        Args:
+            ids: List of performer IDs to delete
+
+        Returns:
+            True if the performers were successfully deleted
+
+        Raises:
+            ValueError: If any performer ID is invalid
+            gql.TransportError: If the request fails
+
+        Examples:
+            Delete multiple performers:
+            ```python
+            result = await client.performers_destroy(["123", "456", "789"])
+            print(f"Performers deleted: {result}")
+            ```
+        """
+        try:
+            result = await self.execute(
+                fragments.PERFORMERS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("performersDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete performers: {e}")
+            raise
+
+    async def bulk_performer_update(
+        self,
+        input_data: BulkPerformerUpdateInput | dict[str, Any],
+    ) -> list[Performer]:
+        """Bulk update performers.
+
+        Args:
+            input_data: BulkPerformerUpdateInput object or dictionary containing:
+                - ids: List of performer IDs to update (optional)
+                - And any fields to update (e.g., gender, birthdate, tags, etc.)
+
+        Returns:
+            List of updated Performer objects
+
+        Examples:
+            Update multiple performers' gender:
+            ```python
+            performers = await client.bulk_performer_update({
+                "ids": ["1", "2", "3"],
+                "gender": "FEMALE"
+            })
+            ```
+
+            Add tags to multiple performers:
+            ```python
+            from stash_graphql_client.types import BulkPerformerUpdateInput, BulkUpdateIds
+
+            input_data = BulkPerformerUpdateInput(
+                ids=["1", "2", "3"],
+                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
+            )
+            performers = await client.bulk_performer_update(input_data)
+            ```
+        """
+        try:
+            # Convert BulkPerformerUpdateInput to dict if needed
+            if isinstance(input_data, BulkPerformerUpdateInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.BULK_PERFORMER_UPDATE_MUTATION,
+                {"input": input_dict},
+            )
+
+            performers_data = result.get("bulkPerformerUpdate", [])
+            return [Performer(**sanitize_model_data(p)) for p in performers_data]
+        except Exception as e:
+            self.log.error(f"Failed to bulk update performers: {e}")
             raise

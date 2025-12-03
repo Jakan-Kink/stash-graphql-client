@@ -50,7 +50,55 @@ def temp_dir() -> Generator[Path, None, None]:
 def pytest_collection_modifyitems(config, items):
     """Hook to validate fixture usage and add markers.
 
-    Future: When stash_client and stash_cleanup_tracker fixtures are added,
-    enforce that tests using real Stash clients also use cleanup trackers.
+    Ensures that any test using Stash fixtures also uses stash_cleanup_tracker
+    for proper test isolation and cleanup.
+
+    This enforcement applies to:
+    - stash_client: Direct access to StashClient
+    - stash_context: StashContext that creates stash_client internally
+
+    Even if a test only does reads, we require the cleanup tracker to:
+    1. Be consistent across all integration tests
+    2. Ensure cleanup is in place if someone adds writes later
+    3. Make the pattern explicit and documented
+
+    Tests that violate this requirement are marked with xfail(strict=True),
+    which means:
+    - If the test would pass, it fails (enforcement)
+    - If the test would fail naturally, it fails (expected)
+    - If Stash is unavailable and test skips, it skips (expected)
+
+    EXCEPTIONS:
+    - respx_stash_client: Uses respx to mock HTTP, no cleanup needed
+    - Tests in tests/types/: Unit tests for data conversion only
     """
-    # Placeholder for future cleanup enforcement
+    for item in items:
+        if hasattr(item, "fixturenames"):
+            # Check if test uses any Stash fixture that requires cleanup
+            uses_stash_fixture = (
+                "stash_client" in item.fixturenames
+                or "stash_context" in item.fixturenames
+            )
+
+            # Exception: respx fixtures use HTTP mocking, no real Stash calls
+            uses_respx = "respx_stash_client" in item.fixturenames
+
+            # Exception: tests/types/ are unit tests for data models
+            is_types_test = "tests/types/" in str(item.fspath)
+
+            has_cleanup = "stash_cleanup_tracker" in item.fixturenames
+
+            # Enforce cleanup requirement
+            if (
+                uses_stash_fixture
+                and not uses_respx
+                and not is_types_test
+                and not has_cleanup
+            ):
+                item.add_marker(
+                    pytest.mark.xfail(
+                        reason="Tests using Stash fixtures (stash_client, stash_context) "
+                        "MUST also use stash_cleanup_tracker for test isolation and cleanup.",
+                        strict=True,
+                    )
+                )

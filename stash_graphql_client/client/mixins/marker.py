@@ -3,7 +3,7 @@
 from typing import Any
 
 from ... import fragments
-from ...types import FindSceneMarkersResultType, SceneMarker
+from ...types import BulkSceneMarkerUpdateInput, FindSceneMarkersResultType, SceneMarker
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 
@@ -150,4 +150,104 @@ class MarkerClientMixin(StashClientProtocol):
             return SceneMarker(**clean_data)
         except Exception as e:
             self.log.error(f"Failed to update marker: {e}")
+            raise
+
+    async def scene_marker_destroy(self, id: str) -> bool:
+        """Delete a scene marker.
+
+        Args:
+            id: Scene marker ID to delete
+
+        Returns:
+            True if the scene marker was successfully deleted
+
+        Raises:
+            ValueError: If the scene marker ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.SCENE_MARKER_DESTROY_MUTATION,
+                {"id": id},
+            )
+
+            return bool(result.get("sceneMarkerDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scene marker: {e}")
+            raise
+
+    async def scene_markers_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple scene markers.
+
+        Args:
+            ids: List of scene marker IDs to delete
+
+        Returns:
+            True if the scene markers were successfully deleted
+
+        Raises:
+            ValueError: If any scene marker ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.SCENE_MARKERS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("sceneMarkersDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scene markers: {e}")
+            raise
+
+    async def bulk_scene_marker_update(
+        self,
+        input_data: BulkSceneMarkerUpdateInput | dict[str, Any],
+    ) -> list[SceneMarker]:
+        """Bulk update scene markers.
+
+        Args:
+            input_data: BulkSceneMarkerUpdateInput object or dictionary containing:
+                - ids: List of scene marker IDs to update (optional)
+                - And any fields to update (e.g., primary_tag_id, tag_ids, etc.)
+
+        Returns:
+            List of updated SceneMarker objects
+
+        Examples:
+            Update multiple markers' primary tag:
+            ```python
+            markers = await client.bulk_scene_marker_update({
+                "ids": ["1", "2", "3"],
+                "primary_tag_id": "tag123"
+            })
+            ```
+
+            Add tags to multiple markers:
+            ```python
+            from stash_graphql_client.types import BulkSceneMarkerUpdateInput, BulkUpdateIds
+
+            input_data = BulkSceneMarkerUpdateInput(
+                ids=["1", "2", "3"],
+                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
+            )
+            markers = await client.bulk_scene_marker_update(input_data)
+            ```
+        """
+        try:
+            # Convert BulkSceneMarkerUpdateInput to dict if needed
+            if isinstance(input_data, BulkSceneMarkerUpdateInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.BULK_SCENE_MARKER_UPDATE_MUTATION,
+                {"input": input_dict},
+            )
+
+            markers_data = result.get("bulkSceneMarkerUpdate", [])
+            return [SceneMarker(**sanitize_model_data(m)) for m in markers_data]
+        except Exception as e:
+            self.log.error(f"Failed to bulk update scene markers: {e}")
             raise

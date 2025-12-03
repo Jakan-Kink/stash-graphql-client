@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
 from .files import StashID, StashIDInput, VideoFile
@@ -31,7 +31,7 @@ class BulkSceneUpdateInput(BaseModel):
     """Input for bulk updating scenes."""
 
     # Optional fields
-    clientMutationId: str | None = None  # String
+    client_mutation_id: str | None = Field(None, alias="clientMutationId")  # String
     ids: list[str]  # [ID!]
     title: str | None = None  # String
     code: str | None = None  # String
@@ -199,12 +199,23 @@ class Scene(StashObject):
     tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
     performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
     stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
-    sceneStreams: list[SceneStreamEndpoint] = Field(
-        default_factory=list
+    scene_streams: list[SceneStreamEndpoint] = Field(
+        default_factory=list, alias="sceneStreams"
     )  # [SceneStreamEndpoint!]! (Return valid stream paths)
 
     # Optional lists
     captions: list[VideoCaption] = Field(default_factory=list)  # [VideoCaption!]
+
+    @field_validator("captions", mode="before")
+    @classmethod
+    def convert_none_to_empty_list(
+        cls, v: list[VideoCaption] | None
+    ) -> list[VideoCaption]:
+        """Convert None to empty list for captions field.
+
+        Stash may return None instead of an empty list for optional list fields.
+        """
+        return v if v is not None else []
 
     # Relationship definitions with their mappings
     __relationships__ = {

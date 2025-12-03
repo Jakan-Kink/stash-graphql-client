@@ -26,6 +26,7 @@ from stash_graphql_client.logging import (
     processing_logger,
     stash_logger,
 )
+from stash_graphql_client.store import CacheStats, StashEntityStore
 
 # Re-export commonly used types
 from stash_graphql_client.types import (
@@ -71,6 +72,9 @@ __all__ = [
     # Client
     "StashClient",
     "StashContext",
+    # Entity Store
+    "StashEntityStore",
+    "CacheStats",
     # Logging
     "stash_logger",
     "client_logger",

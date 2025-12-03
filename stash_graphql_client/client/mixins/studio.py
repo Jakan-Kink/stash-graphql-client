@@ -3,7 +3,12 @@
 from typing import Any
 
 from ... import fragments
-from ...types import FindStudiosResultType, Studio
+from ...types import (
+    BulkStudioUpdateInput,
+    FindStudiosResultType,
+    Studio,
+    StudioDestroyInput,
+)
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 
@@ -126,4 +131,113 @@ class StudioClientMixin(StashClientProtocol):
             return Studio(**clean_data)
         except Exception as e:
             self.log.error(f"Failed to update studio: {e}")
+            raise
+
+    async def studio_destroy(
+        self,
+        input_data: StudioDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete a studio.
+
+        Args:
+            input_data: StudioDestroyInput object or dictionary containing:
+                - id: Studio ID to delete (required)
+
+        Returns:
+            True if the studio was successfully deleted
+
+        Raises:
+            ValueError: If the studio ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            if isinstance(input_data, StudioDestroyInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.STUDIO_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("studioDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete studio: {e}")
+            raise
+
+    async def studios_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple studios.
+
+        Args:
+            ids: List of studio IDs to delete
+
+        Returns:
+            True if the studios were successfully deleted
+
+        Raises:
+            ValueError: If any studio ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.STUDIOS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("studiosDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete studios: {e}")
+            raise
+
+    async def bulk_studio_update(
+        self,
+        input_data: BulkStudioUpdateInput | dict[str, Any],
+    ) -> list[Studio]:
+        """Bulk update studios.
+
+        Args:
+            input_data: BulkStudioUpdateInput object or dictionary containing:
+                - ids: List of studio IDs to update (optional)
+                - And any fields to update (e.g., url, rating100, etc.)
+
+        Returns:
+            List of updated Studio objects
+
+        Examples:
+            Update multiple studios' ratings:
+            ```python
+            studios = await client.bulk_studio_update({
+                "ids": ["1", "2", "3"],
+                "rating100": 80
+            })
+            ```
+
+            Add tags to multiple studios:
+            ```python
+            from stash_graphql_client.types import BulkStudioUpdateInput, BulkUpdateIds
+
+            input_data = BulkStudioUpdateInput(
+                ids=["1", "2", "3"],
+                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
+            )
+            studios = await client.bulk_studio_update(input_data)
+            ```
+        """
+        try:
+            # Convert BulkStudioUpdateInput to dict if needed
+            if isinstance(input_data, BulkStudioUpdateInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.BULK_STUDIO_UPDATE_MUTATION,
+                {"input": input_dict},
+            )
+
+            studios_data = result.get("bulkStudioUpdate", [])
+            return [Studio(**sanitize_model_data(s)) for s in studios_data]
+        except Exception as e:
+            self.log.error(f"Failed to bulk update studios: {e}")
             raise

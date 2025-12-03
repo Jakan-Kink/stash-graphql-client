@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class JobStatus(str, Enum):
@@ -38,12 +38,12 @@ class Job(BaseModel):
 
     id: str  # ID!
     status: JobStatus  # JobStatus!
-    subTasks: list[str]  # [String!]
+    sub_tasks: list[str] = Field(alias="subTasks")  # [String!]
     description: str  # String!
     progress: float | None = None  # Float
-    startTime: datetime | None = None  # Time
-    endTime: datetime | None = None  # Time
-    addTime: datetime  # Time!
+    start_time: datetime | None = Field(None, alias="startTime")  # Time
+    end_time: datetime | None = Field(None, alias="endTime")  # Time
+    add_time: datetime = Field(alias="addTime")  # Time!
     error: str | None = None  # String
 
 

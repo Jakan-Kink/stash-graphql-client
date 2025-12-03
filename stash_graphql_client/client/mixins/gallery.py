@@ -3,7 +3,11 @@
 from typing import Any
 
 from ... import fragments
-from ...types import FindGalleriesResultType, Gallery, GalleryChapter
+from ...types import (
+    FindGalleriesResultType,
+    Gallery,
+    GalleryChapter,
+)
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 

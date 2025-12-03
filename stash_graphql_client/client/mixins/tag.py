@@ -3,7 +3,7 @@
 from typing import Any
 
 from ... import fragments
-from ...types import FindTagsResultType, Tag
+from ...types import FindTagsResultType, Tag, TagDestroyInput
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 
@@ -214,4 +214,61 @@ class TagClientMixin(StashClientProtocol):
             return Tag(**sanitize_model_data(result["tagUpdate"]))
         except Exception as e:
             self.log.error(f"Failed to update tag: {e}")
+            raise
+
+    async def tag_destroy(
+        self,
+        input_data: TagDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete a tag.
+
+        Args:
+            input_data: TagDestroyInput object or dictionary containing:
+                - id: Tag ID to delete (required)
+
+        Returns:
+            True if the tag was successfully deleted
+
+        Raises:
+            ValueError: If the tag ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            if isinstance(input_data, TagDestroyInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.TAG_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("tagDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete tag: {e}")
+            raise
+
+    async def tags_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple tags.
+
+        Args:
+            ids: List of tag IDs to delete
+
+        Returns:
+            True if the tags were successfully deleted
+
+        Raises:
+            ValueError: If any tag ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.TAGS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("tagsDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete tags: {e}")
             raise

@@ -328,9 +328,9 @@ class StashClientBase:
 
             # Execute using the persistent session
             # The session maintains a single connection for all queries
-            result = await self._session.execute(
-                operation, variable_values=processed_vars
-            )
+            # Set variable_values on the operation (gql 4.0+ pattern)
+            operation.variable_values = processed_vars
+            result = await self._session.execute(operation)
             return dict(result)
 
         except Exception as e:
@@ -372,48 +372,41 @@ class StashClientBase:
                 return ConfigDefaultSettingsResult(
                     scan=ScanMetadataOptions(
                         rescan=False,
-                        scanGenerateCovers=True,
-                        scanGeneratePreviews=True,
-                        scanGenerateImagePreviews=True,
-                        scanGenerateSprites=True,
-                        scanGeneratePhashes=True,
-                        scanGenerateThumbnails=True,
-                        scanGenerateClipPreviews=True,
+                        scan_generate_covers=True,
+                        scan_generate_previews=True,
+                        scan_generate_image_previews=True,
+                        scan_generate_sprites=True,
+                        scan_generate_phashes=True,
+                        scan_generate_thumbnails=True,
+                        scan_generate_clip_previews=True,
                     ),
-                    autoTag=AutoTagMetadataOptions(),
+                    auto_tag=AutoTagMetadataOptions(),
                     generate=GenerateMetadataOptions(),
-                    deleteFile=False,
-                    deleteGenerated=False,
+                    delete_file=False,
+                    delete_generated=False,
                 )
 
             if defaults := result.get("configuration", {}).get("defaults"):
-                # Convert all options to proper types
-                if isinstance(defaults.get("scan"), dict):
-                    defaults["scan"] = ScanMetadataOptions(**defaults["scan"])
-                if isinstance(defaults.get("autoTag"), dict):
-                    defaults["autoTag"] = AutoTagMetadataOptions(**defaults["autoTag"])
-                if isinstance(defaults.get("generate"), dict):
-                    defaults["generate"] = GenerateMetadataOptions(
-                        **defaults["generate"]
-                    )
+                # Pydantic automatically handles camelCase → snake_case mapping via Field aliases
+                # and deserializes nested dicts to nested models
                 return ConfigDefaultSettingsResult(**defaults)
 
             self.log.warning("No defaults in response, using hardcoded values")
             return ConfigDefaultSettingsResult(
                 scan=ScanMetadataOptions(
                     rescan=False,
-                    scanGenerateCovers=True,
-                    scanGeneratePreviews=True,
-                    scanGenerateImagePreviews=True,
-                    scanGenerateSprites=True,
-                    scanGeneratePhashes=True,
-                    scanGenerateThumbnails=True,
-                    scanGenerateClipPreviews=True,
+                    scan_generate_covers=True,
+                    scan_generate_previews=True,
+                    scan_generate_image_previews=True,
+                    scan_generate_sprites=True,
+                    scan_generate_phashes=True,
+                    scan_generate_thumbnails=True,
+                    scan_generate_clip_previews=True,
                 ),
-                autoTag=AutoTagMetadataOptions(),
+                auto_tag=AutoTagMetadataOptions(),
                 generate=GenerateMetadataOptions(),
-                deleteFile=False,
-                deleteGenerated=False,
+                delete_file=False,
+                delete_generated=False,
             )
         except Exception as e:
             self.log.error(f"Failed to get configuration defaults: {e}")
@@ -532,20 +525,26 @@ class StashClientBase:
             scan_input = ScanMetadataInput(
                 paths=paths,
                 rescan=getattr(defaults.scan, "rescan", False),
-                scanGenerateCovers=getattr(defaults.scan, "scanGenerateCovers", True),
-                scanGeneratePreviews=getattr(
-                    defaults.scan, "scanGeneratePreviews", True
+                scan_generate_covers=getattr(
+                    defaults.scan, "scan_generate_covers", True
                 ),
-                scanGenerateImagePreviews=getattr(
-                    defaults.scan, "scanGenerateImagePreviews", True
+                scan_generate_previews=getattr(
+                    defaults.scan, "scan_generate_previews", True
                 ),
-                scanGenerateSprites=getattr(defaults.scan, "scanGenerateSprites", True),
-                scanGeneratePhashes=getattr(defaults.scan, "scanGeneratePhashes", True),
-                scanGenerateThumbnails=getattr(
-                    defaults.scan, "scanGenerateThumbnails", True
+                scan_generate_image_previews=getattr(
+                    defaults.scan, "scan_generate_image_previews", True
                 ),
-                scanGenerateClipPreviews=getattr(
-                    defaults.scan, "scanGenerateClipPreviews", True
+                scan_generate_sprites=getattr(
+                    defaults.scan, "scan_generate_sprites", True
+                ),
+                scan_generate_phashes=getattr(
+                    defaults.scan, "scan_generate_phashes", True
+                ),
+                scan_generate_thumbnails=getattr(
+                    defaults.scan, "scan_generate_thumbnails", True
+                ),
+                scan_generate_clip_previews=getattr(
+                    defaults.scan, "scan_generate_clip_previews", True
                 ),
             )
         except Exception as e:
@@ -555,13 +554,13 @@ class StashClientBase:
             scan_input = ScanMetadataInput(
                 paths=paths,
                 rescan=False,
-                scanGenerateCovers=True,
-                scanGeneratePreviews=True,
-                scanGenerateImagePreviews=True,
-                scanGenerateSprites=True,
-                scanGeneratePhashes=True,
-                scanGenerateThumbnails=True,
-                scanGenerateClipPreviews=True,
+                scan_generate_covers=True,
+                scan_generate_previews=True,
+                scan_generate_image_previews=True,
+                scan_generate_sprites=True,
+                scan_generate_phashes=True,
+                scan_generate_thumbnails=True,
+                scan_generate_clip_previews=True,
             )
 
         # Override with any provided flags
@@ -678,7 +677,7 @@ class StashClientBase:
             status = await client.get_system_status()
             if status:
                 print(f"System status: {status.status}")
-                print(f"Database path: {status.databasePath}")
+                print(f"Database path: {status.database_path}")
             ```
         """
         try:
@@ -744,8 +743,8 @@ class StashClientBase:
         # System is OK, log status for debugging
         self.log.debug(
             f"Stash system ready - Status: {status.status}, "
-            f"Database: {status.databasePath}, "
-            f"App Schema: {status.appSchema}"
+            f"Database: {status.database_path}, "
+            f"App Schema: {status.app_schema}"
         )
 
     async def close(self) -> None:

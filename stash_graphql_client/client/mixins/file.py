@@ -8,6 +8,9 @@ from ...types import (
     BaseFile,
     FileSetFingerprintsInput,
     FindFilesResultType,
+    FindFoldersResultType,
+    Folder,
+    FolderFilterType,
     MoveFilesInput,
 )
 from ..protocols import StashClientProtocol
@@ -324,3 +327,96 @@ class FileClientMixin(StashClientProtocol):
         except Exception as e:
             self.log.error(f"Failed to assign file to scene: {e}")
             return False
+
+    async def delete_files(self, ids: list[str]) -> bool:
+        """Delete files.
+
+        Args:
+            ids: List of file IDs to delete
+
+        Returns:
+            True if the files were successfully deleted
+
+        Raises:
+            ValueError: If any file ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.DELETE_FILES_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("deleteFiles", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete files: {e}")
+            raise
+
+    async def find_folder(
+        self,
+        id: str | None = None,
+        path: str | None = None,
+    ) -> Folder | None:
+        """Find a folder by its ID or path.
+
+        Args:
+            id: The ID of the folder to find (optional)
+            path: The path of the folder to find (optional)
+
+        Returns:
+            Folder object if found, None otherwise
+
+        Raises:
+            ValueError: If neither id nor path is provided
+        """
+        if id is None and path is None:
+            raise ValueError("Either id or path must be provided")
+
+        try:
+            result = await self.execute(
+                fragments.FIND_FOLDER_QUERY,
+                {"id": id, "path": path},
+            )
+            if result and result.get("findFolder"):
+                clean_data = sanitize_model_data(result["findFolder"])
+                return Folder(**clean_data)
+            return None
+        except Exception as e:
+            self.log.error(f"Failed to find folder (id={id}, path={path}): {e}")
+            return None
+
+    async def find_folders(
+        self,
+        folder_filter: FolderFilterType | dict[str, Any] | None = None,
+        filter_: dict[str, Any] | None = None,
+        ids: list[str] | None = None,
+    ) -> FindFoldersResultType:
+        """Find folders matching the given filters.
+
+        Args:
+            folder_filter: Optional folder-specific filter (FolderFilterType or dict)
+            filter_: Optional general filter parameters (FindFilterType or dict)
+            ids: Optional list of folder IDs to retrieve
+
+        Returns:
+            FindFoldersResultType containing count and list of folders
+        """
+        try:
+            # Convert FolderFilterType to dict if needed
+            if isinstance(folder_filter, FolderFilterType):
+                folder_filter_dict = folder_filter.model_dump(exclude_none=True)
+            else:
+                folder_filter_dict = folder_filter
+
+            result = await self.execute(
+                fragments.FIND_FOLDERS_QUERY,
+                {
+                    "folder_filter": folder_filter_dict,
+                    "filter": filter_,
+                    "ids": ids,
+                },
+            )
+            return FindFoldersResultType(**result["findFolders"])
+        except Exception as e:
+            self.log.error(f"Failed to find folders: {e}")
+            return FindFoldersResultType(count=0, folders=[])

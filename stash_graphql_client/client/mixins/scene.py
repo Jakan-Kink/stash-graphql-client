@@ -4,7 +4,14 @@ from typing import Any
 
 from ... import fragments
 from ...errors import StashIntegrationError
-from ...types import FindScenesResultType, Scene, SceneHashInput
+from ...types import (
+    FindScenesResultType,
+    Scene,
+    SceneDestroyInput,
+    SceneHashInput,
+    SceneMergeInput,
+    ScenesDestroyInput,
+)
 from ..protocols import StashClientProtocol
 from ..utils import sanitize_model_data
 
@@ -586,3 +593,202 @@ class SceneClientMixin(StashClientProtocol):
             self.log.error(f"Failed to find scene by hash: {e}")
 
             return None
+
+    async def scene_destroy(
+        self,
+        input_data: SceneDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete a scene.
+
+        Args:
+            input_data: SceneDestroyInput object or dictionary containing:
+                - id: Scene ID to delete (required)
+                - delete_file: Whether to delete the scene's file (optional, default: False)
+                - delete_generated: Whether to delete generated files (optional, default: True)
+
+        Returns:
+            True if the scene was successfully deleted
+
+        Raises:
+            ValueError: If the scene ID is invalid
+            gql.TransportError: If the request fails
+
+        Examples:
+            Delete a scene without deleting the file:
+            ```python
+            result = await client.scene_destroy({
+                "id": "123",
+                "delete_file": False,
+                "delete_generated": True
+            })
+            print(f"Scene deleted: {result}")
+            ```
+
+            Delete a scene and its file:
+            ```python
+            result = await client.scene_destroy({
+                "id": "123",
+                "delete_file": True,
+                "delete_generated": True
+            })
+            ```
+
+            Using the input type:
+            ```python
+            from ...types import SceneDestroyInput
+
+            input_data = SceneDestroyInput(
+                id="123",
+                delete_file=True,
+                delete_generated=True
+            )
+            result = await client.scene_destroy(input_data)
+            ```
+        """
+        try:
+            # Convert SceneDestroyInput to dict if needed
+            if isinstance(input_data, SceneDestroyInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.SCENE_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("sceneDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scene: {e}")
+            raise
+
+    async def scenes_destroy(
+        self,
+        input_data: ScenesDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete multiple scenes.
+
+        Args:
+            input_data: ScenesDestroyInput object or dictionary containing:
+                - ids: List of scene IDs to delete (required)
+                - delete_file: Whether to delete the scenes' files (optional, default: False)
+                - delete_generated: Whether to delete generated files (optional, default: True)
+
+        Returns:
+            True if the scenes were successfully deleted
+
+        Raises:
+            ValueError: If any scene ID is invalid
+            gql.TransportError: If the request fails
+
+        Examples:
+            Delete multiple scenes without deleting files:
+            ```python
+            result = await client.scenes_destroy({
+                "ids": ["123", "456", "789"],
+                "delete_file": False,
+                "delete_generated": True
+            })
+            print(f"Scenes deleted: {result}")
+            ```
+
+            Delete multiple scenes and their files:
+            ```python
+            result = await client.scenes_destroy({
+                "ids": ["123", "456"],
+                "delete_file": True,
+                "delete_generated": True
+            })
+            ```
+
+            Using the input type:
+            ```python
+            from ...types import ScenesDestroyInput
+
+            input_data = ScenesDestroyInput(
+                ids=["123", "456", "789"],
+                delete_file=False,
+                delete_generated=True
+            )
+            result = await client.scenes_destroy(input_data)
+            ```
+        """
+        try:
+            # Convert ScenesDestroyInput to dict if needed
+            if isinstance(input_data, ScenesDestroyInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.SCENES_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("scenesDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scenes: {e}")
+            raise
+
+    async def scene_merge(
+        self,
+        input_data: SceneMergeInput | dict[str, Any],
+    ) -> Scene:
+        """Merge multiple scenes into one destination scene.
+
+        Args:
+            input_data: SceneMergeInput object or dictionary containing:
+                - source: List of source scene IDs to merge (required)
+                - destination: Destination scene ID (required)
+                - values: Optional SceneUpdateInput with values to apply to merged scene
+                - play_history: Whether to merge play history (optional, default: False)
+                - o_history: Whether to merge o-count history (optional, default: False)
+
+        Returns:
+            Updated destination Scene object
+
+        Raises:
+            ValueError: If the input data is invalid
+            gql.TransportError: If the request fails
+
+        Examples:
+            Merge two scenes into one:
+            ```python
+            merged = await client.scene_merge({
+                "source": ["123", "456"],
+                "destination": "789"
+            })
+            print(f"Merged into scene: {merged.title}")
+            ```
+
+            Merge scenes and update metadata:
+            ```python
+            from stash_graphql_client.types import SceneMergeInput
+
+            input_data = SceneMergeInput(
+                source=["123", "456"],
+                destination="789",
+                values={"title": "Merged Scene"},
+                play_history=True,
+                o_history=True
+            )
+            merged = await client.scene_merge(input_data)
+            ```
+        """
+        try:
+            # Convert SceneMergeInput to dict if needed
+            if isinstance(input_data, SceneMergeInput):
+                input_dict = input_data.model_dump(exclude_none=True)
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.SCENE_MERGE_MUTATION,
+                {"input": input_dict},
+            )
+
+            clean_data = sanitize_model_data(result["sceneMerge"])
+            return Scene(**clean_data)
+        except Exception as e:
+            self.log.error(f"Failed to merge scenes: {e}")
+            raise

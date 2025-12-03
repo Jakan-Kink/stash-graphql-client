@@ -4,10 +4,12 @@ from typing import Any
 
 from ..logging import client_logger
 from .base import StashClientBase
+from .mixins.config import ConfigClientMixin
 from .mixins.file import FileClientMixin
 from .mixins.gallery import GalleryClientMixin
 from .mixins.image import ImageClientMixin
 from .mixins.marker import MarkerClientMixin
+from .mixins.metadata import MetadataClientMixin
 from .mixins.not_implemented import NotImplementedClientMixin
 from .mixins.performer import PerformerClientMixin
 from .mixins.scene import SceneClientMixin
@@ -20,10 +22,12 @@ from .utils import sanitize_model_data
 class StashClient(
     StashClientBase,  # Base class first to provide execute()
     NotImplementedClientMixin,
+    ConfigClientMixin,
     FileClientMixin,
     GalleryClientMixin,
     ImageClientMixin,
     MarkerClientMixin,
+    MetadataClientMixin,
     PerformerClientMixin,
     SceneClientMixin,
     StudioClientMixin,
@@ -83,10 +87,12 @@ class StashClient(
 
         # Initialize all mixins
         NotImplementedClientMixin.__init__(self)
+        ConfigClientMixin.__init__(self)
         FileClientMixin.__init__(self)
         GalleryClientMixin.__init__(self)
         ImageClientMixin.__init__(self)
         MarkerClientMixin.__init__(self)
+        MetadataClientMixin.__init__(self)
         PerformerClientMixin.__init__(self)
         SceneClientMixin.__init__(self)
         StudioClientMixin.__init__(self)
