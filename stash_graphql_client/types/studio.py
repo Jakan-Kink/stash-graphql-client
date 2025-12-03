@@ -120,7 +120,7 @@ class Studio(StashObject):
 
     @model_validator(mode="before")
     @classmethod
-    def handle_deprecated_url(cls, data: Any) -> Any:
+    def handle_deprecated_url(cls, data: Any, info: Any) -> Any:
         """Convert deprecated 'url' field to 'urls' list for backward compatibility."""
         if isinstance(data, dict):
             # Handle deprecated single url field

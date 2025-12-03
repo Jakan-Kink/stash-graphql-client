@@ -597,9 +597,9 @@ class TestFindIterOperations:
             )
         )
 
-        results = []
-        async for performer in store.find_iter(Performer, query_batch=10):
-            results.append(performer)
+        results = [
+            performer async for performer in store.find_iter(Performer, query_batch=10)
+        ]
 
         assert len(results) == 3
         names = [p.name for p in results]
@@ -668,37 +668,76 @@ class TestFindIterOperations:
 
 
 # =============================================================================
-# Unit Tests - Stub Detection
+# Unit Tests - Field Tracking
 # =============================================================================
 
 
-class TestStubDetection:
-    """Tests for stub detection logic."""
+class TestFieldTracking:
+    """Tests for field-aware population detection."""
 
     @pytest.mark.unit
-    def test_is_stub_minimal_object(self, respx_stash_client) -> None:
-        """Test that minimal object (only id) is detected as stub."""
-        store = StashEntityStore(respx_stash_client)
+    def test_received_fields_tracked_on_construction(self, respx_stash_client) -> None:
+        """Test that _received_fields is set during object construction."""
+        # Construct from dict (simulating GraphQL response)
+        performer = Performer(id="123", name="Test", country="USA")
 
-        # Create minimal performer (stub-like)
-        stub = Performer(id="123", name="")
-
-        assert store._is_stub(stub)
+        received = getattr(performer, "_received_fields", None)
+        assert received is not None
+        assert "id" in received
+        assert "name" in received
+        assert "country" in received
+        assert "ethnicity" not in received  # Was not in the input
 
     @pytest.mark.unit
-    def test_is_stub_full_object(self, respx_stash_client) -> None:
-        """Test that full object is not detected as stub."""
+    def test_stub_has_is_stub_marker(self, respx_stash_client) -> None:
+        """Test that stub objects get _is_stub=True marker."""
+        # Construct stub (only id, missing required 'name')
+        stub = Performer(id="123")
+
+        assert getattr(stub, "_is_stub", False) is True
+        assert stub.name == ""  # Auto-filled by validator
+
+    @pytest.mark.unit
+    def test_has_fields_returns_true_when_present(self, respx_stash_client) -> None:
+        """Test has_fields returns True when all fields are in _received_fields."""
         store = StashEntityStore(respx_stash_client)
+        performer = Performer(id="123", name="Test", country="USA")
 
-        # Create full performer
-        full = PerformerFactory.build(
-            id="123",
-            name="Full Performer",
-            country="USA",
-            ethnicity="Caucasian",
-        )
+        assert store.has_fields(performer, "id", "name")
+        assert store.has_fields(performer, "country")
 
-        assert not store._is_stub(full)
+    @pytest.mark.unit
+    def test_has_fields_returns_false_when_missing(self, respx_stash_client) -> None:
+        """Test has_fields returns False when any field is missing."""
+        store = StashEntityStore(respx_stash_client)
+        performer = Performer(id="123", name="Test")
+
+        assert not store.has_fields(performer, "country")  # Not in input
+        assert not store.has_fields(performer, "name", "ethnicity")  # Partial
+
+    @pytest.mark.unit
+    def test_missing_fields_returns_absent_fields(self, respx_stash_client) -> None:
+        """Test missing_fields returns fields not in _received_fields."""
+        store = StashEntityStore(respx_stash_client)
+        performer = Performer(id="123", name="Test")
+
+        missing = store.missing_fields(performer, "name", "country", "ethnicity")
+        assert missing == {"country", "ethnicity"}
+        assert "name" not in missing  # Was received
+
+    @pytest.mark.unit
+    def test_needs_population_with_specific_fields(self, respx_stash_client) -> None:
+        """Test _needs_population checks specific fields."""
+        store = StashEntityStore(respx_stash_client)
+        performer = Performer(id="123", name="Test")
+
+        # Needs population for fields not received
+        assert store._needs_population(performer, fields={"country"})
+        assert store._needs_population(performer, fields={"ethnicity", "country"})
+
+        # Does not need population for received fields
+        assert not store._needs_population(performer, fields={"name"})
+        assert not store._needs_population(performer, fields={"id", "name"})
 
 
 # =============================================================================
@@ -884,9 +923,9 @@ class TestFindIterEdgeCases:
             ]
         )
 
-        results = []
-        async for performer in store.find_iter(Performer, query_batch=3):
-            results.append(performer)
+        results = [
+            performer async for performer in store.find_iter(Performer, query_batch=3)
+        ]
 
         assert len(results) == 5
         assert len(graphql_route.calls) == 2  # Two pages fetched
@@ -959,7 +998,7 @@ class TestPopulateFunction:
             ]
         )
 
-        result = await store.populate(scene, "performers")
+        result = await store.populate(scene, fields=["performers"])
 
         assert len(result.performers) == 2
         names = {p.name for p in result.performers}
@@ -987,7 +1026,7 @@ class TestPopulateFunction:
             )
         )
 
-        result = await store.populate(scene, "studio")
+        result = await store.populate(scene, fields=["studio"])
 
         assert result.studio is not None
         assert result.studio.name == "Big Studio"
@@ -1000,7 +1039,7 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1")
 
         # Should not raise, just log warning
-        result = await store.populate(scene, "nonexistent_field")
+        result = await store.populate(scene, fields=["nonexistent_field"])
 
         assert result.id == "s1"
 
@@ -1012,7 +1051,7 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1", studio=None)
 
         # Should not raise or attempt to populate None
-        result = await store.populate(scene, "studio")
+        result = await store.populate(scene, fields=["studio"])
 
         assert result.studio is None
 
@@ -1049,7 +1088,7 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1", title="My Scene Title")
 
         # Should not raise, title is neither list nor StashObject
-        result = await store.populate(scene, "title")
+        result = await store.populate(scene, fields=["title"])
 
         # Title should remain unchanged
         assert result.title == "My Scene Title"
@@ -1074,7 +1113,7 @@ class TestPopulateFunction:
             )
         )
 
-        result = await store.populate(scene, "studio")
+        result = await store.populate(scene, fields=["studio"])
 
         # Studio should remain the stub since populated_single is None
         assert result.studio is not None
@@ -1100,7 +1139,7 @@ class TestPopulateFunction:
             return_value=httpx.Response(200, json={"data": {}})
         )
 
-        result = await store.populate(scene, "studio")
+        result = await store.populate(scene, fields=["studio"])
 
         # Studio should remain unchanged (it's not a stub)
         assert result.studio is not None
@@ -1125,11 +1164,11 @@ class TestPopulateFunction:
 
         # No mock needed for get_many since stub_ids will be empty
         # But _populate_list still calls get() for each item at the end
-        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json={"data": {}})
         )
 
-        result = await store.populate(scene, "performers")
+        result = await store.populate(scene, fields=["performers"])
 
         # Performers should remain unchanged
         assert len(result.performers) == 2
@@ -1231,7 +1270,7 @@ class TestTranslateFiltersEdgeCases:
         """Test raw dict with modifier is passed through."""
         store = StashEntityStore(respx_stash_client)
 
-        graphql_filter, entity_filter = store._translate_filters(
+        _graphql_filter, entity_filter = store._translate_filters(
             "Scene",
             {"title": {"value": "test", "modifier": "NOT_EQUALS"}},
         )
@@ -1244,7 +1283,7 @@ class TestTranslateFiltersEdgeCases:
         """Test nested filters ending with _filter."""
         store = StashEntityStore(respx_stash_client)
 
-        graphql_filter, entity_filter = store._translate_filters(
+        _graphql_filter, entity_filter = store._translate_filters(
             "Scene",
             {"performers_filter": {"name": {"value": "Jane", "modifier": "EQUALS"}}},
         )
@@ -1258,7 +1297,7 @@ class TestTranslateFiltersEdgeCases:
         store = StashEntityStore(respx_stash_client)
 
         # Invalid BETWEEN (single value) returns None criterion
-        graphql_filter, entity_filter = store._translate_filters(
+        _graphql_filter, entity_filter = store._translate_filters(
             "Scene",
             {"rating100__between": "invalid"},  # Not a tuple/list
         )

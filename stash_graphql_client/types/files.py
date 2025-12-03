@@ -58,7 +58,7 @@ class BaseFile(StashObject):
 
     @model_validator(mode="before")
     @classmethod
-    def handle_deprecated_id_fields(cls, data: Any) -> Any:
+    def handle_deprecated_id_fields(cls, data: Any, info: Any) -> Any:
         """Convert deprecated ID fields to relationship objects for backward compatibility."""
         if isinstance(data, dict):
             # Handle deprecated parent_folder_id
@@ -174,7 +174,7 @@ class Folder(StashObject):
 
     @model_validator(mode="before")
     @classmethod
-    def handle_deprecated_id_fields(cls, data: Any) -> Any:
+    def handle_deprecated_id_fields(cls, data: Any, info: Any) -> Any:
         """Convert deprecated ID fields to relationship objects for backward compatibility."""
         if isinstance(data, dict):
             # Handle deprecated parent_folder_id

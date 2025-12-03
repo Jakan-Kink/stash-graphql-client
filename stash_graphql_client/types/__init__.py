@@ -242,46 +242,34 @@ from .version import LatestVersion, Version
 
 __all__: list[str] = [
     "DLNAIP",
-    # Metadata types
     "AnonymiseDatabaseInput",
-    # Scalar types
     "Any",
-    # Scene types
     "AssignSceneFileInput",
     "AutoTagMetadataInput",
     "AutoTagMetadataOptions",
     "BackupDatabaseInput",
-    # File types
     "BaseFile",
-    # New types added
     "BasicFile",
-    # Enum types
     "BlobsStorageType",
     "BoolMap",
-    # Gallery types
     "BulkGalleryUpdateInput",
-    # Group types
     "BulkGroupUpdateInput",
     "BulkImageUpdateInput",
     "BulkPerformerUpdateInput",
     "BulkSceneMarkerUpdateInput",
     "BulkSceneUpdateInput",
     "BulkStudioUpdateInput",
-    # Tag types
     "BulkTagUpdateInput",
     "BulkUpdateGroupDescriptionsInput",
     "BulkUpdateIdMode",
-    # Base types
     "BulkUpdateIds",
     "BulkUpdateStrings",
-    # Filter types
     "CircumcisionCriterionInput",
     "CircumisedEnum",
     "CleanGeneratedInput",
     "CleanMetadataInput",
     "ConfigDLNAInput",
     "ConfigDLNAResult",
-    # Config types
     "ConfigDefaultSettingsInput",
     "ConfigDefaultSettingsResult",
     "ConfigDisableDropdownCreate",
@@ -296,7 +284,6 @@ __all__: list[str] = [
     "CriterionModifier",
     "CustomFieldCriterionInput",
     "CustomFieldsInput",
-    # DLNA types
     "DLNAStatus",
     "DateCriterionInput",
     "DestroyFilterInput",
@@ -309,23 +296,18 @@ __all__: list[str] = [
     "FindFilesResultType",
     "FindFilterType",
     "FindFoldersResultType",
-    "FingerprintFilterInput",
     "FindGalleriesResultType",
     "FindGalleryChaptersResultType",
     "FindGroupsResultType",
-    # Image types
     "FindImagesResultType",
-    # Job types
     "FindJobInput",
-    # Performer types
     "FindPerformersResultType",
-    # Marker types
     "FindSceneMarkersResultType",
     "FindScenesResultType",
-    # Studio types
     "FindStudiosResultType",
     "FindTagsResultType",
     "Fingerprint",
+    "FingerprintFilterInput",
     "FloatCriterionInput",
     "Folder",
     "FolderFilterType",
@@ -388,7 +370,6 @@ __all__: list[str] = [
     "JobStatusUpdate",
     "JobStatusUpdateType",
     "LatestVersion",
-    # Log types
     "LogEntry",
     "LogLevel",
     "Map",
@@ -424,7 +405,6 @@ __all__: list[str] = [
     "ScanMetaDataFilterInput",
     "ScanMetadataInput",
     "ScanMetadataOptions",
-    # Core types
     "Scene",
     "SceneCreateInput",
     "SceneDestroyInput",

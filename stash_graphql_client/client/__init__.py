@@ -7,6 +7,7 @@ from .base import StashClientBase
 from .mixins.config import ConfigClientMixin
 from .mixins.file import FileClientMixin
 from .mixins.gallery import GalleryClientMixin
+from .mixins.group import GroupClientMixin
 from .mixins.image import ImageClientMixin
 from .mixins.marker import MarkerClientMixin
 from .mixins.metadata import MetadataClientMixin
@@ -25,6 +26,7 @@ class StashClient(
     ConfigClientMixin,
     FileClientMixin,
     GalleryClientMixin,
+    GroupClientMixin,
     ImageClientMixin,
     MarkerClientMixin,
     MetadataClientMixin,
@@ -90,6 +92,7 @@ class StashClient(
         ConfigClientMixin.__init__(self)
         FileClientMixin.__init__(self)
         GalleryClientMixin.__init__(self)
+        GroupClientMixin.__init__(self)
         ImageClientMixin.__init__(self)
         MarkerClientMixin.__init__(self)
         MetadataClientMixin.__init__(self)

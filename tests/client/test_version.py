@@ -10,9 +10,11 @@ Tests the version() and latestversion() client methods following TESTING_REQUIRE
 import json
 
 import httpx
+import pydantic
 import pytest
 import respx
 
+from stash_graphql_client.errors import StashGraphQLError, StashServerError
 from stash_graphql_client.types import LatestVersion, Version
 from tests.fixtures.stash import create_graphql_response
 
@@ -205,7 +207,7 @@ def test_version_model_validation() -> None:
     assert version_null.hash == "abcdef1234567890"
 
     # Test that hash and build_time are required
-    with pytest.raises(ValueError):  # Pydantic ValidationError
+    with pytest.raises(pydantic.ValidationError):
         Version(version="v0.26.2")  # Missing required fields
 
 
@@ -225,7 +227,7 @@ def test_latestversion_model_validation() -> None:
     assert latest.url == "https://github.com/stashapp/stash/releases/tag/v0.27.0"
 
     # Test that all fields are required (per schema)
-    with pytest.raises(ValueError):  # Pydantic ValidationError
+    with pytest.raises(pydantic.ValidationError):
         LatestVersion(
             version="v0.27.0",
             shorthash="abc123",
@@ -256,7 +258,7 @@ async def test_version_graphql_error(
 
     # Use the fixture client and call version()
     # Should raise exception when GraphQL returns errors
-    with pytest.raises(ValueError):  # Will raise KeyError or similar
+    with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
         await respx_stash_client.version()
 
     # Verify GraphQL request was attempted
@@ -286,7 +288,7 @@ async def test_latestversion_graphql_error(
 
     # Use the fixture client and call latestversion()
     # Should raise exception when GraphQL returns errors
-    with pytest.raises(ValueError):  # Will raise KeyError or similar
+    with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
         await respx_stash_client.latestversion()
 
     # Verify GraphQL request was attempted
@@ -306,7 +308,7 @@ async def test_version_http_error(
 
     # Use the fixture client and call version()
     # Should raise exception on HTTP error
-    with pytest.raises(ValueError):  # Will raise httpx.HTTPStatusError or similar
+    with pytest.raises(StashServerError):
         await respx_stash_client.version()
 
     # Verify GraphQL request was attempted
@@ -326,7 +328,7 @@ async def test_latestversion_http_error(
 
     # Use the fixture client and call latestversion()
     # Should raise exception on HTTP error
-    with pytest.raises(ValueError):  # Will raise httpx.HTTPStatusError or similar
+    with pytest.raises(StashServerError):
         await respx_stash_client.latestversion()
 
     # Verify GraphQL request was attempted

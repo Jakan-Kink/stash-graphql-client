@@ -240,36 +240,19 @@ class SubscriptionClientMixin(StashClientProtocol):
             async with asyncio.timeout(timeout):
                 async with self.subscribe_to_jobs() as subscription:
                     async for update in subscription:
-                        # Extract job_data safely
+                        # update.job is always a Job instance (Pydantic handles dict-to-model conversion)
                         job_data = update.job
                         if not job_data:
                             continue
 
                         # Check if this is the job we're waiting for
-                        job_id_from_update = (
-                            job_data.get("id")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "id", None)
-                        )
-                        if job_id_from_update != job_id:
+                        if job_data.id != job_id:
                             continue
 
-                        # Extract status and other fields
-                        job_status_value = (
-                            job_data.get("status")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "status", None)
-                        )
-                        job_progress = (
-                            job_data.get("progress", 0)
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "progress", 0)
-                        )
-                        job_description = (
-                            job_data.get("description", "")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "description", "")
-                        )
+                        # Extract status and other fields from the Job model
+                        job_status_value = job_data.status
+                        job_progress = job_data.progress or 0
+                        job_description = job_data.description
 
                         # Normalize status to JobStatus enum for reliable comparisons
                         if isinstance(job_status_value, JobStatus):

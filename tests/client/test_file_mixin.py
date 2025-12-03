@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types.files import (
     AssignSceneFileInput,
     FileSetFingerprintsInput,
@@ -501,7 +502,7 @@ async def test_delete_files_error_raises(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.delete_files(ids=["1"])
 
     assert len(graphql_route.calls) == 1

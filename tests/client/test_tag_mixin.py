@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import Tag, TagDestroyInput
 from tests.fixtures import (
     create_find_tags_result,
@@ -321,7 +322,7 @@ async def test_create_tag_already_exists_but_not_found_raises(
 
     tag = Tag(id="new", name="Ghost Tag")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_tag(tag)
 
     # Should have made 2 calls - create then find (which returned empty)
@@ -343,7 +344,7 @@ async def test_create_tag_error_raises(respx_stash_client: StashClient) -> None:
 
     tag = Tag(id="new", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_tag(tag)
 
     assert len(graphql_route.calls) == 1
@@ -400,7 +401,7 @@ async def test_tags_merge_error_raises(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.tags_merge(source=["tag1"], destination="dest")
 
     assert len(graphql_route.calls) == 1
@@ -497,7 +498,7 @@ async def test_bulk_tag_update_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.bulk_tag_update(ids=["t1", "t2"])
 
     assert len(graphql_route.calls) == 1
@@ -557,7 +558,7 @@ async def test_update_tag_error_raises(respx_stash_client: StashClient) -> None:
 
     tag = Tag(id="123", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.update_tag(tag)
 
     assert len(graphql_route.calls) == 1
@@ -624,7 +625,7 @@ async def test_tag_destroy_error_raises(respx_stash_client: StashClient) -> None
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.tag_destroy({"id": "123"})
 
     assert len(graphql_route.calls) == 1
@@ -668,7 +669,7 @@ async def test_tags_destroy_error_raises(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.tags_destroy(["123", "456"])
 
     assert len(graphql_route.calls) == 1

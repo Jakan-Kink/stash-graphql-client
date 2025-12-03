@@ -145,7 +145,7 @@ class Image(StashObject):
 
     @model_validator(mode="before")
     @classmethod
-    def convert_files_to_visual_files(cls, data: Any) -> Any:
+    def convert_files_to_visual_files(cls, data: Any, info: Any) -> Any:
         """Convert file data to proper VisualFile types.
 
         Handles two cases:

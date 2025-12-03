@@ -14,6 +14,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     MigrateBlobsInput,
     MigrateInput,
@@ -79,7 +80,7 @@ async def test_migrate_error_raises(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.migrate({"backupPath": "/path/to/backup"})
 
 
@@ -120,7 +121,7 @@ async def test_migrate_hash_naming_error_raises(
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.migrate_hash_naming()
 
 
@@ -193,7 +194,7 @@ async def test_migrate_scene_screenshots_error_raises(
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.migrate_scene_screenshots({"deleteFiles": False})
 
 
@@ -254,5 +255,5 @@ async def test_migrate_blobs_error_raises(respx_stash_client: StashClient) -> No
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.migrate_blobs({"deleteOld": True})

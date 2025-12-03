@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkStudioUpdateInput,
     BulkUpdateIds,
@@ -250,7 +251,7 @@ async def test_create_studio_error_raises(respx_stash_client: StashClient) -> No
 
     studio = Studio(id="new", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_studio(studio)
 
     assert len(graphql_route.calls) == 1
@@ -310,7 +311,7 @@ async def test_update_studio_error_raises(respx_stash_client: StashClient) -> No
 
     studio = Studio(id="123", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.update_studio(studio)
 
     assert len(graphql_route.calls) == 1
@@ -377,7 +378,7 @@ async def test_studio_destroy_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.studio_destroy({"id": "123"})
 
     assert len(graphql_route.calls) == 1
@@ -421,7 +422,7 @@ async def test_studios_destroy_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.studios_destroy(["123", "456"])
 
     assert len(graphql_route.calls) == 1
@@ -531,7 +532,7 @@ async def test_bulk_studio_update_error_raises(respx_stash_client: StashClient) 
         rating100=80,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.bulk_studio_update(input_data)
 
     assert len(graphql_route.calls) == 1

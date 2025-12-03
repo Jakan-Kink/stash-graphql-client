@@ -173,7 +173,7 @@ class TestStashCleanupWarning:
 
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            warnings.warn("Test cleanup issue", StashCleanupWarning)
+            warnings.warn("Test cleanup issue", StashCleanupWarning, stacklevel=2)
 
             assert len(caught) == 1
             assert issubclass(caught[0].category, StashCleanupWarning)

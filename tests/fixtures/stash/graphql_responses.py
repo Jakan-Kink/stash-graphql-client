@@ -765,6 +765,7 @@ def create_find_folders_result(
 
 def create_config_general_result(
     database_path: str = "/root/.stash/stash-go.sqlite",
+    parallel_tasks: int = 1,
     generated_path: str = "/root/.stash/generated",
     metadata_path: str = "/root/.stash/metadata",
     cache_path: str = "/root/.stash/cache",
@@ -777,8 +778,12 @@ def create_config_general_result(
 ) -> dict[str, Any]:
     """Create a ConfigGeneralResult dict.
 
+    Note: Returns camelCase keys to match GraphQL response format.
+    Pydantic Field(alias=) converts these to snake_case Python attributes.
+
     Args:
         database_path: Path to database file
+        parallel_tasks: Number of parallel tasks
         generated_path: Path to generated files
         metadata_path: Path to metadata
         cache_path: Path to cache
@@ -790,11 +795,11 @@ def create_config_general_result(
         **kwargs: Additional config fields
 
     Returns:
-        Dict matching ConfigGeneralResult type
+        Dict matching ConfigGeneralResult type with camelCase keys
     """
     base = {
-        "database_path": database_path,
-        "parallel_tasks": 1,
+        "databasePath": database_path,
+        "parallelTasks": parallel_tasks,
     }
     base.update(kwargs)
     return base
@@ -808,6 +813,9 @@ def create_config_interface_result(
 ) -> dict[str, Any]:
     """Create a ConfigInterfaceResult dict.
 
+    Note: Returns camelCase keys to match GraphQL response format.
+    Pydantic Field(alias=) converts these to snake_case Python attributes.
+
     Args:
         language: Interface language
         css_enabled: Whether custom CSS is enabled
@@ -815,29 +823,29 @@ def create_config_interface_result(
         **kwargs: Additional interface config fields
 
     Returns:
-        Dict matching ConfigInterfaceResult type
+        Dict matching ConfigInterfaceResult type with camelCase keys
     """
     base = {
-        "menu_items": None,
-        "sound_on_preview": True,
-        "wall_show_title": True,
-        "wall_playback": "video",
-        "show_scrubber": True,
-        "maximum_loop_duration": 0,
-        "no_browser": False,
-        "notifications_enabled": True,
-        "autostart_video": False,
-        "autostart_video_on_play_selected": True,
-        "continue_playlist_default": False,
-        "show_studio_as_text": False,
+        "menuItems": None,
+        "soundOnPreview": True,
+        "wallShowTitle": True,
+        "wallPlayback": "video",
+        "showScrubber": True,
+        "maximumLoopDuration": 0,
+        "noBrowser": False,
+        "notificationsEnabled": True,
+        "autostartVideo": False,
+        "autostartVideoOnPlaySelected": True,
+        "continuePlaylistDefault": False,
+        "showStudioAsText": False,
         "css": None,
-        "css_enabled": css_enabled,
+        "cssEnabled": css_enabled,
         "javascript": None,
-        "javascript_enabled": javascript_enabled,
-        "custom_locales": None,
-        "custom_locales_enabled": False,
+        "javascriptEnabled": javascript_enabled,
+        "customLocales": None,
+        "customLocalesEnabled": False,
         "language": language,
-        "image_lightbox": {
+        "imageLightbox": {
             "slideshowDelay": 5000,
             "displayMode": "FIT_XY",
             "scaleUp": False,
@@ -845,15 +853,15 @@ def create_config_interface_result(
             "scrollMode": "ZOOM",
             "scrollAttemptsBeforeChange": 3,
         },
-        "disable_dropdown_create": {
+        "disableDropdownCreate": {
             "performer": False,
             "tag": False,
             "studio": False,
             "movie": False,
         },
-        "handy_key": None,
-        "funscript_offset": None,
-        "use_stash_hosted_funscript": False,
+        "handyKey": None,
+        "funscriptOffset": None,
+        "useStashHostedFunscript": False,
     }
     base.update(kwargs)
     return base
@@ -869,6 +877,9 @@ def create_config_dlna_result(
 ) -> dict[str, Any]:
     """Create a ConfigDLNAResult dict.
 
+    Note: Returns camelCase keys to match GraphQL response format.
+    Pydantic Field(alias=) converts these to snake_case Python attributes.
+
     Args:
         enabled: Whether DLNA is enabled
         server_name: DLNA server name
@@ -878,15 +889,15 @@ def create_config_dlna_result(
         video_sort_order: Video sort order
 
     Returns:
-        Dict matching ConfigDLNAResult type
+        Dict matching ConfigDLNAResult type with camelCase keys
     """
     return {
         "enabled": enabled,
-        "server_name": server_name,
+        "serverName": server_name,
         "port": port,
-        "whitelisted_ips": whitelisted_ips or [],
+        "whitelistedIPs": whitelisted_ips or [],
         "interfaces": interfaces or [],
-        "video_sort_order": video_sort_order,
+        "videoSortOrder": video_sort_order,
     }
 
 

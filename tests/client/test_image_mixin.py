@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from tests.fixtures import (
     create_find_images_result,
     create_graphql_response,
@@ -558,7 +559,7 @@ async def test_create_image_error(respx_stash_client: StashClient, mock_image) -
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to create image"):
+    with pytest.raises(StashGraphQLError, match="Failed to create image"):
         await respx_stash_client.create_image(mock_image)
 
     assert len(graphql_route.calls) == 1
@@ -576,7 +577,7 @@ async def test_update_image_error(respx_stash_client: StashClient, mock_image) -
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to update image"):
+    with pytest.raises(StashGraphQLError, match="Failed to update image"):
         await respx_stash_client.update_image(mock_image)
 
     assert len(graphql_route.calls) == 1
@@ -594,7 +595,7 @@ async def test_image_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete image"):
+    with pytest.raises(StashGraphQLError, match="Failed to delete image"):
         await respx_stash_client.image_destroy({"id": "123"})
 
     assert len(graphql_route.calls) == 1
@@ -612,7 +613,7 @@ async def test_images_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete images"):
+    with pytest.raises(StashGraphQLError, match="Failed to delete images"):
         await respx_stash_client.images_destroy({"ids": ["123", "456"]})
 
     assert len(graphql_route.calls) == 1
@@ -636,7 +637,7 @@ async def test_bulk_image_update_error(respx_stash_client: StashClient) -> None:
         ids=["1", "2"], tag_ids=BulkUpdateIds(ids=["tag1"], mode="ADD")
     )
 
-    with pytest.raises(Exception, match="Failed to bulk update images"):
+    with pytest.raises(StashGraphQLError, match="Failed to bulk update images"):
         await respx_stash_client.bulk_image_update(input_data)
 
     assert len(graphql_route.calls) == 1

@@ -59,7 +59,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, CleanMetadataInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -124,7 +124,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, CleanGeneratedInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -176,7 +176,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ExportObjectsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -226,7 +226,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ImportObjectsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -270,7 +270,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, BackupDatabaseInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -314,7 +314,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, AnonymiseDatabaseInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -357,7 +357,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, MigrateInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -430,7 +430,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, MigrateSceneScreenshotsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -473,7 +473,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, MigrateBlobsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 

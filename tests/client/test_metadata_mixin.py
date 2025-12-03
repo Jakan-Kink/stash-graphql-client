@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     AnonymiseDatabaseInput,
     BackupDatabaseInput,
@@ -86,7 +87,7 @@ async def test_metadata_clean_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.metadata_clean({"paths": [], "dryRun": False})
 
 
@@ -160,7 +161,7 @@ async def test_metadata_clean_generated_error_raises(
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.metadata_clean_generated({"dryRun": False})
 
 
@@ -225,7 +226,7 @@ async def test_export_objects_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.export_objects({"scenes": {"all": True}})
 
 
@@ -298,7 +299,7 @@ async def test_import_objects_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.import_objects(
             {
                 "file": "/path/to/file",
@@ -368,7 +369,7 @@ async def test_backup_database_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.backup_database({"download": True})
 
 
@@ -432,5 +433,5 @@ async def test_anonymise_database_error_raises(respx_stash_client: StashClient) 
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.anonymise_database({"download": True})

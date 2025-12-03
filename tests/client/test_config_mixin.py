@@ -15,6 +15,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     ConfigDefaultSettingsInput,
     ConfigDLNAInput,
@@ -62,9 +63,10 @@ async def test_configure_general_with_dict(respx_stash_client: StashClient) -> N
 @pytest.mark.unit
 async def test_configure_general_with_model(respx_stash_client: StashClient) -> None:
     """Test configuring general settings with ConfigGeneralInput model."""
-    config_data = create_config_general_result(
-        ffmpeg_path="/custom/ffmpeg", ffprobe_path="/custom/ffprobe"
-    )
+    config_data = create_config_general_result()
+    # Add camelCase keys for fields beyond required minimum
+    config_data["ffmpegPath"] = "/custom/ffmpeg"
+    config_data["ffprobePath"] = "/custom/ffprobe"
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
@@ -94,7 +96,7 @@ async def test_configure_general_error_raises(respx_stash_client: StashClient) -
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_general({"parallelTasks": 4})
 
 
@@ -161,7 +163,7 @@ async def test_configure_interface_error_raises(
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_interface({"language": "en-US"})
 
 
@@ -229,7 +231,7 @@ async def test_configure_dlna_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_dlna({"enabled": False})
 
 
@@ -256,8 +258,8 @@ async def test_configure_defaults_with_dict(respx_stash_client: StashClient) -> 
     )
 
     assert result is not None
-    assert result.deleteFile is True
-    assert result.deleteGenerated is True
+    assert result.delete_file is True
+    assert result.delete_generated is True
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "configureDefaults" in req["query"]
@@ -282,8 +284,8 @@ async def test_configure_defaults_with_model(respx_stash_client: StashClient) ->
     result = await respx_stash_client.configure_defaults(input_data)
 
     assert result is not None
-    assert result.deleteFile is False
-    assert result.deleteGenerated is False
+    assert result.delete_file is False
+    assert result.delete_generated is False
     assert len(graphql_route.calls) == 1
 
 
@@ -297,7 +299,7 @@ async def test_configure_defaults_error_raises(respx_stash_client: StashClient) 
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_defaults({"deleteFile": True})
 
 
@@ -358,7 +360,7 @@ async def test_configure_ui_error_raises(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_ui(input_data={"theme": "dark"})
 
 
@@ -446,7 +448,7 @@ async def test_configure_ui_setting_error_raises(
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.configure_ui_setting("theme", "dark")
 
 
@@ -525,5 +527,5 @@ async def test_generate_api_key_error_raises(respx_stash_client: StashClient) ->
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.generate_api_key({})

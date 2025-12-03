@@ -55,7 +55,7 @@ class ConfigClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ConfigGeneralInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -104,7 +104,7 @@ class ConfigClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ConfigInterfaceInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -156,7 +156,7 @@ class ConfigClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ConfigDLNAInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -204,7 +204,7 @@ class ConfigClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, ConfigDefaultSettingsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 
@@ -323,7 +323,7 @@ class ConfigClientMixin(StashClientProtocol):
         """
         try:
             if isinstance(input_data, GenerateAPIKeyInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.model_dump(by_alias=True, exclude_none=True)
             else:
                 input_dict = input_data
 

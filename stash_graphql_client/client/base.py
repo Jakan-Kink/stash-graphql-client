@@ -273,19 +273,33 @@ class StashClientBase:
             raise RuntimeError("URL not initialized")
 
     def _handle_gql_error(self, e: Exception) -> None:
-        """Handle gql errors with appropriate error messages."""
+        """Handle gql errors with appropriate error messages.
+
+        Raises:
+            StashGraphQLError: For GraphQL query/validation errors
+            StashServerError: For server-side errors (500, 503, etc.)
+            StashConnectionError: For network/connection errors
+            StashError: For unexpected errors
+        """
+        from ..errors import (
+            StashConnectionError,
+            StashError,
+            StashGraphQLError,
+            StashServerError,
+        )
+
         if isinstance(e, TransportQueryError):
             # GraphQL query error (e.g. validation error)
-            raise ValueError(f"GraphQL query error: {e.errors}")
+            raise StashGraphQLError(f"GraphQL query error: {e.errors}")
         if isinstance(e, TransportServerError):
             # Server error (e.g. 500)
-            raise ValueError(f"GraphQL server error: {e}")
+            raise StashServerError(f"GraphQL server error: {e}")
         if isinstance(e, TransportError):
             # Network/connection error
-            raise ValueError(f"Failed to connect to {self.url}: {e}")
+            raise StashConnectionError(f"Failed to connect to {self.url}: {e}")
         if isinstance(e, asyncio.TimeoutError):
-            raise ValueError(f"Request to {self.url} timed out")
-        raise ValueError(f"Unexpected error during request ({type(e).__name__}): {e}")
+            raise StashConnectionError(f"Request to {self.url} timed out")
+        raise StashError(f"Unexpected error during request ({type(e).__name__}): {e}")
 
     async def execute(
         self,

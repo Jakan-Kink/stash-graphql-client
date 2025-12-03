@@ -15,10 +15,12 @@ which are managed by Stash but returned in API responses.
 from __future__ import annotations
 
 import inspect
+import types
+import typing
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from stash_graphql_client.logging import client_logger as log
 
@@ -108,6 +110,211 @@ class StashObject(BaseModel):
     # (e.g., when creating a new object before it's saved)
     created_at: datetime | None = None  # Time!
     updated_at: datetime | None = None  # Time!
+
+    @model_validator(mode="before")
+    @classmethod
+    def handle_stub_data(cls, data: Any, info: Any) -> Any:
+        """Track received fields, handle stubs, and extract/cache nested objects.
+
+        This validator does three things:
+        1. **Field Tracking**: Records which fields were actually received from GraphQL
+           in `_received_fields`. This enables `store.populate()` to know which fields
+           are genuinely missing vs intentionally None.
+
+        2. **Stub Handling**: When GraphQL returns nested objects as stubs (e.g., {id: "123"}),
+           provides default values for required fields to allow construction.
+
+        3. **Nested Object Extraction**: When store context is provided, extracts nested
+           StashObject dicts, creates/caches them, and uses the cached reference (identity map).
+
+        After construction, objects will have:
+        - _received_fields: set[str] of field names that were in the original dict
+        - _is_stub: True if the object is a stub (only id, missing required fields)
+        - name: Empty string "" for stubs if 'name' is a required field
+
+        Examples:
+            # Full object from GraphQL
+            data = {"id": "1", "name": "Test", "urls": ["..."]}
+            # -> _received_fields = {"id", "name", "urls"}
+            # -> _is_stub = False
+
+            # Stub from nested GraphQL response
+            data = {"id": "5"}
+            # -> _received_fields = {"id"}
+            # -> _is_stub = True
+            # -> name = "" (if required)
+
+            # Nested object with store context (identity map)
+            data = {"id": "scene1", "studio": {"id": "st1", "name": "Test"}}
+            # -> Studio is extracted, cached, and scene.studio points to cached ref
+
+        The store can then use `_received_fields` to determine what to fetch:
+            received = getattr(obj, "_received_fields", set())
+            missing = {"urls", "details"} - received  # Fields to fetch
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Always copy to avoid mutating original
+        data = dict(data)
+
+        # Track which fields were received from GraphQL
+        # This is the key to field-aware population!
+        data["_received_fields"] = set(data.keys())
+
+        # Get store from validation context (for identity map pattern)
+        store = None
+        if info and hasattr(info, "context") and info.context:
+            store = info.context.get("store")
+            print(f"DEBUG: {cls.__name__} got store={store is not None}")
+        else:
+            print(
+                f"DEBUG: {cls.__name__} NO context - info.context={getattr(info, 'context', 'NO_ATTR')}"
+            )
+
+        # Process nested StashObjects (extract, cache, use identity map)
+        if store is not None:
+            print(f"DEBUG: {cls.__name__} calling _process_nested_objects")
+            data = cls._process_nested_objects(data, store)
+
+        # Only apply stub defaults if 'id' is present
+        if "id" not in data:
+            return data
+
+        # Check if this class has 'name' as a required field without a default
+        if "name" in cls.model_fields:
+            field_info = cls.model_fields["name"]
+            # Field is required if is_required() returns True
+            if field_info.is_required() and "name" not in data:
+                # Provide empty string as stub default for name
+                data["name"] = ""
+                # Mark as stub in extras for definitive detection
+                data["_is_stub"] = True
+
+        return data
+
+    @classmethod
+    def _process_nested_objects(
+        cls, data: dict[str, Any], store: Any
+    ) -> dict[str, Any]:
+        """Process nested StashObject fields for identity map caching.
+
+        For each field that is a StashObject type:
+        - If value is a dict with 'id', check cache first
+        - If cached, use cached reference (identity map)
+        - If not cached, create new object with store context, cache it
+
+        Args:
+            data: The dict being validated
+            store: StashEntityStore instance for caching
+
+        Returns:
+            Modified data dict with nested objects replaced by cached references
+        """
+        for field_name, field_info in cls.model_fields.items():
+            if field_name not in data:
+                continue
+
+            value = data[field_name]
+            if value is None:
+                continue
+
+            # Get the actual field type annotation
+            field_type = field_info.annotation
+            if field_type is None:
+                continue
+
+            # Handle Optional[X] -> extract X
+            origin = typing.get_origin(field_type)
+            args = typing.get_args(field_type)
+
+            if origin is type(None):
+                continue
+
+            # Handle Union types (e.g., X | None or Optional[X])
+            # Note: Python 3.10+ X | None creates types.UnionType, not typing.Union
+            if origin is typing.Union or isinstance(field_type, types.UnionType):
+                # Find the non-None type
+                non_none_types = [t for t in args if t is not type(None)]
+                if len(non_none_types) == 1:
+                    field_type = non_none_types[0]
+                    origin = typing.get_origin(field_type)
+                    args = typing.get_args(field_type)
+
+            # Handle list[StashObject]
+            if origin is list and args:
+                item_type = args[0]
+                # Check if it's a list of StashObjects
+                if isinstance(value, list) and cls._is_stash_object_type(item_type):
+                    processed_list = []
+                    for item in value:
+                        if isinstance(item, dict) and "id" in item:
+                            processed_item = cls._get_or_create_cached(
+                                item_type, item, store
+                            )
+                            processed_list.append(processed_item)
+                        else:
+                            processed_list.append(item)
+                    data[field_name] = processed_list
+
+            # Handle single StashObject
+            elif cls._is_stash_object_type(field_type):
+                if isinstance(value, dict) and "id" in value:
+                    data[field_name] = cls._get_or_create_cached(
+                        field_type, value, store
+                    )
+
+        return data
+
+    @classmethod
+    def _is_stash_object_type(cls, type_hint: Any) -> bool:
+        """Check if a type hint is a StashObject subclass."""
+        try:
+            return isinstance(type_hint, type) and issubclass(type_hint, StashObject)
+        except TypeError:
+            return False
+
+    @classmethod
+    def _get_or_create_cached(
+        cls, entity_type: type[T], data: dict[str, Any], store: Any
+    ) -> T:
+        """Get entity from cache or create and cache it.
+
+        Implements the identity map pattern: if an entity with this ID
+        is already cached, return the cached instance. Otherwise create
+        a new instance, cache it, and return it.
+
+        Args:
+            entity_type: The StashObject subclass to create
+            data: Dict data for the entity
+            store: StashEntityStore instance
+
+        Returns:
+            Cached or newly created entity instance
+        """
+        entity_id = data.get("id")
+        if not entity_id:
+            # No ID, can't cache - just create normally
+            return entity_type.model_validate(data, context={"store": store})
+
+        type_name = entity_type.__type_name__
+        cache_key = (type_name, entity_id)
+
+        # Check if already cached (identity map lookup)
+        if cache_key in store._cache:
+            entry = store._cache[cache_key]
+            if not entry.is_expired():
+                log.debug(f"Identity map hit: {type_name} {entity_id}")
+                return entry.entity
+
+        # Not cached - create new instance WITH store context (recursive)
+        log.debug(f"Identity map miss: creating {type_name} {entity_id}")
+        entity = entity_type.model_validate(data, context={"store": store})
+
+        # Cache the new entity
+        store._cache_entity(entity)
+
+        return entity
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize object with kwargs.
@@ -204,12 +411,15 @@ class StashObject(BaseModel):
         cls: type[T],
         client: StashClient,
         id: str,
+        store: Any | None = None,
     ) -> T | None:
         """Find object by ID.
 
         Args:
             client: StashClient instance
             id: Object ID
+            store: Optional StashEntityStore for identity map caching of nested objects.
+                   When provided, nested StashObjects are extracted and cached.
 
         Returns:
             Object instance if found, None otherwise
@@ -244,7 +454,12 @@ class StashObject(BaseModel):
         try:
             result = await client.execute(query, {"id": id})
             data = result[f"find{cls.__type_name__}"]
-            return cls(**data) if data else None
+            if not data:
+                return None
+            # Use model_validate with store context for nested object extraction
+            if store is not None:
+                return cls.model_validate(data, context={"store": store})
+            return cls(**data)
         except Exception:
             return None
 

@@ -36,7 +36,7 @@ async def test_performer_fragment_includes_weight(
 ) -> None:
     """Test that performer fragment includes weight field."""
     performer_data = create_performer_dict(id="1", name="Test Performer", weight=150)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -62,7 +62,7 @@ async def test_performer_fragment_includes_rating100(
 ) -> None:
     """Test that performer fragment includes rating100 field."""
     performer_data = create_performer_dict(id="1", name="Test Performer", rating100=85)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -90,7 +90,7 @@ async def test_performer_fragment_includes_death_date(
     performer_data = create_performer_dict(
         id="1", name="Test Performer", death_date="2020-01-15"
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -116,7 +116,7 @@ async def test_performer_fragment_includes_favorite(
 ) -> None:
     """Test that performer fragment includes favorite field."""
     performer_data = create_performer_dict(id="1", name="Test Performer", favorite=True)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -144,7 +144,7 @@ async def test_performer_fragment_includes_ignore_auto_tag(
     performer_data = create_performer_dict(
         id="1", name="Test Performer", ignore_auto_tag=True
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -170,7 +170,7 @@ async def test_performer_fragment_includes_height_cm(
 ) -> None:
     """Test that performer fragment includes height_cm field."""
     performer_data = create_performer_dict(id="1", name="Test Performer", height_cm=175)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -198,7 +198,7 @@ async def test_performer_fragment_includes_career_length(
     performer_data = create_performer_dict(
         id="1", name="Test Performer", career_length="2010-2020"
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -237,7 +237,7 @@ async def test_studio_fragment_includes_child_studios(
     studio_data = create_studio_dict(
         id="1", name="Parent Studio", child_studios=[child_studio_stub]
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -275,7 +275,7 @@ async def test_studio_fragment_includes_stash_ids(
             }
         ],
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -302,7 +302,7 @@ async def test_studio_fragment_includes_rating100(
 ) -> None:
     """Test that studio fragment includes rating100 field."""
     studio_data = create_studio_dict(id="1", name="Test Studio", rating100=90)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -328,7 +328,7 @@ async def test_studio_fragment_includes_favorite(
 ) -> None:
     """Test that studio fragment includes favorite field."""
     studio_data = create_studio_dict(id="1", name="Test Studio", favorite=True)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -354,7 +354,7 @@ async def test_studio_fragment_includes_ignore_auto_tag(
 ) -> None:
     """Test that studio fragment includes ignore_auto_tag field."""
     studio_data = create_studio_dict(id="1", name="Test Studio", ignore_auto_tag=True)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -385,7 +385,7 @@ async def test_tag_fragment_includes_sort_name(
 ) -> None:
     """Test that tag fragment includes sort_name field."""
     tag_data = create_tag_dict(id="1", name="The Tag", sort_name="Tag, The")
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -411,7 +411,7 @@ async def test_tag_fragment_includes_favorite(
 ) -> None:
     """Test that tag fragment includes favorite field."""
     tag_data = create_tag_dict(id="1", name="Test Tag", favorite=True)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -437,7 +437,7 @@ async def test_tag_fragment_includes_ignore_auto_tag(
 ) -> None:
     """Test that tag fragment includes ignore_auto_tag field."""
     tag_data = create_tag_dict(id="1", name="Test Tag", ignore_auto_tag=True)
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -470,7 +470,7 @@ async def test_marker_fragment_includes_end_seconds(
     marker_data = create_marker_dict(
         id="1", title="Test Marker", seconds=10.5, end_seconds=25.0
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -494,7 +494,7 @@ async def test_marker_fragment_includes_stream(
     marker_data = create_marker_dict(
         id="1", title="Test Marker", stream="/scene/1/marker/1/stream"
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -518,7 +518,7 @@ async def test_marker_fragment_includes_preview(
     marker_data = create_marker_dict(
         id="1", title="Test Marker", preview="/scene/1/marker/1/preview.jpg"
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -542,7 +542,7 @@ async def test_marker_fragment_includes_screenshot(
     marker_data = create_marker_dict(
         id="1", title="Test Marker", screenshot="/scene/1/marker/1/screenshot.jpg"
     )
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,

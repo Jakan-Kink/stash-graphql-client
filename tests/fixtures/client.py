@@ -212,6 +212,7 @@ async def stash_cleanup_tracker():
             "tags": [],
             "galleries": [],
             "markers": [],
+            "groups": [],
         }
         capture_mode = "with auto-capture" if auto_capture else "manual tracking"
         print(f"\n{'=' * 60}")
@@ -278,6 +279,12 @@ async def stash_cleanup_tracker():
                         and marker_id not in created_objects["markers"]
                     ):
                         created_objects["markers"].append(marker_id)
+                elif "groupCreate" in result and (
+                    (obj_data := result["groupCreate"])
+                    and (group_id := obj_data.get("id"))
+                    and group_id not in created_objects["groups"]
+                ):
+                    created_objects["groups"].append(group_id)
 
                 return result
 
@@ -362,6 +369,20 @@ async def stash_cleanup_tracker():
                         )
                     except Exception as e:
                         errors.append(f"Scene {scene_id}: {e}")
+
+                # Delete groups (they reference studios/tags)
+                for group_id in created_objects["groups"]:
+                    try:
+                        await client.execute(
+                            """
+                            mutation DeleteGroup($id: ID!) {
+                                groupDestroy(input: { id: $id })
+                            }
+                            """,
+                            {"id": group_id},
+                        )
+                    except Exception as e:
+                        errors.append(f"Group {group_id}: {e}")
 
                 # Delete performers
                 for performer_id in created_objects["performers"]:

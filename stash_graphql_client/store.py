@@ -1,6 +1,6 @@
 """Entity store with read-through caching for Stash entities.
 
-This module provides an in-memory identity map with caching, lazy loading,
+This module provides an in-memory identity map with caching, selective field loading,
 and query capabilities for Stash GraphQL entities.
 """
 
@@ -60,9 +60,13 @@ class CacheStats:
 class StashEntityStore:
     """In-memory identity map with read-through caching for Stash entities.
 
-    Provides caching, lazy loading, and query capabilities for Stash GraphQL
-    entities. All fetched entities are cached, and subsequent requests for
+    Provides caching, selective field loading, and query capabilities for Stash
+    GraphQL entities. All fetched entities are cached, and subsequent requests for
     the same entity return the cached version (if not expired).
+
+    All entities can be treated as "stubs" that may have incomplete data. Use
+    populate() to selectively load additional fields as needed, avoiding expensive
+    queries for data you don't need.
 
     Example:
         ```python
@@ -72,8 +76,27 @@ class StashEntityStore:
             # Get by ID (cache miss -> fetch, then cached)
             performer = await store.get(Performer, "123")
 
+            # Selectively load expensive fields only when needed
+            # Uses _received_fields to determine what's actually missing
+            performer = await store.populate(performer, fields=["scenes", "images"])
+
             # Search (always queries GraphQL, caches results)
             scenes = await store.find(Scene, title__contains="interview")
+
+            # Populate relationships on search results
+            for scene in scenes:
+                scene = await store.populate(scene, fields=["performers", "studio", "tags"])
+
+            # Populate nested objects directly (identity map pattern)
+            scene.studio = await store.populate(scene.studio, fields=["urls", "details"])
+
+            # Check what's missing before fetching
+            missing = store.missing_fields(scene.studio, "urls", "details")
+            if missing:
+                scene.studio = await store.populate(scene.studio, fields=list(missing))
+
+            # Force refresh from server (invalidates cache first)
+            scene = await store.populate(scene, fields=["studio"], force_refetch=True)
 
             # Large result sets: lazy pagination
             async for scene in store.find_iter(Scene, path__contains="/media/"):
@@ -111,18 +134,30 @@ class StashEntityStore:
 
     # ─── Read-through by ID ───────────────────────────────────
 
-    async def get(self, entity_type: type[T], entity_id: str) -> T | None:
+    async def get(
+        self, entity_type: type[T], entity_id: str, fields: list[str] | None = None
+    ) -> T | None:
         """Get entity by ID. Checks cache first, fetches if missing/expired.
 
         Args:
             entity_type: The Stash entity type (e.g., Performer, Scene)
             entity_id: Entity ID
+            fields: Optional list of additional fields to fetch beyond base fragment.
+                   If provided, bypasses cache and fetches directly with specified fields.
 
         Returns:
             Entity if found, None otherwise
         """
         type_name = entity_type.__type_name__
         cache_key = (type_name, entity_id)
+
+        # If specific fields requested, bypass cache and fetch directly
+        if fields is not None:
+            log.debug(f"Fetching {type_name} {entity_id} with fields: {fields}")
+            entity = await self._fetch_with_fields(entity_type, entity_id, fields)
+            if entity is not None:
+                self._cache_entity(entity)
+            return entity
 
         # Check cache
         if cache_key in self._cache:
@@ -133,9 +168,9 @@ class StashEntityStore:
             log.debug(f"Cache expired: {type_name} {entity_id}")
             del self._cache[cache_key]
 
-        # Cache miss - fetch from GraphQL
+        # Cache miss - fetch from GraphQL with store context
         log.debug(f"Cache miss: {type_name} {entity_id}")
-        entity = await entity_type.find_by_id(self._client, entity_id)
+        entity = await entity_type.find_by_id(self._client, entity_id, store=self)
 
         if entity is not None:
             self._cache_entity(entity)
@@ -329,29 +364,93 @@ class StashEntityStore:
         """
         return self.filter(entity_type, lambda _: True)
 
-    # ─── Stub population ──────────────────────────────────────
+    # ─── Field-aware population ─────────────────────────────────
 
-    async def populate(self, obj: T, *fields: str) -> T:
-        """Populate stub relationships with full objects from cache/GraphQL.
+    async def populate(
+        self,
+        obj: T,
+        fields: list[str] | set[str] | None = None,
+        force_refetch: bool = False,
+    ) -> T:
+        """Populate specific fields on an entity using field-aware fetching.
 
-        When GraphQL returns nested objects as stubs (e.g., {id: "1"}), this
-        method fetches the full objects and replaces the stubs.
+        This method uses `_received_fields` tracking to determine which fields are
+        genuinely missing and need to be fetched. All entities are treated as potentially
+        incomplete.
 
         Args:
-            obj: Entity with stub relationships
-            *fields: Field names to populate (e.g., "performers", "studio", "tags")
+            obj: Entity to populate. Can be any StashObject, including nested objects
+                 like scene.studio or scene.performers[0].
+            fields: Fields to populate. If None and force_refetch=False, uses heuristics
+                   to determine if object needs more data.
+            force_refetch: If True, invalidates cache and re-fetches the specified fields
+                          from the server, regardless of whether they're in _received_fields.
 
         Returns:
-            The same entity with populated relationships
+            The populated entity (may be a different instance if refetched from cache).
 
-        Example:
-            scene = await store.get(Scene, "1")
-            scene = await store.populate(scene, "performers", "studio", "tags")
-            # scene.performers now contains full Performer objects
+        Examples:
+            # Populate specific fields on a scene
+            scene = await store.populate(scene, fields=["studio", "performers"])
+
+            # Populate nested object directly (identity map pattern)
+            scene.studio = await store.populate(scene.studio, fields=["urls", "details"])
+
+            # Force refresh from server (invalidates cache first)
+            scene = await store.populate(scene, fields=["studio"], force_refetch=True)
+
+            # Populate performer from a list
+            performer = await store.populate(
+                scene.performers[0], fields=["scenes", "images"]
+            )
+
+            # Check what's missing before populating
+            missing = store.missing_fields(scene.studio, "urls", "details", "aliases")
+            if missing:
+                scene.studio = await store.populate(scene.studio, fields=list(missing))
         """
-        for field_name in fields:
+        # Normalize fields to a set
+        if fields is None:
+            fields_set: set[str] = set()
+        elif isinstance(fields, list):
+            fields_set = set(fields)
+        else:
+            fields_set = fields
+
+        # Get currently received fields
+        received = getattr(obj, "_received_fields", set())
+
+        # Determine which fields genuinely need fetching
+        if force_refetch:
+            # Force refetch all requested fields - invalidate cache first
+            fields_to_fetch = list(fields_set) if fields_set else []
+            if fields_to_fetch:
+                self.invalidate(type(obj), obj.id)
+        else:
+            # Only fetch fields not already in _received_fields
+            fields_to_fetch = [f for f in fields_set if f not in received]
+
+            # Validate that the fields exist on the model
+            for field_name in list(fields_to_fetch):
+                if not hasattr(obj, field_name):
+                    log.warning(f"{obj.__type_name__} has no field '{field_name}'")
+                    fields_to_fetch.remove(field_name)
+
+        # If we have fields to fetch, get fresh data with those fields
+        if fields_to_fetch:
+            log.debug(
+                f"Populating {obj.__type_name__} {obj.id} with fields: {fields_to_fetch}"
+            )
+            fresh_obj = await self.get(type(obj), obj.id, fields=fields_to_fetch)
+            if fresh_obj is not None:
+                # Merge received fields: keep old + add new
+                new_received = received | getattr(fresh_obj, "_received_fields", set())
+                object.__setattr__(fresh_obj, "_received_fields", new_received)
+                obj = fresh_obj  # type: ignore[assignment]
+
+        # Now populate any nested StashObject relationships
+        for field_name in fields_set:
             if not hasattr(obj, field_name):
-                log.warning(f"{obj.__type_name__} has no field '{field_name}'")
                 continue
 
             value = getattr(obj, field_name)
@@ -360,62 +459,120 @@ class StashEntityStore:
                 continue
 
             if isinstance(value, list):
-                # List of stubs -> list of full objects
-                populated_list = await self._populate_list(value)
+                # List of objects -> ensure they're cached/populated
+                populated_list = await self._populate_list(value, force_refetch)
                 setattr(obj, field_name, populated_list)
             elif isinstance(value, StashObject):
-                # Single stub -> full object
-                populated_single = await self._populate_single(value)
+                # Single object -> ensure it's cached/populated
+                populated_single = await self._populate_single(value, force_refetch)
                 if populated_single is not None:
                     setattr(obj, field_name, populated_single)
 
         return obj
 
-    async def _populate_single(self, stub: StashObject) -> StashObject | None:
-        """Populate a single stub object."""
-        # Check if it's actually a stub (only has id, minimal other fields)
-        if self._is_stub(stub):
-            return await self.get(type(stub), stub.id)
-        return stub
+    async def _populate_single(
+        self, obj: StashObject, force_refetch: bool = False
+    ) -> StashObject | None:
+        """Populate a single object by fetching from cache/GraphQL.
 
-    async def _populate_list(self, stubs: list[Any]) -> list[Any]:
-        """Populate a list of stub objects."""
-        if not stubs:
-            return stubs
+        Always attempts to get a fuller version from cache/GraphQL, treating
+        all objects as potentially incomplete.
+        """
+        if force_refetch or self._needs_population(obj):
+            return await self.get(type(obj), obj.id)
+        return obj
+
+    async def _populate_list(
+        self, objects: list[Any], force_refetch: bool = False
+    ) -> list[Any]:
+        """Populate a list of objects by fetching from cache/GraphQL."""
+        if not objects:
+            return objects
 
         # Check if first item is a StashObject
-        if not isinstance(stubs[0], StashObject):
-            return stubs
+        if not isinstance(objects[0], StashObject):
+            return objects
 
-        # Collect IDs of stubs that need fetching
-        entity_type = type(stubs[0])
-        stub_ids = [s.id for s in stubs if self._is_stub(s)]
+        entity_type = type(objects[0])
 
-        if stub_ids:
-            # Batch fetch all stubs
-            await self.get_many(entity_type, stub_ids)
+        # Collect IDs that need fetching
+        ids_to_fetch = [
+            obj.id for obj in objects if force_refetch or self._needs_population(obj)
+        ]
+
+        if ids_to_fetch:
+            # Batch fetch all needed objects
+            await self.get_many(entity_type, ids_to_fetch)
 
         # Return populated list from cache
         result = []
-        for stub in stubs:
-            cached = await self.get(type(stub), stub.id)
-            result.append(cached if cached is not None else stub)
+        for obj in objects:
+            cached = await self.get(type(obj), obj.id)
+            result.append(cached if cached is not None else obj)
 
         return result
 
-    def _is_stub(self, obj: StashObject) -> bool:
-        """Check if an object is a stub (minimal data, needs population).
+    def _needs_population(
+        self, obj: StashObject, fields: set[str] | None = None
+    ) -> bool:
+        """Check if an object needs more data loaded.
 
-        A stub typically only has 'id' and maybe a few other fields populated,
-        while most fields are at their default values.
+        Uses `_received_fields` tracking when available for precise detection,
+        falling back to heuristics for objects not created through this store.
+
+        Args:
+            obj: Entity to check
+            fields: Optional specific fields to check. If provided, returns True
+                   if ANY of these fields are missing from _received_fields.
+                   If None, uses heuristic based on received field count.
+
+        Returns:
+            True if the object likely needs population.
         """
-        # Get non-default fields
+        received = getattr(obj, "_received_fields", None)
+
+        if received is not None:
+            # Precise detection using field tracking
+            if fields is not None:
+                # Check if any requested fields are missing
+                return bool(fields - received)
+            # Heuristic: if only got basic fields, needs more data
+            # Consider "incomplete" if received <= 3 fields (id, maybe name, timestamps)
+            return len(received) <= 3
+        # Fallback heuristic for objects without field tracking
         model_dump = obj.model_dump(exclude_defaults=True)
-        # If only 'id' (and maybe timestamps), it's likely a stub
         non_id_fields = {
             k for k in model_dump if k not in ("id", "created_at", "updated_at")
         }
         return len(non_id_fields) <= 1  # id + maybe name
+
+    def has_fields(self, obj: StashObject, *fields: str) -> bool:
+        """Check if an object has specific fields populated.
+
+        Uses `_received_fields` tracking when available.
+
+        Args:
+            obj: Entity to check
+            *fields: Field names to check for
+
+        Returns:
+            True if ALL specified fields are in _received_fields
+        """
+        received = getattr(obj, "_received_fields", set())
+        return all(f in received for f in fields)
+
+    def missing_fields(self, obj: StashObject, *fields: str) -> set[str]:
+        """Get which of the specified fields are missing from an object.
+
+        Args:
+            obj: Entity to check
+            *fields: Field names to check
+
+        Returns:
+            Set of field names that are NOT in _received_fields
+        """
+        received = getattr(obj, "_received_fields", set())
+        return set(fields) - received
 
     # ─── Cache control ────────────────────────────────────────
 
@@ -518,6 +675,94 @@ class StashEntityStore:
         """Get TTL for a type, falling back to default."""
         return self._type_ttls.get(type_name, self._default_ttl)
 
+    async def _fetch_with_fields(
+        self, entity_type: type[T], entity_id: str, fields: list[str]
+    ) -> T | None:
+        """Fetch an entity with specific fields included in the query.
+
+        Args:
+            entity_type: The Stash entity type
+            entity_id: Entity ID
+            fields: List of field names to include in the query
+
+        Returns:
+            Entity if found, None otherwise
+        """
+        from .client.utils import sanitize_model_data
+
+        type_name = entity_type.__type_name__
+
+        # Build field selection from requested fields
+        field_selection = self._build_field_selection(fields)
+
+        # Build the query
+        query = f"""
+            query Find{type_name}($id: ID!) {{
+                find{type_name}(id: $id) {{
+                    {field_selection}
+                }}
+            }}
+        """
+
+        try:
+            result = await self._client.execute(query, {"id": entity_id})
+            data = result.get(f"find{type_name}")
+            if data:
+                clean = sanitize_model_data(data)
+                # Pass store context for nested object extraction/caching
+                return entity_type.model_validate(clean, context={"store": self})
+            return None
+        except Exception as e:
+            log.error(
+                f"Failed to fetch {type_name} {entity_id} with fields {fields}: {e}"
+            )
+            return None
+
+    def _build_field_selection(self, fields: list[str]) -> str:
+        """Build GraphQL field selection string from field list.
+
+        Handles both scalar fields and nested object/list fields by including
+        appropriate sub-selections for relationships.
+
+        Args:
+            fields: List of field names
+
+        Returns:
+            GraphQL field selection string with nested selections for objects
+        """
+        # Always include id and timestamps
+        base_fields = ["id", "created_at", "updated_at"]
+        all_fields = list(set(base_fields + fields))
+
+        # Map of relationship fields that need nested selections
+        # Format: field_name -> nested fields to include
+        relationship_fields = {
+            # Common relationship fields across types
+            "studio": "id name",
+            "parent_studio": "id name",
+            "tags": "id name",
+            "performers": "id name gender",
+            "scenes": "id title",
+            "galleries": "id title",
+            "images": "id title",
+            "groups": "id name",
+            "movies": "id name",
+            "scene_markers": "id title",
+            "stash_ids": "endpoint stash_id",
+        }
+
+        selections = []
+        for field_name in all_fields:
+            if field_name in relationship_fields:
+                # Nested object/list - include sub-selection
+                nested = relationship_fields[field_name]
+                selections.append(f"{field_name} {{ {nested} }}")
+            else:
+                # Scalar field
+                selections.append(field_name)
+
+        return "\n                    ".join(selections)
+
     async def _execute_find(
         self,
         entity_type: type[T],
@@ -547,9 +792,12 @@ class StashEntityStore:
     async def _execute_find_by_ids(
         self, entity_type: type[T], ids: list[str]
     ) -> list[T]:
-        """Fetch multiple entities by their IDs."""
-        # For now, fetch individually (batch not supported uniformly by all types)
-        # TODO: Optimize with batch queries where supported
+        """Fetch multiple entities by their IDs.
+
+        Note: Currently fetches individually. Could be optimized with batch queries
+        using findScenes/findPerformers with id filter, but this requires careful
+        handling of pagination and result ordering.
+        """
         results = []
         for eid in ids:
             entity = await entity_type.find_by_id(self._client, eid)
@@ -734,11 +982,11 @@ class StashEntityStore:
 
         raw_items = data.get(items_key, [])
 
-        # Convert to entity objects
+        # Convert to entity objects with store context for nested extraction
         items: list[T] = []
         for raw in raw_items:
             clean = sanitize_model_data(raw)
-            items.append(entity_type(**clean))
+            items.append(entity_type.model_validate(clean, context={"store": self}))
 
         return FindResult(
             items=items,

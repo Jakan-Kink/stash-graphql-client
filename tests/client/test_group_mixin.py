@@ -15,6 +15,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkGroupUpdateInput,
     Group,
@@ -248,7 +249,7 @@ async def test_create_group(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    group = Group(name="New Group", duration=7200, director="Test Director")
+    group = Group(id="new", name="New Group", duration=7200, director="Test Director")
     created = await respx_stash_client.create_group(group)
 
     assert created.id == "123"
@@ -272,13 +273,13 @@ async def test_create_group_with_tags(respx_stash_client: StashClient) -> None:
         tags=[tag_data],
     )
 
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("groupCreate", group_data))
         ]
     )
 
-    group = Group(name="Action Movie")
+    group = Group(id="new", name="Action Movie")
     created = await respx_stash_client.create_group(group)
 
     assert created.id == "123"
@@ -289,16 +290,27 @@ async def test_create_group_with_tags(respx_stash_client: StashClient) -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_create_group_error_raises(respx_stash_client: StashClient) -> None:
-    """Test that create_group raises on error."""
+    """Test that create_group raises on error when id is incorrectly included."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
-            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+            httpx.Response(
+                200,
+                json={
+                    "errors": [
+                        {
+                            "message": "unknown field",
+                            "path": ["variable", "input", "id"],
+                            "extensions": {"code": "GRAPHQL_VALIDATION_FAILED"},
+                        }
+                    ]
+                },
+            )
         ]
     )
 
-    group = Group(name="New Group")
+    group = Group(id="temp", name="New Group")
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="unknown field"):
         await respx_stash_client.create_group(group)
 
     assert len(graphql_route.calls) == 1
@@ -341,7 +353,7 @@ async def test_update_group(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_update_group_error_raises(respx_stash_client: StashClient) -> None:
     """Test that update_group raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
@@ -349,7 +361,7 @@ async def test_update_group_error_raises(respx_stash_client: StashClient) -> Non
 
     group = Group(id="123", name="Test")
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.update_group(group)
 
 
@@ -397,13 +409,13 @@ async def test_group_destroy_with_input_type(respx_stash_client: StashClient) ->
 @pytest.mark.unit
 async def test_group_destroy_error_raises(respx_stash_client: StashClient) -> None:
     """Test that group_destroy raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.group_destroy({"id": "123"})
 
 
@@ -435,13 +447,13 @@ async def test_groups_destroy(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_groups_destroy_error_raises(respx_stash_client: StashClient) -> None:
     """Test that groups_destroy raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.groups_destroy(["123", "456"])
 
 
@@ -459,7 +471,7 @@ async def test_bulk_group_update_with_dict(respx_stash_client: StashClient) -> N
         create_group_dict(id="2", name="Group 2", rating100=80),
     ]
 
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200, json=create_graphql_response("bulkGroupUpdate", group_data)
@@ -509,7 +521,7 @@ async def test_bulk_group_update_with_input_type(
 @pytest.mark.unit
 async def test_bulk_group_update_error_raises(respx_stash_client: StashClient) -> None:
     """Test that bulk_group_update raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
@@ -517,7 +529,7 @@ async def test_bulk_group_update_error_raises(respx_stash_client: StashClient) -
 
     input_data = BulkGroupUpdateInput(ids=["1", "2"], rating100=80)
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.bulk_group_update(input_data)
 
 
@@ -555,7 +567,7 @@ async def test_add_group_sub_groups_with_input_type(
     """Test adding sub groups with GroupSubGroupAddInput."""
     from stash_graphql_client.types import GroupDescriptionInput
 
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("addGroupSubGroups", True))
         ]
@@ -577,13 +589,13 @@ async def test_add_group_sub_groups_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that add_group_sub_groups raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.add_group_sub_groups(
             {"containing_group_id": "123", "sub_groups": [{"group_id": "456"}]}
         )
@@ -625,7 +637,7 @@ async def test_remove_group_sub_groups_with_input_type(
     respx_stash_client: StashClient,
 ) -> None:
     """Test removing sub groups with GroupSubGroupRemoveInput."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200, json=create_graphql_response("removeGroupSubGroups", True)
@@ -648,13 +660,13 @@ async def test_remove_group_sub_groups_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that remove_group_sub_groups raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.remove_group_sub_groups(
             {"containing_group_id": "123", "sub_group_ids": ["456"]}
         )
@@ -694,7 +706,7 @@ async def test_reorder_sub_groups_with_input_type(
     respx_stash_client: StashClient,
 ) -> None:
     """Test reordering sub groups with ReorderSubGroupsInput."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("reorderSubGroups", True))
         ]
@@ -717,13 +729,13 @@ async def test_reorder_sub_groups_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that reorder_sub_groups raises on error."""
-    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+    respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.reorder_sub_groups(
             {
                 "group_id": "123",

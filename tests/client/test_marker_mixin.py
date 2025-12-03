@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkSceneMarkerUpdateInput,
     BulkUpdateIds,
@@ -420,7 +421,7 @@ async def test_scene_marker_destroy_error_raises(
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.scene_marker_destroy("123")
 
     assert len(graphql_route.calls) == 1
@@ -441,7 +442,7 @@ async def test_scene_markers_destroy_error_raises(
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.scene_markers_destroy(["123", "456"])
 
     assert len(graphql_route.calls) == 1
@@ -522,7 +523,7 @@ async def test_create_marker_error_raises(respx_stash_client: StashClient) -> No
         screenshot="/screenshot/marker.jpg",
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_marker(marker)
 
     assert len(graphql_route.calls) == 1
@@ -606,7 +607,7 @@ async def test_update_marker_error_raises(respx_stash_client: StashClient) -> No
     )
     marker.title = "Updated Title"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.update_marker(marker)
 
     assert len(graphql_route.calls) == 1
@@ -727,7 +728,7 @@ async def test_bulk_scene_marker_update_error_raises(
         title="Will Fail",
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.bulk_scene_marker_update(input_data)
 
     assert len(graphql_route.calls) == 1

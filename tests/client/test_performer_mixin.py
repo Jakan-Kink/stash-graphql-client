@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkPerformerUpdateInput,
     BulkUpdateIds,
@@ -471,7 +472,7 @@ async def test_create_performer_error_raises(respx_stash_client: StashClient) ->
 
     performer = Performer(id="new", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_performer(performer)
 
     assert len(graphql_route.calls) == 1
@@ -521,7 +522,7 @@ async def test_create_performer_already_exists_but_not_found_raises(
     performer = Performer(id="new", name="Ghost Performer")
 
     # Should re-raise the original exception since performer wasn't found
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.create_performer(performer)
 
     # Should have made 2 calls - create then find (which returned empty)
@@ -586,7 +587,7 @@ async def test_update_performer_error_raises(respx_stash_client: StashClient) ->
 
     performer = Performer(id="123", name="Will Fail")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.update_performer(performer)
 
     assert len(graphql_route.calls) == 1
@@ -652,7 +653,7 @@ async def test_update_performer_image_error_raises(
 
     performer = Performer(id="123", name="Performer")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.update_performer_image(
             performer, "data:image/jpeg;base64,xxx"
         )
@@ -723,7 +724,7 @@ async def test_performer_destroy_error_raises(respx_stash_client: StashClient) -
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.performer_destroy({"id": "123"})
 
     assert len(graphql_route.calls) == 1
@@ -767,7 +768,7 @@ async def test_performers_destroy_error_raises(respx_stash_client: StashClient) 
         ]
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.performers_destroy(["123", "456"])
 
     assert len(graphql_route.calls) == 1
@@ -883,7 +884,7 @@ async def test_bulk_performer_update_error_raises(
         gender="FEMALE",
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(StashGraphQLError):
         await respx_stash_client.bulk_performer_update(input_data)
 
     assert len(graphql_route.calls) == 1

@@ -1194,3 +1194,119 @@ query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $id
     }}
 }}
 """
+
+# Group fragments
+GROUP_FIELDS = """fragment GroupFields on Group {
+    id
+    created_at
+    updated_at
+    name
+    aliases
+    duration
+    date
+    rating100
+    director
+    synopsis
+    urls
+    front_image_path
+    back_image_path
+    studio {
+        id
+    }
+    tags {
+        id
+    }
+    scenes {
+        id
+    }
+    containing_groups {
+        group {
+            id
+        }
+        description
+    }
+    sub_groups {
+        group {
+            id
+        }
+        description
+    }
+}"""
+
+FIND_GROUP_QUERY = f"""
+{GROUP_FIELDS}
+query FindGroup($id: ID!) {{
+    findGroup(id: $id) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+FIND_GROUPS_QUERY = f"""
+{GROUP_FIELDS}
+query FindGroups($filter: FindFilterType, $group_filter: GroupFilterType, $ids: [ID!]) {{
+    findGroups(filter: $filter, group_filter: $group_filter, ids: $ids) {{
+        count
+        groups {{
+            ...GroupFields
+        }}
+    }}
+}}
+"""
+
+CREATE_GROUP_MUTATION = f"""
+{GROUP_FIELDS}
+mutation CreateGroup($input: GroupCreateInput!) {{
+    groupCreate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+UPDATE_GROUP_MUTATION = f"""
+{GROUP_FIELDS}
+mutation UpdateGroup($input: GroupUpdateInput!) {{
+    groupUpdate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+GROUP_DESTROY_MUTATION = """
+mutation GroupDestroy($input: GroupDestroyInput!) {
+    groupDestroy(input: $input)
+}
+"""
+
+GROUPS_DESTROY_MUTATION = """
+mutation GroupsDestroy($ids: [ID!]!) {
+    groupsDestroy(ids: $ids)
+}
+"""
+
+BULK_GROUP_UPDATE_MUTATION = f"""
+{GROUP_FIELDS}
+mutation BulkGroupUpdate($input: BulkGroupUpdateInput!) {{
+    bulkGroupUpdate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+ADD_GROUP_SUB_GROUPS_MUTATION = """
+mutation AddGroupSubGroups($input: GroupSubGroupAddInput!) {
+    addGroupSubGroups(input: $input)
+}
+"""
+
+REMOVE_GROUP_SUB_GROUPS_MUTATION = """
+mutation RemoveGroupSubGroups($input: GroupSubGroupRemoveInput!) {
+    removeGroupSubGroups(input: $input)
+}
+"""
+
+REORDER_SUB_GROUPS_MUTATION = """
+mutation ReorderSubGroups($input: ReorderSubGroupsInput!) {
+    reorderSubGroups(input: $input)
+}
+"""
