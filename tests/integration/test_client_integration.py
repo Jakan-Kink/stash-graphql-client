@@ -160,6 +160,7 @@ async def test_find_gallery_by_id(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_galleries
 @pytest.mark.asyncio
 async def test_gallery_is_organized(
     stash_client: StashClient, stash_cleanup_tracker
