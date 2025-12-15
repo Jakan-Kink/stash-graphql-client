@@ -83,18 +83,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Remove old Poetry installation
+      - name: Install Poetry via pipx
         run: |
-          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv ~/.poetry ~/.cache/pypoetry
-          rm -f ~/.local/bin/poetry ~/.local/bin/poetry-*
-        continue-on-error: true
+          python -m pip install --user pipx
+          python -m pipx ensurepath
+          pipx install poetry
+        env:
+          PIPX_HOME: ${{ runner.temp }}/pipx
+          PIPX_BIN_DIR: ${{ runner.temp }}/pipx/bin
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Add Poetry to PATH
+        run: echo "${{ runner.temp }}/pipx/bin" >> $GITHUB_PATH
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
       - name: Load cached venv
         id: cached-poetry-dependencies
@@ -176,18 +180,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Remove old Poetry installation
+      - name: Install Poetry via pipx
         run: |
-          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv ~/.poetry ~/.cache/pypoetry
-          rm -f ~/.local/bin/poetry ~/.local/bin/poetry-*
-        continue-on-error: true
+          python -m pip install --user pipx
+          python -m pipx ensurepath
+          pipx install poetry
+        env:
+          PIPX_HOME: ${{ runner.temp }}/pipx
+          PIPX_BIN_DIR: ${{ runner.temp }}/pipx/bin
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          version: latest
-          virtualenvs-create: true
-          virtualenvs-in-project: true
+      - name: Add Poetry to PATH
+        run: echo "${{ runner.temp }}/pipx/bin" >> $GITHUB_PATH
+
+      - name: Configure Poetry
+        run: |
+          poetry config virtualenvs.create true
+          poetry config virtualenvs.in-project true
 
       - name: Load cached venv
         id: cached-poetry-dependencies
