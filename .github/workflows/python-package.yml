@@ -57,6 +57,18 @@ jobs:
       matrix:
         python-version: ["3.12", "3.13"]
 
+    services:
+      stash:
+        image: stashapp/stash:latest
+        ports:
+          - 9999:9999
+        options: >-
+          --health-cmd "curl -f http://localhost:9999/graphql || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
     steps:
       - uses: actions/checkout@v6
 
@@ -85,9 +97,23 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --with dev
 
+      - name: Wait for Stash to be ready
+        run: |
+          echo "Waiting for Stash GraphQL endpoint..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:9999/graphql -H "Content-Type: application/json" -d '{"query": "{ version { build_time } }"}' > /dev/null 2>&1; then
+              echo "✓ Stash is ready!"
+              break
+            fi
+            echo "Attempt $i/30: Stash not ready yet, waiting..."
+            sleep 2
+          done
+
       - name: Run tests with pytest
         run: |
           poetry run pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy
+        env:
+          STASH_URL: http://localhost:9999/graphql
 
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
