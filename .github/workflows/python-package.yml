@@ -50,12 +50,19 @@ jobs:
           poetry run ruff format --check .
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: lint
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
+        os: [[self-hosted, macOS, ARM64]]
+        include:
+          # Fallback to GitHub-hosted if self-hosted unavailable
+          - python-version: "3.12"
+            os: ubuntu-latest
+          - python-version: "3.13"
+            os: ubuntu-latest
 
     services:
       stash:
