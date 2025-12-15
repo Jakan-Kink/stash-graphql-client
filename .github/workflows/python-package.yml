@@ -74,12 +74,6 @@ jobs:
           - /etc/localtime:/etc/localtime:ro
           - /tmp/stash-config:/root/.stash
           - /tmp/stash-data:/data
-        options: >-
-          --health-cmd "curl -f http://localhost:9999/graphql || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 30s
 
     steps:
       - uses: actions/checkout@v6
@@ -162,15 +156,11 @@ jobs:
           STASH_GENERATED: /generated/
           STASH_METADATA: /metadata/
           STASH_CACHE: /cache/
+          STASH_PORT: 9999
         volumes:
+          - /etc/localtime:/etc/localtime:ro
           - /tmp/stash-config:/root/.stash
           - /tmp/stash-data:/data
-        options: >-
-          --health-cmd "curl -f http://localhost:9999/graphql || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 30s
 
     steps:
       - uses: actions/checkout@v6
