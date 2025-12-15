@@ -69,7 +69,9 @@ jobs:
           STASH_GENERATED: /generated/
           STASH_METADATA: /metadata/
           STASH_CACHE: /cache/
+          STASH_PORT: 9999
         volumes:
+          - /etc/localtime:/etc/localtime:ro
           - /tmp/stash-config:/root/.stash
           - /tmp/stash-data:/data
         options: >-
