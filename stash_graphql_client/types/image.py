@@ -5,9 +5,18 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator
 
-from .base import BulkUpdateIds, BulkUpdateStrings, StashObject
+from .base import (
+    BulkUpdateIds,
+    BulkUpdateStrings,
+    RelationshipMetadata,
+    StashInput,
+    StashObject,
+    StashResult,
+)
+from .files import ImageFile, VideoFile
+from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
@@ -16,46 +25,50 @@ if TYPE_CHECKING:
     from .studio import Studio
     from .tag import Tag
 
+# VisualFile union type (VideoFile | ImageFile)
+VisualFile = VideoFile | ImageFile
+
 
 class ImageFileType(BaseModel):
     """Image file type from schema/types/image.graphql."""
 
-    mod_time: datetime  # Time!
-    size: int  # Int!
-    width: int  # Int!
-    height: int  # Int!
+    mod_time: datetime | UnsetType = UNSET  # Time!
+    size: int | UnsetType = UNSET  # Int!
+    width: int | UnsetType = UNSET  # Int!
+    height: int | UnsetType = UNSET  # Int!
 
 
 class ImagePathsType(BaseModel):
     """Image paths type from schema/types/image.graphql."""
 
-    thumbnail: str | None = None  # String (Resolver)
-    preview: str | None = None  # String (Resolver)
-    image: str | None = None  # String (Resolver)
+    thumbnail: str | None | UnsetType = UNSET  # String (Resolver)
+    preview: str | None | UnsetType = UNSET  # String (Resolver)
+    image: str | None | UnsetType = UNSET  # String (Resolver)
 
 
-class ImageUpdateInput(BaseModel):
+class ImageUpdateInput(StashInput):
     """Input for updating images."""
 
     # Required fields
     id: str  # ID!
 
     # Optional fields
-    client_mutation_id: str | None = None  # String
-    title: str | None = None  # String
-    code: str | None = None  # String
-    rating100: int | None = None  # Int (1-100)
-    organized: bool | None = None  # Boolean
-    url: str | None = None  # String @deprecated
-    urls: list[str] | None = None  # [String!]
-    date: str | None = None  # String
-    details: str | None = None  # String
-    photographer: str | None = None  # String
-    studio_id: str | None = None  # ID
-    performer_ids: list[str] | None = None  # [ID!]
-    tag_ids: list[str] | None = None  # [ID!]
-    gallery_ids: list[str] | None = None  # [ID!]
-    primary_file_id: str | None = None  # ID
+    client_mutation_id: str | None | UnsetType = Field(
+        default=UNSET, alias="clientMutationId"
+    )  # String
+    title: str | None | UnsetType = UNSET  # String
+    code: str | None | UnsetType = UNSET  # String
+    rating100: int | None | UnsetType = UNSET  # Int (1-100)
+    organized: bool | None | UnsetType = UNSET  # Boolean
+    urls: list[str] | None | UnsetType = UNSET  # [String!]
+    date: str | None | UnsetType = UNSET  # String
+    details: str | None | UnsetType = UNSET  # String
+    photographer: str | None | UnsetType = UNSET  # String
+    studio_id: str | None | UnsetType = UNSET  # ID
+    performer_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    gallery_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    primary_file_id: str | None | UnsetType = UNSET  # ID
 
 
 class Image(StashObject):
@@ -81,32 +94,69 @@ class Image(StashObject):
     }
 
     # Optional fields
-    title: str | None = None  # String
-    code: str | None = None  # String
-    date: str | None = None  # String
-    details: str | None = None  # String
-    photographer: str | None = None  # String
-    studio: Studio | None = None  # Studio
+    title: str | None | UnsetType = UNSET  # String
+    code: str | None | UnsetType = UNSET  # String
+    date: str | None | UnsetType = UNSET  # String
+    rating100: int | None | UnsetType = Field(
+        default=UNSET, ge=0, le=100
+    )  # Int (0-100)
+    details: str | None | UnsetType = UNSET  # String
+    photographer: str | None | UnsetType = UNSET  # String
+    studio: Studio | None | UnsetType = UNSET  # Studio
+    o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
 
     # Required fields
-    urls: list[str] = Field(default_factory=list)  # [String!]!
-    organized: bool = False  # Boolean!
-    visual_files: list[Any] = Field(
-        default_factory=list
-    )  # [VisualFile!]! - The image files (replaces deprecated 'files' field)
-    paths: ImagePathsType = Field(
-        default_factory=ImagePathsType
+    urls: list[str] | UnsetType = Field(default=UNSET)  # [String!]!
+    organized: bool | UnsetType = UNSET  # Boolean!
+    visual_files: list[VisualFile] | UnsetType = Field(
+        default=UNSET
+    )  # [VisualFile!]! - The image files (union of VideoFile | ImageFile)
+    paths: ImagePathsType | UnsetType = Field(
+        default=UNSET
     )  # ImagePathsType! (Resolver)
-    galleries: list[Gallery] = Field(default_factory=list)  # [Gallery!]!
-    tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
-    performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
+    galleries: list[Gallery] | UnsetType = Field(default=UNSET)  # [Gallery!]!
+    tags: list[Tag] | UnsetType = Field(default=UNSET)  # [Tag!]!
+    performers: list[Performer] | UnsetType = Field(default=UNSET)  # [Performer!]!
 
     # Relationship definitions with their mappings
     __relationships__ = {
-        "studio": ("studio_id", False, None),  # (target_field, is_list, transform)
-        "performers": ("performer_ids", True, None),
-        "tags": ("tag_ids", True, None),
-        "galleries": ("gallery_ids", True, None),
+        # Pattern B: Filter query relationship (many-to-one)
+        "studio": RelationshipMetadata(
+            target_field="studio_id",
+            is_list=False,
+            query_field="studio",
+            inverse_type="Studio",
+            query_strategy="filter_query",
+            filter_query_hint="findImages(image_filter={studios: {value: [studio_id]}})",
+            notes="Studio has image_count and filter queries, not direct images field",
+        ),
+        # Pattern A: Direct field relationships (many-to-many)
+        "performers": RelationshipMetadata(
+            target_field="performer_ids",
+            is_list=True,
+            query_field="performers",
+            inverse_type="Performer",
+            inverse_query_field="images",
+            query_strategy="direct_field",
+            notes="Backend auto-syncs image.performers and performer.images",
+        ),
+        "tags": RelationshipMetadata(
+            target_field="tag_ids",
+            is_list=True,
+            query_field="tags",
+            inverse_type="Tag",
+            query_strategy="direct_field",
+            notes="Tag has image_count resolver, not direct images list",
+        ),
+        "galleries": RelationshipMetadata(
+            target_field="gallery_ids",
+            is_list=True,
+            query_field="galleries",
+            inverse_type="Gallery",
+            inverse_query_field="images",
+            query_strategy="direct_field",
+            notes="Backend auto-syncs image.galleries and gallery.images",
+        ),
     }
 
     # Field definitions with their conversion functions
@@ -129,84 +179,88 @@ class Image(StashObject):
         ),
     }
 
-    @model_validator(mode="before")
+    @field_validator("visual_files", mode="before")
     @classmethod
-    def convert_files_to_visual_files(cls, data: Any) -> Any:
-        """Convert deprecated 'files' field to 'visual_files'.
+    def _discriminate_visual_file_types(cls, value: Any) -> Any:
+        """Discriminate VisualFile union types based on __typename.
 
-        The GraphQL schema uses 'files' but we use 'visual_files' internally.
-        This validator handles the conversion when data comes from the API.
-
-        Args:
-            data: Input data (dict or object)
-
-        Returns:
-            Modified data with files converted to visual_files
+        Converts raw dicts to the appropriate VisualFile type (VideoFile or ImageFile)
+        based on __typename field.
         """
-        # Handle dict input
-        if isinstance(data, dict) and "files" in data:
-            from .files import ImageFile, VideoFile
+        if value is None or isinstance(value, type(UNSET)):
+            return value
 
-            files = data.pop("files")
-            visual_files: list[Any] = []
+        if not isinstance(value, list):
+            return value
 
-            for file_data in files if isinstance(files, list) else [files]:
-                # Determine if it's an ImageFile or VideoFile based on presence of duration
-                if isinstance(file_data, dict):
-                    if "duration" in file_data:
-                        visual_files.append(VideoFile(**file_data))
-                    else:
-                        visual_files.append(ImageFile(**file_data))
+        # Type mapping for VisualFile union
+        type_map = {
+            "VideoFile": VideoFile,
+            "ImageFile": ImageFile,
+        }
+
+        result = []
+        for item in value:
+            if isinstance(item, dict) and "__typename" in item:
+                typename = item["__typename"]
+                file_type = type_map.get(typename)
+                if file_type:
+                    # Construct the correct type from the dict
+                    result.append(file_type.model_validate(item))
                 else:
-                    # Already a VisualFile object
-                    visual_files.append(file_data)
+                    # Unknown typename, skip
+                    continue
+            else:
+                # Already constructed or no typename
+                result.append(item)
 
-            # Set visual_files if not already set
-            if "visual_files" not in data:
-                data["visual_files"] = visual_files
-
-        return data
+        return result
 
 
-class ImageDestroyInput(BaseModel):
+class ImageDestroyInput(StashInput):
     """Input for destroying images from schema/types/image.graphql."""
 
     id: str  # ID!
-    delete_file: bool | None = None  # Boolean
-    delete_generated: bool | None = None  # Boolean
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
 
 
-class ImagesDestroyInput(BaseModel):
+class ImagesDestroyInput(StashInput):
     """Input for destroying multiple images from schema/types/image.graphql."""
 
-    ids: list[str]  # [ID!]!
-    delete_file: bool | None = None  # Boolean
-    delete_generated: bool | None = None  # Boolean
+    ids: list[str] | UnsetType = UNSET  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
 
 
-class BulkImageUpdateInput(BaseModel):
+class BulkImageUpdateInput(StashInput):
     """Input for bulk updating images."""
 
     # Optional fields
-    client_mutation_id: str | None = None  # String
-    ids: list[str]  # [ID!]
-    rating100: int | None = None  # Int (1-100)
-    organized: bool | None = None  # Boolean
-    url: str | None = None  # String @deprecated
-    urls: BulkUpdateStrings | None = None  # BulkUpdateStrings
-    date: str | None = None  # String
-    details: str | None = None  # String
-    photographer: str | None = None  # String
-    studio_id: str | None = None  # ID
-    performer_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    tag_ids: BulkUpdateIds | None = None  # BulkUpdateIds
-    gallery_ids: BulkUpdateIds | None = None  # BulkUpdateIds
+    client_mutation_id: str | None | UnsetType = Field(
+        default=UNSET, alias="clientMutationId"
+    )  # String
+    ids: list[str] | UnsetType = UNSET  # [ID!]
+    title: str | None | UnsetType = UNSET  # String
+    code: str | None | UnsetType = UNSET  # String
+    rating100: int | None | UnsetType = Field(
+        default=UNSET, ge=0, le=100
+    )  # Int (0-100)
+    organized: bool | None | UnsetType = UNSET  # Boolean
+    urls: BulkUpdateStrings | None | UnsetType = UNSET  # BulkUpdateStrings
+    date: str | None | UnsetType = UNSET  # String
+    details: str | None | UnsetType = UNSET  # String
+    photographer: str | None | UnsetType = UNSET  # String
+    studio_id: str | None | UnsetType = UNSET  # ID
+    performer_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    gallery_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
 
 
-class FindImagesResultType(BaseModel):
+class FindImagesResultType(StashResult):
     """Result type for finding images from schema/types/image.graphql."""
 
-    count: int  # Int!
-    megapixels: float  # Float! (Total megapixels of the images)
-    filesize: float  # Float! (Total file size in bytes)
-    images: list[Image] = Field(default_factory=list)  # [Image!]!
+    count: int | UnsetType = UNSET  # Int!
+    megapixels: float | UnsetType = UNSET  # Float! (Total megapixels of the images)
+    filesize: float | UnsetType = UNSET  # Float! (Total file size in bytes)
+    images: list[Image] | UnsetType = Field(default=UNSET)  # [Image!]!

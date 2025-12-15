@@ -9,6 +9,7 @@ from multidict import CIMultiDict
 
 from .client import StashClient
 from .logging import client_logger as logger
+from .store import StashEntityStore
 
 
 class StashContext:
@@ -63,6 +64,7 @@ class StashContext:
         self.conn = CIMultiDict(conn or {})
         self.verify_ssl = verify_ssl
         self._client: StashClient | None = None
+        self._store: StashEntityStore | None = None
         self._ref_count: int = 0
         self._ref_lock: asyncio.Lock = asyncio.Lock()
 
@@ -105,6 +107,14 @@ class StashContext:
                 logger.debug(
                     f"Client initialization complete, _client set to {self._client}"
                 )
+
+                # Initialize entity store and wire it to StashObject
+                self._store = StashEntityStore(self._client)
+                from .types.base import StashObject
+
+                StashObject._store = self._store
+                logger.debug("Entity store initialized and wired to StashObject")
+
             except Exception as e:
                 logger.error(f"Client initialization failed: {e}")
                 self._client = None
@@ -158,6 +168,14 @@ class StashContext:
                 await self._client.close()
                 self._client = None
                 logger.debug("StashClient closed")
+            if self._store is not None:
+                # Clear store cache and unwire from StashObject
+                self._store.invalidate_all()
+                from .types.base import StashObject
+
+                StashObject._store = None
+                self._store = None
+                logger.debug("Entity store cleared and unwired")
             return
 
         # Manual call - need to acquire lock
@@ -174,6 +192,15 @@ class StashContext:
                 await self._client.close()
                 self._client = None
                 logger.debug("StashClient closed")
+
+            if self._store is not None:
+                # Clear store cache and unwire from StashObject
+                self._store.invalidate_all()
+                from .types.base import StashObject
+
+                StashObject._store = None
+                self._store = None
+                logger.debug("Entity store cleared and unwired")
 
     async def __aenter__(self) -> StashClient:
         """Enter async context manager.

@@ -10,12 +10,21 @@ from pathlib import Path
 # from pyloyalfans.metadata.account import Account
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from .base import StashObject
+from .base import (
+    BulkUpdateIds,
+    BulkUpdateStrings,
+    RelationshipMetadata,
+    StashInput,
+    StashObject,
+    StashResult,
+)
 from .enums import CircumisedEnum, GenderEnum
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
+from .scalars import Map
+from .unset import UNSET, UnsetType
 
 
 # if _TYPE_CHECKING_METADATA:
@@ -29,86 +38,125 @@ if TYPE_CHECKING:
     from .scene import Scene
     from .tag import Tag
 
+    # Movie type to be implemented by other agents
+    class Movie:
+        """Placeholder for Movie type."""
+
+
 T = TypeVar("T", bound="Performer")
 
 
-class PerformerCreateInput(BaseModel):
+class PerformerCreateInput(StashInput):
     """Input for creating performers."""
 
     # Required fields
     name: str  # String!
 
     # Optional fields
-    disambiguation: str | None = None  # String
-    url: str | None = None  # String @deprecated
-    urls: list[str] | None = None  # [String!]
-    gender: GenderEnum | None = None  # GenderEnum
-    birthdate: str | None = None  # String
-    ethnicity: str | None = None  # String
-    country: str | None = None  # String
-    eye_color: str | None = None  # String
-    height_cm: int | None = None  # Int
-    measurements: str | None = None  # String
-    fake_tits: str | None = None  # String
-    penis_length: float | None = None  # Float
-    circumcised: CircumisedEnum | None = None  # CircumisedEnum
-    career_length: str | None = None  # String
-    tattoos: str | None = None  # String
-    piercings: str | None = None  # String
-    alias_list: list[str] | None = None  # [String!]
-    twitter: str | None = None  # String @deprecated
-    instagram: str | None = None  # String @deprecated
-    favorite: bool | None = None  # Boolean
-    tag_ids: list[str] | None = None  # [ID!]
-    image: str | None = None  # String (URL or base64)
-    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
-    rating100: int | None = None  # Int
-    details: str | None = None  # String
-    death_date: str | None = None  # String
-    hair_color: str | None = None  # String
-    weight: int | None = None  # Int
-    ignore_auto_tag: bool | None = None  # Boolean
-    custom_fields: dict[str, Any] | None = None  # Map
+    disambiguation: str | None | UnsetType = UNSET  # String
+    urls: list[str] | None | UnsetType = UNSET  # [String!]
+    gender: GenderEnum | None | UnsetType = UNSET  # GenderEnum
+    birthdate: str | None | UnsetType = UNSET  # String
+    ethnicity: str | None | UnsetType = UNSET  # String
+    country: str | None | UnsetType = UNSET  # String
+    eye_color: str | None | UnsetType = UNSET  # String
+    height_cm: int | None | UnsetType = UNSET  # Int
+    measurements: str | None | UnsetType = UNSET  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: float | None | UnsetType = UNSET  # Float
+    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    career_length: str | None | UnsetType = UNSET  # String
+    tattoos: str | None | UnsetType = UNSET  # String
+    piercings: str | None | UnsetType = UNSET  # String
+    alias_list: list[str] | None | UnsetType = UNSET  # [String!]
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    image: str | None | UnsetType = UNSET  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
+    rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    details: str | None | UnsetType = UNSET  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
+    weight: int | None | UnsetType = UNSET  # Int
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map
 
 
-class PerformerUpdateInput(BaseModel):
+class PerformerUpdateInput(StashInput):
     """Input for updating performers."""
 
     # Required fields
     id: str  # ID!
 
     # Optional fields
-    name: str | None = None  # String
-    disambiguation: str | None = None  # String
-    url: str | None = None  # String @deprecated
-    urls: list[str] | None = None  # [String!]
-    gender: GenderEnum | None = None  # GenderEnum
-    birthdate: str | None = None  # String
-    ethnicity: str | None = None  # String
-    country: str | None = None  # String
-    eye_color: str | None = None  # String
-    height_cm: int | None = None  # Int
-    measurements: str | None = None  # String
-    fake_tits: str | None = None  # String
-    penis_length: float | None = None  # Float
-    circumcised: CircumisedEnum | None = None  # CircumisedEnum
-    career_length: str | None = None  # String
-    tattoos: str | None = None  # String
-    piercings: str | None = None  # String
-    alias_list: list[str] | None = None  # [String!]
-    twitter: str | None = None  # String @deprecated
-    instagram: str | None = None  # String @deprecated
-    favorite: bool | None = None  # Boolean
-    tag_ids: list[str] | None = None  # [ID!]
-    image: str | None = None  # String (URL or base64)
-    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
-    rating100: int | None = None  # Int
-    details: str | None = None  # String
-    death_date: str | None = None  # String
-    hair_color: str | None = None  # String
-    weight: int | None = None  # Int
-    ignore_auto_tag: bool | None = None  # Boolean
-    custom_fields: CustomFieldsInput | None = None  # CustomFieldsInput
+    name: str | None | UnsetType = UNSET  # String
+    disambiguation: str | None | UnsetType = UNSET  # String
+    urls: list[str] | None | UnsetType = UNSET  # [String!]
+    gender: GenderEnum | None | UnsetType = UNSET  # GenderEnum
+    birthdate: str | None | UnsetType = UNSET  # String
+    ethnicity: str | None | UnsetType = UNSET  # String
+    country: str | None | UnsetType = UNSET  # String
+    eye_color: str | None | UnsetType = UNSET  # String
+    height_cm: int | None | UnsetType = UNSET  # Int
+    measurements: str | None | UnsetType = UNSET  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: float | None | UnsetType = UNSET  # Float
+    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    career_length: str | None | UnsetType = UNSET  # String
+    tattoos: str | None | UnsetType = UNSET  # String
+    piercings: str | None | UnsetType = UNSET  # String
+    alias_list: list[str] | None | UnsetType = UNSET  # [String!]
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    image: str | None | UnsetType = UNSET  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
+    rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    details: str | None | UnsetType = UNSET  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
+    weight: int | None | UnsetType = UNSET  # Int
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+
+
+class BulkPerformerUpdateInput(StashInput):
+    """Input for bulk updating performers from schema/types/performer.graphql."""
+
+    client_mutation_id: str | None | UnsetType = Field(
+        default=UNSET, alias="clientMutationId"
+    )  # String
+    ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    disambiguation: str | None | UnsetType = UNSET  # String
+    urls: BulkUpdateStrings | None | UnsetType = UNSET  # BulkUpdateStrings
+    gender: GenderEnum | None | UnsetType = UNSET  # GenderEnum
+    birthdate: str | None | UnsetType = UNSET  # String
+    ethnicity: str | None | UnsetType = UNSET  # String
+    country: str | None | UnsetType = UNSET  # String
+    eye_color: str | None | UnsetType = UNSET  # String
+    height_cm: int | None | UnsetType = UNSET  # Int
+    measurements: str | None | UnsetType = UNSET  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: float | None | UnsetType = UNSET  # Float
+    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    career_length: str | None | UnsetType = UNSET  # String
+    tattoos: str | None | UnsetType = UNSET  # String
+    piercings: str | None | UnsetType = UNSET  # String
+    alias_list: BulkUpdateStrings | None | UnsetType = UNSET  # BulkUpdateStrings
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    details: str | None | UnsetType = UNSET  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
+    weight: int | None | UnsetType = UNSET  # Int
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+
+
+class PerformerDestroyInput(StashInput):
+    """Input for destroying performers from schema/types/performer.graphql."""
+
+    id: str  # ID!
 
 
 class Performer(StashObject):
@@ -145,34 +193,47 @@ class Performer(StashObject):
     }
 
     # Required fields from schema
-    name: str  # String!
-    alias_list: list[str] = Field(default_factory=list)  # [String!]!
-    tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
-    stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
-    scenes: list[Scene] = Field(default_factory=list)  # [Scene!]!
-    groups: list[Group] = Field(default_factory=list)  # [Group!]!
+    name: str | UnsetType = UNSET  # String!
+    alias_list: list[str] | UnsetType = UNSET  # [String!]!
+    tags: list[Tag] | UnsetType = UNSET  # [Tag!]!
+    stash_ids: list[StashID] | UnsetType = UNSET  # [StashID!]!
+    scenes: list[Scene] | UnsetType = UNSET  # [Scene!]!
+    groups: list[Group] | UnsetType = UNSET  # [Group!]!
+    favorite: bool | UnsetType = UNSET  # Boolean!
+    ignore_auto_tag: bool | UnsetType = UNSET  # Boolean!
+    scene_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+    image_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+    gallery_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+    group_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+    performer_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+    custom_fields: Map | UnsetType = UNSET  # Map!
+    # created_at and updated_at inherited from StashObject
 
     # Optional fields from schema
-    disambiguation: str | None = None  # String
-    urls: list[str] = Field(default_factory=list)  # [String!]
-    gender: GenderEnum | None = None  # GenderEnum
-    birthdate: str | None = None  # String
-    ethnicity: str | None = None  # String
-    country: str | None = None  # String
-    eye_color: str | None = None  # String
-    height_cm: int | None = None  # Int
-    measurements: str | None = None  # String
-    fake_tits: str | None = None  # String
-    penis_length: float | None = None  # Float
-    circumcised: CircumisedEnum | None = None  # CircumisedEnum
-    career_length: str | None = None  # String
-    tattoos: str | None = None  # String
-    piercings: str | None = None  # String
-    image_path: str | None = None  # String (Resolver)
-    details: str | None = None  # String
-    death_date: str | None = None  # String
-    hair_color: str | None = None  # String
-    weight: int | None = None  # Int
+    disambiguation: str | None | UnsetType = UNSET  # String
+    urls: list[str] | UnsetType = UNSET  # [String!]
+    gender: GenderEnum | None | UnsetType = UNSET  # GenderEnum
+    birthdate: str | None | UnsetType = UNSET  # String
+    rating100: int | None | UnsetType = Field(
+        default=UNSET, ge=0, le=100
+    )  # Int (0-100)
+    ethnicity: str | None | UnsetType = UNSET  # String
+    country: str | None | UnsetType = UNSET  # String
+    eye_color: str | None | UnsetType = UNSET  # String
+    height_cm: int | None | UnsetType = UNSET  # Int
+    measurements: str | None | UnsetType = UNSET  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: float | None | UnsetType = UNSET  # Float
+    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    career_length: str | None | UnsetType = UNSET  # String
+    tattoos: str | None | UnsetType = UNSET  # String
+    piercings: str | None | UnsetType = UNSET  # String
+    image_path: str | None | UnsetType = UNSET  # String (Resolver)
+    details: str | None | UnsetType = UNSET  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
+    weight: int | None | UnsetType = UNSET  # Int
+    o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
 
     async def update_avatar(
         self, client: StashClient, image_path: str | Path
@@ -277,13 +338,21 @@ class Performer(StashObject):
     }
 
     __relationships__ = {
-        # Standard ID relationships
-        "tags": ("tag_ids", True, None),  # (target_field, is_list, transform)
-        # Special case with custom transform
-        "stash_ids": (
-            "stash_ids",
-            True,
-            lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+        "tags": RelationshipMetadata(
+            target_field="tag_ids",
+            is_list=True,
+            query_field="tags",
+            inverse_type="Tag",
+            inverse_query_field="performers",
+            query_strategy="direct_field",
+            notes="Backend auto-syncs performer.tags and tag.performers",
+        ),
+        "stash_ids": RelationshipMetadata(
+            target_field="stash_ids",
+            is_list=True,
+            transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+            query_field="stash_ids",
+            notes="Requires transform to StashIDInput for mutations",
         ),
     }
 
@@ -321,8 +390,8 @@ class Performer(StashObject):
             return None
 
 
-class FindPerformersResultType(BaseModel):
+class FindPerformersResultType(StashResult):
     """Result type for finding performers from schema/types/performer.graphql."""
 
-    count: int  # Int!
-    performers: list[Performer] = Field(default_factory=list)  # [Performer!]!
+    count: int | UnsetType = UNSET  # Int!
+    performers: list[Performer] | UnsetType = UNSET  # [Performer!]!

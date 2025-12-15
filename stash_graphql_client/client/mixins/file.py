@@ -1,27 +1,24 @@
 """File-related client functionality."""
 
-from typing import Any, ClassVar
+from typing import Any
 
 from ... import fragments
-from ...client_helpers import AsyncCachedFunction, async_lru_cache
 from ...types import (
     AssignSceneFileInput,
     BaseFile,
     FileSetFingerprintsInput,
     FindFilesResultType,
+    FindFoldersResultType,
+    Folder,
+    FolderFilterType,
     MoveFilesInput,
 )
 from ..protocols import StashClientProtocol
-from ..utils import sanitize_model_data
 
 
 class FileClientMixin(StashClientProtocol):
     """Mixin for file-related client methods."""
 
-    # Type hints for cached methods
-    _find_file_cache: ClassVar[AsyncCachedFunction]
-
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_file(
         self,
         id: str | None = None,
@@ -70,15 +67,12 @@ class FileClientMixin(StashClientProtocol):
             raise ValueError("Either id or path must be provided")
 
         try:
-            result = await self.execute(
+            # BaseFile is polymorphic - will return VideoFile, ImageFile, etc
+            return await self.execute(
                 fragments.FIND_FILE_QUERY,
                 {"id": id, "path": path},
+                result_type=BaseFile,
             )
-            if result and result.get("findFile"):
-                clean_data = sanitize_model_data(result["findFile"])
-                # BaseFile is polymorphic - will return VideoFile, ImageFile, etc
-                return BaseFile(**clean_data)
-            return None
         except Exception as e:
             self.log.error(f"Failed to find file (id={id}, path={path}): {e}")
             return None
@@ -150,15 +144,15 @@ class FileClientMixin(StashClientProtocol):
             ```
         """
         try:
-            result = await self.execute(
+            return await self.execute(
                 fragments.FIND_FILES_QUERY,
                 {
                     "file_filter": file_filter,
                     "filter": filter_,
                     "ids": ids,
                 },
+                result_type=FindFilesResultType,
             )
-            return FindFilesResultType(**result["findFiles"])
         except Exception as e:
             self.log.error(f"Failed to find files: {e}")
             return FindFilesResultType(
@@ -213,7 +207,7 @@ class FileClientMixin(StashClientProtocol):
         try:
             # Convert MoveFilesInput to dict if needed
             if isinstance(input_data, MoveFilesInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.to_graphql()
             else:
                 input_dict = input_data
 
@@ -267,7 +261,7 @@ class FileClientMixin(StashClientProtocol):
         try:
             # Convert FileSetFingerprintsInput to dict if needed
             if isinstance(input_data, FileSetFingerprintsInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.to_graphql()
             else:
                 input_dict = input_data
 
@@ -317,7 +311,7 @@ class FileClientMixin(StashClientProtocol):
         try:
             # Convert AssignSceneFileInput to dict if needed
             if isinstance(input_data, AssignSceneFileInput):
-                input_dict = input_data.model_dump(exclude_none=True)
+                input_dict = input_data.to_graphql()
             else:
                 input_dict = input_data
 
@@ -329,3 +323,93 @@ class FileClientMixin(StashClientProtocol):
         except Exception as e:
             self.log.error(f"Failed to assign file to scene: {e}")
             return False
+
+    async def delete_files(self, ids: list[str]) -> bool:
+        """Delete files.
+
+        Args:
+            ids: List of file IDs to delete
+
+        Returns:
+            True if the files were successfully deleted
+
+        Raises:
+            ValueError: If any file ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.DELETE_FILES_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("deleteFiles", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete files: {e}")
+            raise
+
+    async def find_folder(
+        self,
+        id: str | None = None,
+        path: str | None = None,
+    ) -> Folder | None:
+        """Find a folder by its ID or path.
+
+        Args:
+            id: The ID of the folder to find (optional)
+            path: The path of the folder to find (optional)
+
+        Returns:
+            Folder object if found, None otherwise
+
+        Raises:
+            ValueError: If neither id nor path is provided
+        """
+        if id is None and path is None:
+            raise ValueError("Either id or path must be provided")
+
+        try:
+            return await self.execute(
+                fragments.FIND_FOLDER_QUERY,
+                {"id": id, "path": path},
+                result_type=Folder,
+            )
+        except Exception as e:
+            self.log.error(f"Failed to find folder (id={id}, path={path}): {e}")
+            return None
+
+    async def find_folders(
+        self,
+        folder_filter: FolderFilterType | dict[str, Any] | None = None,
+        filter_: dict[str, Any] | None = None,
+        ids: list[str] | None = None,
+    ) -> FindFoldersResultType:
+        """Find folders matching the given filters.
+
+        Args:
+            folder_filter: Optional folder-specific filter (FolderFilterType or dict)
+            filter_: Optional general filter parameters (FindFilterType or dict)
+            ids: Optional list of folder IDs to retrieve
+
+        Returns:
+            FindFoldersResultType containing count and list of folders
+        """
+        try:
+            # Convert FolderFilterType to dict if needed
+            if isinstance(folder_filter, FolderFilterType):
+                folder_filter_dict = folder_filter.to_graphql()
+            else:
+                folder_filter_dict = folder_filter
+
+            return await self.execute(
+                fragments.FIND_FOLDERS_QUERY,
+                {
+                    "folder_filter": folder_filter_dict,
+                    "filter": filter_,
+                    "ids": ids,
+                },
+                result_type=FindFoldersResultType,
+            )
+        except Exception as e:
+            self.log.error(f"Failed to find folders: {e}")
+            return FindFoldersResultType(count=0, folders=[])

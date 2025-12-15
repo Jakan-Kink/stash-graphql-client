@@ -43,8 +43,167 @@ def temp_dir() -> Generator[Path, None, None]:
 
 
 # =============================================================================
+# Integration Test State Validation (xdist-aware)
+# =============================================================================
+
+# Global flag to track Stash availability
+_stash_available = None
+_initial_state = None
+
+
+async def _capture_stash_state():
+    """Async helper to capture Stash state counts."""
+    from stash_graphql_client.context import StashContext
+
+    conn = {
+        "Scheme": "http",
+        "Host": "localhost",
+        "Port": 9999,
+    }
+
+    context = StashContext(conn=conn, verify_ssl=False)
+    client = await context.get_client()
+
+    try:
+        # Capture state counts
+        scenes_result = await client.find_scenes()
+        images_result = await client.find_images()
+        galleries_result = await client.find_galleries()
+        performers_result = await client.find_performers()
+        studios_result = await client.find_studios()
+        tags_result = await client.find_tags()
+
+        return {
+            "scenes": scenes_result.count,
+            "images": images_result.count,
+            "galleries": galleries_result.count,
+            "performers": performers_result.count,
+            "studios": studios_result.count,
+            "tags": tags_result.count,
+        }
+    finally:
+        await client.close()
+        await context.close()
+
+
+def pytest_sessionstart(session):
+    """Hook called at the start of the test session (runs on controller).
+
+    This captures the initial Stash state before any tests run.
+    Unlike session-scoped fixtures, this hook ALWAYS runs on the controller,
+    even with xdist workers.
+    """
+    import asyncio
+
+    global _stash_available, _initial_state
+
+    # Skip if running as xdist worker
+    if hasattr(session.config, "workerinput"):
+        return
+
+    try:
+        # Capture initial state (controller only)
+        _initial_state = asyncio.run(_capture_stash_state())
+        _stash_available = True
+
+        print(f"\n{'=' * 70}")
+        print("STASH STATE VALIDATION: Initial state captured")
+        print(f"{'=' * 70}")
+        for entity_type, count in _initial_state.items():
+            print(f"  {entity_type}: {count}")
+        print(f"{'=' * 70}\n")
+
+    except Exception as e:
+        # Stash not available - mark as unavailable and skip integration tests
+        _stash_available = False
+        print(f"\n{'=' * 70}")
+        print(
+            "STASH STATE VALIDATION: Stash unavailable - integration tests will be skipped"
+        )
+        print(f"Reason: {e}")
+        print(f"{'=' * 70}\n")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Hook called at the end of the test session (runs on controller).
+
+    This validates the final Stash state matches the initial state.
+    Unlike session-scoped fixtures, this hook ALWAYS runs on the controller,
+    even with xdist workers.
+    """
+    import asyncio
+
+    # Skip if running as xdist worker
+    if hasattr(session.config, "workerinput"):
+        return
+
+    # Skip if Stash was never available (read-only access, no global needed)
+    if not _stash_available or _initial_state is None:
+        return
+
+    try:
+        # Capture final state (controller only)
+        final_state = asyncio.run(_capture_stash_state())
+
+        print(f"\n{'=' * 70}")
+        print("STASH STATE VALIDATION: Final state captured")
+        print(f"{'=' * 70}")
+        for entity_type, count in final_state.items():
+            print(f"  {entity_type}: {count}")
+        print(f"{'=' * 70}\n")
+
+        # Compare initial and final states
+        divergences = []
+        for entity_type in _initial_state:
+            initial_count = _initial_state[entity_type]
+            final_count = final_state[entity_type]
+            if final_count != initial_count:
+                delta = final_count - initial_count
+                divergences.append(
+                    f"  {entity_type}: {initial_count} -> {final_count} "
+                    f"({'+' if delta > 0 else ''}{delta})"
+                )
+
+        if divergences:
+            error_msg = (
+                "\n" + "=" * 70 + "\n"
+                "STASH STATE VALIDATION FAILED: Environment was modified!\n"
+                + "="
+                * 70
+                + "\n"
+                "Tests left artifacts behind:\n"
+                + "\n".join(divergences)
+                + "\n\nThis indicates tests created objects without cleaning them up.\n"
+                "All integration tests MUST use stash_cleanup_tracker fixture.\n"
+                + "="
+                * 70
+            )
+            print(error_msg)
+            # Don't fail here - just warn (exitstatus already set by tests)
+        else:
+            print(f"\n{'=' * 70}")
+            print("STASH STATE VALIDATION: ✓ Environment unchanged")
+            print(f"{'=' * 70}\n")
+
+    except Exception as e:
+        print(f"\n{'=' * 70}")
+        print(f"STASH STATE VALIDATION: Failed to validate final state: {e}")
+        print(f"{'=' * 70}\n")
+
+
+# =============================================================================
 # Pytest Hooks for Test Validation
 # =============================================================================
+
+
+def pytest_runtest_setup(item):
+    """Hook that runs before each test to enforce requirements.
+
+    - Skip integration tests if Stash is unavailable
+    """
+    # Skip integration tests if Stash is unavailable
+    if "integration" in item.keywords and _stash_available is False:
+        pytest.skip("Skipping integration test - Stash server unavailable")
 
 
 def pytest_collection_modifyitems(config, items):

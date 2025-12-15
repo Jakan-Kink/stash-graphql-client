@@ -19,10 +19,11 @@ Usage:
 """
 
 from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 from factory.base import Factory
-from factory.declarations import LazyAttribute, LazyFunction, Sequence
+from factory.declarations import LazyFunction, Sequence
 
 from stash_graphql_client.types import (
     Gallery,
@@ -35,6 +36,8 @@ from stash_graphql_client.types import (
 )
 from stash_graphql_client.types.files import Fingerprint, ImageFile, VideoFile
 from stash_graphql_client.types.job import Job, JobStatus
+from stash_graphql_client.types.scene import SceneCreateInput
+from stash_graphql_client.types.unset import UNSET
 
 
 class PerformerFactory(Factory):
@@ -63,7 +66,8 @@ class PerformerFactory(Factory):
     id = Sequence(lambda n: str(100 + n))
     name = Sequence(lambda n: f"Performer_{n}")
 
-    # Lists with default factories (required fields)
+    # Lists with default factories
+    # All lists are non-nullable [Type!]! in GraphQL, use []
     alias_list = LazyFunction(list)
     tags = LazyFunction(list)
     stash_ids = LazyFunction(list)
@@ -118,11 +122,11 @@ class StudioFactory(Factory):
     id = Sequence(lambda n: str(200 + n))
     name = Sequence(lambda n: f"Studio_{n}")
 
-    # Optional fields with defaults
-    urls = LazyAttribute(lambda _: [])
-    aliases = LazyAttribute(lambda _: [])
-    tags = LazyAttribute(lambda _: [])
-    stash_ids = LazyAttribute(lambda _: [])
+    # Studio list fields are all nullable in GraphQL, so use None
+    urls = None
+    aliases = None
+    tags = None
+    stash_ids = None
     parent_studio = None
     details = None
     image_path = None
@@ -153,10 +157,10 @@ class TagFactory(Factory):
     id = Sequence(lambda n: str(300 + n))
     name = Sequence(lambda n: f"Tag_{n}")
 
-    # Lists with default factories (required fields)
-    aliases = LazyFunction(list)
-    parents = LazyFunction(list)
-    children = LazyFunction(list)
+    # Tag list fields are all nullable in GraphQL, so use None
+    aliases = None
+    parents = None
+    children = None
 
     # Optional fields
     description = None
@@ -189,6 +193,7 @@ class SceneFactory(Factory):
     title = Sequence(lambda n: f"Scene_{n}")
 
     # Lists with default factories
+    # Most Scene lists are non-nullable [Type!]! in GraphQL, use []
     files = LazyFunction(list)
     tags = LazyFunction(list)
     performers = LazyFunction(list)
@@ -198,7 +203,8 @@ class SceneFactory(Factory):
     galleries = LazyFunction(list)
     scene_markers = LazyFunction(list)
     sceneStreams = LazyFunction(list)
-    captions = LazyFunction(list)
+    # captions is nullable [VideoCaption!] in GraphQL, use None
+    captions = None
 
     # Optional fields
     code = None
@@ -209,7 +215,8 @@ class SceneFactory(Factory):
     o_counter = None
     organized = False
     studio = None
-    paths = None
+    # paths is an object field (ScenePathsType | UnsetType), use UNSET not None
+    paths = UNSET
 
 
 class GalleryFactory(Factory):
@@ -296,7 +303,8 @@ class ImageFactory(Factory):
     photographer = None
     organized = False
     studio = None
-    paths = None
+    # paths is an object field (ImagePathsType | UnsetType), use UNSET not None
+    paths = UNSET
 
 
 class GroupFactory(Factory):
@@ -618,6 +626,65 @@ def mock_video_file():
     )
 
 
+@pytest.fixture
+def enable_scene_creation():
+    """Enable scene creation during tests using patch.object context manager.
+
+    This fixture temporarily sets Scene.__create_input_type__ to SceneCreateInput,
+    allowing scenes to be created directly during testing. It uses patch.object
+    for cleaner setup/teardown handling compared to manual attribute manipulation.
+
+    Without this fixture, Scene objects normally cannot be created directly via API
+    because the __create_input_type__ attribute is not set by default.
+
+    The fixture uses patch.object which automatically handles:
+    - Storing the original value (if any)
+    - Setting the new value for the duration of the test
+    - Restoring the original value after the test completes
+    - Proper cleanup even if the test raises an exception
+
+    Yields:
+        None: This fixture doesn't provide a value, it just modifies Scene class state
+
+    Example:
+        ```python
+        @pytest.mark.asyncio
+        async def test_scene_creation(stash_client, enable_scene_creation):
+            # With this fixture, Scene objects can be created directly
+            scene = Scene(
+                title="Test Scene",
+                urls=["https://example.com/scene"],
+                organized=True,
+            )
+            scene = await stash_client.create_scene(scene)
+            assert scene.id is not None
+        ```
+
+        ```python
+        @pytest.mark.asyncio
+        async def test_save_with_scene(respx_stash_client, enable_scene_creation):
+            # Can also be used with store.save()
+            import uuid
+            from stash_graphql_client import StashEntityStore
+            scene = Scene(id=uuid.uuid4().hex, title="New Scene")
+            scene._is_new = True
+
+            # Mock the GraphQL response
+            respx.post("http://localhost:9999/graphql").mock(
+                return_value=httpx.Response(200, json={
+                    "data": {"sceneCreate": {"id": "123", "title": "New Scene"}}
+                })
+            )
+
+            store = StashEntityStore(respx_stash_client)
+            await store.save(scene)
+            assert scene.id == "123"
+        ```
+    """
+    with patch.object(Scene, "__create_input_type__", SceneCreateInput):
+        yield
+
+
 # Export all factories and fixtures
 __all__ = [
     # Factories
@@ -640,4 +707,5 @@ __all__ = [
     "mock_studio",
     "mock_tag",
     "mock_video_file",
+    "enable_scene_creation",
 ]

@@ -4,31 +4,51 @@ from typing import Any
 
 from ..logging import client_logger
 from .base import StashClientBase
+from .mixins.config import ConfigClientMixin
 from .mixins.file import FileClientMixin
+from .mixins.filter import FilterClientMixin
 from .mixins.gallery import GalleryClientMixin
+from .mixins.group import GroupClientMixin
 from .mixins.image import ImageClientMixin
+from .mixins.jobs import JobsClientMixin
 from .mixins.marker import MarkerClientMixin
+from .mixins.metadata import MetadataClientMixin
 from .mixins.not_implemented import NotImplementedClientMixin
+from .mixins.package import PackageClientMixin
 from .mixins.performer import PerformerClientMixin
+from .mixins.plugin import PluginClientMixin
 from .mixins.scene import SceneClientMixin
+from .mixins.scraper import ScraperClientMixin
 from .mixins.studio import StudioClientMixin
 from .mixins.subscription import SubscriptionClientMixin
+from .mixins.system_query import SystemQueryClientMixin
 from .mixins.tag import TagClientMixin
+from .mixins.version import VersionClientMixin
 from .utils import sanitize_model_data
 
 
 class StashClient(
     StashClientBase,  # Base class first to provide execute()
-    NotImplementedClientMixin,
+    ConfigClientMixin,
     FileClientMixin,
+    FilterClientMixin,
     GalleryClientMixin,
+    GroupClientMixin,
     ImageClientMixin,
+    JobsClientMixin,
     MarkerClientMixin,
+    MetadataClientMixin,
+    PackageClientMixin,
     PerformerClientMixin,
+    PluginClientMixin,
     SceneClientMixin,
+    ScraperClientMixin,
     StudioClientMixin,
     SubscriptionClientMixin,
+    SystemQueryClientMixin,
     TagClientMixin,
+    VersionClientMixin,
+    NotImplementedClientMixin,  # LAST: Fallback for unimplemented methods only
 ):
     """Full Stash client combining all functionality."""
 
@@ -67,7 +87,7 @@ class StashClient(
         conn = conn or {}
         scheme = conn.get("Scheme", "http")
         host = conn.get("Host", "localhost")
-        if host == "0.0.0.0":  # nosec B104  # Converting all-interfaces to localhost
+        if host == "0.0.0.0":  # nosec B104  # noqa: S104  # Converting all-interfaces to localhost
             host = "127.0.0.1"
         port = conn.get("Port", 9999)
         self.url = f"{scheme}://{host}:{port}/graphql"
@@ -83,12 +103,20 @@ class StashClient(
 
         # Initialize all mixins
         NotImplementedClientMixin.__init__(self)
+        ConfigClientMixin.__init__(self)
         FileClientMixin.__init__(self)
+        FilterClientMixin.__init__(self)
         GalleryClientMixin.__init__(self)
+        GroupClientMixin.__init__(self)
         ImageClientMixin.__init__(self)
+        JobsClientMixin.__init__(self)
         MarkerClientMixin.__init__(self)
+        MetadataClientMixin.__init__(self)
+        PackageClientMixin.__init__(self)
         PerformerClientMixin.__init__(self)
+        PluginClientMixin.__init__(self)
         SceneClientMixin.__init__(self)
+        ScraperClientMixin.__init__(self)
         StudioClientMixin.__init__(self)
         SubscriptionClientMixin.__init__(self)
         TagClientMixin.__init__(self)

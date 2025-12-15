@@ -185,6 +185,67 @@ class SystemStatusEnum(str, Enum):
     OK = "OK"
 
 
+# Job enums
+class JobStatus(str, Enum):
+    """Job status enum from schema/types/job.graphql."""
+
+    READY = "READY"
+    RUNNING = "RUNNING"
+    FINISHED = "FINISHED"
+    STOPPING = "STOPPING"
+    CANCELLED = "CANCELLED"
+    FAILED = "FAILED"
+
+
+class JobStatusUpdateType(str, Enum):
+    """Job status update type enum from schema/types/job.graphql."""
+
+    ADD = "ADD"
+    REMOVE = "REMOVE"
+    UPDATE = "UPDATE"
+
+
+# Logging enums
+class LogLevel(str, Enum):
+    """Log level enum from schema/types/logging.graphql."""
+
+    TRACE = "Trace"
+    DEBUG = "Debug"
+    INFO = "Info"
+    PROGRESS = "Progress"
+    WARNING = "Warning"
+    ERROR = "Error"
+
+
+# Plugin enums
+class PluginSettingTypeEnum(str, Enum):
+    """Plugin setting type enum from schema/types/plugin.graphql."""
+
+    STRING = "STRING"
+    NUMBER = "NUMBER"
+    BOOLEAN = "BOOLEAN"
+
+
+# Scraper enums
+class ScrapeContentType(str, Enum):
+    """Scrape content type enum from schema/types/scraper.graphql."""
+
+    GALLERY = "GALLERY"
+    IMAGE = "IMAGE"
+    MOVIE = "MOVIE"
+    GROUP = "GROUP"
+    PERFORMER = "PERFORMER"
+    SCENE = "SCENE"
+
+
+class ScrapeType(str, Enum):
+    """Scrape type enum from schema/types/scraper.graphql."""
+
+    NAME = "NAME"
+    FRAGMENT = "FRAGMENT"
+    URL = "URL"
+
+
 # Package enums
 class PackageType(str, Enum):
     """Package type enum from schema."""

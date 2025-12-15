@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel
+
+from .scalars import Time
+from .unset import UNSET, UnsetType
 
 
 class LogLevel(str, Enum):
@@ -22,6 +24,6 @@ class LogLevel(str, Enum):
 class LogEntry(BaseModel):
     """Log entry type from schema/types/logging.graphql."""
 
-    time: datetime  # Time!
-    level: LogLevel  # LogLevel!
-    message: str  # String!
+    time: Time | None | UnsetType = UNSET  # Time!
+    level: LogLevel | None | UnsetType = UNSET  # LogLevel!
+    message: str | None | UnsetType = UNSET  # String!

@@ -26,6 +26,7 @@ from stash_graphql_client.logging import (
     processing_logger,
     stash_logger,
 )
+from stash_graphql_client.store import CacheEntry, StashEntityStore
 
 # Re-export commonly used types
 from stash_graphql_client.types import (
@@ -61,6 +62,7 @@ from stash_graphql_client.types import (
     TagCreateInput,
     TagUpdateInput,
 )
+from stash_graphql_client.utils import ScrapeParser
 
 
 __version__ = "0.1.0"
@@ -71,6 +73,11 @@ __all__ = [
     # Client
     "StashClient",
     "StashContext",
+    # Store
+    "StashEntityStore",
+    "CacheEntry",
+    # Utils
+    "ScrapeParser",
     # Logging
     "stash_logger",
     "client_logger",

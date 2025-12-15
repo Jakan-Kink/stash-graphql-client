@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .base import FromGraphQLMixin, StashInput
+from .scalars import Time
+from .unset import UNSET, UnsetType
 
 
 class JobStatus(str, Enum):
@@ -19,21 +22,25 @@ class JobStatus(str, Enum):
     FAILED = "FAILED"
 
 
-class Job(BaseModel):
+class Job(FromGraphQLMixin, BaseModel):
     """Job type from schema/types/job.graphql."""
 
-    id: str  # ID!
-    status: JobStatus  # JobStatus!
-    subTasks: list[str]  # [String!]
-    description: str  # String!
-    progress: float | None = None  # Float
-    startTime: datetime | None = None  # Time
-    endTime: datetime | None = None  # Time
-    addTime: datetime  # Time!
-    error: str | None = None  # String
+    id: str | None | UnsetType = UNSET  # ID!
+    status: JobStatus | None | UnsetType = UNSET  # JobStatus!
+    sub_tasks: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="subTasks"
+    )  # [String!]
+    description: str | None | UnsetType = UNSET  # String!
+    progress: float | None | UnsetType = UNSET  # Float
+    start_time: Time | None | UnsetType = Field(
+        default=UNSET, alias="startTime"
+    )  # Time
+    end_time: Time | None | UnsetType = Field(default=UNSET, alias="endTime")  # Time
+    add_time: Time | None | UnsetType = Field(default=UNSET, alias="addTime")  # Time!
+    error: str | None | UnsetType = UNSET  # String
 
 
-class FindJobInput(BaseModel):
+class FindJobInput(StashInput):
     """Input for finding jobs from schema/types/job.graphql."""
 
     id: str  # ID!
@@ -47,7 +54,7 @@ class JobStatusUpdateType(str, Enum):
     UPDATE = "UPDATE"
 
 
-class JobStatusUpdate(BaseModel):
+class JobStatusUpdate(FromGraphQLMixin, BaseModel):
     """Job status update type from schema/types/job.graphql."""
 
     type: JobStatusUpdateType  # JobStatusUpdateType!

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator
 
-from .base import StashObject
+from .base import StashInput, StashObject, StashResult
+from .scalars import Time
+from .unset import UNSET, UnsetType
 
 
 def fingerprint_resolver(parent: BaseFile, type: str) -> str:
@@ -21,33 +23,37 @@ def fingerprint_resolver(parent: BaseFile, type: str) -> str:
         The fingerprint value for the given type, or empty string if not found.
         This matches the GraphQL schema which defines the return type as String! (non-nullable).
     """
+    # Handle UNSET case
+    if isinstance(parent.fingerprints, UnsetType):
+        return ""
+
     for fp in parent.fingerprints:
         if fp.type_ == type:
             return fp.value
     return ""  # Return empty string instead of None to match GraphQL schema
 
 
-class SetFingerprintsInput(BaseModel):
+class SetFingerprintsInput(StashInput):
     """Input for setting fingerprints."""
 
     type_: str = Field(alias="type")  # String! - aliased to avoid built-in conflict
-    value: str | None = None  # String
+    value: str | None | UnsetType = UNSET  # String
 
 
-class FileSetFingerprintsInput(BaseModel):
+class FileSetFingerprintsInput(StashInput):
     """Input for setting file fingerprints."""
 
     id: str  # ID!
     fingerprints: list[SetFingerprintsInput]  # [SetFingerprintsInput!]!
 
 
-class MoveFilesInput(BaseModel):
+class MoveFilesInput(StashInput):
     """Input for moving files."""
 
     ids: list[str]  # [ID!]!
-    destination_folder: str | None = None  # String
-    destination_folder_id: str | None = None  # ID
-    destination_basename: str | None = None  # String
+    destination_folder: str | None | UnsetType = UNSET  # String
+    destination_folder_id: str | None | UnsetType = UNSET  # ID
+    destination_basename: str | None | UnsetType = UNSET  # String
 
 
 class Fingerprint(BaseModel):
@@ -66,61 +72,18 @@ class BaseFile(StashObject):
     __type_name__ = "BaseFile"
 
     # Required fields
-    path: str  # String!
-    basename: str  # String!
-    parent_folder: Folder  # Folder! (replaces deprecated parent_folder_id)
-    mod_time: datetime  # Time!
-    size: int  # Int64!
-    fingerprints: list[Fingerprint] = Field(default_factory=list)  # [Fingerprint!]!
+    path: str | UnsetType = UNSET  # String!
+    basename: str | UnsetType = UNSET  # String!
+    parent_folder: Folder | UnsetType = UNSET  # Folder!
+    mod_time: datetime | UnsetType = UNSET  # Time!
+    size: int | UnsetType = UNSET  # Int64!
+    fingerprints: list[Fingerprint] | UnsetType = UNSET  # [Fingerprint!]!
 
     # Optional fields
-    zip_file: BasicFile | None = None  # BasicFile (replaces deprecated zip_file_id)
+    zip_file: BasicFile | None | UnsetType = UNSET  # BasicFile
 
     # Note: fingerprint field with resolver is not directly supported in Pydantic
     # Users should call fingerprint_resolver(instance, type) directly
-
-    @model_validator(mode="before")
-    @classmethod
-    def handle_deprecated_id_fields(cls, data: Any) -> Any:
-        """Convert deprecated ID fields to relationship objects for backward compatibility."""
-        if isinstance(data, dict):
-            # Handle deprecated parent_folder_id
-            if "parent_folder_id" in data and "parent_folder" not in data:
-                from datetime import datetime
-
-                # Create a minimal Folder object from the ID with required fields
-                data["parent_folder"] = {
-                    "id": data["parent_folder_id"],
-                    "path": "",  # Placeholder - will be populated by actual query
-                    "mod_time": datetime.now(UTC),  # Placeholder
-                }
-                data.pop("parent_folder_id", None)
-
-            # Handle deprecated zip_file_id
-            if data.get("zip_file_id"):
-                from datetime import datetime
-
-                if "zip_file" not in data:
-                    # Create a minimal BasicFile object from the ID with required fields
-                    data["zip_file"] = {
-                        "id": data["zip_file_id"],
-                        "path": "",  # Placeholder
-                        "basename": "",  # Placeholder
-                        "parent_folder": {
-                            "id": "",
-                            "path": "",
-                            "mod_time": datetime.now(UTC),
-                        },
-                        "mod_time": datetime.now(UTC),
-                        "size": 0,
-                        "fingerprints": [],
-                    }
-                data.pop("zip_file_id", None)
-            elif "zip_file_id" in data:
-                # zip_file_id exists but is None, just remove it
-                data.pop("zip_file_id", None)
-
-        return data
 
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input.
@@ -129,15 +92,13 @@ class BaseFile(StashObject):
             Dictionary of input fields for move or set fingerprints operations.
         """
         # Files don't have create/update operations, only move and set fingerprints
-        if hasattr(self, "id"):
-            # For move operation - return dict with proper field names
-            return {
-                "ids": [self.id],
-                "destination_folder": None,  # Must be set by caller
-                "destination_folder_id": None,  # Must be set by caller
-                "destination_basename": self.basename,
-            }
-        raise ValueError("File must have an ID")
+        # For move operation - return dict with proper field names
+        return {
+            "ids": [self.id],
+            "destination_folder": None,  # Must be set by caller
+            "destination_folder_id": None,  # Must be set by caller
+            "destination_basename": self.basename,
+        }
 
 
 class BasicFile(BaseFile):
@@ -156,8 +117,9 @@ class ImageFile(BaseFile):
     __type_name__ = "ImageFile"
 
     # Required fields
-    width: int  # Int!
-    height: int  # Int!
+    format: str | UnsetType = UNSET  # String!
+    width: int | UnsetType = UNSET  # Int!
+    height: int | UnsetType = UNSET  # Int!
 
 
 class VideoFile(BaseFile):
@@ -168,14 +130,14 @@ class VideoFile(BaseFile):
     __type_name__ = "VideoFile"
 
     # Required fields
-    format: str  # String!
-    width: int  # Int!
-    height: int  # Int!
-    duration: float  # Float!
-    video_codec: str  # String!
-    audio_codec: str  # String!
-    frame_rate: float  # Float!  # frame_rate in schema
-    bit_rate: int  # Int!  # bit_rate in schema
+    format: str | UnsetType = UNSET  # String!
+    width: int | UnsetType = UNSET  # Int!
+    height: int | UnsetType = UNSET  # Int!
+    duration: float | UnsetType = UNSET  # Float!
+    video_codec: str | UnsetType = UNSET  # String!
+    audio_codec: str | UnsetType = UNSET  # String!
+    frame_rate: float | UnsetType = UNSET  # Float!  # frame_rate in schema
+    bit_rate: int | UnsetType = UNSET  # Int!  # bit_rate in schema
 
 
 # Union type for VisualFile (VideoFile or ImageFile)
@@ -194,29 +156,31 @@ class GalleryFile(BaseFile):
 class ScenePathsType(BaseModel):
     """Scene paths type from schema/types/scene.graphql."""
 
-    screenshot: str | None = None  # String (Resolver)
-    preview: str | None = None  # String (Resolver)
-    stream: str | None = None  # String (Resolver)
-    webp: str | None = None  # String (Resolver)
-    vtt: str | None = None  # String (Resolver)
-    sprite: str | None = None  # String (Resolver)
-    funscript: str | None = None  # String (Resolver)
-    interactive_heatmap: str | None = None  # String (Resolver)
-    caption: str | None = None  # String (Resolver)
+    screenshot: str | None | UnsetType = UNSET  # String (Resolver)
+    preview: str | None | UnsetType = UNSET  # String (Resolver)
+    stream: str | None | UnsetType = UNSET  # String (Resolver)
+    webp: str | None | UnsetType = UNSET  # String (Resolver)
+    vtt: str | None | UnsetType = UNSET  # String (Resolver)
+    sprite: str | None | UnsetType = UNSET  # String (Resolver)
+    funscript: str | None | UnsetType = UNSET  # String (Resolver)
+    interactive_heatmap: str | None | UnsetType = UNSET  # String (Resolver)
+    caption: str | None | UnsetType = UNSET  # String (Resolver)
 
 
-class StashIDInput(BaseModel):
+class StashIDInput(StashInput):
     """Input for StashID from schema/types/stash-box.graphql."""
 
     endpoint: str  # String!
     stash_id: str  # String!
+    updated_at: Time | None | UnsetType = UNSET  # Time
 
 
 class StashID(BaseModel):
     """StashID type from schema/types/stash-box.graphql."""
 
-    endpoint: str  # String!
-    stash_id: str  # String!
+    endpoint: str | None | UnsetType = UNSET  # String!
+    stash_id: str | None | UnsetType = UNSET  # String!
+    updated_at: Time | None | UnsetType = UNSET  # Time!
 
 
 class VideoCaption(BaseModel):
@@ -235,59 +199,12 @@ class Folder(StashObject):
     __type_name__ = "Folder"
 
     # Required fields
-    path: str  # String!
-    mod_time: datetime  # Time!
+    path: str | UnsetType = UNSET  # String!
+    mod_time: datetime | UnsetType = UNSET  # Time!
 
     # Optional fields
-    parent_folder: Folder | None = None  # Folder (replaces deprecated parent_folder_id)
-    zip_file: BasicFile | None = None  # BasicFile (replaces deprecated zip_file_id)
-
-    @model_validator(mode="before")
-    @classmethod
-    def handle_deprecated_id_fields(cls, data: Any) -> Any:
-        """Convert deprecated ID fields to relationship objects for backward compatibility."""
-        if isinstance(data, dict):
-            # Handle deprecated parent_folder_id
-            if data.get("parent_folder_id"):
-                from datetime import datetime
-
-                if "parent_folder" not in data:
-                    # Create a minimal Folder object from the ID with required fields
-                    data["parent_folder"] = {
-                        "id": data["parent_folder_id"],
-                        "path": "",  # Placeholder - will be populated by actual query
-                        "mod_time": datetime.now(UTC),  # Placeholder
-                    }
-                data.pop("parent_folder_id", None)
-            elif "parent_folder_id" in data:
-                # parent_folder_id exists but is None, just remove it
-                data.pop("parent_folder_id", None)
-
-            # Handle deprecated zip_file_id
-            if data.get("zip_file_id"):
-                from datetime import datetime
-
-                if "zip_file" not in data:
-                    # Create a minimal BasicFile object from the ID with required fields
-                    data["zip_file"] = {
-                        "id": data["zip_file_id"],
-                        "path": "",  # Placeholder
-                        "basename": "",  # Placeholder
-                        "parent_folder": {
-                            "id": "",
-                            "path": "",
-                            "mod_time": datetime.now(UTC),
-                        },
-                        "mod_time": datetime.now(UTC),
-                        "size": 0,
-                        "fingerprints": [],
-                    }
-                data.pop("zip_file_id", None)
-            elif "zip_file_id" in data:
-                # zip_file_id exists but is None, just remove it
-                data.pop("zip_file_id", None)
-
-        return data
+    parent_folder: Folder | None | UnsetType = UNSET  # Folder
+    zip_file: BasicFile | None | UnsetType = UNSET  # BasicFile
 
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input.
@@ -296,32 +213,30 @@ class Folder(StashObject):
             Dictionary of input fields for move operation.
         """
         # Folders don't have create/update operations, only move
-        if hasattr(self, "id"):
-            # For move operation - return dict with proper field names
-            return {
-                "ids": [self.id],
-                "destination_folder": None,  # Must be set by caller
-                "destination_folder_id": None,  # Must be set by caller
-                "destination_basename": None,  # Not applicable for folders
-            }
-        raise ValueError("Folder must have an ID")
+        # For move operation - return dict with proper field names
+        return {
+            "ids": [self.id],
+            "destination_folder": None,  # Must be set by caller
+            "destination_folder_id": None,  # Must be set by caller
+            "destination_basename": None,  # Not applicable for folders
+        }
 
 
-class AssignSceneFileInput(BaseModel):
+class AssignSceneFileInput(StashInput):
     """Input for assigning a file to a scene."""
 
     scene_id: str  # ID!
     file_id: str  # ID!
 
 
-class SceneHashInput(BaseModel):
+class SceneHashInput(StashInput):
     """Input for finding a scene by hash."""
 
-    checksum: str | None = None  # String
-    oshash: str | None = None  # String
+    checksum: str | None | UnsetType = UNSET  # String
+    oshash: str | None | UnsetType = UNSET  # String
 
 
-class FindFilesResultType(BaseModel):
+class FindFilesResultType(StashResult):
     """Result type for finding files from schema/types/file.graphql."""
 
     count: int  # Int!
@@ -330,8 +245,39 @@ class FindFilesResultType(BaseModel):
     size: int  # Int!
     files: list[BaseFile]  # [BaseFile!]!
 
+    @field_validator("files", mode="before")
+    @classmethod
+    def _discriminate_file_types(cls, value: Any) -> Any:
+        """Discriminate BaseFile interface types based on __typename.
 
-class FindFoldersResultType(BaseModel):
+        Converts raw dicts to the appropriate BaseFile subclass based on __typename field.
+        """
+        if not isinstance(value, list):
+            return value
+
+        # Type mapping for BaseFile interface
+        type_map = {
+            "VideoFile": VideoFile,
+            "ImageFile": ImageFile,
+            "GalleryFile": GalleryFile,
+            "BasicFile": BasicFile,
+        }
+
+        result = []
+        for item in value:
+            if isinstance(item, dict) and "__typename" in item:
+                typename = item["__typename"]
+                file_type = type_map.get(typename, BaseFile)
+                # Construct the correct type from the dict
+                result.append(file_type.model_validate(item))
+            else:
+                # Already constructed or no typename
+                result.append(item)
+
+        return result
+
+
+class FindFoldersResultType(StashResult):
     """Result type for finding folders from schema/types/file.graphql."""
 
     count: int  # Int!

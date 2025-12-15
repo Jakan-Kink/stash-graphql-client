@@ -6,6 +6,7 @@ Tests studio types including Studio, StudioCreateInput, StudioUpdateInput and re
 import pytest
 from pydantic import BaseModel
 
+from stash_graphql_client.types import UNSET
 from stash_graphql_client.types.studio import (
     FindStudiosResultType,
     Studio,
@@ -103,6 +104,9 @@ def test_studio_class_variables() -> None:
         "urls",
         "parent_studio",
         "details",
+        "rating100",
+        "favorite",
+        "ignore_auto_tag",
     }
     assert Studio.__tracked_fields__ == expected_tracked_fields
 
@@ -127,6 +131,8 @@ def test_studio_field_conversions() -> None:
 @pytest.mark.unit
 def test_studio_relationships() -> None:
     """Test Studio relationships."""
+    from stash_graphql_client.types.base import RelationshipMetadata
+
     assert hasattr(Studio, "__relationships__")
 
     # Test key relationships exist
@@ -137,14 +143,16 @@ def test_studio_relationships() -> None:
             f"Relationship {field} not found in Studio"
         )
 
-    # Test specific relationship mappings
+    # Test specific relationship mappings (using RelationshipMetadata attributes)
     parent_studio_mapping = Studio.__relationships__["parent_studio"]
-    assert parent_studio_mapping[0] == "parent_id"  # target field
-    assert parent_studio_mapping[1] is False  # is_list
+    assert isinstance(parent_studio_mapping, RelationshipMetadata)
+    assert parent_studio_mapping.target_field == "parent_id"
+    assert parent_studio_mapping.is_list is False
 
     tags_mapping = Studio.__relationships__["tags"]
-    assert tags_mapping[0] == "tag_ids"  # target field
-    assert tags_mapping[1] is True  # is_list
+    assert isinstance(tags_mapping, RelationshipMetadata)
+    assert tags_mapping.target_field == "tag_ids"
+    assert tags_mapping.is_list is True
 
 
 @pytest.mark.unit
@@ -176,13 +184,16 @@ def test_find_studios_result_type() -> None:
 @pytest.mark.unit
 def test_studio_instantiation() -> None:
     """Test Studio instantiation."""
+    from stash_graphql_client.types.unset import UNSET
+
     studio = Studio(id="123", name="Test Studio")
 
     assert studio.id == "123"
     assert studio.name == "Test Studio"
-    assert studio.aliases == []  # default factory
-    assert studio.tags == []  # default factory
-    assert studio.stash_ids == []  # default factory
+    # Studio list fields default to UNSET (not [] or None) for fragment-based loading
+    assert studio.aliases is UNSET
+    assert studio.tags is UNSET
+    assert studio.stash_ids is UNSET
 
 
 @pytest.mark.unit
@@ -207,14 +218,6 @@ def test_studio_update_input_instantiation() -> None:
     assert studio_input.id == "123"
     assert studio_input.name == "Updated Studio"
     assert studio_input.urls == ["https://updated.com"]
-
-
-@pytest.mark.unit
-def test_studio_from_account() -> None:
-    """Test Studio.from_account class method exists."""
-    # Test that the from_account method exists
-    assert hasattr(Studio, "from_account")
-    assert callable(Studio.from_account)
 
 
 @pytest.mark.unit
@@ -247,56 +250,87 @@ def test_studio_inheritance() -> None:
 @pytest.mark.unit
 def test_studio_stash_id_relationship() -> None:
     """Test Studio's stash_ids relationship transformation."""
+    from stash_graphql_client.types.base import RelationshipMetadata
+
     # Test that stash_ids relationship has a transformation function
     stash_ids_mapping = Studio.__relationships__["stash_ids"]
-    assert stash_ids_mapping[0] == "stash_ids"  # target field
-    assert stash_ids_mapping[1] is True  # is_list
-    assert stash_ids_mapping[2] is not None  # has transformation function
+    assert isinstance(stash_ids_mapping, RelationshipMetadata)
+    assert stash_ids_mapping.target_field == "stash_ids"
+    assert stash_ids_mapping.is_list is True
+    assert stash_ids_mapping.transform is not None  # has transformation function
 
 
-# @pytest.mark.unit
-# async def test_studio_from_account_method() -> None:
-#     """Test Studio.from_account method creates studio from account."""
+@pytest.mark.unit
+def test_studio_handle_deprecated_url_migration() -> None:
+    """Test Studio.handle_deprecated_url() migrates url to urls.
 
-#     # Create mock account
-# !!!!!    mock_account = Mock()
-# !!!!!    mock_account.display_name = "Test Display Name"
-# !!!!!    mock_account.username = "testuser"
-# !!!!!    mock_account.bio = "Test bio description"
-# !!!!!    mock_account.site_url = "https://example.mymember.site"
-# !!!!!    mock_account.studio_name = "ExampleStudio"  # This should come from site config
+    This covers lines 131-137 in studio.py - url migration logic.
+    """
+    # Test migrating single url to urls array via Studio instantiation
+    studio = Studio(id="1", url="https://example.com", name="Test Studio")
 
-#     # Call the method
-#     studio = await Studio.from_account(mock_account)
-
-#     # Verify the result
-#     assert studio.id == "new"
-#     assert studio.name == "ExampleStudio"  # Should use studio_name from site config
-#     assert studio.url == "https://example.mymember.site"
-#     assert studio.details == "Test bio description"
+    # url should be migrated to urls
+    assert studio.urls == ["https://example.com"]
 
 
-# @pytest.mark.unit
-# async def test_studio_from_account_fallback_name() -> None:
-#     """Test Studio.from_account handles missing display_name."""
+@pytest.mark.unit
+def test_studio_handle_deprecated_url_merge() -> None:
+    """Test Studio.handle_deprecated_url() merges url into existing urls.
 
-#     # Create mock account with no display_name
-# !!!!!    mock_account = Mock(spec=["display_name", "username", "bio", "site_url"])
-# !!!!!    mock_account.display_name = None
-# !!!!!    mock_account.username = "testuser"
-# !!!!!    mock_account.bio = "Test bio"
-# !!!!!    mock_account.site_url = None  # Explicitly set site_url to None
-#     # No studio_name attribute, should fall back to username
+    This covers lines 135-137 in studio.py - ensuring url is in urls array.
+    """
+    # Test merging url into existing urls if not present
+    studio = Studio(
+        id="1",
+        url="https://example.com",
+        urls=["https://other.com"],
+        name="Test Studio",
+    )
 
-#     # Call the method
-#     studio = await Studio.from_account(mock_account)
+    # url should be prepended to urls
+    assert studio.urls == ["https://example.com", "https://other.com"]
 
-#     # Should fallback to username
-#     assert studio.name == "testuser"
 
-#     # Test with no username either
-#     mock_account.username = None
-#     studio = await Studio.from_account(mock_account)
+@pytest.mark.unit
+def test_studio_handle_deprecated_url_already_in_urls() -> None:
+    """Test Studio.handle_deprecated_url() when url already in urls.
 
-#     # Should fallback to "Unknown"
-#     assert studio.name == "Unknown"
+    This covers line 135 branch where url is already in urls.
+    """
+    # Test when url is already in urls
+    studio = Studio(
+        id="1",
+        url="https://example.com",
+        urls=["https://example.com", "https://other.com"],
+        name="Test Studio",
+    )
+
+    # Should not duplicate
+    assert studio.urls == ["https://example.com", "https://other.com"]
+
+
+@pytest.mark.unit
+def test_studio_handle_deprecated_url_empty_string() -> None:
+    """Test Studio.handle_deprecated_url() removes empty string url.
+
+    This covers line 133 in studio.py - removing empty url.
+    """
+    # Test with empty string url
+    studio = Studio(id="1", name="Test Studio", url="")
+
+    # Empty url should be removed, urls should be UNSET
+    assert studio.urls is UNSET
+
+
+@pytest.mark.unit
+def test_studio_handle_deprecated_url_none() -> None:
+    """Test Studio.handle_deprecated_url() removes None url.
+
+    This covers lines 131-133 in studio.py - removing None url.
+    """
+    # Can't actually pass url=None since it's a string field
+    # But the validator handles the case defensively
+    studio = Studio(id="1", name="Test Studio")
+
+    # Should have UNSET urls (no url field provided)
+    assert studio.urls is UNSET

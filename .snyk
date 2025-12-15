@@ -1,0 +1,9 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  'python/HardcodedNonCryptoSecret/test':
+    - '**/tests/client/test_config_mixin.py':
+        reason: Test data only - not real API keys
+        expires: 2099-12-31T23:59:59.999Z
+        created: 2025-12-08T00:00:00.000Z

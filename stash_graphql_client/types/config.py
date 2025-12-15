@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .base import FromGraphQLMixin, StashInput
+from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
@@ -26,274 +29,636 @@ if TYPE_CHECKING:
     )
 
 
-class SetupInput(BaseModel):
+class SetupInput(StashInput):
     """Input for initial setup."""
 
-    config_location: str  # String!
-    stashes: list[StashConfigInput]  # [StashConfigInput!]!
-    database_file: str  # String!
-    generated_location: str  # String!
-    cache_location: str  # String!
-    store_blobs_in_database: bool  # Boolean!
-    blobs_location: str  # String!
+    config_location: str | UnsetType = Field(
+        default=UNSET, alias="configLocation"
+    )  # String!
+    stashes: list[StashConfigInput] | UnsetType = UNSET  # [StashConfigInput!]!
+    sfw_content_mode: bool | None | UnsetType = Field(
+        default=UNSET, alias="sfwContentMode"
+    )  # Boolean
+    database_file: str | UnsetType = Field(
+        default=UNSET, alias="databaseFile"
+    )  # String!
+    generated_location: str | UnsetType = Field(
+        default=UNSET, alias="generatedLocation"
+    )  # String!
+    cache_location: str | UnsetType = Field(
+        default=UNSET, alias="cacheLocation"
+    )  # String!
+    store_blobs_in_database: bool | UnsetType = Field(
+        default=UNSET, alias="storeBlobsInDatabase"
+    )  # Boolean!
+    blobs_location: str | UnsetType = Field(
+        default=UNSET, alias="blobsLocation"
+    )  # String!
 
 
-class ConfigGeneralInput(BaseModel):
+class ConfigGeneralInput(StashInput):
     """Input for general configuration."""
 
-    stashes: list[StashConfigInput] | None = None  # [StashConfigInput!]
-    database_path: str | None = None  # String
-    backup_directory_path: str | None = None  # String
-    generated_path: str | None = None  # String
-    metadata_path: str | None = None  # String
-    cache_path: str | None = None  # String
-    blobs_path: str | None = None  # String
-    blobs_storage: BlobsStorageType | None = None  # BlobsStorageType
-    ffmpeg_path: str | None = None  # String
-    ffprobe_path: str | None = None  # String
-    calculate_md5: bool | None = None  # Boolean
-    video_file_naming_algorithm: HashAlgorithm | None = None  # HashAlgorithm
-    parallel_tasks: int | None = None  # Int
-    preview_audio: bool | None = None  # Boolean
-    preview_segments: int | None = None  # Int
-    preview_segment_duration: float | None = None  # Float
-    preview_exclude_start: str | None = None  # String
-    preview_exclude_end: str | None = None  # String
-    preview_preset: PreviewPreset | None = None  # PreviewPreset
-    transcode_hardware_acceleration: bool | None = None  # Boolean
-    max_transcode_size: StreamingResolutionEnum | None = None  # StreamingResolutionEnum
-    max_streaming_transcode_size: StreamingResolutionEnum | None = (
-        None  # StreamingResolutionEnum
-    )
-    transcode_input_args: list[str] | None = None  # [String!]
-    transcode_output_args: list[str] | None = None  # [String!]
-    live_transcode_input_args: list[str] | None = None  # [String!]
-    live_transcode_output_args: list[str] | None = None  # [String!]
-    draw_funscript_heatmap_range: bool | None = None  # Boolean
-    write_image_thumbnails: bool | None = None  # Boolean
-    create_image_clips_from_videos: bool | None = None  # Boolean
-    username: str | None = None  # String
-    password: str | None = None  # String
-    max_session_age: int | None = None  # Int
-    log_file: str | None = None  # String
-    log_out: bool | None = None  # Boolean
-    log_level: str | None = None  # String
-    log_access: bool | None = None  # Boolean
-    create_galleries_from_folders: bool | None = None  # Boolean
-    gallery_cover_regex: str | None = None  # String
-    video_extensions: list[str] | None = None  # [String!]
-    image_extensions: list[str] | None = None  # [String!]
-    gallery_extensions: list[str] | None = None  # [String!]
-    excludes: list[str] | None = None  # [String!]
-    image_excludes: list[str] | None = None  # [String!]
-    custom_performer_image_location: str | None = None  # String
+    stashes: list[StashConfigInput] | None | UnsetType = UNSET  # [StashConfigInput!]
+    database_path: str | None | UnsetType = Field(
+        default=UNSET, alias="databasePath"
+    )  # String
+    backup_directory_path: str | None | UnsetType = Field(
+        default=UNSET, alias="backupDirectoryPath"
+    )  # String
+    delete_trash_path: str | None | UnsetType = Field(
+        default=UNSET, alias="deleteTrashPath"
+    )  # String
+    generated_path: str | None | UnsetType = Field(
+        default=UNSET, alias="generatedPath"
+    )  # String
+    metadata_path: str | None | UnsetType = Field(
+        default=UNSET, alias="metadataPath"
+    )  # String
+    scrapers_path: str | None | UnsetType = Field(
+        default=UNSET, alias="scrapersPath"
+    )  # String
+    plugins_path: str | None | UnsetType = Field(
+        default=UNSET, alias="pluginsPath"
+    )  # String
+    cache_path: str | None | UnsetType = Field(
+        default=UNSET, alias="cachePath"
+    )  # String
+    blobs_path: str | None | UnsetType = Field(
+        default=UNSET, alias="blobsPath"
+    )  # String
+    blobs_storage: BlobsStorageType | None | UnsetType = Field(
+        default=UNSET, alias="blobsStorage"
+    )  # BlobsStorageType
+    ffmpeg_path: str | None | UnsetType = Field(
+        default=UNSET, alias="ffmpegPath"
+    )  # String
+    ffprobe_path: str | None | UnsetType = Field(
+        default=UNSET, alias="ffprobePath"
+    )  # String
+    calculate_md5: bool | None | UnsetType = Field(
+        default=UNSET, alias="calculateMD5"
+    )  # Boolean
+    video_file_naming_algorithm: HashAlgorithm | None | UnsetType = Field(
+        default=UNSET, alias="videoFileNamingAlgorithm"
+    )  # HashAlgorithm
+    parallel_tasks: int | None | UnsetType = Field(
+        default=UNSET, alias="parallelTasks"
+    )  # Int
+    preview_audio: bool | None | UnsetType = Field(
+        default=UNSET, alias="previewAudio"
+    )  # Boolean
+    preview_segments: int | None | UnsetType = Field(
+        default=UNSET, alias="previewSegments"
+    )  # Int
+    preview_segment_duration: float | None | UnsetType = Field(
+        default=UNSET, alias="previewSegmentDuration"
+    )  # Float
+    preview_exclude_start: str | None | UnsetType = Field(
+        default=UNSET, alias="previewExcludeStart"
+    )  # String
+    preview_exclude_end: str | None | UnsetType = Field(
+        default=UNSET, alias="previewExcludeEnd"
+    )  # String
+    preview_preset: PreviewPreset | None | UnsetType = Field(
+        default=UNSET, alias="previewPreset"
+    )  # PreviewPreset
+    transcode_hardware_acceleration: bool | None | UnsetType = Field(
+        default=UNSET, alias="transcodeHardwareAcceleration"
+    )  # Boolean
+    max_transcode_size: StreamingResolutionEnum | None | UnsetType = Field(
+        default=UNSET, alias="maxTranscodeSize"
+    )  # StreamingResolutionEnum
+    max_streaming_transcode_size: StreamingResolutionEnum | None | UnsetType = Field(
+        default=UNSET, alias="maxStreamingTranscodeSize"
+    )  # StreamingResolutionEnum
+    transcode_input_args: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="transcodeInputArgs"
+    )  # [String!]
+    transcode_output_args: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="transcodeOutputArgs"
+    )  # [String!]
+    live_transcode_input_args: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="liveTranscodeInputArgs"
+    )  # [String!]
+    live_transcode_output_args: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="liveTranscodeOutputArgs"
+    )  # [String!]
+    draw_funscript_heatmap_range: bool | None | UnsetType = Field(
+        default=UNSET, alias="drawFunscriptHeatmapRange"
+    )  # Boolean
+    write_image_thumbnails: bool | None | UnsetType = Field(
+        default=UNSET, alias="writeImageThumbnails"
+    )  # Boolean
+    create_image_clips_from_videos: bool | None | UnsetType = Field(
+        default=UNSET, alias="createImageClipsFromVideos"
+    )  # Boolean
+    username: str | None | UnsetType = UNSET  # String
+    password: str | None | UnsetType = UNSET  # String
+    max_session_age: int | None | UnsetType = Field(
+        default=UNSET, alias="maxSessionAge"
+    )  # Int
+    log_file: str | None | UnsetType = Field(default=UNSET, alias="logFile")  # String
+    log_out: bool | None | UnsetType = Field(default=UNSET, alias="logOut")  # Boolean
+    log_level: str | None | UnsetType = Field(default=UNSET, alias="logLevel")  # String
+    log_access: bool | None | UnsetType = Field(
+        default=UNSET, alias="logAccess"
+    )  # Boolean
+    log_file_max_size: int | None | UnsetType = Field(
+        default=UNSET, alias="logFileMaxSize"
+    )  # Int
+    create_galleries_from_folders: bool | None | UnsetType = Field(
+        default=UNSET, alias="createGalleriesFromFolders"
+    )  # Boolean
+    gallery_cover_regex: str | None | UnsetType = Field(
+        default=UNSET, alias="galleryCoverRegex"
+    )  # String
+    video_extensions: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="videoExtensions"
+    )  # [String!]
+    image_extensions: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="imageExtensions"
+    )  # [String!]
+    gallery_extensions: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="galleryExtensions"
+    )  # [String!]
+    excludes: list[str] | None | UnsetType = UNSET  # [String!]
+    image_excludes: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="imageExcludes"
+    )  # [String!]
+    custom_performer_image_location: str | None | UnsetType = Field(
+        default=UNSET, alias="customPerformerImageLocation"
+    )  # String
+    stash_boxes: list[Any] | None | UnsetType = Field(
+        default=UNSET, alias="stashBoxes"
+    )  # [StashBoxInput!]
+    python_path: str | None | UnsetType = Field(
+        default=UNSET, alias="pythonPath"
+    )  # String
+    scraper_package_sources: list[Any] | None | UnsetType = Field(
+        default=UNSET, alias="scraperPackageSources"
+    )  # [PackageSourceInput!]
+    plugin_package_sources: list[Any] | None | UnsetType = Field(
+        default=UNSET, alias="pluginPackageSources"
+    )  # [PackageSourceInput!]
 
 
-class ConfigGeneralResult(BaseModel):
+class ConfigGeneralResult(FromGraphQLMixin, BaseModel):
     """Result type for general configuration."""
 
-    stashes: list[StashConfig]  # [StashConfig!]!
-    database_path: str  # String!
-    backup_directory_path: str  # String!
-    generated_path: str  # String!
-    metadata_path: str  # String!
-    config_file_path: str  # String!
-    cache_path: str  # String!
-    blobs_path: str  # String!
-    blobs_storage: BlobsStorageType  # BlobsStorageType!
-    ffmpeg_path: str  # String!
-    ffprobe_path: str  # String!
-    calculate_md5: bool  # Boolean!
-    video_file_naming_algorithm: HashAlgorithm  # HashAlgorithm!
-    parallel_tasks: int  # Int!
-    preview_audio: bool  # Boolean!
-    preview_segments: int  # Int!
-    preview_segment_duration: float  # Float!
-    preview_exclude_start: str  # String!
-    preview_exclude_end: str  # String!
-    preview_preset: PreviewPreset  # PreviewPreset!
-    transcode_hardware_acceleration: bool  # Boolean!
-    max_transcode_size: StreamingResolutionEnum | None = None  # StreamingResolutionEnum
-    max_streaming_transcode_size: StreamingResolutionEnum | None = (
-        None  # StreamingResolutionEnum
-    )
-    transcode_input_args: list[str]  # [String!]!
-    transcode_output_args: list[str]  # [String!]!
-    live_transcode_input_args: list[str]  # [String!]!
-    live_transcode_output_args: list[str]  # [String!]!
-    draw_funscript_heatmap_range: bool  # Boolean!
-    write_image_thumbnails: bool  # Boolean!
-    create_image_clips_from_videos: bool  # Boolean!
-    api_key: str  # String!
-    username: str  # String!
-    password: str  # String!
-    max_session_age: int  # Int!
-    log_file: str | None = None  # String
-    log_out: bool  # Boolean!
-    log_level: str  # String!
-    log_access: bool  # Boolean!
-    video_extensions: list[str]  # [String!]!
-    image_extensions: list[str]  # [String!]!
-    gallery_extensions: list[str]  # [String!]!
-    create_galleries_from_folders: bool  # Boolean!
-    gallery_cover_regex: str  # String!
-    excludes: list[str]  # [String!]!
-    image_excludes: list[str]  # [String!]!
-    custom_performer_image_location: str | None = None  # String
+    stashes: list[StashConfig] | UnsetType = UNSET  # [StashConfig!]!
+    database_path: str | UnsetType = Field(
+        default=UNSET, alias="databasePath"
+    )  # String!
+    backup_directory_path: str | UnsetType = Field(
+        default=UNSET, alias="backupDirectoryPath"
+    )  # String!
+    delete_trash_path: str | UnsetType = Field(
+        default=UNSET, alias="deleteTrashPath"
+    )  # String!
+    generated_path: str | UnsetType = Field(
+        default=UNSET, alias="generatedPath"
+    )  # String!
+    metadata_path: str | UnsetType = Field(
+        default=UNSET, alias="metadataPath"
+    )  # String!
+    config_file_path: str | UnsetType = Field(
+        default=UNSET, alias="configFilePath"
+    )  # String!
+    scrapers_path: str | UnsetType = Field(
+        default=UNSET, alias="scrapersPath"
+    )  # String!
+    plugins_path: str | UnsetType = Field(default=UNSET, alias="pluginsPath")  # String!
+    cache_path: str | UnsetType = Field(default=UNSET, alias="cachePath")  # String!
+    blobs_path: str | UnsetType = Field(default=UNSET, alias="blobsPath")  # String!
+    blobs_storage: BlobsStorageType | UnsetType = Field(
+        default=UNSET, alias="blobsStorage"
+    )  # BlobsStorageType!
+    ffmpeg_path: str | UnsetType = Field(default=UNSET, alias="ffmpegPath")  # String!
+    ffprobe_path: str | UnsetType = Field(default=UNSET, alias="ffprobePath")  # String!
+    calculate_md5: bool | UnsetType = Field(
+        default=UNSET, alias="calculateMD5"
+    )  # Boolean!
+    video_file_naming_algorithm: HashAlgorithm | UnsetType = Field(
+        default=UNSET, alias="videoFileNamingAlgorithm"
+    )  # HashAlgorithm!
+    parallel_tasks: int | UnsetType = Field(
+        default=UNSET, alias="parallelTasks"
+    )  # Int!
+    preview_audio: bool | UnsetType = Field(
+        default=UNSET, alias="previewAudio"
+    )  # Boolean!
+    preview_segments: int | UnsetType = Field(
+        default=UNSET, alias="previewSegments"
+    )  # Int!
+    preview_segment_duration: float | UnsetType = Field(
+        default=UNSET, alias="previewSegmentDuration"
+    )  # Float!
+    preview_exclude_start: str | UnsetType = Field(
+        default=UNSET, alias="previewExcludeStart"
+    )  # String!
+    preview_exclude_end: str | UnsetType = Field(
+        default=UNSET, alias="previewExcludeEnd"
+    )  # String!
+    preview_preset: PreviewPreset | UnsetType = Field(
+        default=UNSET, alias="previewPreset"
+    )  # PreviewPreset!
+    transcode_hardware_acceleration: bool | UnsetType = Field(
+        default=UNSET, alias="transcodeHardwareAcceleration"
+    )  # Boolean!
+    max_transcode_size: StreamingResolutionEnum | None | UnsetType = Field(
+        default=UNSET, alias="maxTranscodeSize"
+    )  # StreamingResolutionEnum
+    max_streaming_transcode_size: StreamingResolutionEnum | None | UnsetType = Field(
+        default=UNSET, alias="maxStreamingTranscodeSize"
+    )  # StreamingResolutionEnum
+    transcode_input_args: list[str] | UnsetType = Field(
+        default=UNSET, alias="transcodeInputArgs"
+    )  # [String!]!
+    transcode_output_args: list[str] | UnsetType = Field(
+        default=UNSET, alias="transcodeOutputArgs"
+    )  # [String!]!
+    live_transcode_input_args: list[str] | UnsetType = Field(
+        default=UNSET, alias="liveTranscodeInputArgs"
+    )  # [String!]!
+    live_transcode_output_args: list[str] | UnsetType = Field(
+        default=UNSET, alias="liveTranscodeOutputArgs"
+    )  # [String!]!
+    draw_funscript_heatmap_range: bool | UnsetType = Field(
+        default=UNSET, alias="drawFunscriptHeatmapRange"
+    )  # Boolean!
+    write_image_thumbnails: bool | UnsetType = Field(
+        default=UNSET, alias="writeImageThumbnails"
+    )  # Boolean!
+    create_image_clips_from_videos: bool | UnsetType = Field(
+        default=UNSET, alias="createImageClipsFromVideos"
+    )  # Boolean!
+    api_key: str | UnsetType = Field(default=UNSET, alias="apiKey")  # String!
+    username: str | UnsetType = UNSET  # String!
+    password: str | UnsetType = UNSET  # String!
+    max_session_age: int | UnsetType = Field(
+        default=UNSET, alias="maxSessionAge"
+    )  # Int!
+    log_file: str | None | UnsetType = Field(default=UNSET, alias="logFile")  # String
+    log_out: bool | UnsetType = Field(default=UNSET, alias="logOut")  # Boolean!
+    log_level: str | UnsetType = Field(default=UNSET, alias="logLevel")  # String!
+    log_access: bool | UnsetType = Field(default=UNSET, alias="logAccess")  # Boolean!
+    log_file_max_size: int | UnsetType = Field(
+        default=UNSET, alias="logFileMaxSize"
+    )  # Int!
+    video_extensions: list[str] | UnsetType = Field(
+        default=UNSET, alias="videoExtensions"
+    )  # [String!]!
+    image_extensions: list[str] | UnsetType = Field(
+        default=UNSET, alias="imageExtensions"
+    )  # [String!]!
+    gallery_extensions: list[str] | UnsetType = Field(
+        default=UNSET, alias="galleryExtensions"
+    )  # [String!]!
+    create_galleries_from_folders: bool | UnsetType = Field(
+        default=UNSET, alias="createGalleriesFromFolders"
+    )  # Boolean!
+    gallery_cover_regex: str | UnsetType = Field(
+        default=UNSET, alias="galleryCoverRegex"
+    )  # String!
+    excludes: list[str] | UnsetType = UNSET  # [String!]!
+    image_excludes: list[str] | UnsetType = Field(
+        default=UNSET, alias="imageExcludes"
+    )  # [String!]!
+    custom_performer_image_location: str | None | UnsetType = Field(
+        default=UNSET, alias="customPerformerImageLocation"
+    )  # String
+    stash_boxes: list[Any] | UnsetType = Field(
+        default=UNSET, alias="stashBoxes"
+    )  # [StashBox!]!
+    python_path: str | UnsetType = Field(default=UNSET, alias="pythonPath")  # String!
+    scraper_package_sources: list[Any] | UnsetType = Field(
+        default=UNSET, alias="scraperPackageSources"
+    )  # [PackageSource!]!
+    plugin_package_sources: list[Any] | UnsetType = Field(
+        default=UNSET, alias="pluginPackageSources"
+    )  # [PackageSource!]!
 
 
-class ConfigDisableDropdownCreateInput(BaseModel):
+class ConfigDisableDropdownCreateInput(StashInput):
     """Input for disabling dropdown create."""
 
-    performer: bool | None = None  # Boolean
-    tag: bool | None = None  # Boolean
-    studio: bool | None = None  # Boolean
-    movie: bool | None = None  # Boolean
+    performer: bool | None | UnsetType = UNSET  # Boolean
+    tag: bool | None | UnsetType = UNSET  # Boolean
+    studio: bool | None | UnsetType = UNSET  # Boolean
+    movie: bool | None | UnsetType = UNSET  # Boolean
 
 
-class ConfigImageLightboxInput(BaseModel):
+class ConfigImageLightboxInput(StashInput):
     """Input for image lightbox configuration."""
 
-    slideshowDelay: int | None = None  # Int
-    displayMode: ImageLightboxDisplayMode | None = None  # ImageLightboxDisplayMode
-    scaleUp: bool | None = None  # Boolean
-    resetZoomOnNav: bool | None = None  # Boolean
-    scrollMode: ImageLightboxScrollMode | None = None  # ImageLightboxScrollMode
-    scrollAttemptsBeforeChange: int | None = None  # Int
+    slideshow_delay: int | None | UnsetType = Field(
+        default=UNSET, alias="slideshowDelay"
+    )  # Int
+    display_mode: ImageLightboxDisplayMode | None | UnsetType = Field(
+        default=UNSET, alias="displayMode"
+    )  # ImageLightboxDisplayMode
+    scale_up: bool | None | UnsetType = Field(default=UNSET, alias="scaleUp")  # Boolean
+    reset_zoom_on_nav: bool | None | UnsetType = Field(
+        default=UNSET, alias="resetZoomOnNav"
+    )  # Boolean
+    scroll_mode: ImageLightboxScrollMode | None | UnsetType = Field(
+        default=UNSET, alias="scrollMode"
+    )  # ImageLightboxScrollMode
+    scroll_attempts_before_change: int | None | UnsetType = Field(
+        default=UNSET, alias="scrollAttemptsBeforeChange"
+    )  # Int
 
 
-class ConfigImageLightboxResult(BaseModel):
+class ConfigImageLightboxResult(FromGraphQLMixin, BaseModel):
     """Result type for image lightbox configuration."""
 
-    slideshowDelay: int | None = None  # Int
-    displayMode: ImageLightboxDisplayMode | None = None  # ImageLightboxDisplayMode
-    scaleUp: bool | None = None  # Boolean
-    resetZoomOnNav: bool | None = None  # Boolean
-    scrollMode: ImageLightboxScrollMode | None = None  # ImageLightboxScrollMode
-    scrollAttemptsBeforeChange: int  # Int!
+    slideshow_delay: int | None | UnsetType = Field(
+        default=UNSET, alias="slideshowDelay"
+    )  # Int
+    display_mode: ImageLightboxDisplayMode | None | UnsetType = Field(
+        default=UNSET, alias="displayMode"
+    )  # ImageLightboxDisplayMode
+    scale_up: bool | None | UnsetType = Field(default=UNSET, alias="scaleUp")  # Boolean
+    reset_zoom_on_nav: bool | None | UnsetType = Field(
+        default=UNSET, alias="resetZoomOnNav"
+    )  # Boolean
+    scroll_mode: ImageLightboxScrollMode | None | UnsetType = Field(
+        default=UNSET, alias="scrollMode"
+    )  # ImageLightboxScrollMode
+    scroll_attempts_before_change: int | UnsetType = Field(
+        default=UNSET, alias="scrollAttemptsBeforeChange"
+    )  # Int!
 
 
-class ConfigInterfaceInput(BaseModel):
+class ConfigInterfaceInput(StashInput):
     """Input for interface configuration."""
 
-    menu_items: list[str] | None = None  # [String!]
-    sound_on_preview: bool | None = None  # Boolean
-    wall_show_title: bool | None = None  # Boolean
-    wall_playback: str | None = None  # String
-    show_scrubber: bool | None = None  # Boolean
-    maximum_loop_duration: int | None = None  # Int
-    autostart_video: bool | None = None  # Boolean
-    autostart_video_on_play_selected: bool | None = None  # Boolean
-    continue_playlist_default: bool | None = None  # Boolean
-    show_studio_as_text: bool | None = None  # Boolean
-    css: str | None = None  # String
-    css_enabled: bool | None = None  # Boolean
-    javascript: str | None = None  # String
-    javascript_enabled: bool | None = None  # Boolean
-    custom_locales: str | None = None  # String
-    custom_locales_enabled: bool | None = None  # Boolean
-    language: str | None = None  # String
-    image_lightbox: ConfigImageLightboxInput | None = None  # ConfigImageLightboxInput
-    disable_dropdown_create: ConfigDisableDropdownCreateInput | None = (
-        None  # ConfigDisableDropdownCreateInput
-    )
-    handy_key: str | None = None  # String
-    funscript_offset: int | None = None  # Int
-    use_stash_hosted_funscript: bool | None = None  # Boolean
-    no_browser: bool | None = None  # Boolean
-    notifications_enabled: bool | None = None  # Boolean
+    sfw_content_mode: bool | None | UnsetType = Field(
+        default=UNSET, alias="sfwContentMode"
+    )  # Boolean
+    menu_items: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="menuItems"
+    )  # [String!]
+    sound_on_preview: bool | None | UnsetType = Field(
+        default=UNSET, alias="soundOnPreview"
+    )  # Boolean
+    wall_show_title: bool | None | UnsetType = Field(
+        default=UNSET, alias="wallShowTitle"
+    )  # Boolean
+    wall_playback: str | None | UnsetType = Field(
+        default=UNSET, alias="wallPlayback"
+    )  # String
+    show_scrubber: bool | None | UnsetType = Field(
+        default=UNSET, alias="showScrubber"
+    )  # Boolean
+    maximum_loop_duration: int | None | UnsetType = Field(
+        default=UNSET, alias="maximumLoopDuration"
+    )  # Int
+    autostart_video: bool | None | UnsetType = Field(
+        default=UNSET, alias="autostartVideo"
+    )  # Boolean
+    autostart_video_on_play_selected: bool | None | UnsetType = Field(
+        default=UNSET, alias="autostartVideoOnPlaySelected"
+    )  # Boolean
+    continue_playlist_default: bool | None | UnsetType = Field(
+        default=UNSET, alias="continuePlaylistDefault"
+    )  # Boolean
+    show_studio_as_text: bool | None | UnsetType = Field(
+        default=UNSET, alias="showStudioAsText"
+    )  # Boolean
+    css: str | None | UnsetType = UNSET  # String
+    css_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="cssEnabled"
+    )  # Boolean
+    javascript: str | None | UnsetType = UNSET  # String
+    javascript_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="javascriptEnabled"
+    )  # Boolean
+    custom_locales: str | None | UnsetType = Field(
+        default=UNSET, alias="customLocales"
+    )  # String
+    custom_locales_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="customLocalesEnabled"
+    )  # Boolean
+    language: str | None | UnsetType = UNSET  # String
+    image_lightbox: ConfigImageLightboxInput | None | UnsetType = Field(
+        default=UNSET, alias="imageLightbox"
+    )  # ConfigImageLightboxInput
+    disable_dropdown_create: ConfigDisableDropdownCreateInput | None | UnsetType = (
+        Field(default=UNSET, alias="disableDropdownCreate")
+    )  # ConfigDisableDropdownCreateInput
+    handy_key: str | None | UnsetType = Field(default=UNSET, alias="handyKey")  # String
+    funscript_offset: int | None | UnsetType = Field(
+        default=UNSET, alias="funscriptOffset"
+    )  # Int
+    use_stash_hosted_funscript: bool | None | UnsetType = Field(
+        default=UNSET, alias="useStashHostedFunscript"
+    )  # Boolean
+    no_browser: bool | None | UnsetType = Field(
+        default=UNSET, alias="noBrowser"
+    )  # Boolean
+    notifications_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="notificationsEnabled"
+    )  # Boolean
 
 
-class ConfigDisableDropdownCreate(BaseModel):
+class ConfigDisableDropdownCreate(FromGraphQLMixin, BaseModel):
     """Result type for disable dropdown create."""
 
-    performer: bool  # Boolean!
-    tag: bool  # Boolean!
-    studio: bool  # Boolean!
-    movie: bool  # Boolean!
+    performer: bool | UnsetType = UNSET  # Boolean!
+    tag: bool | UnsetType = UNSET  # Boolean!
+    studio: bool | UnsetType = UNSET  # Boolean!
+    movie: bool | UnsetType = UNSET  # Boolean!
 
 
-class ConfigInterfaceResult(BaseModel):
+class ConfigInterfaceResult(FromGraphQLMixin, BaseModel):
     """Result type for interface configuration."""
 
-    menu_items: list[str] | None = None  # [String!]
-    sound_on_preview: bool | None = None  # Boolean
-    wall_show_title: bool | None = None  # Boolean
-    wall_playback: str | None = None  # String
-    show_scrubber: bool | None = None  # Boolean
-    maximum_loop_duration: int | None = None  # Int
-    no_browser: bool | None = None  # Boolean
-    notifications_enabled: bool | None = None  # Boolean
-    autostart_video: bool | None = None  # Boolean
-    autostart_video_on_play_selected: bool | None = None  # Boolean
-    continue_playlist_default: bool | None = None  # Boolean
-    show_studio_as_text: bool | None = None  # Boolean
-    css: str | None = None  # String
-    css_enabled: bool | None = None  # Boolean
-    javascript: str | None = None  # String
-    javascript_enabled: bool | None = None  # Boolean
-    custom_locales: str | None = None  # String
-    custom_locales_enabled: bool | None = None  # Boolean
-    language: str | None = None  # String
-    image_lightbox: ConfigImageLightboxResult  # ConfigImageLightboxResult!
-    disable_dropdown_create: ConfigDisableDropdownCreate  # ConfigDisableDropdownCreate!
-    handy_key: str | None = None  # String
-    funscript_offset: int | None = None  # Int
-    use_stash_hosted_funscript: bool | None = None  # Boolean
+    sfw_content_mode: bool | UnsetType = Field(
+        default=UNSET, alias="sfwContentMode"
+    )  # Boolean!
+    menu_items: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="menuItems"
+    )  # [String!]
+    sound_on_preview: bool | None | UnsetType = Field(
+        default=UNSET, alias="soundOnPreview"
+    )  # Boolean
+    wall_show_title: bool | None | UnsetType = Field(
+        default=UNSET, alias="wallShowTitle"
+    )  # Boolean
+    wall_playback: str | None | UnsetType = Field(
+        default=UNSET, alias="wallPlayback"
+    )  # String
+    show_scrubber: bool | None | UnsetType = Field(
+        default=UNSET, alias="showScrubber"
+    )  # Boolean
+    maximum_loop_duration: int | None | UnsetType = Field(
+        default=UNSET, alias="maximumLoopDuration"
+    )  # Int
+    no_browser: bool | None | UnsetType = Field(
+        default=UNSET, alias="noBrowser"
+    )  # Boolean
+    notifications_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="notificationsEnabled"
+    )  # Boolean
+    autostart_video: bool | None | UnsetType = Field(
+        default=UNSET, alias="autostartVideo"
+    )  # Boolean
+    autostart_video_on_play_selected: bool | None | UnsetType = Field(
+        default=UNSET, alias="autostartVideoOnPlaySelected"
+    )  # Boolean
+    continue_playlist_default: bool | None | UnsetType = Field(
+        default=UNSET, alias="continuePlaylistDefault"
+    )  # Boolean
+    show_studio_as_text: bool | None | UnsetType = Field(
+        default=UNSET, alias="showStudioAsText"
+    )  # Boolean
+    css: str | None | UnsetType = UNSET  # String
+    css_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="cssEnabled"
+    )  # Boolean
+    javascript: str | None | UnsetType = UNSET  # String
+    javascript_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="javascriptEnabled"
+    )  # Boolean
+    custom_locales: str | None | UnsetType = Field(
+        default=UNSET, alias="customLocales"
+    )  # String
+    custom_locales_enabled: bool | None | UnsetType = Field(
+        default=UNSET, alias="customLocalesEnabled"
+    )  # Boolean
+    language: str | None | UnsetType = UNSET  # String
+    image_lightbox: ConfigImageLightboxResult | UnsetType = Field(
+        default=UNSET, alias="imageLightbox"
+    )  # ConfigImageLightboxResult!
+    disable_dropdown_create: ConfigDisableDropdownCreate | UnsetType = Field(
+        default=UNSET, alias="disableDropdownCreate"
+    )  # ConfigDisableDropdownCreate!
+    handy_key: str | None | UnsetType = Field(default=UNSET, alias="handyKey")  # String
+    funscript_offset: int | None | UnsetType = Field(
+        default=UNSET, alias="funscriptOffset"
+    )  # Int
+    use_stash_hosted_funscript: bool | None | UnsetType = Field(
+        default=UNSET, alias="useStashHostedFunscript"
+    )  # Boolean
 
 
-class ConfigDLNAInput(BaseModel):
+class ConfigDLNAInput(StashInput):
     """Input for DLNA configuration."""
 
-    server_name: str | None = None  # String
-    enabled: bool | None = None  # Boolean
-    port: int | None = None  # Int
-    whitelisted_ips: list[str] | None = None  # [String!]
-    interfaces: list[str] | None = None  # [String!]
-    video_sort_order: str | None = None  # String
+    server_name: str | None | UnsetType = Field(
+        default=UNSET, alias="serverName"
+    )  # String
+    enabled: bool | None | UnsetType = UNSET  # Boolean
+    port: int | None | UnsetType = UNSET  # Int
+    whitelisted_ips: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="whitelistedIPs"
+    )  # [String!]
+    interfaces: list[str] | None | UnsetType = UNSET  # [String!]
+    video_sort_order: str | None | UnsetType = Field(
+        default=UNSET, alias="videoSortOrder"
+    )  # String
 
 
-class ConfigDLNAResult(BaseModel):
+class ConfigDLNAResult(FromGraphQLMixin, BaseModel):
     """Result type for DLNA configuration."""
 
-    server_name: str  # String!
-    enabled: bool  # Boolean!
-    port: int  # Int!
-    whitelisted_ips: list[str]  # [String!]!
-    interfaces: list[str]  # [String!]!
-    video_sort_order: str  # String!
+    server_name: str | UnsetType = Field(default=UNSET, alias="serverName")  # String!
+    enabled: bool | UnsetType = UNSET  # Boolean!
+    port: int | UnsetType = UNSET  # Int!
+    whitelisted_ips: list[str] | UnsetType = Field(
+        default=UNSET, alias="whitelistedIPs"
+    )  # [String!]!
+    interfaces: list[str] | UnsetType = UNSET  # [String!]!
+    video_sort_order: str | UnsetType = Field(
+        default=UNSET, alias="videoSortOrder"
+    )  # String!
 
 
-class ConfigDefaultSettingsResult(BaseModel):
+class ConfigScrapingInput(StashInput):
+    """Input for scraping configuration."""
+
+    scraper_user_agent: str | None | UnsetType = Field(
+        default=UNSET, alias="scraperUserAgent"
+    )  # String
+    scraper_cdp_path: str | None | UnsetType = Field(
+        default=UNSET, alias="scraperCDPPath"
+    )  # String
+    scraper_cert_check: bool | None | UnsetType = Field(
+        default=UNSET, alias="scraperCertCheck"
+    )  # Boolean
+    exclude_tag_patterns: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="excludeTagPatterns"
+    )  # [String!]
+
+
+class ConfigScrapingResult(BaseModel):
+    """Result type for scraping configuration."""
+
+    scraper_user_agent: str | None | UnsetType = Field(
+        default=UNSET, alias="scraperUserAgent"
+    )  # String
+    scraper_cdp_path: str | None | UnsetType = Field(
+        default=UNSET, alias="scraperCDPPath"
+    )  # String
+    scraper_cert_check: bool | UnsetType = Field(
+        default=UNSET, alias="scraperCertCheck"
+    )  # Boolean!
+    exclude_tag_patterns: list[str] | UnsetType = Field(
+        default=UNSET, alias="excludeTagPatterns"
+    )  # [String!]!
+
+
+class ConfigDefaultSettingsResult(FromGraphQLMixin, BaseModel):
     """Result type for default settings configuration."""
 
-    scan: ScanMetadataOptions  # ScanMetadataOptions
-    autoTag: AutoTagMetadataOptions  # AutoTagMetadataOptions
-    generate: GenerateMetadataOptions  # GenerateMetadataOptions
-    deleteFile: (
-        bool  # Boolean (If true, delete file checkbox will be checked by default)
+    scan: ScanMetadataOptions | None | UnsetType = (
+        UNSET  # ScanMetadataOptions (nullable)
     )
-    deleteGenerated: bool  # Boolean (If true, delete generated supporting files checkbox will be checked by default)
+    identify: Any | UnsetType = UNSET  # IdentifyMetadataTaskOptions
+    auto_tag: AutoTagMetadataOptions | None | UnsetType = Field(
+        default=UNSET, alias="autoTag"
+    )  # AutoTagMetadataOptions (nullable)
+    generate: GenerateMetadataOptions | None | UnsetType = (
+        UNSET  # GenerateMetadataOptions (nullable)
+    )
+    delete_file: bool | UnsetType = Field(
+        default=UNSET, alias="deleteFile"
+    )  # Boolean (If true, delete file checkbox will be checked by default)
+    delete_generated: bool | UnsetType = Field(
+        default=UNSET, alias="deleteGenerated"
+    )  # Boolean (If true, delete generated supporting files checkbox will be checked by default)
 
 
-class ConfigDefaultSettingsInput(BaseModel):
+class ConfigDefaultSettingsInput(StashInput):
     """Input for default settings configuration."""
 
-    scan: ScanMetadataInput | None = None  # ScanMetadataInput
-    autoTag: AutoTagMetadataInput | None = None  # AutoTagMetadataInput
-    generate: GenerateMetadataInput | None = None  # GenerateMetadataInput
-    deleteFile: bool | None = None  # Boolean
-    deleteGenerated: bool | None = None  # Boolean
+    scan: ScanMetadataInput | None | UnsetType = UNSET  # ScanMetadataInput
+    identify: Any | None | UnsetType = UNSET  # IdentifyMetadataInput
+    auto_tag: AutoTagMetadataInput | None | UnsetType = Field(
+        default=UNSET, alias="autoTag"
+    )  # AutoTagMetadataInput
+    generate: GenerateMetadataInput | None | UnsetType = UNSET  # GenerateMetadataInput
+    delete_file: bool | None | UnsetType = Field(
+        default=UNSET, alias="deleteFile"
+    )  # Boolean
+    delete_generated: bool | None | UnsetType = Field(
+        default=UNSET, alias="deleteGenerated"
+    )  # Boolean
 
 
-class ConfigResult(BaseModel):
+class ConfigResult(FromGraphQLMixin, BaseModel):
     """Result type for all configuration."""
 
-    general: ConfigGeneralResult  # ConfigGeneralResult!
-    interface: ConfigInterfaceResult  # ConfigInterfaceResult!
-    dlna: ConfigDLNAResult  # ConfigDLNAResult!
-    defaults: ConfigDefaultSettingsResult  # ConfigDefaultSettingsResult!
-    ui: dict[str, Any]  # Map!
+    general: ConfigGeneralResult | UnsetType = UNSET  # ConfigGeneralResult!
+    interface: ConfigInterfaceResult | UnsetType = UNSET  # ConfigInterfaceResult!
+    dlna: ConfigDLNAResult | UnsetType = UNSET  # ConfigDLNAResult!
+    scraping: ConfigScrapingResult | UnsetType = UNSET  # ConfigScrapingResult!
+    defaults: ConfigDefaultSettingsResult | UnsetType = (
+        UNSET  # ConfigDefaultSettingsResult!
+    )
+    ui: dict[str, Any] | UnsetType = UNSET  # Map!
 
     def plugins(self, include: list[str] | None = None) -> dict[str, dict[str, Any]]:
         """Get plugin configuration.
@@ -311,28 +676,36 @@ class ConfigResult(BaseModel):
 class Directory(BaseModel):
     """Directory structure of a path."""
 
-    path: str  # String!
-    parent: str | None = None  # String
-    directories: list[str]  # [String!]!
+    path: str | UnsetType = UNSET  # String!
+    parent: str | None | UnsetType = UNSET  # String
+    directories: list[str] | UnsetType = UNSET  # [String!]!
 
 
-class StashConfigInput(BaseModel):
+class StashConfigInput(StashInput):
     """Input for stash configuration."""
 
-    path: str  # String!
-    excludeVideo: bool  # Boolean!
-    excludeImage: bool  # Boolean!
+    path: str | UnsetType = UNSET  # String!
+    exclude_video: bool | UnsetType = Field(
+        default=UNSET, alias="excludeVideo"
+    )  # Boolean!
+    exclude_image: bool | UnsetType = Field(
+        default=UNSET, alias="excludeImage"
+    )  # Boolean!
 
 
-class StashConfig(BaseModel):
+class StashConfig(FromGraphQLMixin, BaseModel):
     """Result type for stash configuration."""
 
-    path: str  # String!
-    excludeVideo: bool  # Boolean!
-    excludeImage: bool  # Boolean!
+    path: str | UnsetType = UNSET  # String!
+    exclude_video: bool | UnsetType = Field(
+        default=UNSET, alias="excludeVideo"
+    )  # Boolean!
+    exclude_image: bool | UnsetType = Field(
+        default=UNSET, alias="excludeImage"
+    )  # Boolean!
 
 
-class GenerateAPIKeyInput(BaseModel):
+class GenerateAPIKeyInput(StashInput):
     """Input for generating API key."""
 
-    clear: bool | None = None  # Boolean
+    clear: bool | None | UnsetType = UNSET  # Boolean

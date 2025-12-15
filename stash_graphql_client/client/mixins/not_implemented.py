@@ -1,300 +1,127 @@
-"""Mixin for not implemented methods."""
+"""Mixin for operations that are intentionally not implemented.
+
+This mixin contains stub methods for GraphQL operations that are either:
+1. Security risks (direct SQL access)
+2. Not yet prioritized for implementation (DLNA, StashBox validation)
+
+Due to Python's Method Resolution Order (MRO), this mixin is placed LAST
+in the StashClient inheritance chain, so any real implementations in other
+mixins will automatically override these stubs.
+
+IMPORTANT: If you implement any of these methods in another mixin, you should
+remove the corresponding stub from this file to avoid confusion.
+"""
 
 from typing import Any
 
 from ...types import (
     DLNAStatus,
-    Gallery,
-    Image,
-    JobStatusUpdate,
-    LatestVersion,
-    Performer,
-    Scene,
     SQLExecResult,
     SQLQueryResult,
     StashBoxValidationResult,
-    Version,
 )
 
 
 class NotImplementedClientMixin:
-    """Mixin for methods that are not yet implemented."""
+    """Mixin containing stubs for unimplemented GraphQL operations.
 
-    # File Operations
-    async def delete_files(self, ids: list[str]) -> bool:
-        """Delete files by ID."""
-        raise NotImplementedError("File operations not implemented")
+    This class serves as:
+    - Documentation of which operations exist in the schema but aren't implemented
+    - Type hints for IDE autocomplete
+    - Clear error messages when calling unimplemented operations
 
-    # Configuration
-    async def configure_general(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure general settings."""
-        raise NotImplementedError("Configuration not implemented")
+    All methods here raise NotImplementedError when called.
+    """
 
-    async def configure_interface(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure interface settings."""
-        raise NotImplementedError("Configuration not implemented")
+    # =========================================================================
+    # SQL Operations - INTENTIONALLY NOT IMPLEMENTED (Security Risk)
+    # =========================================================================
+    # Direct SQL access poses significant security risks:
+    # - SQL injection vulnerabilities
+    # - Potential for data corruption
+    # - Bypasses application-level validation and business logic
+    # - Could expose sensitive data
+    #
+    # Users requiring SQL access should use Stash's UI or direct database tools.
 
-    async def configure_dlna(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure DLNA settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_scraping(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure scraping settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_defaults(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Configure default settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_plugin(
-        self, plugin_id: str, input_data: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Configure plugin settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_ui(
-        self,
-        input_data: dict[str, Any] | None = None,
-        partial: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Configure UI settings."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def configure_ui_setting(self, key: str, value: Any) -> dict[str, Any]:
-        """Configure a single UI setting."""
-        raise NotImplementedError("Configuration not implemented")
-
-    async def generate_api_key(self, input_data: dict[str, Any]) -> str:
-        """Generate a new API key."""
-        raise NotImplementedError("Configuration not implemented")
-
-    # Import/Export
-    async def export_objects(self, input_data: dict[str, Any]) -> str:
-        """Export objects to a file."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def import_objects(self, input_data: dict[str, Any]) -> str:
-        """Import objects from a file."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_import(self) -> str:
-        """Import metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_export(self) -> str:
-        """Export metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_auto_tag(self, input_data: dict[str, Any]) -> str:
-        """Auto-tag metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_identify(self, input_data: dict[str, Any]) -> str:
-        """Identify metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_clean(self, input_data: dict[str, Any]) -> str:
-        """Clean metadata."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    async def metadata_clean_generated(self, input_data: dict[str, Any]) -> str:
-        """Clean generated files."""
-        raise NotImplementedError("Import/Export not implemented")
-
-    # Queries
-    async def scene_streams(self, id: str) -> list[dict[str, Any]]:
-        """Get scene stream endpoints."""
-        raise NotImplementedError("Scene streams not implemented")
-
-    async def marker_wall(self, q: str | None = None) -> list[dict[str, Any]]:
-        """Get marker wall."""
-        raise NotImplementedError("Marker wall not implemented")
-
-    async def marker_strings(
-        self, q: str | None = None, sort: str | None = None
-    ) -> list[dict[str, Any]]:
-        """Get marker strings."""
-        raise NotImplementedError("Marker strings not implemented")
-
-    async def stats(self) -> dict[str, Any]:
-        """Get system stats."""
-        raise NotImplementedError("Stats not implemented")
-
-    async def logs(self) -> list[dict[str, Any]]:
-        """Get system logs."""
-        raise NotImplementedError("Logs not implemented")
-
-    # Scene Mutations
-    async def scene_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a scene."""
-        raise NotImplementedError("Scene deletion not implemented")
-
-    async def scene_merge(self, input_data: dict[str, Any]) -> Scene:
-        """Merge scenes."""
-        raise NotImplementedError("Scene merging not implemented")
-
-    async def scenes_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple scenes."""
-        raise NotImplementedError("Scene deletion not implemented")
-
-    async def scene_add_o(
-        self, id: str, times: list[str] | None = None
-    ) -> dict[str, Any]:
-        """Add O-count to scene."""
-        raise NotImplementedError("Scene O-count not implemented")
-
-    async def scene_delete_o(
-        self, id: str, times: list[str] | None = None
-    ) -> dict[str, Any]:
-        """Delete O-count from scene."""
-        raise NotImplementedError("Scene O-count not implemented")
-
-    async def scene_reset_o(self, id: str) -> int:
-        """Reset scene O-count."""
-        raise NotImplementedError("Scene O-count not implemented")
-
-    async def scene_save_activity(
-        self,
-        id: str,
-        resume_time: float | None = None,
-        play_duration: float | None = None,
-    ) -> bool:
-        """Save scene activity."""
-        raise NotImplementedError("Scene activity not implemented")
-
-    async def scene_reset_activity(
-        self, id: str, reset_resume: bool = False, reset_duration: bool = False
-    ) -> bool:
-        """Reset scene activity."""
-        raise NotImplementedError("Scene activity not implemented")
-
-    async def scene_add_play(
-        self, id: str, times: list[str] | None = None
-    ) -> dict[str, Any]:
-        """Add play count to scene."""
-        raise NotImplementedError("Scene play count not implemented")
-
-    async def scene_delete_play(
-        self, id: str, times: list[str] | None = None
-    ) -> dict[str, Any]:
-        """Delete play count from scene."""
-        raise NotImplementedError("Scene play count not implemented")
-
-    async def scene_reset_play_count(self, id: str) -> int:
-        """Reset scene play count."""
-        raise NotImplementedError("Scene play count not implemented")
-
-    # Scene Marker Mutations
-    async def scene_marker_create(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Create a scene marker."""
-        raise NotImplementedError("Scene markers not implemented")
-
-    async def scene_marker_update(self, input_data: dict[str, Any]) -> dict[str, Any]:
-        """Update a scene marker."""
-        raise NotImplementedError("Scene markers not implemented")
-
-    async def scene_marker_destroy(self, id: str) -> bool:
-        """Delete a scene marker."""
-        raise NotImplementedError("Scene markers not implemented")
-
-    async def scene_markers_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple scene markers."""
-        raise NotImplementedError("Scene markers not implemented")
-
-    # Image Mutations
-    async def bulk_image_update(self, input_data: dict[str, Any]) -> list[Image]:
-        """Update multiple images."""
-        raise NotImplementedError("Bulk image update not implemented")
-
-    async def images_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete multiple images."""
-        raise NotImplementedError("Image deletion not implemented")
-
-    async def images_update(self, input_data: list[dict[str, Any]]) -> list[Image]:
-        """Update multiple images."""
-        raise NotImplementedError("Image updates not implemented")
-
-    async def image_increment_o(self, id: str) -> int:
-        """Increment image O-count."""
-        raise NotImplementedError("Image O-count not implemented")
-
-    async def image_decrement_o(self, id: str) -> int:
-        """Decrement image O-count."""
-        raise NotImplementedError("Image O-count not implemented")
-
-    async def image_reset_o(self, id: str) -> int:
-        """Reset image O-count."""
-        raise NotImplementedError("Image O-count not implemented")
-
-    # Gallery Mutations
-    async def bulk_gallery_update(self, input_data: dict[str, Any]) -> list[Gallery]:
-        """Update multiple galleries."""
-        raise NotImplementedError("Bulk gallery update not implemented")
-
-    # Performer Mutations
-    async def performer_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a performer."""
-        raise NotImplementedError("Performer deletion not implemented")
-
-    async def performers_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple performers."""
-        raise NotImplementedError("Performer deletion not implemented")
-
-    async def bulk_performer_update(
-        self, input_data: dict[str, Any]
-    ) -> list[Performer]:
-        """Update multiple performers."""
-        raise NotImplementedError("Bulk performer update not implemented")
-
-    # Studio Mutations
-    async def studio_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a studio."""
-        raise NotImplementedError("Studio deletion not implemented")
-
-    async def studios_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple studios."""
-        raise NotImplementedError("Studio deletion not implemented")
-
-    # Tag Mutations
-    async def tag_destroy(self, input_data: dict[str, Any]) -> bool:
-        """Delete a tag."""
-        raise NotImplementedError("Tag deletion not implemented")
-
-    async def tags_destroy(self, ids: list[str]) -> bool:
-        """Delete multiple tags."""
-        raise NotImplementedError("Tag deletion not implemented")
-
-    # SQL Operations
     async def querySQL(self, sql: str, args: list[Any] | None = None) -> SQLQueryResult:
-        """Execute SQL query."""
-        raise NotImplementedError("SQL queries not implemented")
+        """Execute SQL query.
+
+        SECURITY: This operation is intentionally not implemented to prevent
+        SQL injection vulnerabilities and unauthorized database access.
+
+        Args:
+            sql: SQL query string
+            args: Optional query arguments
+
+        Raises:
+            NotImplementedError: Always raised (security measure)
+        """
+        raise NotImplementedError(
+            "SQL queries are not implemented for security reasons. "
+            "Use Stash's UI or direct database tools for SQL access."
+        )
 
     async def execSQL(self, sql: str, args: list[Any] | None = None) -> SQLExecResult:
-        """Execute SQL statement."""
-        raise NotImplementedError("SQL execution not implemented")
+        """Execute SQL statement.
 
-    # Stash-box Operations
+        SECURITY: This operation is intentionally not implemented to prevent
+        SQL injection vulnerabilities and unauthorized database modifications.
+
+        Args:
+            sql: SQL statement string
+            args: Optional statement arguments
+
+        Raises:
+            NotImplementedError: Always raised (security measure)
+        """
+        raise NotImplementedError(
+            "SQL execution is not implemented for security reasons. "
+            "Use Stash's UI or direct database tools for SQL access."
+        )
+
+    # =========================================================================
+    # StashBox Operations - Not Yet Implemented
+    # =========================================================================
+
     async def validateStashBoxCredentials(
         self, input_data: dict[str, Any]
     ) -> StashBoxValidationResult:
-        """Validate stash-box credentials."""
-        raise NotImplementedError("Stash-box validation not implemented")
+        """Validate StashBox instance credentials.
 
-    # DLNA Operations
+        Tests whether the provided StashBox credentials are valid.
+
+        Args:
+            input_data: Dictionary containing StashBox endpoint and API key
+
+        Returns:
+            StashBoxValidationResult with validation status
+
+        Raises:
+            NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError(
+            "StashBox credential validation is not yet implemented. "
+            "Please validate credentials through Stash's UI."
+        )
+
+    # =========================================================================
+    # DLNA Operations - Not Yet Implemented
+    # =========================================================================
+
     async def dlnaStatus(self) -> DLNAStatus:
-        """Get DLNA status."""
-        raise NotImplementedError("DLNA not implemented")
+        """Get DLNA server status.
 
-    # Job Operations
-    async def jobsSubscribe(self) -> JobStatusUpdate:
-        """Subscribe to job updates."""
-        raise NotImplementedError("Job subscription not implemented")
+        Returns information about the DLNA server state, including
+        whether it's running and what IPs are whitelisted.
 
-    # Version Operations
-    async def version(self) -> Version:
-        """Get version information."""
-        raise NotImplementedError("Version info not implemented")
+        Returns:
+            DLNAStatus with server information
 
-    async def latestversion(self) -> LatestVersion:
-        """Get latest version information."""
-        raise NotImplementedError("Latest version info not implemented")
+        Raises:
+            NotImplementedError: Not yet implemented
+        """
+        raise NotImplementedError(
+            "DLNA status query is not yet implemented. "
+            "Please check DLNA status through Stash's UI."
+        )

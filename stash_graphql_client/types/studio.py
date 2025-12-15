@@ -2,64 +2,63 @@
 
 from __future__ import annotations
 
-# TODO: Re-enable once metadata module is implemented
-# from pyloyalfans.metadata import Account
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
 
-from .base import StashObject
+from .base import (
+    BulkUpdateIds,
+    BulkUpdateStrings,
+    RelationshipMetadata,
+    StashInput,
+    StashObject,
+    StashResult,
+)
 from .files import StashID, StashIDInput
-
-
-# if _TYPE_CHECKING_METADATA:
-#     from pyloyalfans.metadata import Account
+from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
     from .tag import Tag
 
-    # Account type - placeholder until metadata module is implemented
-    Account = Any
 
-
-class StudioCreateInput(BaseModel):
+class StudioCreateInput(StashInput):
     """Input for creating studios."""
 
     # Required fields
     name: str  # String!
 
     # Optional fields
-    urls: list[str] | None = None  # [String!]
-    parent_id: str | None = None  # ID
-    image: str | None = None  # String (URL or base64)
-    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
-    rating100: int | None = None  # Int
-    favorite: bool | None = None  # Boolean
-    details: str | None = None  # String
-    aliases: list[str] | None = None  # [String!]
-    tag_ids: list[str] | None = None  # [ID!]
-    ignore_auto_tag: bool | None = None  # Boolean
+    urls: list[str] | None | UnsetType = UNSET  # [String!]
+    parent_id: str | None | UnsetType = UNSET  # ID
+    image: str | None | UnsetType = UNSET  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
+    rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    details: str | None | UnsetType = UNSET  # String
+    aliases: list[str] | None | UnsetType = UNSET  # [String!]
+    tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
 
 
-class StudioUpdateInput(BaseModel):
+class StudioUpdateInput(StashInput):
     """Input for updating studios."""
 
     # Required fields
     id: str  # ID!
 
     # Optional fields
-    name: str | None = None  # String
-    urls: list[str] | None = None  # [String!]
-    parent_id: str | None = None  # ID
-    image: str | None = None  # String (URL or base64)
-    stash_ids: list[StashIDInput] | None = None  # [StashIDInput!]
-    rating100: int | None = None  # Int
-    favorite: bool | None = None  # Boolean
-    details: str | None = None  # String
-    aliases: list[str] | None = None  # [String!]
-    tag_ids: list[str] | None = None  # [ID!]
-    ignore_auto_tag: bool | None = None  # Boolean
+    name: str | None | UnsetType = UNSET  # String
+    urls: list[str] | None | UnsetType = UNSET  # [String!]
+    parent_id: str | None | UnsetType = UNSET  # ID
+    image: str | None | UnsetType = UNSET  # String (URL or base64)
+    stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
+    rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    details: str | None | UnsetType = UNSET  # String
+    aliases: list[str] | None | UnsetType = UNSET  # [String!]
+    tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
 
 
 class Studio(StashObject):
@@ -78,78 +77,65 @@ class Studio(StashObject):
         "urls",  # StudioCreateInput/StudioUpdateInput
         "parent_studio",  # mapped to parent_id
         "details",  # StudioCreateInput/StudioUpdateInput
+        "rating100",  # StudioCreateInput/StudioUpdateInput
+        "favorite",  # StudioCreateInput/StudioUpdateInput
+        "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
     }
 
-    # Required fields
-    name: str  # String!
-    aliases: list[str] = Field(default_factory=list)  # [String!]!
-    tags: list[Tag] = Field(default_factory=list)  # [Tag!]!
-    stash_ids: list[StashID] = Field(default_factory=list)  # [StashID!]!
-    urls: list[str] = Field(default_factory=list)  # [String!]!
-
-    # Optional fields
-    parent_studio: Studio | None = None  # Studio
-    details: str | None = None  # String
-    image_path: str | None = None  # String (Resolver)
+    # All fields are optional in client (fragment-based loading)
+    name: str | None | UnsetType = UNSET  # String!
+    urls: list[str] | None | UnsetType = UNSET  # [String!]!
+    parent_studio: Studio | None | UnsetType = UNSET  # Studio
+    child_studios: list[Studio] | None | UnsetType = UNSET  # [Studio!]!
+    aliases: list[str] | None | UnsetType = UNSET  # [String!]!
+    tags: list[Tag] | None | UnsetType = UNSET  # [Tag!]!
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean!
+    image_path: str | None | UnsetType = UNSET  # String (Resolver)
+    scene_count: int | None | UnsetType = Field(
+        default=UNSET, ge=0
+    )  # Int! (Resolver with depth param)
+    image_count: int | None | UnsetType = Field(
+        default=UNSET, ge=0
+    )  # Int! (Resolver with depth param)
+    gallery_count: int | None | UnsetType = Field(
+        default=UNSET, ge=0
+    )  # Int! (Resolver with depth param)
+    performer_count: int | None | UnsetType = Field(
+        default=UNSET, ge=0
+    )  # Int! (Resolver with depth param)
+    group_count: int | None | UnsetType = Field(
+        default=UNSET, ge=0
+    )  # Int! (Resolver with depth param)
+    stash_ids: list[StashID] | None | UnsetType = UNSET  # [StashID!]!
+    rating100: int | None | UnsetType = Field(
+        default=UNSET, ge=0, le=100
+    )  # Int (1-100)
+    favorite: bool | None | UnsetType = UNSET  # Boolean!
+    details: str | None | UnsetType = UNSET  # String
+    groups: list[Any] | None | UnsetType = (
+        UNSET  # [Group!]! - Any to avoid circular import
+    )
+    o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
 
     @model_validator(mode="before")
     @classmethod
     def handle_deprecated_url(cls, data: Any) -> Any:
         """Convert deprecated 'url' field to 'urls' list for backward compatibility."""
-        if isinstance(data, dict):
-            # Handle deprecated single url field
-            if data.get("url"):
-                if "urls" not in data or not data["urls"]:
-                    # Migrate url to urls
-                    data["urls"] = [data["url"]]
-                elif data["url"] not in data["urls"]:
-                    # Ensure url is in urls
-                    data["urls"].insert(0, data["url"])
-                # Remove the deprecated field
-                data.pop("url", None)
-            elif "url" in data:
-                # url exists but is None/empty, just remove it
-                data.pop("url", None)
+        # Pydantic always passes dict to before validators
+        # Handle deprecated single url field
+        if data.get("url"):
+            if "urls" not in data or not data["urls"]:
+                # Migrate url to urls
+                data["urls"] = [data["url"]]
+            elif data["url"] not in data["urls"]:
+                # Ensure url is in urls
+                data["urls"].insert(0, data["url"])
+            # Remove the deprecated field
+            data.pop("url", None)
+        elif "url" in data:
+            # url exists but is None/empty, just remove it
+            data.pop("url", None)
         return data
-
-    @classmethod
-    async def from_account(cls, account: Account) -> Studio:
-        """Create studio from account.
-
-        Args:
-            account: Account to convert
-
-        Returns:
-            New studio instance
-        """
-        # Get name from account or fallback options
-        studio_name = account.display_name or account.username or "Unknown"
-
-        # Build URLs list based on site_url
-        urls = []
-        if hasattr(account, "site_url") and account.site_url:
-            urls = [account.site_url]
-
-        # Get details from account bio or default
-        details = account.bio or ""
-
-        # Use studio name from site config if available
-        # Safely check for studio_name attribute
-        if hasattr(account, "studio_name") and getattr(account, "studio_name", None):
-            studio_name = getattr(account, "studio_name", studio_name)
-
-        # Debug print removed for production code
-
-        return cls(
-            id="new",  # Will be replaced on save
-            name=studio_name,
-            urls=urls,
-            details=details,
-            # Required fields with defaults
-            aliases=[],
-            tags=[],
-            stash_ids=[],
-        )
 
     # Field definitions with their conversion functions
     __field_conversions__ = {
@@ -160,30 +146,57 @@ class Studio(StashObject):
     }
 
     __relationships__ = {
-        # Standard ID relationships
-        "parent_studio": (
-            "parent_id",
-            False,
-            None,
-        ),  # (target_field, is_list, transform)
-        "tags": ("tag_ids", True, None),
-        # Special case with custom transform
-        "stash_ids": (
-            "stash_ids",
-            True,
-            lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+        "parent_studio": RelationshipMetadata(
+            target_field="parent_id",
+            is_list=False,
+            query_field="parent_studio",
+            inverse_type="Studio",  # Self-referential
+            inverse_query_field="child_studios",
+            query_strategy="direct_field",
+            notes="Self-referential parent/child hierarchy",
+        ),
+        "tags": RelationshipMetadata(
+            target_field="tag_ids",
+            is_list=True,
+            query_field="tags",
+            inverse_type="Tag",
+            inverse_query_field="studios",
+            query_strategy="direct_field",
+            notes="Backend auto-syncs studio.tags and tag.studios",
+        ),
+        "stash_ids": RelationshipMetadata(
+            target_field="stash_ids",
+            is_list=True,
+            transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
+            query_field="stash_ids",
+            notes="Requires transform to StashIDInput for mutations",
         ),
     }
 
 
-class StudioDestroyInput(BaseModel):
+class BulkStudioUpdateInput(StashInput):
+    """Input for bulk updating studios from schema/types/studio.graphql."""
+
+    ids: list[str]  # [ID!]!
+    urls: BulkUpdateStrings | None | UnsetType = UNSET  # BulkUpdateStrings
+    parent_id: str | None | UnsetType = UNSET  # ID
+    rating100: int | None | UnsetType = Field(
+        default=UNSET, ge=0, le=100
+    )  # Int (1-100)
+    favorite: bool | None | UnsetType = UNSET  # Boolean
+    details: str | None | UnsetType = UNSET  # String
+    tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+
+
+class StudioDestroyInput(StashInput):
     """Input for destroying a studio from schema/types/studio.graphql."""
 
     id: str  # ID!
 
 
-class FindStudiosResultType(BaseModel):
+class FindStudiosResultType(StashResult):
     """Result type for finding studios from schema/types/studio.graphql."""
 
-    count: int  # Int!
-    studios: list[Studio]  # [Studio!]!
+    count: int | None | UnsetType = UNSET  # Int!
+    studios: list[Studio] | None | UnsetType = UNSET  # [Studio!]!

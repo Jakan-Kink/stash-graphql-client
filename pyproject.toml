@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.1.0"
+version = "0.5.0b1"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -36,6 +36,9 @@ dev = [
     "respx (>=0.22.0)",
     "keyrings-codeartifact (>=2.1.2,<3.0.0)",
 ]
+test = [
+    "pytest-rerunfailures (>=16.1,<17.0)"
+]
 
 
 [build-system]
@@ -65,35 +68,36 @@ exclude = [
 [tool.ruff.lint]
 # Enable comprehensive rule set matching mymember.site standards
 select = [
-    "E",     # pycodestyle errors
-    "W",     # pycodestyle warnings
-    "F",     # Pyflakes
-    "I",     # isort
-    "C90",   # McCabe complexity
-    "N",     # pep8-naming
-    "UP",    # pyupgrade
-    "B",     # flake8-bugbear
     "A",     # flake8-builtins
-    "COM",   # flake8-commas
-    "C4",    # flake8-comprehensions
-    "DTZ",   # flake8-datetimez
-    "ISC",   # flake8-implicit-str-concat
-    "ICN",   # flake8-import-conventions
-    "G",     # flake8-logging-format
-    "PIE",   # flake8-pie
-    "T20",   # flake8-print
-    "PT",    # flake8-pytest-style
-    "Q",     # flake8-quotes
-    "RSE",   # flake8-raise
-    "RET",   # flake8-return
-    "SIM",   # flake8-simplify
-    "TID",   # flake8-tidy-imports
     "ARG",   # flake8-unused-arguments
-    "PTH",   # flake8-use-pathlib
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "C90",   # McCabe complexity
+    "COM",   # flake8-commas
+    "DTZ",   # flake8-datetimez
+    "E",     # pycodestyle errors
     "ERA",   # eradicate
-    "PL",    # Pylint
+    "F",     # Pyflakes
+    "G",     # flake8-logging-format
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
+    "ISC",   # flake8-implicit-str-concat
+    "N",     # pep8-naming
     "PERF",  # Perflint
+    "PIE",   # flake8-pie
+    "PL",    # Pylint
+    "PT",    # flake8-pytest-style
+    "PTH",   # flake8-use-pathlib
+    "Q",     # flake8-quotes
+    "RET",   # flake8-return
+    "RSE",   # flake8-raise
     "RUF",   # Ruff-specific rules
+    "S",     # bandit security rules
+    "SIM",   # flake8-simplify
+    "T20",   # flake8-print
+    "TID",   # flake8-tidy-imports
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
 ]
 
 # Ignore rules - matching mymember.site patterns with pyLoyalFans-specific additions
@@ -159,7 +163,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 "stash_graphql_client/fragments.py" = ["N815"]
 # Test fixtures
 "tests/conftest.py" = ["F403", "F405"]  # Star imports and undefined names from star imports
-"tests/**/test_*.py" = ["N815", "A002"]  # Tests use schema-matching names
+"tests/**/test_*.py" = ["N815", "A002","S101"]  # Tests use schema-matching names
 "tests/fixtures/__init__.py" = ["F401", "F403", "F405", "RUF022"]  # Unused imports, star imports, undefined names, categorized __all__
 "tests/fixtures/*.py" = ["RUF022", "N815"]  # Allow categorized __all__ lists for readability
 "tests/fixtures/stash/graphql_responses.py" = ["N815", "A002"]  # mixed-case for GraphQL

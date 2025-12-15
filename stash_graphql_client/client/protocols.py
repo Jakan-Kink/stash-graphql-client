@@ -2,18 +2,30 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar, overload
 
 from gql import Client
 from gql.client import AsyncClientSession, ReconnectingAsyncClientSession
 from gql.transport.httpx import HTTPXAsyncTransport
 from gql.transport.websockets import WebsocketsTransport
 
-from ..types import Job, JobStatus
+from ..types import (
+    ConfigDefaultSettingsResult,
+    GenerateMetadataInput,
+    GenerateMetadataOptions,
+    Job,
+    JobStatus,
+    ScanMetadataInput,
+    ScanMetadataOptions,
+)
+from ..types.metadata import SystemStatus
 
 
 if TYPE_CHECKING:
     from loguru import Logger
+
+
+T = TypeVar("T")
 
 
 class StashClientProtocol(Protocol):
@@ -25,7 +37,11 @@ class StashClientProtocol(Protocol):
 
     # Properties
     log: Logger
-    fragments: Any  # Module containing GraphQL fragments    # GQL clients (kept open for persistent connections)
+    url: str
+    fragments: Any  # Module containing GraphQL fragments
+    schema: Any  # GraphQL schema (None if disabled)
+
+    # GQL clients (kept open for persistent connections)
     client: Client  # Backward compatibility alias for gql_client
     gql_client: Client | None
     gql_ws_client: Client | None
@@ -38,23 +54,35 @@ class StashClientProtocol(Protocol):
     http_transport: HTTPXAsyncTransport
     ws_transport: WebsocketsTransport
 
-    # Core methods
+    # Initialization
+    async def initialize(self) -> None:
+        """Initialize the client."""
+        ...
+
+    async def close(self) -> None:
+        """Close the client and cleanup resources."""
+        ...
+
+    # Core execution methods
     async def execute(
         self,
         query: str,
         variables: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        result_type: type[T] | None = None,
+    ) -> dict[str, Any] | T:
         """Execute a GraphQL query or mutation.
 
         Args:
             query: GraphQL query or mutation string
             variables: Optional query variables dictionary
+            result_type: Optional type to deserialize result to
 
         Returns:
-            Query response data dictionary
+            Query response data dictionary or typed object
         """
         ...
 
+    # Helper methods used by mixins
     def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
         """Parse an object into an ID.
 
@@ -64,6 +92,86 @@ class StashClientProtocol(Protocol):
 
         Returns:
             Parsed ID or filter dict
+        """
+        ...
+
+    @overload
+    def _decode_result(self, type_: type[T], data: dict[str, Any]) -> T:
+        """Decode GraphQL result dict to typed object (non-None data)."""
+        ...
+
+    @overload
+    def _decode_result(self, type_: type[T], data: None) -> None:
+        """Decode GraphQL result dict to typed object (None data)."""
+        ...
+
+    @overload
+    def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
+        """Decode GraphQL result dict to typed object (optional data)."""
+        ...
+
+    def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
+        """Decode GraphQL result dict to typed object.
+
+        Args:
+            type_: Target type to decode to
+            data: GraphQL response data dict (or None)
+
+        Returns:
+            Typed object instance, or None if data is None
+        """
+        ...
+
+    def _convert_datetime(self, obj: Any) -> Any:
+        """Convert datetime objects in data structure.
+
+        Args:
+            obj: Object to convert
+
+        Returns:
+            Converted object
+        """
+        ...
+
+    # Configuration methods
+    async def get_configuration_defaults(self) -> ConfigDefaultSettingsResult:
+        """Get default configuration settings.
+
+        Returns:
+            Configuration defaults
+        """
+        ...
+
+    # Metadata methods
+    async def metadata_generate(
+        self,
+        options: GenerateMetadataOptions | dict[str, Any] | None = None,
+        input_data: GenerateMetadataInput | dict[str, Any] | None = None,
+    ) -> str:
+        """Generate metadata.
+
+        Args:
+            options: Generation options
+            input_data: Input data specifying what to process
+
+        Returns:
+            Job ID for the generation task
+        """
+        ...
+
+    async def metadata_scan(
+        self,
+        options: ScanMetadataOptions | dict[str, Any] | None = None,
+        input_data: ScanMetadataInput | dict[str, Any] | None = None,
+    ) -> str:
+        """Scan for new/changed media.
+
+        Args:
+            options: Scan options
+            input_data: Input data specifying what to scan
+
+        Returns:
+            Job ID for the scan task
         """
         ...
 
@@ -98,5 +206,23 @@ class StashClientProtocol(Protocol):
             True if job reached desired status
             False if job finished with different status
             None if job not found
+        """
+        ...
+
+    # System methods
+    async def get_system_status(self) -> SystemStatus | None:
+        """Get the current Stash system status.
+
+        Returns:
+            SystemStatus object or None if query fails
+        """
+        ...
+
+    async def check_system_ready(self) -> None:
+        """Check if the Stash system is ready for processing.
+
+        Raises:
+            StashSystemNotReadyError: If system is not ready
+            RuntimeError: If status cannot be determined
         """
         ...

@@ -62,24 +62,76 @@ conn = {
 ## Available Operations
 
 ### Scenes
+
 - `find_scenes()`, `find_scene(id)`, `create_scene()`, `update_scene()`, `destroy_scene()`
 
 ### Galleries
+
 - `find_galleries()`, `find_gallery(id)`, `create_gallery()`, `update_gallery()`, `destroy_gallery()`
 
 ### Performers
+
 - `find_performers()`, `find_performer(id)`, `create_performer()`, `update_performer()`, `destroy_performer()`
 
 ### Studios
+
 - `find_studios()`, `find_studio(id)`, `create_studio()`, `update_studio()`, `destroy_studio()`
 
 ### Tags
+
 - `find_tags()`, `find_tag(id)`, `create_tag()`, `update_tag()`, `destroy_tag()`
 
 ### Metadata Operations
+
 - `metadata_scan()` - Scan for new media
 - `metadata_generate()` - Generate thumbnails, previews, etc.
 - `find_job()`, `wait_for_job()` - Job status tracking
+
+## Fuzzy Date Support (Stash v0.30.0+)
+
+Stash v0.30.0 introduced support for partial dates (year-only or year-month formats) in addition to full dates. This client includes utilities to work with these "fuzzy" dates:
+
+```python
+from stash_graphql_client.types import (
+    FuzzyDate,
+    validate_fuzzy_date,
+    normalize_date,
+    DatePrecision,
+)
+
+# Validate date formats
+validate_fuzzy_date("2024")        # True - year only
+validate_fuzzy_date("2024-03")     # True - year and month
+validate_fuzzy_date("2024-03-15")  # True - full date
+validate_fuzzy_date("2024-3")      # False - invalid format
+
+# Create fuzzy dates
+date = FuzzyDate("2024-03")
+print(date.precision)  # DatePrecision.MONTH
+print(date.to_datetime())  # datetime(2024, 3, 1)
+
+# Normalize dates to different precisions
+normalize_date("2024-03-15", "year")   # "2024"
+normalize_date("2024-03-15", "month")  # "2024-03"
+normalize_date("2024", "day")          # "2024-01-01"
+
+# Use in performer/scene data
+performer_data = {
+    "name": "John Doe",
+    "birthdate": "1990",  # Year-only birthdate
+}
+await client.create_performer(**performer_data)
+
+scene_data = {
+    "date": "2024-03",  # Month precision
+}
+```
+
+Supported date formats:
+
+- `YYYY` - Year precision (e.g., "2024")
+- `YYYY-MM` - Month precision (e.g., "2024-03")
+- `YYYY-MM-DD` - Day precision (e.g., "2024-03-15")
 
 ## License
 

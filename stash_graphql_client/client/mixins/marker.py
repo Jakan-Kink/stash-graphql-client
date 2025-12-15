@@ -3,16 +3,18 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
-from ...types import FindSceneMarkersResultType, SceneMarker
+from ...types import (
+    BulkSceneMarkerUpdateInput,
+    FindSceneMarkersResultType,
+    MarkerStringsResultType,
+    SceneMarker,
+)
 from ..protocols import StashClientProtocol
-from ..utils import sanitize_model_data
 
 
 class MarkerClientMixin(StashClientProtocol):
     """Mixin for marker-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_marker(self, id: str) -> SceneMarker | None:
         """Find a scene marker by its ID.
 
@@ -28,15 +30,12 @@ class MarkerClientMixin(StashClientProtocol):
                 {"id": id},
             )
             if result and result.get("findSceneMarker"):
-                # Sanitize model data before creating SceneMarker
-                clean_data = sanitize_model_data(result["findSceneMarker"])
-                return SceneMarker(**clean_data)
+                return self._decode_result(SceneMarker, result["findSceneMarker"])
             return None
         except Exception as e:
             self.log.error(f"Failed to find marker {id}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_markers(
         self,
         filter_: dict[str, Any] | None = None,
@@ -72,7 +71,11 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.FIND_MARKERS_QUERY,
                 {"filter": filter_, "marker_filter": marker_filter},
             )
-            return FindSceneMarkersResultType(**result["findSceneMarkers"])
+            if result and result.get("findSceneMarkers"):
+                return self._decode_result(
+                    FindSceneMarkersResultType, result["findSceneMarkers"]
+                )
+            return FindSceneMarkersResultType(count=0, scene_markers=[])
         except Exception as e:
             self.log.error(f"Failed to find markers: {e}")
             return FindSceneMarkersResultType(count=0, scene_markers=[])
@@ -99,12 +102,7 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.CREATE_MARKER_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified markers
-            self.find_marker.cache_clear()
-            self.find_markers.cache_clear()
-            # Sanitize model data before creating SceneMarker
-            clean_data = sanitize_model_data(result["sceneMarkerCreate"])
-            return SceneMarker(**clean_data)
+            return self._decode_result(SceneMarker, result["sceneMarkerCreate"])
         except Exception as e:
             self.log.error(f"Failed to create marker: {e}")
             raise
@@ -153,12 +151,180 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.UPDATE_MARKER_MUTATION,
                 {"input": input_data},
             )
-            # Clear caches since we've modified a marker
-            self.find_marker.cache_clear()
-            self.find_markers.cache_clear()
-            # Sanitize model data before creating SceneMarker
-            clean_data = sanitize_model_data(result["sceneMarkerUpdate"])
-            return SceneMarker(**clean_data)
+            return self._decode_result(SceneMarker, result["sceneMarkerUpdate"])
         except Exception as e:
             self.log.error(f"Failed to update marker: {e}")
             raise
+
+    async def scene_marker_destroy(self, id: str) -> bool:
+        """Delete a scene marker.
+
+        Args:
+            id: Scene marker ID to delete
+
+        Returns:
+            True if the scene marker was successfully deleted
+
+        Raises:
+            ValueError: If the scene marker ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.SCENE_MARKER_DESTROY_MUTATION,
+                {"id": id},
+            )
+
+            return bool(result.get("sceneMarkerDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scene marker: {e}")
+            raise
+
+    async def scene_markers_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple scene markers.
+
+        Args:
+            ids: List of scene marker IDs to delete
+
+        Returns:
+            True if the scene markers were successfully deleted
+
+        Raises:
+            ValueError: If any scene marker ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.SCENE_MARKERS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("sceneMarkersDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete scene markers: {e}")
+            raise
+
+    async def bulk_scene_marker_update(
+        self,
+        input_data: BulkSceneMarkerUpdateInput | dict[str, Any],
+    ) -> list[SceneMarker]:
+        """Bulk update scene markers.
+
+        Args:
+            input_data: BulkSceneMarkerUpdateInput object or dictionary containing:
+                - ids: List of scene marker IDs to update (optional)
+                - And any fields to update (e.g., primary_tag_id, tag_ids, etc.)
+
+        Returns:
+            List of updated SceneMarker objects
+
+        Examples:
+            Update multiple markers' primary tag:
+            ```python
+            markers = await client.bulk_scene_marker_update({
+                "ids": ["1", "2", "3"],
+                "primary_tag_id": "tag123"
+            })
+            ```
+
+            Add tags to multiple markers:
+            ```python
+            from stash_graphql_client.types import BulkSceneMarkerUpdateInput, BulkUpdateIds
+
+            input_data = BulkSceneMarkerUpdateInput(
+                ids=["1", "2", "3"],
+                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
+            )
+            markers = await client.bulk_scene_marker_update(input_data)
+            ```
+        """
+        try:
+            # Convert BulkSceneMarkerUpdateInput to dict if needed
+            if isinstance(input_data, BulkSceneMarkerUpdateInput):
+                input_dict = input_data.to_graphql()
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.BULK_SCENE_MARKER_UPDATE_MUTATION,
+                {"input": input_dict},
+            )
+
+            markers_data = result.get("bulkSceneMarkerUpdate", [])
+            return [self._decode_result(SceneMarker, m) for m in markers_data]
+        except Exception as e:
+            self.log.error(f"Failed to bulk update scene markers: {e}")
+            raise
+
+    async def marker_wall(self, q: str | None = None) -> list[SceneMarker]:
+        """Get marker wall - random markers for display.
+
+        Args:
+            q: Optional search query to filter markers
+
+        Returns:
+            List of SceneMarker objects selected for wall display
+
+        Examples:
+            Get all wall markers:
+            ```python
+            markers = await client.marker_wall()
+            print(f"Found {len(markers)} markers for wall")
+            ```
+
+            Search wall markers:
+            ```python
+            markers = await client.marker_wall(q="interview")
+            ```
+        """
+        try:
+            result = await self.execute(
+                fragments.MARKER_WALL_QUERY,
+                {"q": q} if q else {},
+            )
+            markers_data = result.get("markerWall", [])
+            return [self._decode_result(SceneMarker, m) for m in markers_data]
+        except Exception as e:
+            self.log.error(f"Failed to get marker wall: {e}")
+            return []
+
+    async def marker_strings(
+        self, q: str | None = None, sort: str | None = None
+    ) -> list[MarkerStringsResultType]:
+        """Get marker title strings with counts.
+
+        Args:
+            q: Optional search query to filter marker titles
+            sort: Optional sort order for results
+
+        Returns:
+            List of MarkerStringsResultType objects containing:
+                - id: Marker title ID
+                - title: Marker title string
+                - count: Number of markers with this title
+
+        Examples:
+            Get all marker title strings:
+            ```python
+            strings = await client.marker_strings()
+            for s in strings:
+                print(f"{s.title}: {s.count} markers")
+            ```
+
+            Search and sort marker strings:
+            ```python
+            strings = await client.marker_strings(q="bj", sort="count")
+            ```
+        """
+        try:
+            result = await self.execute(
+                fragments.MARKER_STRINGS_QUERY,
+                {"q": q, "sort": sort},
+            )
+            strings_data = result.get("markerStrings", [])
+            return [
+                self._decode_result(MarkerStringsResultType, s) for s in strings_data
+            ]
+        except Exception as e:
+            self.log.error(f"Failed to get marker strings: {e}")
+            return []

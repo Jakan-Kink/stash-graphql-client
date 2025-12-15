@@ -3,16 +3,13 @@
 from typing import Any
 
 from ... import fragments
-from ...client_helpers import async_lru_cache
-from ...types import FindTagsResultType, Tag
+from ...types import FindTagsResultType, Tag, TagDestroyInput
 from ..protocols import StashClientProtocol
-from ..utils import sanitize_model_data
 
 
 class TagClientMixin(StashClientProtocol):
     """Mixin for tag-related client methods."""
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_tag(self, id: str) -> Tag | None:
         """Find a tag by its ID.
 
@@ -28,15 +25,12 @@ class TagClientMixin(StashClientProtocol):
                 {"id": id},
             )
             if result and result.get("findTag"):
-                # Sanitize model data before creating Tag
-                clean_data = sanitize_model_data(result["findTag"])
-                return Tag(**clean_data)
+                return self._decode_result(Tag, result["findTag"])
             return None
         except Exception as e:
             self.log.error(f"Failed to find tag {id}: {e}")
             return None
 
-    @async_lru_cache(maxsize=3096, exclude_arg_indices=[0])  # exclude self
     async def find_tags(
         self,
         filter_: dict[str, Any] | None = None,
@@ -61,7 +55,6 @@ class TagClientMixin(StashClientProtocol):
                 - tags: List of Tag objects
 
         Note:
-            Results are cached using async_lru_cache with the function arguments as key.
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
@@ -100,7 +93,7 @@ class TagClientMixin(StashClientProtocol):
                 fragments.CREATE_TAG_MUTATION,
                 {"input": input_data},
             )
-            return Tag(**sanitize_model_data(result["tagCreate"]))
+            return self._decode_result(Tag, result["tagCreate"])
         except Exception as e:
             error_message = str(e)
             if "tag with name" in error_message and "already exists" in error_message:
@@ -108,8 +101,6 @@ class TagClientMixin(StashClientProtocol):
                     f"Tag '{tag.name}' already exists. Fetching existing tag."
                 )
                 # Clear both tag caches
-                self.find_tag.cache_clear()
-                self.find_tags.cache_clear()
                 # Try to find the existing tag with exact name match
                 results: FindTagsResultType = await self.find_tags(
                     tag_filter={"name": {"value": tag.name, "modifier": "EQUALS"}},
@@ -145,9 +136,7 @@ class TagClientMixin(StashClientProtocol):
                 {"input": {"source": source, "destination": destination}},
             )
             # Clear caches since we've modified tags
-            self.find_tag.cache_clear()
-            self.find_tags.cache_clear()
-            return Tag(**sanitize_model_data(result["tagsMerge"]))
+            return self._decode_result(Tag, result["tagsMerge"])
         except Exception as e:
             self.log.error(f"Failed to merge tags {source} into {destination}: {e}")
             raise
@@ -197,9 +186,7 @@ class TagClientMixin(StashClientProtocol):
                 {"input": input_data},
             )
             # Clear caches since we've modified tags
-            self.find_tag.cache_clear()
-            self.find_tags.cache_clear()
-            return [Tag(**sanitize_model_data(tag)) for tag in result["bulkTagUpdate"]]
+            return [self._decode_result(Tag, tag) for tag in result["bulkTagUpdate"]]
         except Exception as e:
             self.log.error(f"Failed to bulk update tags {ids}: {e}")
             raise
@@ -227,9 +214,174 @@ class TagClientMixin(StashClientProtocol):
                 {"input": input_data},
             )
             # Clear caches since we've modified a tag
-            self.find_tag.cache_clear()
-            self.find_tags.cache_clear()
-            return Tag(**sanitize_model_data(result["tagUpdate"]))
+            return self._decode_result(Tag, result["tagUpdate"])
         except Exception as e:
             self.log.error(f"Failed to update tag: {e}")
             raise
+
+    async def tag_destroy(
+        self,
+        input_data: TagDestroyInput | dict[str, Any],
+    ) -> bool:
+        """Delete a tag.
+
+        Args:
+            input_data: TagDestroyInput object or dictionary containing:
+                - id: Tag ID to delete (required)
+
+        Returns:
+            True if the tag was successfully deleted
+
+        Raises:
+            ValueError: If the tag ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            if isinstance(input_data, TagDestroyInput):
+                input_dict = input_data.to_graphql()
+            else:
+                input_dict = input_data
+
+            result = await self.execute(
+                fragments.TAG_DESTROY_MUTATION,
+                {"input": input_dict},
+            )
+
+            return bool(result.get("tagDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete tag: {e}")
+            raise
+
+    async def tags_destroy(self, ids: list[str]) -> bool:
+        """Delete multiple tags.
+
+        Args:
+            ids: List of tag IDs to delete
+
+        Returns:
+            True if the tags were successfully deleted
+
+        Raises:
+            ValueError: If any tag ID is invalid
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.TAGS_DESTROY_MUTATION,
+                {"ids": ids},
+            )
+
+            return bool(result.get("tagsDestroy", False))
+        except Exception as e:
+            self.log.error(f"Failed to delete tags: {e}")
+            raise
+
+    async def map_tag_ids(
+        self,
+        tags: list[str | dict[str, Any] | Tag],
+        create: bool = False,
+    ) -> list[str]:
+        """Convert tag names/objects to IDs, optionally creating missing tags.
+
+        This is a convenience method to resolve tag references to their IDs,
+        reducing boilerplate when working with tag relationships.
+
+        Args:
+            tags: List of tag references, can be:
+                - str: Tag name (searches for exact match)
+                - dict: Tag filter criteria (e.g., {"name": "Action"})
+                - Tag: Tag object (extracts ID if present, otherwise searches by name)
+            create: If True, create tags that don't exist. Default is False.
+
+        Returns:
+            List of tag IDs. Skips tags that aren't found (unless create=True).
+
+        Examples:
+            Map tag names to IDs:
+            ```python
+            tag_ids = await client.map_tag_ids(["Action", "Drama", "Comedy"])
+            # Returns: ["1", "2", "3"] (IDs of existing tags)
+            ```
+
+            Auto-create missing tags:
+            ```python
+            tag_ids = await client.map_tag_ids(
+                ["Action", "NewTag", "Drama"],
+                create=True
+            )
+            # Creates "NewTag" if it doesn't exist
+            ```
+
+            Mix of strings and Tag objects:
+            ```python
+            tag_obj = Tag(name="Action")
+            tag_ids = await client.map_tag_ids([tag_obj, "Drama"])
+            ```
+
+            Use in scene creation:
+            ```python
+            scene = Scene(
+                title="My Scene",
+                tags=[]  # Will populate with tag IDs
+            )
+            scene.tags = await client.map_tag_ids(
+                ["Action", "Drama"],
+                create=True
+            )
+            created_scene = await client.create_scene(scene)
+            ```
+        """
+        tag_ids: list[str] = []
+
+        for tag_input in tags:
+            try:
+                # Handle Tag objects
+                tag_name: str | None = None
+                if isinstance(tag_input, Tag):
+                    # If tag has an ID, use it directly
+                    if tag_input.id:
+                        tag_ids.append(tag_input.id)
+                        continue
+                    # Otherwise search by name
+                    tag_name = tag_input.name or ""
+
+                # Handle string input (tag name)
+                if isinstance(tag_input, str):
+                    tag_name = tag_input
+
+                if tag_name:
+                    # Search for exact match
+                    results = await self.find_tags(
+                        tag_filter={"name": {"value": tag_name, "modifier": "EQUALS"}}
+                    )
+                    if results.count > 0:
+                        tag_ids.append(results.tags[0].id)  # type: ignore[union-attr]
+                    elif create:
+                        # Create new tag
+                        self.log.info(f"Creating missing tag: '{tag_name}'")
+                        new_tag = await self.create_tag(Tag(name=tag_name))
+                        tag_ids.append(new_tag.id)  # type: ignore[union-attr]
+                    else:
+                        self.log.warning(f"Tag '{tag_name}' not found and create=False")
+
+                # Handle dict input (filter criteria)
+                elif isinstance(tag_input, dict):
+                    name = tag_input.get("name")
+                    if name:
+                        results = await self.find_tags(
+                            tag_filter={"name": {"value": name, "modifier": "EQUALS"}}
+                        )
+                        if results.count > 0:
+                            tag_ids.append(results.tags[0].id)  # type: ignore[union-attr]
+                        elif create:
+                            self.log.info(f"Creating missing tag: '{name}'")
+                            new_tag = await self.create_tag(Tag(name=name))
+                            tag_ids.append(new_tag.id)  # type: ignore[union-attr]
+                        else:
+                            self.log.warning(f"Tag '{name}' not found and create=False")
+
+            except Exception as e:
+                self.log.error(f"Failed to map tag {tag_input}: {e}")
+                continue
+
+        return tag_ids

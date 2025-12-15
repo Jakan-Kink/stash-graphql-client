@@ -8,6 +8,7 @@ from typing import Any, TypeVar
 from gql import gql
 
 from ...types import JobStatus, JobStatusUpdate, LogEntry
+from ...types.unset import UnsetType
 from .protocols import StashClientProtocol
 
 
@@ -95,10 +96,11 @@ class SubscriptionClientMixin(StashClientProtocol):
             subscription_gen = session.subscribe(subscription)
             yield AsyncIteratorWrapper(
                 subscription_gen,
-                lambda x: JobStatusUpdate(
-                    type=x["jobsSubscribe"]["type"],
-                    # Use dict to create JobStatusUpdate to match its expected type
-                    job=x["jobsSubscribe"]["job"],
+                lambda x: JobStatusUpdate.model_validate(
+                    {
+                        "type": x["jobsSubscribe"]["type"],
+                        "job": x["jobsSubscribe"]["job"],
+                    }
                 ),
             )
 
@@ -132,7 +134,9 @@ class SubscriptionClientMixin(StashClientProtocol):
             subscription_gen = session.subscribe(subscription)
             yield AsyncIteratorWrapper(
                 subscription_gen,
-                lambda x: [LogEntry(**entry) for entry in x["loggingSubscribe"]],
+                lambda x: [
+                    LogEntry.model_validate(entry) for entry in x["loggingSubscribe"]
+                ],
             )
 
     @asynccontextmanager
@@ -193,9 +197,10 @@ class SubscriptionClientMixin(StashClientProtocol):
         job: dict[str, Any] | None = result.get("findJob")
         if job is not None:
             job_status = JobStatus(job["status"])
+            progress = job.get("progress") or 0
+            description = job.get("description") or ""
             self.log.info(
-                f"Job {job_id}: {job_status} "
-                f"({job.get('progress', 0):.1f}%) - {job.get('description', '')}"
+                f"Job {job_id}: {job_status} ({progress:.1f}%) - {description}"
             )
 
             is_done = job_status in [JobStatus.FINISHED, JobStatus.CANCELLED]
@@ -240,53 +245,33 @@ class SubscriptionClientMixin(StashClientProtocol):
             async with asyncio.timeout(timeout):
                 async with self.subscribe_to_jobs() as subscription:
                     async for update in subscription:
-                        # Extract job_data safely
+                        # update.job is always populated (Job! in GraphQL schema)
                         job_data = update.job
-                        if not job_data:
-                            continue
 
                         # Check if this is the job we're waiting for
-                        job_id_from_update = (
-                            job_data.get("id")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "id", None)
-                        )
-                        if job_id_from_update != job_id:
+                        if job_data.id != job_id:
                             continue
 
-                        # Extract status and other fields
-                        job_status_value = (
-                            job_data.get("status")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "status", None)
-                        )
+                        # Extract status and other fields from the Job model
+                        job_status_value = job_data.status
                         job_progress = (
-                            job_data.get("progress", 0)
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "progress", 0)
+                            job_data.progress
+                            if not isinstance(job_data.progress, UnsetType)
+                            else 0
                         )
                         job_description = (
-                            job_data.get("description", "")
-                            if isinstance(job_data, dict)
-                            else getattr(job_data, "description", "")
+                            job_data.description
+                            if not isinstance(job_data.description, UnsetType)
+                            else ""
                         )
 
-                        # Normalize status to JobStatus enum for reliable comparisons
+                        # Status is always JobStatus enum (Pydantic validates it)
                         if isinstance(job_status_value, JobStatus):
                             job_status = job_status_value
-                        elif isinstance(job_status_value, str):
-                            try:
-                                job_status = JobStatus(job_status_value)
-                            except ValueError:
-                                self.log.warning(
-                                    "Received unknown job status %s for job %s",
-                                    job_status_value,
-                                    job_id,
-                                )
-                                continue
                         else:
                             self.log.warning(
-                                "Received job update without status for job %s", job_id
+                                "Received job update without valid status for job %s",
+                                job_id,
                             )
                             continue
 

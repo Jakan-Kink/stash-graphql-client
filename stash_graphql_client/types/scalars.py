@@ -16,6 +16,14 @@ BoolMap = dict[str, bool]
 PluginConfigMap = dict[str, dict[str, Any]]
 Int64 = int
 
+# Any scalar - uses typing.Any (already imported)
+# The GraphQL 'Any' scalar is mapped directly to Python's typing.Any
+
+# Upload scalar - represents a multipart file upload
+# In practice, this is handled by the HTTP transport layer and client code
+# For type hints, we use Any since the actual type depends on the HTTP library
+Upload = Any
+
 
 def _parse_time(value: Any) -> datetime:
     """Parse Time scalar from string or return datetime directly.

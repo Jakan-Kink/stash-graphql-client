@@ -1,10 +1,9 @@
 """Base Stash client class."""
 
 import asyncio
-import time
 from datetime import datetime
 from types import TracebackType
-from typing import Any, TypedDict, TypeVar
+from typing import Any, TypedDict, TypeVar, get_args, get_origin, overload
 
 import httpx
 from gql import Client, gql
@@ -17,22 +16,8 @@ from gql.transport.httpx import HTTPXAsyncTransport
 from gql.transport.websockets import WebsocketsTransport
 from httpx_retries import Retry, RetryTransport
 
-from .. import fragments
-from ..errors import StashSystemNotReadyError
 from ..logging import client_logger
-from ..types import (
-    AutoTagMetadataOptions,
-    ConfigDefaultSettingsResult,
-    FindJobInput,
-    GenerateMetadataInput,
-    GenerateMetadataOptions,
-    Job,
-    JobStatus,
-    ScanMetadataInput,
-    ScanMetadataOptions,
-)
-from ..types.enums import SystemStatusEnum
-from ..types.metadata import SystemStatus
+from .utils import sanitize_model_data
 
 
 T = TypeVar("T")
@@ -140,7 +125,7 @@ class StashClientBase:
         scheme = conn.get("Scheme", "http")
         ws_scheme = "ws" if scheme == "http" else "wss"
         host = conn.get("Host", "localhost")
-        if host == "0.0.0.0":  # nosec B104  # Converting all-interfaces to localhost
+        if host == "0.0.0.0":  # nosec B104  # noqa: S104  # Converting all-interfaces to localhost
             host = "127.0.0.1"
         port = conn.get("Port", 9999)
 
@@ -234,6 +219,44 @@ class StashClientBase:
 
         self._initialized = True
 
+    @overload
+    def _decode_result(self, type_: type[T], data: dict[str, Any]) -> T:
+        """Decode GraphQL result dict to typed object (non-None data)."""
+
+    @overload
+    def _decode_result(self, type_: type[T], data: None) -> None:
+        """Decode GraphQL result dict to typed object (None data)."""
+
+    def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
+        """Decode GraphQL result dict to typed object, handling nested entities.
+
+        This method automatically sanitizes GraphQL data and uses Pydantic's from_graphql()
+        to properly construct nested entity types, triggering the identity map validator
+        for entity caching.
+
+        Args:
+            type_: The target type to decode to
+            data: Dictionary from GraphQL response (will be sanitized automatically)
+
+        Returns:
+            Typed instance with all nested entities properly constructed, or None if data is None
+
+        Example:
+            result = await self.execute(FIND_GROUPS_QUERY, {...})
+            return self._decode_result(FindGroupsResultType, result["findGroups"])
+        """
+        if data is None:
+            return None
+
+        # Sanitize the data first (handles __typename removal, etc.)
+        clean_data = sanitize_model_data(data)
+
+        # Use from_graphql() for StashObject types, model_validate() for others
+        if hasattr(type_, "from_graphql"):
+            return type_.from_graphql(clean_data)  # type: ignore[attr-defined]
+        # For non-StashObject types (like result types), use model_validate
+        return type_.model_validate(clean_data)  # type: ignore[attr-defined]
+
     async def _cleanup_connection_resources(self) -> None:
         """Clean up persistent connection resources."""
         # Close the persistent GQL session first
@@ -273,33 +296,49 @@ class StashClientBase:
             raise RuntimeError("URL not initialized")
 
     def _handle_gql_error(self, e: Exception) -> None:
-        """Handle gql errors with appropriate error messages."""
+        """Handle gql errors with appropriate error messages.
+
+        Raises:
+            StashGraphQLError: For GraphQL query/validation errors
+            StashServerError: For server-side errors (500, 503, etc.)
+            StashConnectionError: For network/connection errors
+            StashError: For unexpected errors
+        """
+        from ..errors import (
+            StashConnectionError,
+            StashError,
+            StashGraphQLError,
+            StashServerError,
+        )
+
         if isinstance(e, TransportQueryError):
             # GraphQL query error (e.g. validation error)
-            raise ValueError(f"GraphQL query error: {e.errors}")
+            raise StashGraphQLError(f"GraphQL query error: {e.errors}")
         if isinstance(e, TransportServerError):
             # Server error (e.g. 500)
-            raise ValueError(f"GraphQL server error: {e}")
+            raise StashServerError(f"GraphQL server error: {e}")
         if isinstance(e, TransportError):
             # Network/connection error
-            raise ValueError(f"Failed to connect to {self.url}: {e}")
+            raise StashConnectionError(f"Failed to connect to {self.url}: {e}")
         if isinstance(e, asyncio.TimeoutError):
-            raise ValueError(f"Request to {self.url} timed out")
-        raise ValueError(f"Unexpected error during request ({type(e).__name__}): {e}")
+            raise StashConnectionError(f"Request to {self.url} timed out")
+        raise StashError(f"Unexpected error during request ({type(e).__name__}): {e}")
 
     async def execute(
         self,
         query: str,
         variables: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        result_type: type[T] | None = None,
+    ) -> dict[str, Any] | T:
         """Execute GraphQL query with proper initialization and error handling.
 
         Args:
             query: GraphQL query string
             variables: Optional variables for query
+            result_type: Optional type to deserialize result to using Pydantic's from_graphql()
 
         Returns:
-            Query result as dictionary
+            Query result as dictionary, or typed object if result_type provided
 
         Raises:
             ValueError: If query validation fails or execution fails
@@ -326,25 +365,99 @@ class StashClientBase:
                     "GQL session not initialized - call initialize() first"
                 )
 
+            # Set variable_values on the query object (gql 4.x pattern)
+            # This avoids deprecation warning for passing variable_values to execute()
+            operation.variable_values = processed_vars
+
             # Execute using the persistent session
             # The session maintains a single connection for all queries
-            result = await self._session.execute(
-                operation, variable_values=processed_vars
-            )
-            return dict(result)
+            result = await self._session.execute(operation)
+            result_dict = dict(result)
+
+            # If result_type is specified, deserialize to that type
+            if result_type is not None:
+                return self._parse_result_to_type(result_dict, result_type)
+
+            return result_dict
 
         except Exception as e:
             self._handle_gql_error(e)  # This will raise ValueError
             raise RuntimeError("Unexpected execution path")  # pragma: no cover
 
+    def _parse_result_to_type(
+        self, result_dict: dict[str, Any], result_type: type[T]
+    ) -> T:
+        """Parse GraphQL result dictionary to specified type.
+
+        Args:
+            result_dict: GraphQL response dictionary
+            result_type: Type to deserialize result to (can be Model, list[Model], etc.)
+
+        Returns:
+            Deserialized instance of result_type
+        """
+        # GraphQL response structure: result contains one key (query/mutation name)
+        # Extract the single field data (e.g., result["findScenes"])
+        if isinstance(result_dict, dict) and len(result_dict) == 1:
+            field_name = next(iter(result_dict.keys()))
+            field_data = result_dict[field_name]
+
+            # If GraphQL returned None, return None (don't create empty object)
+            if field_data is None:
+                return None  # type: ignore[return-value]
+
+            # Check if result_type is a list type (e.g., list[Studio])
+            origin = get_origin(result_type)
+            if origin is list:
+                # Extract the element type from list[ElementType]
+                args = get_args(result_type)
+                if args and isinstance(field_data, list):
+                    element_type = args[0]
+                    # Deserialize each item in the list
+                    return [
+                        (
+                            element_type.from_graphql(item)
+                            if hasattr(element_type, "from_graphql")
+                            else element_type.model_validate(item)
+                        )
+                        for item in field_data
+                    ]  # type: ignore[return-value]
+                return field_data  # type: ignore[return-value]
+
+            # Use from_graphql() for StashObject types, model_validate() for others
+            if hasattr(result_type, "from_graphql"):
+                return result_type.from_graphql(field_data)  # type: ignore[attr-defined]
+            # For non-StashObject types (like result types), use model_validate
+            return result_type.model_validate(field_data)  # type: ignore[attr-defined]
+
+        # Fallback for unexpected response structure
+        self.log.warning(
+            f"Unexpected GraphQL response structure: {list(result_dict.keys())}"
+        )
+        if hasattr(result_type, "from_graphql"):
+            return result_type.from_graphql(result_dict)  # type: ignore[attr-defined]
+        return result_type.model_validate(result_dict)  # type: ignore[attr-defined]
+
     def _convert_datetime(self, obj: Any) -> Any:
-        """Convert datetime objects to ISO format strings."""
+        """Convert datetime objects to ISO format strings and filter out UNSET values."""
+        from ..types.unset import UnsetType
+
+        # Filter out UNSET sentinel values (should not be sent to GraphQL)
+        if isinstance(obj, UnsetType):
+            return None  # Or skip entirely in dict comprehension
         if isinstance(obj, datetime):
             return obj.isoformat()
         if isinstance(obj, dict):
-            return {k: self._convert_datetime(v) for k, v in obj.items()}
+            # Filter out UNSET values from dictionaries
+            return {
+                k: self._convert_datetime(v)
+                for k, v in obj.items()
+                if not isinstance(v, UnsetType)
+            }
         if isinstance(obj, (list, tuple)):
-            return [self._convert_datetime(x) for x in obj]
+            return [
+                self._convert_datetime(x) for x in obj if not isinstance(x, UnsetType)
+            ]
         return obj
 
     def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
@@ -359,394 +472,6 @@ class StashClientBase:
             if param.get("id"):
                 return int(param["id"])
         return param
-
-    async def get_configuration_defaults(self) -> ConfigDefaultSettingsResult:
-        """Get default configuration settings."""
-        try:
-            result = await self.execute(fragments.CONFIG_DEFAULTS_QUERY)
-
-            if not result:
-                self.log.warning(
-                    "No result from configuration query, using hardcoded defaults"
-                )
-                return ConfigDefaultSettingsResult(
-                    scan=ScanMetadataOptions(
-                        rescan=False,
-                        scanGenerateCovers=True,
-                        scanGeneratePreviews=True,
-                        scanGenerateImagePreviews=True,
-                        scanGenerateSprites=True,
-                        scanGeneratePhashes=True,
-                        scanGenerateThumbnails=True,
-                        scanGenerateClipPreviews=True,
-                    ),
-                    autoTag=AutoTagMetadataOptions(),
-                    generate=GenerateMetadataOptions(),
-                    deleteFile=False,
-                    deleteGenerated=False,
-                )
-
-            if defaults := result.get("configuration", {}).get("defaults"):
-                # Convert all options to proper types
-                if isinstance(defaults.get("scan"), dict):
-                    defaults["scan"] = ScanMetadataOptions(**defaults["scan"])
-                if isinstance(defaults.get("autoTag"), dict):
-                    defaults["autoTag"] = AutoTagMetadataOptions(**defaults["autoTag"])
-                if isinstance(defaults.get("generate"), dict):
-                    defaults["generate"] = GenerateMetadataOptions(
-                        **defaults["generate"]
-                    )
-                return ConfigDefaultSettingsResult(**defaults)
-
-            self.log.warning("No defaults in response, using hardcoded values")
-            return ConfigDefaultSettingsResult(
-                scan=ScanMetadataOptions(
-                    rescan=False,
-                    scanGenerateCovers=True,
-                    scanGeneratePreviews=True,
-                    scanGenerateImagePreviews=True,
-                    scanGenerateSprites=True,
-                    scanGeneratePhashes=True,
-                    scanGenerateThumbnails=True,
-                    scanGenerateClipPreviews=True,
-                ),
-                autoTag=AutoTagMetadataOptions(),
-                generate=GenerateMetadataOptions(),
-                deleteFile=False,
-                deleteGenerated=False,
-            )
-        except Exception as e:
-            self.log.error(f"Failed to get configuration defaults: {e}")
-            raise
-
-    async def metadata_generate(
-        self,
-        options: GenerateMetadataOptions | dict[str, Any] | None = None,
-        input_data: GenerateMetadataInput | dict[str, Any] | None = None,
-    ) -> str:
-        """Generate metadata.
-
-        Args:
-            options: GenerateMetadataOptions object or dictionary of what to generate:
-                - covers: bool - Generate covers
-                - sprites: bool - Generate sprites
-                - previews: bool - Generate previews
-                - imagePreviews: bool - Generate image previews
-                - previewOptions: GeneratePreviewOptionsInput
-                    - previewSegments: int - Number of segments in a preview file
-                    - previewSegmentDuration: float - Duration of each segment in seconds
-                    - previewExcludeStart: str - Duration to exclude from start
-                    - previewExcludeEnd: str - Duration to exclude from end
-                    - previewPreset: PreviewPreset - Preset when generating preview
-                - markers: bool - Generate markers
-                - markerImagePreviews: bool - Generate marker image previews
-                - markerScreenshots: bool - Generate marker screenshots
-                - transcodes: bool - Generate transcodes
-                - forceTranscodes: bool - Generate transcodes even if not required
-                - phashes: bool - Generate phashes
-                - interactiveHeatmapsSpeeds: bool - Generate interactive heatmaps speeds
-                - imageThumbnails: bool - Generate image thumbnails
-                - clipPreviews: bool - Generate clip previews
-            input_data: Optional GenerateMetadataInput object or dictionary to specify what to process:
-                - sceneIDs: list[str] - List of scene IDs to generate for (default: all)
-                - markerIDs: list[str] - List of marker IDs to generate for (default: all)
-                - overwrite: bool - Overwrite existing media (default: False)
-
-        Returns:
-            Job ID for the generation task
-
-        Raises:
-            ValueError: If the input data is invalid
-            gql.TransportError: If the request fails
-        """
-        try:
-            # Convert GenerateMetadataOptions to dict if needed
-            options_dict = {}
-            if options is not None:
-                if isinstance(options, GenerateMetadataOptions):
-                    options_dict = {
-                        k: v for k, v in vars(options).items() if v is not None
-                    }
-                else:
-                    options_dict = options
-
-            # Convert GenerateMetadataInput to dict if needed
-            input_dict = {}
-            if input_data is not None:
-                if isinstance(input_data, GenerateMetadataInput):
-                    input_dict = {
-                        k: v for k, v in vars(input_data).items() if v is not None
-                    }
-                else:
-                    input_dict = input_data
-
-            # Combine options and input data
-            variables = {"input": {**options_dict, **input_dict}}
-
-            # Execute mutation with combined input
-            result = await self.execute(fragments.METADATA_GENERATE_MUTATION, variables)
-
-            if not isinstance(result, dict):
-                raise ValueError("Invalid response format from server")
-
-            job_id = result.get("metadataGenerate")
-            if not job_id:
-                raise ValueError("No job ID returned from server")
-
-            return str(job_id)
-
-        except Exception as e:
-            self.log.error(f"Failed to generate metadata: {e}")
-            raise
-
-    async def metadata_scan(
-        self,
-        paths: list[str] | None = None,
-        flags: dict[str, Any] | None = None,
-    ) -> str:
-        """Start a metadata scan job.
-
-        Args:
-            paths: List of paths to scan (empty for all paths)
-            flags: Optional scan flags matching ScanMetadataInput schema:
-                - rescan: bool
-                - scanGenerateCovers: bool
-                - scanGeneratePreviews: bool
-                - scanGenerateImagePreviews: bool
-                - scanGenerateSprites: bool
-                - scanGeneratePhashes: bool
-                - scanGenerateThumbnails: bool
-                - scanGenerateClipPreviews: bool
-                - filter: ScanMetaDataFilterInput
-
-        Returns:
-            Job ID for the scan operation
-        """
-        # Get scan input object with defaults from config
-        if flags is None:
-            flags = {}
-        if paths is None:
-            paths = []
-        try:
-            defaults = await self.get_configuration_defaults()
-            scan_input = ScanMetadataInput(
-                paths=paths,
-                rescan=getattr(defaults.scan, "rescan", False),
-                scanGenerateCovers=getattr(defaults.scan, "scanGenerateCovers", True),
-                scanGeneratePreviews=getattr(
-                    defaults.scan, "scanGeneratePreviews", True
-                ),
-                scanGenerateImagePreviews=getattr(
-                    defaults.scan, "scanGenerateImagePreviews", True
-                ),
-                scanGenerateSprites=getattr(defaults.scan, "scanGenerateSprites", True),
-                scanGeneratePhashes=getattr(defaults.scan, "scanGeneratePhashes", True),
-                scanGenerateThumbnails=getattr(
-                    defaults.scan, "scanGenerateThumbnails", True
-                ),
-                scanGenerateClipPreviews=getattr(
-                    defaults.scan, "scanGenerateClipPreviews", True
-                ),
-            )
-        except Exception as e:
-            self.log.warning(
-                f"Failed to get scan defaults: {e}, using hardcoded defaults"
-            )
-            scan_input = ScanMetadataInput(
-                paths=paths,
-                rescan=False,
-                scanGenerateCovers=True,
-                scanGeneratePreviews=True,
-                scanGenerateImagePreviews=True,
-                scanGenerateSprites=True,
-                scanGeneratePhashes=True,
-                scanGenerateThumbnails=True,
-                scanGenerateClipPreviews=True,
-            )
-
-        # Override with any provided flags
-        if flags:
-            for key, value in flags.items():
-                setattr(scan_input, key, value)
-
-        # Convert to dict for GraphQL
-        variables = {"input": scan_input.__dict__}
-        try:
-            result = await self.execute(fragments.METADATA_SCAN_MUTATION, variables)
-            job_id = result.get("metadataScan")
-            if not job_id:
-                raise ValueError("Failed to start metadata scan - no job ID returned")
-            return str(job_id)
-        except Exception as e:
-            self.log.error(f"Failed to start metadata scan: {e}")
-            raise ValueError(f"Failed to start metadata scan: {e}")
-
-    async def find_job(self, job_id: str) -> Job | None:
-        """Find a job by ID.
-
-        Args:
-            job_id: Job ID to find
-
-        Returns:
-            Job object if found, None otherwise
-
-        Examples:
-            Find a job and check its status:
-            ```python
-            job = await client.find_job("123")
-            if job:
-                print(f"Job status: {job.status}")
-            ```
-        """
-        if not job_id:
-            return None
-
-        try:
-            result = await self.execute(
-                fragments.FIND_JOB_QUERY,
-                {"input": FindJobInput(id=job_id).__dict__},
-            )
-            # First check if there are any GraphQL errors
-            if "errors" in result:
-                return None
-            # Then check if we got a valid job back
-            if job_data := result.get("findJob"):
-                return Job(**job_data)
-            return None
-        except Exception as e:
-            self.log.error(f"Failed to find job {job_id}: {e}")
-            return None
-
-    async def wait_for_job(
-        self,
-        job_id: str | int,
-        status: JobStatus = JobStatus.FINISHED,
-        period: float = 1.5,
-        timeout: float = 120.0,
-    ) -> bool | None:
-        """Wait for a job to reach a specific status.
-
-        Args:
-            job_id: Job ID to wait for
-            status: Status to wait for (default: JobStatus.FINISHED)
-            period: Time between checks in seconds (default: 1.5)
-            timeout: Maximum time to wait in seconds (default: 120)
-
-        Returns:
-            True if job reached desired status
-            False if job finished with different status
-            None if job not found
-
-        Raises:
-            TimeoutError: If timeout is reached
-            ValueError: If job is not found
-        """
-        if not job_id:
-            return None
-
-        timeout_value = time.time() + timeout
-        while time.time() < timeout_value:
-            job = await self.find_job(str(job_id))
-            if not isinstance(job, Job):
-                raise ValueError(f"Job {job_id} not found")
-
-            # Only log through stash's logger
-            self.log.info(
-                f"Job {job_id} - Status: {job.status}, Progress: {job.progress}%"
-            )
-
-            # Check for desired state
-            if job.status == status:
-                return True
-            if job.status in [JobStatus.FINISHED, JobStatus.CANCELLED]:
-                return False
-
-            await asyncio.sleep(period)
-
-        raise TimeoutError(f"Timeout waiting for job {job_id} to reach status {status}")
-
-    async def get_system_status(self) -> SystemStatus | None:
-        """Get the current Stash system status.
-
-        Returns:
-            SystemStatus object containing system information and status
-            None if the query fails
-
-        Examples:
-            Check system status:
-            ```python
-            status = await client.get_system_status()
-            if status:
-                print(f"System status: {status.status}")
-                print(f"Database path: {status.databasePath}")
-            ```
-        """
-        try:
-            result = await self.execute(fragments.SYSTEM_STATUS_QUERY)
-            if status_data := result.get("systemStatus"):
-                return SystemStatus(**status_data)
-            return None
-        except Exception as e:
-            self.log.error(f"Failed to get system status: {e}")
-            return None
-
-    async def check_system_ready(self) -> None:
-        """Check if the Stash system is ready for processing.
-
-        This method queries the system status and raises an exception if the
-        system is not in OK status. It should be called before starting any
-        processing operations.
-
-        Raises:
-            StashSystemNotReadyError: If system status is SETUP or NEEDS_MIGRATION
-            RuntimeError: If system status cannot be determined
-
-        Examples:
-            Validate system before processing:
-            ```python
-            try:
-                await client.check_system_ready()
-                # Safe to proceed with processing
-                await client.metadata_scan()
-            except StashSystemNotReadyError as e:
-                print(f"System not ready: {e}")
-                # Handle migration or setup
-            ```
-        """
-        status = await self.get_system_status()
-
-        if status is None:
-            raise RuntimeError(
-                "Unable to determine Stash system status. "
-                "Cannot proceed with processing."
-            )
-
-        # Check for blocking states
-        if status.status == SystemStatusEnum.NEEDS_MIGRATION:
-            raise StashSystemNotReadyError(
-                status="NEEDS_MIGRATION",
-                message=(
-                    "Stash database requires migration. "
-                    "Please run the database migration before starting processing. "
-                    "All processing is blocked until migration is completed."
-                ),
-            )
-
-        if status.status == SystemStatusEnum.SETUP:
-            raise StashSystemNotReadyError(
-                status="SETUP",
-                message=(
-                    "Stash requires initial setup. "
-                    "Please complete the setup wizard before starting processing."
-                ),
-            )
-
-        # System is OK, log status for debugging
-        self.log.debug(
-            f"Stash system ready - Status: {status.status}, "
-            f"Database: {status.databasePath}, "
-            f"App Schema: {status.appSchema}"
-        )
 
     async def close(self) -> None:
         """Close the HTTP client and clean up resources.
