@@ -16,6 +16,7 @@ from stash_graphql_client import StashClient
 
 
 @pytest.mark.integration
+@pytest.mark.requires_scenes
 @pytest.mark.asyncio
 async def test_find_scenes_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
@@ -53,6 +54,7 @@ async def test_find_scenes_with_pagination(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_scenes
 @pytest.mark.asyncio
 async def test_find_scene_by_id(
     stash_client: StashClient, stash_cleanup_tracker
@@ -70,6 +72,7 @@ async def test_find_scene_by_id(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_images
 @pytest.mark.asyncio
 async def test_find_images_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
@@ -107,6 +110,7 @@ async def test_find_images_with_pagination(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_images
 @pytest.mark.asyncio
 async def test_find_image_by_id(
     stash_client: StashClient, stash_cleanup_tracker
@@ -124,6 +128,7 @@ async def test_find_image_by_id(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_galleries
 @pytest.mark.asyncio
 async def test_find_galleries_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
@@ -137,6 +142,7 @@ async def test_find_galleries_returns_expected_count(
 
 
 @pytest.mark.integration
+@pytest.mark.requires_galleries
 @pytest.mark.asyncio
 async def test_find_gallery_by_id(
     stash_client: StashClient, stash_cleanup_tracker

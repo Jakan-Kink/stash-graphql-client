@@ -124,6 +124,68 @@ def pytest_sessionstart(session):
         print(f"{'=' * 70}\n")
 
 
+@pytest.fixture(scope="session")
+def stash_state():
+    """Provide access to captured Stash state.
+
+    Returns dict with counts for: scenes, images, galleries, performers, studios, tags
+    Returns None if Stash unavailable.
+    """
+    return _initial_state if _stash_available else None
+
+
+@pytest.fixture(autouse=True)
+def skip_if_no_data(request, stash_state):
+    """Auto-skip tests that require specific Stash data types.
+
+    Usage in test files:
+        @pytest.mark.requires_scenes
+        def test_something():
+            ...
+    """
+    # Skip if Stash not available
+    if stash_state is None:
+        if (
+            request.node.get_closest_marker("requires_scenes")
+            or request.node.get_closest_marker("requires_images")
+            or request.node.get_closest_marker("requires_galleries")
+            or request.node.get_closest_marker("requires_performers")
+            or request.node.get_closest_marker("requires_studios")
+            or request.node.get_closest_marker("requires_tags")
+        ):
+            pytest.skip("Stash not available")
+        return
+
+    # Check data requirements
+    if (
+        request.node.get_closest_marker("requires_scenes")
+        and stash_state["scenes"] == 0
+    ):
+        pytest.skip("No scenes in Stash")
+    if (
+        request.node.get_closest_marker("requires_images")
+        and stash_state["images"] == 0
+    ):
+        pytest.skip("No images in Stash")
+    if (
+        request.node.get_closest_marker("requires_galleries")
+        and stash_state["galleries"] == 0
+    ):
+        pytest.skip("No galleries in Stash")
+    if (
+        request.node.get_closest_marker("requires_performers")
+        and stash_state["performers"] == 0
+    ):
+        pytest.skip("No performers in Stash")
+    if (
+        request.node.get_closest_marker("requires_studios")
+        and stash_state["studios"] == 0
+    ):
+        pytest.skip("No studios in Stash")
+    if request.node.get_closest_marker("requires_tags") and stash_state["tags"] == 0:
+        pytest.skip("No tags in Stash")
+
+
 def pytest_sessionfinish(session, exitstatus):
     """Hook called at the end of the test session (runs on controller).
 

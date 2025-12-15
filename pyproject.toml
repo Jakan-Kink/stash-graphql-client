@@ -210,6 +210,12 @@ markers = [
     "unit: marks tests as unit tests",
     "integration: marks tests as integration tests",
     "slow: marks tests as slow",
+    "requires_scenes: test requires Stash to have scenes",
+    "requires_images: test requires Stash to have images",
+    "requires_galleries: test requires Stash to have galleries",
+    "requires_performers: test requires Stash to have performers",
+    "requires_studios: test requires Stash to have studios",
+    "requires_tags: test requires Stash to have tags",
 ]
 [tool.coverage.run]
 branch = true
