@@ -59,9 +59,17 @@ jobs:
 
     services:
       stash:
-        image: stashapp/stash:latest
+        image: stashapp/stash:development
         ports:
           - 9999:9999
+        env:
+          STASH_STASH: /data/
+          STASH_GENERATED: /generated/
+          STASH_METADATA: /metadata/
+          STASH_CACHE: /cache/
+        volumes:
+          - /tmp/stash-config:/root/.stash
+          - /tmp/stash-data:/data
         options: >-
           --health-cmd "curl -f http://localhost:9999/graphql || exit 1"
           --health-interval 10s
