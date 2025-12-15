@@ -85,7 +85,8 @@ jobs:
 
       - name: Remove old Poetry installation
         run: |
-          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv
+          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv ~/.poetry ~/.cache/pypoetry
+          rm -f ~/.local/bin/poetry ~/.local/bin/poetry-*
         continue-on-error: true
 
       - name: Install Poetry
@@ -177,7 +178,8 @@ jobs:
 
       - name: Remove old Poetry installation
         run: |
-          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv
+          rm -rf ~/.local/share/pypoetry ~/.local/bin/poetry ~/.local/venv ~/.poetry ~/.cache/pypoetry
+          rm -f ~/.local/bin/poetry ~/.local/bin/poetry-*
         continue-on-error: true
 
       - name: Install Poetry
