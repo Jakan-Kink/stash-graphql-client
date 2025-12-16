@@ -25,6 +25,7 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
+  id-token: write
 
 jobs:
   claude:
@@ -52,9 +53,6 @@ jobs:
 
           # Enable progress tracking for visibility
           track_progress: true
-
-          # Allowed tools for Claude (security boundaries)
-          allowed_tools: "Read,Glob,Grep,WebFetch"
 
           # Custom instructions for Claude (optional)
           # custom_instructions: |
