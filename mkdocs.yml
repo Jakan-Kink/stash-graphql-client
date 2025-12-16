@@ -1,0 +1,176 @@
+site_name: Stash GraphQL Client
+site_description: Async Python client for Stash GraphQL API
+site_url: https://jakan-kink.github.io/stash-graphql-client/
+repo_url: https://github.com/Jakan-Kink/stash-graphql-client
+repo_name: Jakan-Kink/stash-graphql-client
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search:
+      separator: '[\s\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+  - mkdocstrings:
+      enabled: true
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          options:
+            # Docstring parsing
+            docstring_style: google
+            docstring_section_style: table
+
+            # Signature rendering
+            show_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            separate_signature: true
+
+            # Source code
+            show_source: true
+
+            # Class members
+            show_bases: true
+            show_inheritance_diagram: false
+            show_if_no_docstring: true
+
+            # Member filtering
+            members_order: source
+            filters: ["!^_", "!^__init__$"]
+
+            # Type annotations
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+
+            # Headings
+            heading_level: 2
+            show_root_heading: true
+            show_root_full_path: false
+            show_object_full_path: false
+            show_category_heading: true
+
+            # Merging
+            merge_init_into_class: true
+
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: material.extensions.emoji.twemoji
+      emoji_generator: material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Jakan-Kink/stash-graphql-client
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/stash-graphql-client/
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - User Guide:
+      - UNSET Pattern: guide/unset-pattern.md
+      - Fuzzy Dates: guide/fuzzy-dates.md
+  - API Reference:
+      - Client: api/client.md
+      - Context: api/context.md
+      - Entity Store: api/store.md
+      - Errors: api/errors.md
+      - GraphQL Fragments: api/fragments.md
+      - Schema: api/schema.md
+      - Types: api/types.md
+      - Client Mixins:
+          - Scene: api/client/mixins/scene.md
+          - Gallery: api/client/mixins/gallery.md
+          - Image: api/client/mixins/image.md
+          - Group: api/client/mixins/group.md
+          - Performer: api/client/mixins/performer.md
+          - Studio: api/client/mixins/studio.md
+          - Tag: api/client/mixins/tag.md
+          - Marker: api/client/mixins/marker.md
+          - File: api/client/mixins/file.md
+          - Metadata: api/client/mixins/metadata.md
+          - Jobs: api/client/mixins/jobs.md
+          - Config: api/client/mixins/config.md
+          - Filter: api/client/mixins/filter.md
+          - Plugin: api/client/mixins/plugin.md
+          - Scraper: api/client/mixins/scraper.md
+          - Package: api/client/mixins/package.md
+          - Subscription: api/client/mixins/subscription.md
+          - System Query: api/client/mixins/system_query.md
+          - Version: api/client/mixins/version.md
+  - Reference:
+      - Quick Reference: reference/quick-reference.md
