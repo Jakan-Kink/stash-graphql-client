@@ -105,9 +105,7 @@ markdown_extensions:
       smart_enable: all
   - pymdownx.caret
   - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: material.extensions.emoji.twemoji
-      emoji_generator: material.extensions.emoji.to_svg
+  - pymdownx.emoji
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
@@ -116,11 +114,7 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: pymdownx.superfences.fence_code_format
+  - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist:
