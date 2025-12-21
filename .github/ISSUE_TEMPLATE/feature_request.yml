@@ -1,0 +1,131 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for stash-graphql-client
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your use case and evaluate the request.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What's the use case?
+      placeholder: I'm frustrated when... / I need to... / It would be helpful if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your proposed solution or how you'd like this to work.
+      placeholder: I'd like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: api-design
+    attributes:
+      label: Proposed API/Usage Example
+      description: Show how you envision using this feature with example code.
+      placeholder: |
+        ```python
+        from stash_graphql_client import StashClient
+
+        client = StashClient(url="http://localhost:9999/graphql")
+        # Example of how the new feature would be used...
+        ```
+      render: python
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What alternative solutions or features have you considered?
+      placeholder: I considered... / Another approach could be...
+
+  - type: dropdown
+    id: stash-support
+    attributes:
+      label: Stash API Support
+      description: What's the current state of Stash API support for this functionality?
+      options:
+        - "Stash GraphQL API fully supports this (just needs client implementation)"
+        - "Stash supports this, but NOT through GraphQL (needs Stash GraphQL API work)"
+        - "Stash has the feature, but GraphQL is incomplete/limited (partial API coverage)"
+        - "Could be implemented through multiple GraphQL calls (creative combination)"
+        - "Requires new Stash feature (not currently in Stash at all)"
+        - "Library-level client feature (retry logic, batch operations, type helpers, etc.)"
+        - "Application-level feature (consumers should implement in their own code)"
+        - "I'm not sure - needs investigation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: graphql-example
+    attributes:
+      label: GraphQL Query/Mutation (if applicable)
+      description: If this relates to a specific Stash GraphQL operation, provide an example query or mutation.
+      placeholder: |
+        ```graphql
+        query ExampleQuery {
+          # ...
+        }
+        ```
+      render: graphql
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority/Impact
+      description: How important is this feature to you?
+      options:
+        - "Critical - Blocking my use case"
+        - "High - Would significantly improve my workflow"
+        - "Medium - Nice to have"
+        - "Low - Minor improvement"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Willing to Contribute
+      description: Are you interested in implementing this feature yourself?
+      options:
+        - "Yes, I can submit a PR"
+        - "Yes, with guidance"
+        - "No, but I can help test"
+        - "No"
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: (Optional) If you have ideas about how to implement this, share them here.
+      placeholder: This could be implemented by...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or references about the feature request.
+      placeholder: Any additional information...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues and PRs to ensure this feature hasn't been requested
+          required: true
+        - label: This feature aligns with the project's scope (GraphQL client for Stash)
+          required: true
+        - label: I have provided a clear use case and proposed solution
+          required: true

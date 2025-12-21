@@ -1,0 +1,100 @@
+name: Question / Support
+description: Ask a question about using stash-graphql-client
+title: "[Question]: "
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using stash-graphql-client? We're here to help!
+
+        **Note:** For general discussions, consider using [GitHub Discussions](https://github.com/Jakan-Kink/stash-graphql-client/discussions) instead.
+
+  - type: dropdown
+    id: question-type
+    attributes:
+      label: Question Type
+      description: What kind of question is this?
+      options:
+        - "How do I... (Usage question)"
+        - "Why does... (Understanding behavior)"
+        - "What's the best way to... (Best practices)"
+        - "Is it possible to... (Feature availability)"
+        - "Error interpretation (Help understanding an error)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Ask your question clearly and provide context.
+      placeholder: How do I...? / Why does...? / What's the best way to...?
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What Have You Tried?
+      description: What approaches have you attempted? Include relevant code if applicable.
+      placeholder: |
+        I tried...
+
+        ```python
+        from stash_graphql_client import StashClient
+        # Code I've tried...
+        ```
+      render: python
+
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Desired Outcome
+      description: What are you trying to achieve?
+      placeholder: I want to...
+
+  - type: input
+    id: version
+    attributes:
+      label: stash-graphql-client Version
+      description: What version are you using?
+      placeholder: "e.g., 0.1.0 or 'latest'"
+
+  - type: input
+    id: stash-version
+    attributes:
+      label: Stash Version
+      description: What version of Stash are you connecting to?
+      placeholder: "e.g., v0.26.0"
+
+  - type: textarea
+    id: relevant-docs
+    attributes:
+      label: Documentation Reviewed
+      description: Have you checked the documentation? Which sections did you review?
+      placeholder: |
+        - README.md
+        - docs/guide/unset-pattern.md
+        - Stash API documentation
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might help us answer your question
+      placeholder: Additional context...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues and discussions for similar questions
+          required: true
+        - label: I have reviewed the README and relevant documentation
+          required: true
+        - label: This question is specific to stash-graphql-client (not general Python or Stash questions)
+          required: false

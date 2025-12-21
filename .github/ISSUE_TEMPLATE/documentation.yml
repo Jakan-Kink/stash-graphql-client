@@ -1,0 +1,102 @@
+name: Documentation
+description: Report issues with documentation or request documentation improvements
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! Clear docs make the project accessible to everyone.
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What kind of documentation issue is this?
+      options:
+        - "Correction - Fix incorrect information"
+        - "Missing - Add documentation for existing feature"
+        - "Clarification - Improve unclear explanation"
+        - "Example - Add or improve code examples"
+        - "API Reference - Add or update API documentation"
+        - "Guide - Request a new tutorial or guide"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation that needs updating? (file path, URL, or section name)
+      placeholder: "e.g., README.md, docs/guide/unset-pattern.md, or 'Authentication section'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issue Description
+      description: What's wrong, missing, or unclear about the current documentation?
+      placeholder: The current documentation...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed Change
+      description: How should the documentation be improved? Provide the corrected or additional content if possible.
+      placeholder: |
+        The documentation should say...
+
+        OR provide a draft:
+
+        ```markdown
+        # Updated Section
+        Content here...
+        ```
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Code Example (if applicable)
+      description: If requesting example code, provide a draft or describe what the example should demonstrate.
+      placeholder: |
+        ```python
+        # Example demonstrating the feature
+        from stash_graphql_client import StashClient
+        # ...
+        ```
+      render: python
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other information that would help (screenshots, links to related docs, etc.)
+      placeholder: Additional context...
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Willing to Contribute
+      description: Are you interested in submitting a PR to fix this documentation issue?
+      options:
+        - "Yes, I can submit a PR"
+        - "Yes, with guidance on where to make changes"
+        - "No, but I can review proposed changes"
+        - "No"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have checked that this documentation issue doesn't already exist
+          required: true
+        - label: I have identified the specific location of the documentation
+          required: true
