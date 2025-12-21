@@ -576,6 +576,82 @@ poetry update <package-name>
 poetry show --outdated
 ```
 
+## Release Process
+
+### Publishing to PyPI
+
+This project uses **Trusted Publishers (OIDC)** for secure, token-free publishing to PyPI.
+
+#### Automated Publishing
+
+- **TestPyPI**: Every push to `main` automatically publishes to [test.pypi.org](https://test.pypi.org/project/stash-graphql-client/)
+- **PyPI**: Pushing a git tag triggers production release to [pypi.org](https://pypi.org/project/stash-graphql-client/)
+
+#### Release Workflow
+
+1. **Update version** in `pyproject.toml`:
+   ```bash
+   # Edit version in pyproject.toml (e.g., "0.5.0" for stable, "0.5.1b1" for beta)
+   ```
+
+2. **Update CHANGELOG.md**:
+   ```markdown
+   ## [0.5.0] - 2025-01-15
+
+   ### Added
+   - New feature X
+
+   ### Fixed
+   - Bug Y
+   ```
+
+3. **Commit changes**:
+   ```bash
+   git add pyproject.toml CHANGELOG.md
+   git commit -m "chore: Bump version to 0.5.0"
+   ```
+
+4. **Create and push tag**:
+   ```bash
+   git tag v0.5.0
+   git push origin main
+   git push origin v0.5.0  # This triggers PyPI release
+   ```
+
+5. **GitHub Actions** automatically:
+   - Builds the package
+   - Authenticates via OIDC (no tokens!)
+   - Publishes to PyPI
+   - Package becomes available within minutes
+
+#### Version Numbering
+
+Follow [Semantic Versioning](https://semver.org/):
+
+- **Major** (1.0.0): Breaking changes
+- **Minor** (0.5.0): New features, backward compatible
+- **Patch** (0.5.1): Bug fixes, backward compatible
+- **Beta** (0.5.0b1): Pre-release testing
+
+#### Manual Testing on TestPyPI
+
+```bash
+# Install from TestPyPI
+pip install --index-url https://test.pypi.org/simple/ stash-graphql-client
+
+# Test the package
+python -c "from stash_graphql_client import StashClient; print('Success!')"
+```
+
+#### Security Note
+
+This project uses **GitHub Trusted Publishers** instead of API tokens:
+
+- ✅ **Zero secrets** - No tokens to manage or leak
+- ✅ **Audit trail** - GitHub OIDC provides full authentication logs
+- ✅ **Scoped access** - Each workflow/environment is separately authorized
+- ✅ **Industry standard** - Recommended by PyPI for maximum security
+
 ## Getting Help
 
 - **Documentation:** Check [docs/](docs/) directory

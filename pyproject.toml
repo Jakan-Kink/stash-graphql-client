@@ -1,13 +1,38 @@
 [project]
 name = "stash-graphql-client"
-version = "0.5.0b1"
+version = "0.5.0b2"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
 ]
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-or-later"}
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
+keywords = [
+    "stash",
+    "stashapp",
+    "graphql",
+    "graphql-client",
+    "async",
+    "pydantic",
+    "metadata",
+    "media-management",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Database",
+    "Typing :: Typed",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "gql[httpx,websockets] (>=4.0.0)",
     "websocket-client (>=1.8.0)",
@@ -18,6 +43,14 @@ dependencies = [
     "pydantic-extra-types (>=2.10.6)",
     "multidict (>=6.7.0)"
 ]
+
+[project.urls]
+Homepage = "https://github.com/Jakan-Kink/stash-graphql-client"
+Repository = "https://github.com/Jakan-Kink/stash-graphql-client"
+Documentation = "https://github.com/Jakan-Kink/stash-graphql-client/tree/main/docs"
+Issues = "https://github.com/Jakan-Kink/stash-graphql-client/issues"
+Changelog = "https://github.com/Jakan-Kink/stash-graphql-client/blob/main/CHANGELOG.md"
+"Stash GitHub" = "https://github.com/stashapp/stash"
 
 [dependency-groups]
 dev = [
@@ -34,7 +67,6 @@ dev = [
     "mypy (>=1.11.0)",
     "factory-boy (>=3.3.3)",
     "respx (>=0.22.0)",
-    "keyrings-codeartifact (>=2.1.2,<3.0.0)",
     "mkdocs (>=1.6.1,<2.0.0)",
     "mkdocs-material (>=9.7.0,<10.0.0)",
     "mkdocstrings[python] (>=1.0.0,<2.0.0)",
@@ -137,8 +169,6 @@ ignore = [
     "PLW0603", # global statement (used intentionally for module state) - KEEP: intentional pattern
     "B904",   # raise without from inside except (sometimes intentional) - TODO: review and fix
     "RUF006", # asyncio dangling task (tracked manually) - TODO: review and fix
-    # pyLoyalFans-specific ignores (risky transformations)
-    "TC001",   # typing-only-first-party-import (risky, broke some imports in mymember.site)
 ]
 
 # Allow fix for all enabled rules (when `--fix` is provided)
@@ -283,9 +313,3 @@ show_contexts = true
 [tool.coverage.xml]
 output = "coverage.xml"
 package_depth = 2
-
-# AWS CodeArtifact private package repository (for publishing)
-[[tool.poetry.source]]
-name = "codeartifact"
-url = "https://stash-tools-024848464090.d.codeartifact.us-east-2.amazonaws.com/pypi/python-packages/simple/"
-priority = "supplemental"

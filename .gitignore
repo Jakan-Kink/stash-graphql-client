@@ -71,3 +71,6 @@ config.local.yml
 # (Override any global config.yml or *.agent.md patterns)
 !.github/ISSUE_TEMPLATE/config.yml
 !.github/agents/*.agent.md
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md
