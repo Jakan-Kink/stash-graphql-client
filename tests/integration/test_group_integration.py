@@ -104,7 +104,7 @@ async def test_create_and_find_group(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating a group and finding it by ID."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create a new group
         group = Group.new(
             name="Integration Test Group",
@@ -133,7 +133,7 @@ async def test_create_and_update_group(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating and updating a group."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create a new group
         group = Group.new(
             name="Group To Update",
@@ -159,7 +159,8 @@ async def test_create_and_destroy_group(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating and destroying a group."""
-    async with stash_cleanup_tracker(stash_client):
+    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+        # Does not require cleanup as we are destroying the group immediately after creation
         # Create a new group
         group = Group.new(name="Group To Destroy")
         created_group = await stash_client.create_group(group)
@@ -183,7 +184,8 @@ async def test_create_multiple_and_destroy_groups(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating multiple groups and destroying them in bulk."""
-    async with stash_cleanup_tracker(stash_client):
+    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+        # Does not require cleanup as we are destroying the groups immediately after creation
         # Create multiple groups
         group1 = await stash_client.create_group(Group.new(name="Bulk Destroy Group 1"))
         group2 = await stash_client.create_group(Group.new(name="Bulk Destroy Group 2"))
@@ -208,7 +210,7 @@ async def test_create_group_with_duration_and_date(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating a group with duration and date fields."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         group = Group.new(
             name="Group With Metadata",
             duration=7200,  # 2 hours in seconds
@@ -229,7 +231,7 @@ async def test_create_group_with_urls(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test creating a group with URLs."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         group = Group.new(
             name="Group With URLs",
             urls=["https://example.com/group1", "https://example.com/group2"],
@@ -252,7 +254,7 @@ async def test_bulk_group_update(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test bulk updating multiple groups."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create multiple groups
         created_groups = []
         for i in range(3):
@@ -285,7 +287,7 @@ async def test_add_and_remove_sub_groups(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test adding and removing sub-groups from a parent group."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create parent and child groups
         parent_group = await stash_client.create_group(Group.new(name="Parent Group"))
         cleanup["groups"].append(parent_group.id)  # Manual cleanup registration
@@ -334,7 +336,7 @@ async def test_reorder_sub_groups(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test reordering sub-groups within a parent group."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create parent and multiple child groups
         parent_group = await stash_client.create_group(
             Group.new(name="Parent For Reorder")
@@ -381,7 +383,7 @@ async def test_find_group_by_id_returns_complete_data(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test that find_group returns all expected fields."""
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         # Create a group with all optional fields
         group = Group.new(
             name="Complete Group",

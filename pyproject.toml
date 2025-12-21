@@ -229,6 +229,7 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
     "--cov-config=pyproject.toml",
+    "--cov-context=test",
 ]
 timeout = 60
 timeout_method = "thread"
@@ -300,7 +301,7 @@ exclude_also = [
 ]
 ignore_errors = true
 skip_empty = true
-skip_covered = true
+# skip_covered = true
 precision = 2
 show_missing = true
 fail_under = 70

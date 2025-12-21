@@ -927,21 +927,26 @@ async def test_resolve_tag_not_found(respx_stash_client: StashClient):
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+@pytest.mark.filterwarnings("ignore::UserWarning:pydantic.main")
 async def test_resolve_tags_skips_unset_ids(respx_stash_client: StashClient):
     """Test resolve_tags skips tags with UNSET IDs.
 
     This covers line 539->536: when tag_id is UNSET (field wasn't queried),
     skip adding it to the result list.
+
+    Note: This test intentionally uses UNSET for tag.id to test the filtering logic,
+    which triggers a Pydantic serialization warning that we suppress.
     """
 
     # Mock find_tags to return tags where one has UNSET id
     async def mock_find_tags(*args, **kwargs):
-        # Create tags with model_construct to set UNSET id
+        # Create tags with model_construct to explicitly set UNSET id
         tag1 = Tag.model_construct(id="tag-1", name="Tag Alpha")
         tag2 = Tag.model_construct(id=UNSET, name="Tag Beta")  # UNSET id!
         tag3 = Tag.model_construct(id="tag-3", name="Tag Gamma")
 
-        return FindTagsResultType(count=3, tags=[tag1, tag2, tag3])
+        # Use model_construct to bypass validation
+        return FindTagsResultType.model_construct(count=3, tags=[tag1, tag2, tag3])
 
     with patch.object(respx_stash_client, "find_tags", side_effect=mock_find_tags):
         parser = ScrapeParser(client=respx_stash_client)

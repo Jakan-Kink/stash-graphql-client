@@ -170,6 +170,9 @@ class StashClientBase:
             url=self.ws_url,
             headers=headers,
             ssl=verify_ssl,
+            connect_args={
+                "max_size": 50 * 1024 * 1024,  # 50 MB limit for large GraphQL responses
+            },
         )
 
         # Create persistent GQL client that manages the transport lifecycle
