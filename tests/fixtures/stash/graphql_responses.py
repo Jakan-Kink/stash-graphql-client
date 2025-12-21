@@ -119,6 +119,7 @@ def create_tag_dict(
         )
     """
     return {
+        "__typename": "Tag",
         "id": id,
         "name": name,
         "aliases": aliases or [],
@@ -188,6 +189,7 @@ def create_performer_dict(
         Dict matching Performer type
     """
     base = {
+        "__typename": "Performer",
         "id": id,
         "name": name,
         "alias_list": [],
@@ -246,6 +248,7 @@ def create_studio_dict(
         Dict matching Studio type
     """
     return {
+        "__typename": "Studio",
         "id": id,
         "name": name,
         "urls": [url] if url else [],  # Studio expects 'urls' (plural, list)
@@ -307,6 +310,7 @@ def create_scene_dict(
         Dict matching Scene type
     """
     base = {
+        "__typename": "Scene",
         "id": id,
         "title": title,
         "studio": studio,
@@ -376,6 +380,7 @@ def create_image_dict(
         Dict matching Image type
     """
     base = {
+        "__typename": "Image",
         "id": id,
         "title": title,
         "studio": studio,
@@ -438,6 +443,7 @@ def create_gallery_dict(
         Dict matching Gallery type
     """
     base = {
+        "__typename": "Gallery",
         "id": id,
         "title": title,
         "code": code,
@@ -477,6 +483,7 @@ def create_version_dict(
         )
     """
     return {
+        "__typename": "Version",
         "version": version,
         "hash": hash,
         "build_time": build_time,
@@ -509,6 +516,7 @@ def create_latestversion_dict(
         )
     """
     return {
+        "__typename": "LatestVersion",
         "version": version,
         "shorthash": shorthash,
         "release_date": release_date,
@@ -599,6 +607,7 @@ def create_marker_dict(
         }
 
     base = {
+        "__typename": "SceneMarker",
         "id": id,
         "title": title,
         "seconds": seconds,
@@ -688,6 +697,7 @@ def create_file_dict(
         }
 
     base = {
+        "__typename": "VideoFile",
         "id": id,
         "path": path,
         "basename": basename,
@@ -718,6 +728,7 @@ def create_folder_dict(
         Dict matching Folder type
     """
     base = {
+        "__typename": "Folder",
         "id": id,
         "path": path,
         "mod_time": mod_time,
@@ -987,6 +998,7 @@ def create_group_dict(
         Dict matching Group GraphQL type
     """
     base = {
+        "__typename": "Group",
         "id": id,
         "name": name,
         "urls": urls or [],

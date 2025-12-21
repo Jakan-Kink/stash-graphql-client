@@ -1011,24 +1011,24 @@ class StashEntityStore:
         Returns:
             GraphQL field selection string with nested selections for objects
         """
-        # Always include id and timestamps
-        base_fields = ["id", "created_at", "updated_at"]
+        # Always include __typename, id, and timestamps
+        base_fields = ["__typename", "id", "created_at", "updated_at"]
         all_fields = list(set(base_fields + fields))
 
         # Map of relationship fields that need nested selections
         # Format: field_name -> nested fields to include
         relationship_fields = {
             # Common relationship fields across types
-            "studio": "id name",
-            "parent_studio": "id name",
-            "tags": "id name",
-            "performers": "id name gender",
-            "scenes": "id title",
-            "galleries": "id title",
-            "images": "id title",
-            "groups": "id name",
-            "scene_markers": "id title",
-            "stash_ids": "endpoint stash_id",
+            "studio": "__typename id name",
+            "parent_studio": "__typename id name",
+            "tags": "__typename id name",
+            "performers": "__typename id name gender",
+            "scenes": "__typename id title",
+            "galleries": "__typename id title",
+            "images": "__typename id title",
+            "groups": "__typename id name",
+            "scene_markers": "__typename id title",
+            "stash_ids": "__typename endpoint stash_id",
         }
 
         selections = []

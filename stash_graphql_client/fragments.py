@@ -58,6 +58,7 @@ query ConfigurationDefaults {{
 
 # Job fragments
 JOB_FIELDS = """
+    __typename
     id
     status
     subTasks
@@ -91,10 +92,12 @@ FILE_FIELDS = """fragment FileFields on BaseFile {
     path
     basename
     parent_folder {
+        __typename
         id
         path
     }
     zip_file {
+        __typename
         id
         path
     }
@@ -103,12 +106,14 @@ FILE_FIELDS = """fragment FileFields on BaseFile {
     created_at
     updated_at
     fingerprints {
+        __typename
         type
         value
     }
 }"""
 
 VIDEO_FILE_FIELDS = """fragment VideoFileFields on VideoFile {
+    __typename
     ...FileFields
     format
     width
@@ -121,6 +126,7 @@ VIDEO_FILE_FIELDS = """fragment VideoFileFields on VideoFile {
 }"""
 
 IMAGE_FILE_FIELDS = """fragment ImageFileFields on ImageFile {
+    __typename
     ...FileFields
     format
     width
@@ -128,11 +134,13 @@ IMAGE_FILE_FIELDS = """fragment ImageFileFields on ImageFile {
 }"""
 
 GALLERY_FILE_FIELDS = """fragment GalleryFileFields on GalleryFile {
+    __typename
     ...FileFields
 }"""
 
 # Scene fragments
 SCENE_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -143,6 +151,7 @@ SCENE_FIELDS = """
     date
     organized
     captions {
+        __typename
         language_code
         caption_type
     }
@@ -150,19 +159,24 @@ SCENE_FIELDS = """
         ...VideoFileFields
     }
     studio {
+        __typename
         id
     }
     performers {
+        __typename
         id
     }
     tags {
+        __typename
         id
     }
     stash_ids {
+        __typename
         endpoint
         stash_id
     }
     sceneStreams {
+        __typename
         url
         mime_type
         label
@@ -171,6 +185,7 @@ SCENE_FIELDS = """
 
 # Performer fragments
 PERFORMER_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -193,22 +208,27 @@ PERFORMER_FIELDS = """
     details
     hair_color
     stash_ids {
+        __typename
         endpoint
         stash_id
     }
     tags {
+        __typename
         id
     }
     scenes {
+        __typename
         id
     }
     groups {
+        __typename
         id
     }
 """
 
 # Studio fragments
 STUDIO_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -218,15 +238,18 @@ STUDIO_FIELDS = """
     aliases
     details
     tags {
+        __typename
         id
     }
     parent_studio {
+        __typename
         id
     }
 """
 
 # Tag fragments
 TAG_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -235,13 +258,16 @@ TAG_FIELDS = """
     aliases
     image_path
     stash_ids {
+        __typename
         endpoint
         stash_id
     }
     parents {
+        __typename
         id
     }
     children {
+        __typename
         id
     }
 """
@@ -463,6 +489,7 @@ mutation UpdateTag($input: TagUpdateInput!) {{
 
 # Gallery fragments
 GALLERY_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -474,16 +501,20 @@ GALLERY_FIELDS = """
     photographer
     organized
     studio {
+        __typename
         id
     }
     scenes {
+        __typename
         id
     }
     performers {
+        __typename
         id
         name
     }
     tags {
+        __typename
         id
         name
     }
@@ -617,6 +648,7 @@ mutation AddGalleryImages($input: GalleryAddInput!) {
 # NOTE: visual_files is a union type (VisualFile = VideoFile | ImageFile)
 # GIF images are returned as VideoFile since they contain animation/video data
 IMAGE_FIELDS = """
+    __typename
     id
     created_at
     updated_at
@@ -628,16 +660,20 @@ IMAGE_FIELDS = """
     details
     photographer
     studio {
+        __typename
         id
     }
     performers {
+        __typename
         id
     }
     tags {
+        __typename
         id
         name
     }
     galleries {
+        __typename
         id
     }
     visual_files {
@@ -724,18 +760,22 @@ mutation ImageResetO($id: ID!) {
 
 # Marker fragments
 MARKER_FIELDS = """
+    __typename
     id
     created_at
     updated_at
     title
     seconds
     scene {
+        __typename
         id
     }
     primary_tag {
+        __typename
         id
     }
     tags {
+        __typename
         id
     }
 """
@@ -970,6 +1010,7 @@ mutation GenerateAPIKey($input: GenerateAPIKeyInput!) {
 
 # System status query
 SYSTEM_STATUS_FIELDS = """
+    __typename
     databaseSchema
     databasePath
     configPath
@@ -1212,6 +1253,7 @@ mutation BulkSceneMarkerUpdate($input: BulkSceneMarkerUpdateInput!) {{
 
 # Folder fragments and queries
 FOLDER_FIELDS = """fragment FolderFields on Folder {
+    __typename
     id
     path
     parent_folder_id
@@ -1244,6 +1286,7 @@ query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $id
 
 # Group fragments
 GROUP_FIELDS = """fragment GroupFields on Group {
+    __typename
     id
     created_at
     updated_at
@@ -1258,22 +1301,29 @@ GROUP_FIELDS = """fragment GroupFields on Group {
     front_image_path
     back_image_path
     studio {
+        __typename
         id
     }
     tags {
+        __typename
         id
     }
     scenes {
+        __typename
         id
     }
     containing_groups {
+        __typename
         group {
+            __typename
             id
         }
         description
     }
     sub_groups {
+        __typename
         group {
+            __typename
             id
         }
         description
@@ -1511,10 +1561,12 @@ mutation BulkGalleryUpdate($input: BulkGalleryUpdateInput!) {{
 # =============================================================================
 
 SAVED_FILTER_FIELDS = """
+    __typename
     id
     mode
     name
     find_filter {
+        __typename
         q
         page
         per_page
@@ -1649,6 +1701,7 @@ query DLNAStatus {
         until
         recentIPAddresses
         allowedIPAddresses {
+            __typename
             ipAddress
             until
         }
