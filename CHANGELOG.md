@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0b3] - 2025-12-21
+
+### Fixed
+- Updated README.md license section from MIT to AGPL-3.0 (badge was correct, text section was outdated)
+- Regenerated poetry.lock after removing keyrings-codeartifact (-425 lines of AWS dependencies)
+
+### Changed
+- Cleaned up transitive dependencies from poetry.lock after PyPI migration
+
 ## [0.5.0b2] - 2025-12-21
 
 ### Added
@@ -47,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b2...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...HEAD
+[0.5.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b2...v0.5.0b3
 [0.5.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b1...v0.5.0b2
 [0.5.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/releases/tag/v0.5.0b1
