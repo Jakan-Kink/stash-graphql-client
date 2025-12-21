@@ -1,5 +1,10 @@
 # stash-graphql-client
 
+[![PyPI version](https://badge.fury.io/py/stash-graphql-client.svg)](https://badge.fury.io/py/stash-graphql-client)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![codecov](https://codecov.io/gh/Jakan-Kink/stash-graphql-client/branch/main/graph/badge.svg?token=qtamVrMS5r)](https://codecov.io/gh/Jakan-Kink/stash-graphql-client)
+
 Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 
 ## Features
@@ -12,13 +17,30 @@ Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 
 ## Installation
 
-```bash
-# From AWS CodeArtifact (private)
-pip install stash-graphql-client
+### From PyPI (Recommended)
 
-# Or with Poetry
+```bash
+pip install stash-graphql-client
+```
+
+### With Poetry
+
+```bash
 poetry add stash-graphql-client
 ```
+
+### From Source
+
+```bash
+git clone https://github.com/Jakan-Kink/stash-graphql-client.git
+cd stash-graphql-client
+poetry install
+```
+
+### Requirements
+
+- Python 3.12+
+- Poetry for development
 
 ## Quick Start
 
