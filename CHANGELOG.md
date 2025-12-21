@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0b4] - 2025-12-21
+
+### Added
+- `__typename` field to all GraphQL fragments and queries for improved type safety
+- Type validation in `FromGraphQLMixin.from_graphql()` to verify GraphQL response types match Python classes
+- Polymorphic type support via `cls.__subclasses__()` check for interface/union types
+- Test coverage for type mismatch validation error paths
+
+### Fixed
+- pytest-xdist worker state sharing bug that caused integration tests to skip in parallel mode
+- Added `pytest_configure_node()` hook to properly share Stash availability state between controller and workers
+
+### Changed
+- All 16 fragment definitions now include `__typename` as first field
+- All nested inline objects in fragments include `__typename`
+- Dynamic query generation in `StashEntityStore.populate()` includes `__typename`
+- All test fixtures (12 `create_*_dict()` functions and 10 Factory classes) include `__typename`
+
 ## [0.5.0b3] - 2025-12-21
 
 ### Fixed
@@ -56,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...HEAD
+[0.5.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...v0.5.0b4
 [0.5.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b2...v0.5.0b3
 [0.5.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b1...v0.5.0b2
 [0.5.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/releases/tag/v0.5.0b1

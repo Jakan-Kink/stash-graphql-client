@@ -97,8 +97,11 @@ def pytest_sessionstart(session):
 
     global _stash_available, _initial_state
 
-    # Skip if running as xdist worker
+    # For xdist workers, get state from controller
     if hasattr(session.config, "workerinput"):
+        workerinput = session.config.workerinput
+        _stash_available = workerinput.get("stash_available", False)
+        _initial_state = workerinput.get("stash_state", None)
         return
 
     try:
@@ -184,6 +187,16 @@ def skip_if_no_data(request, stash_state):
         pytest.skip("No studios in Stash")
     if request.node.get_closest_marker("requires_tags") and stash_state["tags"] == 0:
         pytest.skip("No tags in Stash")
+
+
+def pytest_configure_node(node):
+    """Hook called when configuring an xdist worker node.
+
+    This sends the captured Stash state from controller to workers.
+    """
+    # Send state to workers
+    node.workerinput["stash_available"] = _stash_available
+    node.workerinput["stash_state"] = _initial_state
 
 
 def pytest_sessionfinish(session, exitstatus):

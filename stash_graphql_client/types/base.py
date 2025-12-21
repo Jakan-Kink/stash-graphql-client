@@ -210,7 +210,23 @@ class FromGraphQLMixin:
 
         Returns:
             Instance of the type with data validated
+
+        Raises:
+            ValueError: If __typename doesn't match the class name
         """
+        # Validate __typename matches class name (if present in data)
+        # This ensures type safety when explicitly deserializing to a specific type
+        # For polymorphic types (interfaces/unions), allow concrete implementations
+        if isinstance(data, dict) and "__typename" in data:
+            expected = cls.__name__
+            actual = data["__typename"]
+            # Check if this might be polymorphic (interface/union with subclasses)
+            # If the class has subclasses, allow different __typename (field validators will handle it)
+            if actual != expected and not cls.__subclasses__():
+                raise ValueError(
+                    f"Type mismatch: Attempting to deserialize {actual} as {expected}"
+                )
+
         # Recursively process nested StashObject dicts
         processed_data = cls._process_nested_graphql(data)
 
@@ -636,11 +652,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """Identity map validator with nested object support.
 
         This validator implements the identity map pattern:
-        1. If data has an ID, check if entity is already cached
-        2. If cached, return the cached instance (skip construction)
-        3. Process nested StashObject dicts to replace with cached instances
-        4. Call handler() for normal Pydantic construction with processed data
-        5. Cache the newly constructed instance
+        1. Validate __typename matches expected type (if present)
+        2. If data has an ID, check if entity is already cached
+        3. If cached, return the cached instance (skip construction)
+        4. Process nested StashObject dicts to replace with cached instances
+        5. Call handler() for normal Pydantic construction with processed data
+        6. Cache the newly constructed instance
 
         This ensures same ID = same object reference for both top-level
         and nested objects.
@@ -651,6 +668,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         Returns:
             Entity instance (either from cache or newly constructed)
+
+        Raises:
+            ValueError: If __typename doesn't match expected type
         """
         # Skip identity map if no store or not a dict
         if not cls._store or not isinstance(data, dict):

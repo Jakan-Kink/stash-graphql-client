@@ -287,3 +287,26 @@ def test_image_visual_files_no_typename():
     assert len(image.visual_files) == 1
     # The item should still be in the list (passed through)
     assert image.visual_files[0] is not None
+
+
+# =============================================================================
+# from_graphql() __typename validation edge cases
+# =============================================================================
+
+
+def test_from_graphql_typename_mismatch_non_polymorphic():
+    """Test that from_graphql raises error for type mismatch on non-polymorphic types."""
+    # Test line 227 in base.py - type mismatch error for non-polymorphic types
+    # VideoFile has no subclasses, so it should reject mismatched __typename
+    from stash_graphql_client.types import Scene
+
+    data = {
+        "__typename": "Performer",  # Wrong type!
+        "id": "1",
+        "created_at": "2024-01-01T12:00:00Z",
+        "updated_at": "2024-01-01T12:00:00Z",
+    }
+
+    # Should raise ValueError for type mismatch
+    with pytest.raises(ValueError, match=r"Type mismatch.*Performer.*Scene"):
+        Scene.from_graphql(data)

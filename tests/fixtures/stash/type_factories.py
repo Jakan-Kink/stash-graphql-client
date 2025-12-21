@@ -64,6 +64,7 @@ class PerformerFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(100 + n))
+    __typename = "Performer"
     name = Sequence(lambda n: f"Performer_{n}")
 
     # Lists with default factories
@@ -120,6 +121,7 @@ class StudioFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(200 + n))
+    __typename = "Studio"
     name = Sequence(lambda n: f"Studio_{n}")
 
     # Studio list fields are all nullable in GraphQL, so use None
@@ -155,6 +157,7 @@ class TagFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(300 + n))
+    __typename = "Tag"
     name = Sequence(lambda n: f"Tag_{n}")
 
     # Tag list fields are all nullable in GraphQL, so use None
@@ -190,6 +193,7 @@ class SceneFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(400 + n))
+    __typename = "Scene"
     title = Sequence(lambda n: f"Scene_{n}")
 
     # Lists with default factories
@@ -242,6 +246,7 @@ class GalleryFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(500 + n))
+    __typename = "Gallery"
     title = Sequence(lambda n: f"Gallery_{n}")
 
     # Lists with default factories
@@ -287,6 +292,7 @@ class ImageFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(600 + n))
+    __typename = "Image"
     title = Sequence(lambda n: f"Image_{n}")
 
     # Lists with default factories
@@ -330,6 +336,7 @@ class GroupFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: str(700 + n))
+    __typename = "Group"
     name = Sequence(lambda n: f"Group_{n}")
 
     # Lists with default factories
@@ -377,6 +384,7 @@ class ImageFileFactory(Factory):
 
     # Required fields from BaseFile (inherited via StashObject)
     id = Sequence(lambda n: str(800 + n))
+    __typename = "ImageFile"
     path = Sequence(lambda n: f"/test/images/image_{n}.jpg")
     basename = Sequence(lambda n: f"image_{n}.jpg")
     parent_folder_id = "folder_1"
@@ -421,6 +429,7 @@ class VideoFileFactory(Factory):
 
     # Required fields from BaseFile (inherited via StashObject)
     id = Sequence(lambda n: str(900 + n))
+    __typename = "VideoFile"
     path = Sequence(lambda n: f"/test/videos/video_{n}.mp4")
     basename = Sequence(lambda n: f"video_{n}.mp4")
     parent_folder_id = "folder_1"
@@ -470,6 +479,7 @@ class JobFactory(Factory):
 
     # Required fields
     id = Sequence(lambda n: f"job_{n}")
+    __typename = "Job"
     status = JobStatus.FINISHED
     subTasks = LazyFunction(list)
     description = Sequence(lambda n: f"Job_{n}")
