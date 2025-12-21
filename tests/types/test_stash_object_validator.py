@@ -41,6 +41,9 @@ class TestIdentityMapValidator:
         calling the validator. This test exercises the validator's own
         expiration handling.
         """
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Scene._store is not None
+
         # Set up mock GraphQL response (not actually called in this test)
         respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json={"data": {}})
@@ -195,6 +198,10 @@ class TestStashObjectInit:
         self, respx_entity_store
     ) -> None:
         """Test _process_nested_cache_lookups replaces cached items in lists - covers lines 579-604."""
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Tag._store is not None
+        assert Scene._store is not None
+
         # Clear cache to ensure test isolation
         Tag._store._cache.clear()
         Scene._store._cache.clear()
@@ -270,6 +277,9 @@ class TestStashObjectInit:
         self, respx_entity_store
     ) -> None:
         """Test _process_nested_cache_lookups with expired cached list item - covers branch 607->613."""
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Tag._store is not None
+
         # Clear any existing cache to ensure test isolation
         Tag._store._cache.clear()
 
@@ -308,6 +318,9 @@ class TestStashObjectInit:
         self, respx_entity_store
     ) -> None:
         """Test _process_nested_cache_lookups with expired cached single object - covers branch 628->550."""
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Studio._store is not None
+
         # Clear any existing cache to ensure test isolation
         Studio._store._cache.clear()
 
@@ -339,3 +352,108 @@ class TestStashObjectInit:
 
         # Clean up
         Studio._store._cache.clear()
+
+    def test_process_nested_cache_lookups_with_valid_cached_single_object(
+        self, respx_entity_store
+    ) -> None:
+        """Test _process_nested_cache_lookups reuses valid cached single object - covers lines 799-806.
+
+        This is the "happy path" complement to test_process_nested_cache_lookups_expired_single_object.
+        When a single nested StashObject field references a cached entity that has NOT expired,
+        the cached instance should be reused instead of constructing a new object.
+
+        This covers:
+        - Line 800: if cache_key in cls._store._cache (TRUE branch)
+        - Line 802: if not cached_entry.is_expired() (TRUE branch)
+        - Line 803-805: log.debug statement
+        - Line 806: processed[field_name] = cached_entry.entity
+        """
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Studio._store is not None
+        assert Scene._store is not None
+
+        # Clear any existing cache to ensure test isolation
+        Studio._store._cache.clear()
+        Scene._store._cache.clear()
+
+        # Pre-populate cache with a studio
+        studio_data = {"id": "studio-456", "name": "Cached Studio"}
+        cached_studio = Studio.from_graphql(studio_data)
+
+        # Verify studio was cached and NOT expired
+        cache_key = ("Studio", "studio-456")
+        assert cache_key in Studio._store._cache
+        assert Studio._store._cache[cache_key].entity is cached_studio
+        assert not Studio._store._cache[cache_key].is_expired()  # Confirm not expired
+
+        # Create scene data with studio field containing a dict reference to the cached studio
+        scene_data = {
+            "id": "scene-111",
+            "title": "Test Scene with Cached Studio",
+            "studio": {
+                "id": "studio-456",
+                "name": "Cached Studio",
+            },  # Should reuse cached
+        }
+
+        # Process the nested data - this should hit lines 799-806
+        processed = Scene._process_nested_cache_lookups(scene_data)
+
+        # Verify the cached studio instance was reused (same object reference)
+        assert processed["studio"] is cached_studio
+        assert not isinstance(processed["studio"], dict)  # Not a dict anymore
+        assert processed["studio"].id == "studio-456"
+        assert processed["studio"].name == "Cached Studio"
+
+        # Clean up
+        Studio._store._cache.clear()
+        Scene._store._cache.clear()
+
+    def test_process_nested_cache_lookups_single_object_not_in_cache(
+        self, respx_entity_store
+    ) -> None:
+        """Test _process_nested_cache_lookups with uncached single object - covers line 800 FALSE branch.
+
+        When a single nested StashObject field references an entity that is NOT in the cache,
+        the dict should be left unchanged (not replaced with a cached instance).
+
+        This covers:
+        - Line 800: if cache_key in cls._store._cache (FALSE branch)
+        """
+        # Ensure store is initialized by fixture (type narrowing for Pylance)
+        assert Studio._store is not None
+        assert Scene._store is not None
+
+        # Clear any existing cache to ensure test isolation
+        Studio._store._cache.clear()
+        Scene._store._cache.clear()
+
+        # Create scene data with studio field containing a dict reference
+        # This studio is NOT pre-cached, so the dict should remain unchanged
+        scene_data = {
+            "id": "scene-222",
+            "title": "Test Scene with Uncached Studio",
+            "studio": {
+                "id": "studio-999",
+                "name": "Uncached Studio",
+            },  # NOT in cache
+        }
+
+        # Verify the studio is NOT in cache before processing
+        cache_key = ("Studio", "studio-999")
+        assert cache_key not in Studio._store._cache
+
+        # Process the nested data - should take FALSE branch at line 800
+        processed = Scene._process_nested_cache_lookups(scene_data)
+
+        # Verify the studio dict was NOT replaced (stays as dict)
+        assert isinstance(processed["studio"], dict)
+        assert processed["studio"]["id"] == "studio-999"
+        assert processed["studio"]["name"] == "Uncached Studio"
+
+        # Verify it's still not cached after processing
+        assert cache_key not in Studio._store._cache
+
+        # Clean up
+        Studio._store._cache.clear()
+        Scene._store._cache.clear()
