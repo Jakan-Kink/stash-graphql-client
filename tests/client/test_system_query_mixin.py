@@ -1,7 +1,7 @@
 """Tests for SystemQueryClientMixin."""
 
 import json
-from datetime import UTC
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -136,8 +136,6 @@ async def test_check_system_ready_ok_status(respx_stash_client: StashClient) -> 
 @pytest.mark.unit
 async def test_dlna_status_success(respx_stash_client: StashClient) -> None:
     """Test dlna_status() method returns DLNA server status."""
-    from datetime import datetime
-
     dlna_data = {
         "running": True,
         "until": "2024-01-15T12:00:00Z",

@@ -28,9 +28,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from pydantic_core import core_schema
+
 
 if TYPE_CHECKING:
-    from pydantic_core import core_schema
+    pass
 
 
 class UnsetType:
@@ -75,7 +77,6 @@ class UnsetType:
         This tells Pydantic to treat UnsetType as a valid type that requires
         no validation - it's just a marker/sentinel value.
         """
-        from pydantic_core import core_schema
 
         # Define a validator that accepts UnsetType instances
         def validate_unset(value: Any) -> UnsetType:

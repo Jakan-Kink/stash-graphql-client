@@ -13,12 +13,14 @@ from __future__ import annotations
 from typing import ClassVar
 from unittest.mock import AsyncMock, PropertyMock, patch
 
+import httpx
 import pytest
 import respx
 from pydantic import BaseModel
 
 from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.scene import Scene
+from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
 
 
@@ -209,7 +211,6 @@ class TestFindById:
         self, respx_stash_client, respx_entity_store
     ) -> None:
         """Test find_by_id() builds fallback query for types not in query_map - covers lines 750-757."""
-        import httpx
 
         # Create a custom type not in the query_map
         class CustomType(StashObject):
@@ -294,8 +295,6 @@ class TestSaveMethod:
         self, respx_stash_client, respx_entity_store
     ) -> None:
         """Test save() raises when operation key missing from response - covers lines 818."""
-        import httpx
-
         # Create a new tag
         tag = Tag.new(name="Test")
 
@@ -314,8 +313,6 @@ class TestSaveMethod:
         self, respx_stash_client, respx_entity_store
     ) -> None:
         """Test save() raises when operation result is None - covers line 822."""
-        import httpx
-
         # Create a new tag
         tag = Tag.new(name="Test")
 
@@ -529,8 +526,6 @@ class TestProcessRelationships:
         self, respx_entity_store
     ) -> None:
         """Test _process_relationships() when single relationship transform returns falsy - covers line 932->903."""
-        from stash_graphql_client.types.studio import Studio
-
         # Create scene with studio
         scene = Scene.new(title="Test")
         studio = Studio.new(name="Test Studio")

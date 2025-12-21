@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from .. import fragments
 from ..logging import client_logger
 from .base import StashClientBase
 from .mixins.config import ConfigClientMixin
@@ -71,8 +72,6 @@ class StashClient(
                 - Logger: Optional logger instance
             verify_ssl: Whether to verify SSL certificates
         """
-        from .. import fragments
-
         # Set initial state
         self._initialized = False
         self._init_args = (conn, verify_ssl)

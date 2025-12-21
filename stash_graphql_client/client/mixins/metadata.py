@@ -11,6 +11,7 @@ from ...types import (
     CleanGeneratedInput,
     CleanMetadataInput,
     ConfigDefaultSettingsResult,
+    ConfigResult,
     ExportObjectsInput,
     GenerateMetadataInput,
     GenerateMetadataOptions,
@@ -193,8 +194,6 @@ class MetadataClientMixin(StashClientProtocol):
         """Get default configuration settings."""
         try:
             # Use new execute() with result_type for automatic deserialization
-            from ...types import ConfigResult
-
             config = await self.execute(
                 fragments.CONFIG_DEFAULTS_QUERY, result_type=ConfigResult
             )

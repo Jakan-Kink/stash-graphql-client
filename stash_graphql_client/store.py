@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from . import fragments
+from .client.utils import sanitize_model_data
 from .errors import StashError, StashIntegrationError
 from .logging import client_logger as log
 from .types.base import StashObject
@@ -967,8 +969,6 @@ class StashEntityStore:
         Returns:
             Entity if found, None otherwise
         """
-        from .client.utils import sanitize_model_data
-
         type_name = entity_type.__type_name__
 
         # Build field selection from requested fields
@@ -1197,9 +1197,6 @@ class StashEntityStore:
         entity_filter: dict[str, Any] | None,
     ) -> FindResult[T]:
         """Execute the actual GraphQL find query."""
-        from . import fragments
-        from .client.utils import sanitize_model_data
-
         type_name = entity_type.__type_name__
 
         # Map type names to their query info

@@ -331,8 +331,6 @@ async def test_latestversion_http_error(
 @pytest.mark.unit
 def test_version_model_field_types() -> None:
     """Test Version model has correct field types as defined in schema."""
-    from stash_graphql_client.types.version import Version
-
     # Verify field annotations match schema
     # Pydantic uses model_fields (or __annotations__ for older versions)
     fields = getattr(Version, "model_fields", Version.__annotations__)
@@ -348,8 +346,6 @@ def test_version_model_field_types() -> None:
 @pytest.mark.unit
 def test_latestversion_model_field_types() -> None:
     """Test LatestVersion model has correct field types as defined in schema."""
-    from stash_graphql_client.types.version import LatestVersion
-
     # Verify field annotations match schema
     # Pydantic uses model_fields (or __annotations__ for older versions)
     fields = getattr(LatestVersion, "model_fields", LatestVersion.__annotations__)

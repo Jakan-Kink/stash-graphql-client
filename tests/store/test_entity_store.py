@@ -7,6 +7,7 @@ Tests the StashEntityStore following TESTING_REQUIREMENTS.md:
 """
 
 import time
+import uuid
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -1539,8 +1540,6 @@ class TestIsUuidMethod:
         """Test _is_uuid() returns True for valid UUID."""
         store = respx_entity_store
 
-        import uuid
-
         valid_uuid = uuid.uuid4().hex
 
         assert store._is_uuid(valid_uuid) is True
@@ -1582,8 +1581,6 @@ class TestFindUnsavedRelatedObjects:
         """Test finding unsaved single related object with UUID."""
         store = respx_entity_store
 
-        import uuid
-
         unsaved_studio = Studio(id=uuid.uuid4().hex, name="Unsaved Studio")
         scene = Scene(id="1", title="Test Scene", studio=unsaved_studio)
 
@@ -1596,8 +1593,6 @@ class TestFindUnsavedRelatedObjects:
     def test_find_unsaved_related_list_with_uuids(self, respx_entity_store) -> None:
         """Test finding unsaved related objects in lists."""
         store = respx_entity_store
-
-        import uuid
 
         unsaved_p1 = Performer(id=uuid.uuid4().hex, name="Unsaved 1")
         unsaved_p2 = Performer(id=uuid.uuid4().hex, name="Unsaved 2")
@@ -1681,8 +1676,6 @@ class TestSaveMethod:
         self, respx_stash_client, caplog
     ) -> None:
         """Test save() cascades for unsaved related objects with warning."""
-        import uuid
-
         store = StashEntityStore(respx_stash_client)
 
         # Create unsaved tag with UUID (tags can be saved easily)
@@ -1721,8 +1714,6 @@ class TestSaveMethod:
         self, respx_stash_client, caplog
     ) -> None:
         """Test save() warning message truncates when >3 unsaved objects (line 708)."""
-        import uuid
-
         store = StashEntityStore(respx_stash_client)
 
         # Create 5 unsaved tags with UUIDs
@@ -1768,8 +1759,6 @@ class TestSaveMethod:
     @pytest.mark.unit
     async def test_save_new_object_updates_cache_key(self, respx_stash_client) -> None:
         """Test save() updates cache key from UUID to real ID for new objects."""
-        import uuid
-
         store = StashEntityStore(respx_stash_client)
 
         # Create new performer with UUID
@@ -1802,8 +1791,6 @@ class TestSaveMethod:
         self, respx_stash_client
     ) -> None:
         """Test save() adds new object to cache if not already cached."""
-        import uuid
-
         store = StashEntityStore(respx_stash_client)
 
         # Create new performer with UUID but DON'T add to cache
@@ -1831,8 +1818,6 @@ class TestSaveMethod:
         self, respx_stash_client
     ) -> None:
         """Test save() raises if unsaved UUIDs remain after cascade."""
-        import uuid
-
         store = StashEntityStore(respx_stash_client)
 
         # Create unsaved parent studio that won't get saved properly (keeps UUID)

@@ -310,8 +310,6 @@ class Scene(StashObject):
             >>> scene.add_to_gallery(gallery)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.galleries is UNSET:
             self.galleries = []
         if gallery not in self.galleries:
@@ -330,8 +328,6 @@ class Scene(StashObject):
             >>> scene.remove_from_gallery(gallery)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.galleries is not UNSET and gallery in self.galleries:
             self.galleries.remove(gallery)
 
@@ -348,8 +344,6 @@ class Scene(StashObject):
             >>> scene.add_performer(performer)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.performers is UNSET:
             self.performers = []
         if performer not in self.performers:
@@ -367,8 +361,6 @@ class Scene(StashObject):
             >>> scene.remove_performer(performer)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.performers is not UNSET and performer in self.performers:
             self.performers.remove(performer)
 
@@ -385,8 +377,6 @@ class Scene(StashObject):
             >>> scene.add_tag(tag)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.tags is UNSET:
             self.tags = []
         if tag not in self.tags:
@@ -405,8 +395,6 @@ class Scene(StashObject):
             >>> scene.remove_tag(tag)
             >>> await store.save(scene)  # Persist the change
         """
-        from .unset import UNSET
-
         if self.tags is not UNSET and tag in self.tags:
             self.tags.remove(tag)
 

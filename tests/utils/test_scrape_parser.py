@@ -1,5 +1,7 @@
 """Tests for ScrapeParser utility."""
 
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
@@ -7,10 +9,12 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import (
     UNSET,
+    FindTagsResultType,
     ScrapedPerformer,
     ScrapedScene,
     ScrapedStudio,
     ScrapedTag,
+    Tag,
 )
 from stash_graphql_client.utils import ScrapeParser
 from tests.fixtures.stash.graphql_responses import create_graphql_response
@@ -929,14 +933,9 @@ async def test_resolve_tags_skips_unset_ids(respx_stash_client: StashClient):
     This covers line 539->536: when tag_id is UNSET (field wasn't queried),
     skip adding it to the result list.
     """
-    from unittest.mock import patch
-
-    from stash_graphql_client.types import Tag
 
     # Mock find_tags to return tags where one has UNSET id
     async def mock_find_tags(*args, **kwargs):
-        from stash_graphql_client.types import FindTagsResultType
-
         # Create tags with model_construct to set UNSET id
         tag1 = Tag.model_construct(id="tag-1", name="Tag Alpha")
         tag2 = Tag.model_construct(id=UNSET, name="Tag Beta")  # UNSET id!

@@ -9,14 +9,16 @@ from ...types import (
     Scene,
     SceneDestroyInput,
     SceneHashInput,
+    SceneMarker,
     SceneMergeInput,
     ScenesDestroyInput,
 )
+from ...types.scene import SceneStreamEndpoint
 from ..protocols import StashClientProtocol
 
 
 if TYPE_CHECKING:
-    from ...types import SceneStreamEndpoint
+    pass
 
 
 class SceneClientMixin(StashClientProtocol):
@@ -1137,9 +1139,6 @@ class SceneClientMixin(StashClientProtocol):
                 {"id": scene_id},
             )
             streams_data = result.get("sceneStreams", [])
-            # Import here to avoid circular import
-            from ...types.scene import SceneStreamEndpoint
-
             return [self._decode_result(SceneStreamEndpoint, s) for s in streams_data]
         except Exception as e:
             self.log.error(f"Failed to get scene streams for scene {scene_id}: {e}")
@@ -1200,9 +1199,6 @@ class SceneClientMixin(StashClientProtocol):
             ```
         """
         try:
-            # Import SceneMarker type
-            from ...types import SceneMarker
-
             created_markers = []
 
             # Process each source scene

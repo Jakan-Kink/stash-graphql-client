@@ -22,6 +22,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
 from stash_graphql_client.types import Job, JobStatus, JobStatusUpdate, LogEntry
 
 
@@ -1084,8 +1085,6 @@ async def test_wait_for_job_with_updates_custom_status(
 @pytest.mark.unit
 async def test_async_iterator_wrapper_transforms_values() -> None:
     """Test AsyncIteratorWrapper correctly transforms iterator values."""
-    from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
-
     # Create mock iterator
     source = MockAsyncIterator([1, 2, 3, 4, 5])
 
@@ -1102,8 +1101,6 @@ async def test_async_iterator_wrapper_transforms_values() -> None:
 @pytest.mark.unit
 async def test_async_iterator_wrapper_with_dict_transform() -> None:
     """Test AsyncIteratorWrapper with dictionary transformation."""
-    from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
-
     source = MockAsyncIterator([{"value": 10}, {"value": 20}, {"value": 30}])
 
     # Extract value field
@@ -1118,8 +1115,6 @@ async def test_async_iterator_wrapper_with_dict_transform() -> None:
 @pytest.mark.unit
 async def test_async_iterator_wrapper_empty_source() -> None:
     """Test AsyncIteratorWrapper with empty source iterator."""
-    from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
-
     source = MockAsyncIterator([])
     wrapped = AsyncIteratorWrapper(source, lambda x: x * 2)
 

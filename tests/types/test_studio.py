@@ -7,6 +7,7 @@ import pytest
 from pydantic import BaseModel
 
 from stash_graphql_client.types import UNSET
+from stash_graphql_client.types.base import RelationshipMetadata
 from stash_graphql_client.types.studio import (
     FindStudiosResultType,
     Studio,
@@ -131,8 +132,6 @@ def test_studio_field_conversions() -> None:
 @pytest.mark.unit
 def test_studio_relationships() -> None:
     """Test Studio relationships."""
-    from stash_graphql_client.types.base import RelationshipMetadata
-
     assert hasattr(Studio, "__relationships__")
 
     # Test key relationships exist
@@ -184,8 +183,6 @@ def test_find_studios_result_type() -> None:
 @pytest.mark.unit
 def test_studio_instantiation() -> None:
     """Test Studio instantiation."""
-    from stash_graphql_client.types.unset import UNSET
-
     studio = Studio(id="123", name="Test Studio")
 
     assert studio.id == "123"
@@ -250,8 +247,6 @@ def test_studio_inheritance() -> None:
 @pytest.mark.unit
 def test_studio_stash_id_relationship() -> None:
     """Test Studio's stash_ids relationship transformation."""
-    from stash_graphql_client.types.base import RelationshipMetadata
-
     # Test that stash_ids relationship has a transformation function
     stash_ids_mapping = Studio.__relationships__["stash_ids"]
     assert isinstance(stash_ids_mapping, RelationshipMetadata)

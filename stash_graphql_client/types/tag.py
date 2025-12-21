@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 from pydantic import Field
 
+from stash_graphql_client import fragments
 from stash_graphql_client.logging import processing_logger as logger
 
 from .base import (
@@ -300,9 +301,6 @@ class Tag(StashObject):
         Returns:
             Tag instance if found, None otherwise
         """
-        # Circular import: fragments uses types for GraphQL schema
-        from stash_graphql_client import fragments
-
         # Build query using proper TAG_FIELDS fragment
         query = f"""
             {fragments.FIND_TAGS_QUERY}

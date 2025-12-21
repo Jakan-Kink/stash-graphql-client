@@ -16,7 +16,14 @@ from gql.transport.httpx import HTTPXAsyncTransport
 from gql.transport.websockets import WebsocketsTransport
 from httpx_retries import Retry, RetryTransport
 
+from ..errors import (
+    StashConnectionError,
+    StashError,
+    StashGraphQLError,
+    StashServerError,
+)
 from ..logging import client_logger
+from ..types.unset import UnsetType
 from .utils import sanitize_model_data
 
 
@@ -304,13 +311,6 @@ class StashClientBase:
             StashConnectionError: For network/connection errors
             StashError: For unexpected errors
         """
-        from ..errors import (
-            StashConnectionError,
-            StashError,
-            StashGraphQLError,
-            StashServerError,
-        )
-
         if isinstance(e, TransportQueryError):
             # GraphQL query error (e.g. validation error)
             raise StashGraphQLError(f"GraphQL query error: {e.errors}")
@@ -440,8 +440,6 @@ class StashClientBase:
 
     def _convert_datetime(self, obj: Any) -> Any:
         """Convert datetime objects to ISO format strings and filter out UNSET values."""
-        from ..types.unset import UnsetType
-
         # Filter out UNSET sentinel values (should not be sent to GraphQL)
         if isinstance(obj, UnsetType):
             return None  # Or skip entirely in dict comprehension

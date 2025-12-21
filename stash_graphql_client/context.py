@@ -10,6 +10,7 @@ from multidict import CIMultiDict
 from .client import StashClient
 from .logging import client_logger as logger
 from .store import StashEntityStore
+from .types.base import StashObject
 
 
 class StashContext:
@@ -110,8 +111,6 @@ class StashContext:
 
                 # Initialize entity store and wire it to StashObject
                 self._store = StashEntityStore(self._client)
-                from .types.base import StashObject
-
                 StashObject._store = self._store
                 logger.debug("Entity store initialized and wired to StashObject")
 
@@ -171,8 +170,6 @@ class StashContext:
             if self._store is not None:
                 # Clear store cache and unwire from StashObject
                 self._store.invalidate_all()
-                from .types.base import StashObject
-
                 StashObject._store = None
                 self._store = None
                 logger.debug("Entity store cleared and unwired")
@@ -196,8 +193,6 @@ class StashContext:
             if self._store is not None:
                 # Clear store cache and unwire from StashObject
                 self._store.invalidate_all()
-                from .types.base import StashObject
-
                 StashObject._store = None
                 self._store = None
                 logger.debug("Entity store cleared and unwired")
