@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/Jakan-Kink/stash-graphql-client/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/Jakan-Kink/stash-graphql-client/security/advisories/new
+    about: Report a security vulnerability privately (or email github@jakan.co)
+  - name: 📖 Documentation
+    url: https://github.com/Jakan-Kink/stash-graphql-client/tree/main/docs
+    about: Browse the project documentation
+  - name: 🎯 Stash Project
+    url: https://github.com/stashapp/stash
+    about: Issues with Stash itself should be reported to the Stash repository

@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# Poetry
+poetry.lock.bak
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Personal configuration files
+config.json
+config.local.yml
+*.local
+
+# Personal AI tool configurations (see CONTRIBUTING.md)
+.claude/
+.cursorrules
+.aider*
+
+# Personal workspace files
+*.code-workspace
+
+# EXCEPTIONS: GitHub Feature Configurations
+# These MUST be committed despite global gitignore rules
+# (Override any global config.yml or *.agent.md patterns)
+!.github/ISSUE_TEMPLATE/config.yml
+!.github/agents/*.agent.md
