@@ -3,7 +3,7 @@
 **Async Python client for [Stash](https://stashapp.cc) GraphQL API**
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 ---
 
@@ -118,4 +118,13 @@ This library is perfect for:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-or-later)**.
+
+See [LICENSE](https://github.com/Jakan-Kink/stash-graphql-client/blob/main/LICENSE) for the full license text.
+
+This license ensures:
+
+- ✅ Open source code sharing
+- ✅ Network use requires source disclosure
+- ✅ Compatible with [Stash](https://github.com/stashapp/stash) (also AGPL-3.0)
+- ✅ Derivative works must also be AGPL-3.0

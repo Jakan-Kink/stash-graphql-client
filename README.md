@@ -157,4 +157,13 @@ Supported date formats:
 
 ## License
 
-MIT
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-or-later)**.
+
+See [LICENSE](LICENSE) for the full license text.
+
+This license ensures:
+
+- ✅ Open source code sharing
+- ✅ Network use requires source disclosure
+- ✅ Compatible with [Stash](https://github.com/stashapp/stash) (also AGPL-3.0)
+- ✅ Derivative works must also be AGPL-3.0
