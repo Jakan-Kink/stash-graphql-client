@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0b5] - 2025-12-21
+
+### Changed
+- **PEP 8 Compliance**: Moved all function-level imports to module level across 13 production files (24 violations fixed)
+  - Refactored `types/tag.py`, `types/performer.py`, `types/unset.py`, `types/base.py`, `types/scene.py`
+  - Refactored `client/mixins/metadata.py`, `client/mixins/scene.py`, `client/__init__.py`, `client/base.py`
+  - Refactored `store.py`, `context.py`
+  - Removed outdated "circular import" workarounds - testing confirmed no circular dependencies exist
+  - Removed redundant inline imports where types were already imported at module level
+
+### Technical Details
+- All imports verified for circular dependencies with no issues found
+- `fragments.py` contains only string constants, safe to import anywhere
+- All 1547 tests pass with 100% coverage maintained
+- Code quality checks passing (ruff, formatting)
+
 ## [0.5.0b4] - 2025-12-21
 
 ### Added
@@ -74,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...HEAD
+[0.5.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...v0.5.0b5
 [0.5.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...v0.5.0b4
 [0.5.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b2...v0.5.0b3
 [0.5.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b1...v0.5.0b2
