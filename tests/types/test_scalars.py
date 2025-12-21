@@ -14,6 +14,8 @@ from stash_graphql_client.types.scalars import (
     Timestamp,
     _parse_time,
     _parse_timestamp,
+    _parse_timestamp_value,
+    _serialize_timestamp,
 )
 
 
@@ -186,8 +188,6 @@ def test_serialize_timestamp_success() -> None:
 
     This covers line 114 in scalars.py - return value.isoformat().
     """
-    from stash_graphql_client.types.scalars import _serialize_timestamp
-
     dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
     result = _serialize_timestamp(dt)
 
@@ -201,8 +201,6 @@ def test_serialize_timestamp_invalid_type() -> None:
 
     This covers lines 115-117 in scalars.py - error in _serialize_timestamp.
     """
-    from stash_graphql_client.types.scalars import _serialize_timestamp
-
     with pytest.raises(
         StashIntegrationError, match="expected datetime for serialization"
     ):
@@ -220,8 +218,6 @@ def test_parse_timestamp_value_with_datetime() -> None:
 
     This covers line 92-93 in scalars.py - return value when already datetime.
     """
-    from stash_graphql_client.types.scalars import _parse_timestamp_value
-
     dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
     result = _parse_timestamp_value(dt)
     assert result == dt
@@ -233,8 +229,6 @@ def test_parse_timestamp_value_with_string() -> None:
 
     This covers lines 94-95 in scalars.py - parsing string.
     """
-    from stash_graphql_client.types.scalars import _parse_timestamp_value
-
     result = _parse_timestamp_value("<2h")
     assert isinstance(result, datetime)
     # Should be in the past
@@ -247,8 +241,6 @@ def test_parse_timestamp_value_invalid_type() -> None:
 
     This covers lines 96-98 in scalars.py - StashIntegrationError raise.
     """
-    from stash_graphql_client.types.scalars import _parse_timestamp_value
-
     with pytest.raises(StashIntegrationError, match="expected datetime or str"):
         _parse_timestamp_value(123)
 

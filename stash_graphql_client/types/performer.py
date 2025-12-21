@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import Field
 
+from stash_graphql_client.fragments import FIND_PERFORMERS_QUERY
+
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
@@ -371,9 +373,6 @@ class Performer(StashObject):
         Returns:
             Performer instance if found, None otherwise
         """
-        # Circular import: fragments uses types for GraphQL schema definitions
-        from stash_graphql_client.fragments import FIND_PERFORMERS_QUERY
-
         try:
             result = await client.execute(
                 FIND_PERFORMERS_QUERY,

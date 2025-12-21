@@ -12,6 +12,14 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
+from stash_graphql_client.types import (
+    BulkImageUpdateInput,
+    BulkUpdateIdMode,
+    BulkUpdateIds,
+    ImageDestroyInput,
+    ImagesDestroyInput,
+    ImageUpdateInput,
+)
 from tests.fixtures import (
     create_find_images_result,
     create_graphql_response,
@@ -390,8 +398,6 @@ async def test_image_destroy_with_options(respx_stash_client: StashClient) -> No
 @pytest.mark.unit
 async def test_image_destroy_with_model_input(respx_stash_client: StashClient) -> None:
     """Test destroying an image using ImageDestroyInput model."""
-    from stash_graphql_client.types import ImageDestroyInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("imageDestroy", True))
@@ -458,8 +464,6 @@ async def test_images_destroy_with_options(respx_stash_client: StashClient) -> N
 @pytest.mark.unit
 async def test_images_destroy_with_model_input(respx_stash_client: StashClient) -> None:
     """Test destroying multiple images using ImagesDestroyInput model."""
-    from stash_graphql_client.types import ImagesDestroyInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("imagesDestroy", True))
@@ -623,8 +627,6 @@ async def test_images_destroy_error(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_bulk_image_update_error(respx_stash_client: StashClient) -> None:
     """Test bulk_image_update error handling."""
-    from stash_graphql_client.types import BulkImageUpdateInput, BulkUpdateIds
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
@@ -647,12 +649,6 @@ async def test_bulk_image_update_error(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_bulk_image_update_success(respx_stash_client: StashClient) -> None:
     """Test bulk_image_update with model input."""
-    from stash_graphql_client.types import (
-        BulkImageUpdateInput,
-        BulkUpdateIdMode,
-        BulkUpdateIds,
-    )
-
     updated_images = [
         create_image_dict(id="1", title="Image 1"),
         create_image_dict(id="2", title="Image 2"),
@@ -832,8 +828,6 @@ async def test_image_reset_o_error(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_images_update_success(respx_stash_client: StashClient) -> None:
     """Test imagesUpdate mutation with multiple individual updates."""
-    from stash_graphql_client.types import ImageUpdateInput
-
     updated_images = [
         create_image_dict(id="1", title="Updated Image 1", organized=True),
         create_image_dict(id="2", title="Updated Image 2", rating100=90),
@@ -921,8 +915,6 @@ async def test_images_update_empty_list(respx_stash_client: StashClient) -> None
 @pytest.mark.unit
 async def test_images_update_error(respx_stash_client: StashClient) -> None:
     """Test imagesUpdate error handling."""
-    from stash_graphql_client.types import ImageUpdateInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(

@@ -7,19 +7,36 @@ error handling, and request/response processing.
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
 import respx
+from gql import Client
 from gql.transport.exceptions import (
     TransportError,
     TransportQueryError,
     TransportServerError,
 )
 
+from stash_graphql_client import StashClient
 from stash_graphql_client.client.base import StashClientBase
-from stash_graphql_client.errors import StashConnectionError, StashError
+from stash_graphql_client.context import StashContext
+from stash_graphql_client.errors import (
+    StashConnectionError,
+    StashError,
+    StashGraphQLError,
+    StashServerError,
+    StashSystemNotReadyError,
+)
+from stash_graphql_client.types import (
+    GenerateMetadataInput,
+    GenerateMetadataOptions,
+    Studio,
+)
+from stash_graphql_client.types.scene import Scene, SceneHashInput
+from stash_graphql_client.types.unset import UNSET
 
 
 @pytest.mark.asyncio
@@ -99,8 +116,6 @@ async def test_host_0_0_0_0_converted_to_127_0_0_1(
     The 0.0.0.0 address (all interfaces) is converted to localhost
     for actual connection attempts.
     """
-    from stash_graphql_client.context import StashContext
-
     context = StashContext(conn={"Host": "0.0.0.0", "Port": 9999})  # noqa: S104
 
     with respx.mock:
@@ -190,8 +205,6 @@ async def test_decode_result_handles_none_data(stash_client) -> None:
     When GraphQL response data is None (not just empty dict, but actually None),
     the method should return None without attempting deserialization.
     """
-    from stash_graphql_client.types.scene import Scene
-
     # Call _decode_result with None data
     result = stash_client._decode_result(Scene, None)
 
@@ -210,8 +223,6 @@ async def test_decode_result_uses_model_validate_for_input_types(stash_client) -
     without from_graphql(), so they use model_validate() path (line 275)
     instead of from_graphql() path (line 273).
     """
-    from stash_graphql_client.types.scene import SceneHashInput
-
     # Sample data for SceneHashInput
     data = {"checksum": "bad_check", "oshash": "bad_oshash"}
 
@@ -466,8 +477,6 @@ async def test_handle_gql_error_converts_transport_query_error(stash_client) -> 
     TransportQueryError (GraphQL validation errors) should be converted
     to StashGraphQLError.
     """
-    from stash_graphql_client.errors import StashGraphQLError
-
     # Create a TransportQueryError with sample errors
     gql_error = TransportQueryError(
         "Query validation failed", errors=[{"message": "Invalid field"}]
@@ -489,8 +498,6 @@ async def test_handle_gql_error_converts_transport_server_error(stash_client) ->
     TransportServerError (server-side errors like 500) should be converted
     to StashServerError.
     """
-    from stash_graphql_client.errors import StashServerError
-
     # Create a TransportServerError
     server_error = TransportServerError("Internal server error", 500)
 
@@ -510,8 +517,6 @@ async def test_handle_gql_error_converts_transport_error(stash_client) -> None:
     TransportError (network/connection errors) should be converted
     to StashConnectionError.
     """
-    from stash_graphql_client.errors import StashConnectionError
-
     # Create a TransportError
     transport_error = TransportError("Connection refused")
 
@@ -530,8 +535,6 @@ async def test_handle_gql_error_converts_timeout_error(stash_client) -> None:
 
     asyncio.TimeoutError should be converted to StashConnectionError.
     """
-    from stash_graphql_client.errors import StashConnectionError
-
     # Create an asyncio.TimeoutError
     timeout_error = TimeoutError()
 
@@ -571,8 +574,6 @@ async def test_parse_result_to_type_handles_unexpected_response_structure(
     When response doesn't match expected single-key structure,
     should log warning and attempt fallback deserialization.
     """
-    from stash_graphql_client.types.scene import Scene
-
     # Test with unexpected structure - multiple keys instead of single key
     # This triggers the fallback path starting at line 450
     unexpected_data = {
@@ -671,11 +672,6 @@ async def test_metadata_generate_basic_call(stash_client) -> None:
 
     Tests the complete metadata generation flow.
     """
-    from stash_graphql_client.types import (
-        GenerateMetadataInput,
-        GenerateMetadataOptions,
-    )
-
     # Mock HTTP response with job ID
     response_data = {"data": {"metadataGenerate": "123"}}
 
@@ -738,8 +734,6 @@ async def test_check_system_ready_raises_on_needs_migration(stash_client) -> Non
 
     When system needs migration, should raise specific error.
     """
-    from stash_graphql_client.errors import StashSystemNotReadyError
-
     # Mock HTTP response with NEEDS_MIGRATION status
     response_data = {
         "data": {
@@ -775,8 +769,6 @@ async def test_check_system_ready_raises_on_setup_required(stash_client) -> None
 
     When system needs setup, should raise specific error.
     """
-    from stash_graphql_client.errors import StashSystemNotReadyError
-
     # Mock HTTP response with SETUP status
     response_data = {
         "data": {
@@ -834,8 +826,6 @@ async def test_execute_without_initialized_session(respx_stash_client) -> None:
 @pytest.mark.unit
 async def test_convert_datetime_with_unset(respx_stash_client) -> None:
     """Test _convert_datetime returns None for UNSET values."""
-    from stash_graphql_client.types.unset import UNSET
-
     result = respx_stash_client._convert_datetime(UNSET)
     assert result is None
 
@@ -844,8 +834,6 @@ async def test_convert_datetime_with_unset(respx_stash_client) -> None:
 @pytest.mark.unit
 async def test_convert_datetime_with_datetime(respx_stash_client) -> None:
     """Test _convert_datetime converts datetime to ISO format."""
-    from datetime import UTC, datetime
-
     dt = datetime(2024, 6, 15, 14, 30, 0, tzinfo=UTC)
     result = respx_stash_client._convert_datetime(dt)
     assert result == "2024-06-15T14:30:00+00:00"
@@ -879,8 +867,6 @@ async def test_parse_obj_for_id_with_dict_having_id(respx_stash_client) -> None:
 @pytest.mark.unit
 async def test_context_manager_exit_calls_close(respx_stash_client) -> None:
     """Test __aexit__ calls close() method."""
-    from unittest.mock import AsyncMock, patch
-
     # Patch close to verify it's called
     with patch.object(
         respx_stash_client, "close", new_callable=AsyncMock
@@ -930,8 +916,6 @@ async def test_close_with_transports_present(respx_stash_client) -> None:
 @pytest.mark.unit
 async def test_execute_with_list_type_but_non_list_data(respx_stash_client) -> None:
     """Test execute with list[Type] but GraphQL returns non-list data - hits line 426."""
-    from stash_graphql_client.types import Studio
-
     # Mock GraphQL response with a string instead of a list
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -977,8 +961,6 @@ async def test_execute_with_unexpected_response_structure_raises_error(
     respx_stash_client,
 ) -> None:
     """Test execute with unexpected response structure triggers fallback and fails - hits lines 441-444."""
-    from stash_graphql_client.types import Studio
-
     # Mock GraphQL response with unexpected structure (multiple root keys)
     respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1033,8 +1015,6 @@ async def test_parse_obj_for_id_with_non_string_non_dict(respx_stash_client) -> 
 @pytest.mark.unit
 async def test_close_skips_client_when_client_is_falsy(respx_stash_client) -> None:
     """Test close() skips client closing when client is falsy - hits branch 517->531."""
-    from unittest.mock import AsyncMock, patch
-
     # Set client to False to make the condition at line 517 False
     respx_stash_client.client = False
 
@@ -1048,9 +1028,6 @@ async def test_close_skips_client_when_client_is_falsy(respx_stash_client) -> No
     async def wrapper(*args, **kwargs):
         nonlocal call_count
         call_count += 1
-
-    # Mock the Client class for patching
-    from gql import Client
 
     # Patch Client.close_async to track calls
     with patch.object(
@@ -1066,8 +1043,6 @@ async def test_close_skips_client_when_client_is_falsy(respx_stash_client) -> No
 @pytest.mark.unit
 async def test_close_skips_transports_when_falsy(respx_stash_client) -> None:
     """Test close() skips both transports when falsy - hits branches 531->535 and 535->539."""
-    from unittest.mock import patch
-
     # Set client and transports to None to skip all closing blocks
     respx_stash_client.client = None
     respx_stash_client.http_transport = None
@@ -1096,10 +1071,6 @@ async def test_close_skips_transports_when_falsy(respx_stash_client) -> None:
 @pytest.mark.unit
 async def test_aenter_initializes_when_not_initialized() -> None:
     """Test __aenter__ calls initialize() when not initialized - hits line 548."""
-    from unittest.mock import patch
-
-    from stash_graphql_client import StashClient
-
     # Create client without initializing, verify_ssl=False to avoid connection errors
     client = StashClient({"Host": "localhost", "Port": 9999}, verify_ssl=False)
     assert not client._initialized

@@ -5,7 +5,9 @@ the inverse relationship is automatically updated on related objects
 in the same identity map.
 """
 
-from stash_graphql_client.types import Tag
+from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag
+from stash_graphql_client.types.base import RelationshipMetadata
+from stash_graphql_client.types.unset import UNSET, UnsetType
 
 
 class TestTagSelfReferentialSync:
@@ -115,8 +117,6 @@ class TestTagSelfReferentialSync:
 
         # parent.children is still UNSET, so sync is skipped
         # (This is expected behavior - can't sync to UNSET fields)
-        from stash_graphql_client.types.unset import UnsetType
-
         assert isinstance(parent.children, UnsetType)
 
     def test_duplicate_prevention(self):
@@ -138,8 +138,6 @@ class TestSceneRelationshipSync:
 
     def test_scene_gallery_sync(self):
         """Test that setting scene.galleries updates gallery.scenes."""
-        from stash_graphql_client.types import Gallery, Scene
-
         scene = Scene(title="Test Scene", galleries=[], performers=[], tags=[])
         gallery = Gallery(title="Test Gallery", scenes=[])
 
@@ -151,8 +149,6 @@ class TestSceneRelationshipSync:
 
     def test_scene_performer_sync(self):
         """Test that setting scene.performers updates performer.scenes."""
-        from stash_graphql_client.types import Performer, Scene
-
         scene = Scene(title="Test Scene", galleries=[], performers=[], tags=[])
         performer = Performer(name="Test Performer", scenes=[])
 
@@ -168,8 +164,6 @@ class TestSingleObjectRelationshipSync:
 
     def test_scene_studio_sync(self):
         """Test that setting scene.studio would sync inverse if Studio had scenes field."""
-        from stash_graphql_client.types import Scene, Studio
-
         # Note: Studio doesn't have a direct 'scenes' field, so this won't sync
         # This test documents the current behavior
         scene = Scene(title="Test Scene", galleries=[], performers=[], tags=[])
@@ -193,8 +187,6 @@ class TestInverseSyncEdgeCases:
 
         This covers line 490: early return when field_name not in __relationships__.
         """
-        from stash_graphql_client.types import Tag
-
         tag = Tag(name="Test Tag", parents=[], children=[])
 
         # Set a non-relationship field - should not crash
@@ -208,8 +200,6 @@ class TestInverseSyncEdgeCases:
 
         This covers line 505: continue when isinstance(related_obj, StashObject) is False.
         """
-        from stash_graphql_client.types import Tag
-
         # Create tags with explicit parents/children to enable inverse sync
         child = Tag(id="child-1", name="Child", parents=[], children=[])
 
@@ -234,9 +224,6 @@ class TestInverseSyncEdgeCases:
 
         This covers lines 509-510: elif branch for single object relationships.
         """
-        from stash_graphql_client.types import Gallery, Scene
-        from stash_graphql_client.types.base import RelationshipMetadata
-
         # We need to test a single-object relationship with inverse metadata
         # Scene.studio has is_list=False but inverse_query_field=None
         # So let's create a custom scenario by directly manipulating metadata
@@ -282,8 +269,6 @@ class TestInverseSyncEdgeCases:
 
         This covers line 533: setting single object inverse field.
         """
-        from stash_graphql_client.types import Scene
-
         # Create scenes with IDs
         scene1 = Scene.model_construct(
             id="scene-1", title="Scene 1", galleries=[], performers=[], tags=[]
@@ -308,17 +293,12 @@ class TestInverseSyncEdgeCases:
 
         This covers line 490: early return when isinstance(new_value, UnsetType).
         """
-        from stash_graphql_client.types import Tag
-        from stash_graphql_client.types.unset import UNSET
-
         parent = Tag(name="Parent", parents=[], children=[])
 
         # Set a field to UNSET explicitly - should trigger early return
         parent.parents = UNSET  # type: ignore[assignment]
 
         # Should not crash, UNSET is preserved
-        from stash_graphql_client.types.unset import UnsetType
-
         assert isinstance(parent.parents, UnsetType)
 
     def test_sync_single_object_set_to_none(self):
@@ -326,9 +306,6 @@ class TestInverseSyncEdgeCases:
 
         This covers line 509->exit: when new_value is None for single-object relationship.
         """
-        from stash_graphql_client.types import Gallery, Scene
-        from stash_graphql_client.types.base import RelationshipMetadata
-
         # Create Gallery with scenes list
         gallery = Gallery(id="gal-1", title="Gallery", scenes=[])
 
@@ -370,8 +347,6 @@ class TestInverseSyncEdgeCases:
         This covers line 497: early return when mapping is not RelationshipMetadata.
         This tests the defensive code that handles legacy tuple format or invalid mappings.
         """
-        from stash_graphql_client.types import Tag
-
         # Create a tag with valid relationships
         tag = Tag(name="Test Tag", parents=[], children=[])
 

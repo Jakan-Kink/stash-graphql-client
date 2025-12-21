@@ -12,7 +12,11 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
-from stash_graphql_client.types import Gallery
+from stash_graphql_client.types import (
+    BulkGalleryUpdateInput,
+    BulkUpdateIdMode,
+    Gallery,
+)
 from tests.fixtures import (
     create_find_galleries_result,
     create_gallery_dict,
@@ -968,11 +972,6 @@ async def test_gallery_chapter_destroy_error_raises(
 @pytest.mark.unit
 async def test_bulk_gallery_update_success(respx_stash_client: StashClient) -> None:
     """Test bulk_gallery_update with model input."""
-    from stash_graphql_client.types import (
-        BulkGalleryUpdateInput,
-        BulkUpdateIdMode,
-    )
-
     updated_galleries = [
         create_gallery_dict(id="1", title="Gallery 1", organized=True),
         create_gallery_dict(id="2", title="Gallery 2", organized=True),
@@ -1041,8 +1040,6 @@ async def test_bulk_gallery_update_with_dict(respx_stash_client: StashClient) ->
 @pytest.mark.unit
 async def test_bulk_gallery_update_error(respx_stash_client: StashClient) -> None:
     """Test bulk_gallery_update error handling."""
-    from stash_graphql_client.types import BulkGalleryUpdateInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(

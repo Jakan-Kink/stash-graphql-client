@@ -15,12 +15,15 @@ Organization:
 - fixtures/stash/test_objects.py - TestStashObject implementations
 """
 
+import asyncio
 import os
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+from stash_graphql_client.context import StashContext
 
 # Import all fixtures via wildcard
 from tests.fixtures import *
@@ -53,8 +56,6 @@ _initial_state = None
 
 async def _capture_stash_state():
     """Async helper to capture Stash state counts."""
-    from stash_graphql_client.context import StashContext
-
     conn = {
         "Scheme": "http",
         "Host": "localhost",
@@ -93,8 +94,6 @@ def pytest_sessionstart(session):
     Unlike session-scoped fixtures, this hook ALWAYS runs on the controller,
     even with xdist workers.
     """
-    import asyncio
-
     global _stash_available, _initial_state
 
     # For xdist workers, get state from controller
@@ -206,8 +205,6 @@ def pytest_sessionfinish(session, exitstatus):
     Unlike session-scoped fixtures, this hook ALWAYS runs on the controller,
     even with xdist workers.
     """
-    import asyncio
-
     # Skip if running as xdist worker
     if hasattr(session.config, "workerinput"):
         return

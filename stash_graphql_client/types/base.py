@@ -49,6 +49,7 @@ from pydantic import (
     model_validator,
 )
 
+from stash_graphql_client import fragments
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
 from stash_graphql_client.types.unset import UNSET, UnsetType
@@ -369,8 +370,6 @@ class StashInput(BaseModel):
             # {'title': 'New Title', 'rating': None}  # url excluded
             ```
         """
-        from .unset import UnsetType
-
         # Build exclude set using Python field names (not aliases)
         # Pydantic's exclude parameter works with field names, not aliases
         exclude_fields = {
@@ -925,9 +924,6 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Returns:
             Object instance if found, None otherwise
         """
-        # Circular import: fragments uses types for GraphQL schema definitions
-        from stash_graphql_client import fragments
-
         # Map type names to their corresponding find queries
         query_map = {
             "Scene": fragments.FIND_SCENE_QUERY,

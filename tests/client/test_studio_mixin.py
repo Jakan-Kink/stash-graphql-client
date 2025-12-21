@@ -5,6 +5,7 @@ through the entire GraphQL client stack including serialization/deserialization.
 """
 
 import json
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -1132,8 +1133,6 @@ async def test_map_studio_ids_exception_handling_patched(
     This covers lines 429-431: exception caught, logged, continue processing.
     Uses patch to bypass find_studios' internal exception handler.
     """
-    from unittest.mock import patch
-
     studio_data = create_studio_dict(id="good_studio", name="GoodStudio")
 
     # Mock find_studios to raise exception for first call, succeed for second

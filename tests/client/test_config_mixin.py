@@ -17,11 +17,18 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
+    AddTempDLNAIPInput,
     ConfigDefaultSettingsInput,
     ConfigDLNAInput,
     ConfigGeneralInput,
     ConfigInterfaceInput,
+    ConfigScrapingInput,
+    DisableDLNAInput,
+    EnableDLNAInput,
+    FilterMode,
     GenerateAPIKeyInput,
+    RemoveTempDLNAIPInput,
+    StashBoxInput,
 )
 from tests.fixtures import (
     create_config_defaults_result,
@@ -648,8 +655,6 @@ async def test_find_saved_filters_no_mode(respx_stash_client: StashClient) -> No
 @pytest.mark.unit
 async def test_find_saved_filters_with_mode(respx_stash_client: StashClient) -> None:
     """Test finding saved filters filtered by mode."""
-    from stash_graphql_client.types import FilterMode
-
     filters_data = [
         {
             "id": "filter-1",
@@ -731,8 +736,6 @@ async def test_configure_scraping_with_dict(respx_stash_client: StashClient) -> 
 @pytest.mark.unit
 async def test_configure_scraping_with_model(respx_stash_client: StashClient) -> None:
     """Test configuring scraping settings with ConfigScrapingInput model."""
-    from stash_graphql_client.types import ConfigScrapingInput
-
     config_data = {
         "scraperUserAgent": "MyAgent/2.0",
         "scraperCertCheck": False,
@@ -816,8 +819,6 @@ async def test_validate_stashbox_credentials_with_model(
     respx_stash_client: StashClient,
 ) -> None:
     """Test validating StashBox credentials with StashBoxInput model."""
-    from stash_graphql_client.types import StashBoxInput
-
     validation_result = {"valid": False, "status": "Invalid API key"}
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -892,8 +893,6 @@ async def test_enable_dlna_with_dict(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_enable_dlna_with_model(respx_stash_client: StashClient) -> None:
     """Test enabling DLNA with EnableDLNAInput model."""
-    from stash_graphql_client.types import EnableDLNAInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("enableDLNA", True))
@@ -948,8 +947,6 @@ async def test_disable_dlna_with_dict(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_disable_dlna_with_model(respx_stash_client: StashClient) -> None:
     """Test disabling DLNA with DisableDLNAInput model."""
-    from stash_graphql_client.types import DisableDLNAInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("disableDLNA", True))
@@ -1007,8 +1004,6 @@ async def test_add_temp_dlna_ip_with_dict(respx_stash_client: StashClient) -> No
 @pytest.mark.unit
 async def test_add_temp_dlna_ip_with_model(respx_stash_client: StashClient) -> None:
     """Test adding temp DLNA IP with AddTempDLNAIPInput model."""
-    from stash_graphql_client.types import AddTempDLNAIPInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("addTempDLNAIP", True))
@@ -1066,8 +1061,6 @@ async def test_remove_temp_dlna_ip_with_dict(respx_stash_client: StashClient) ->
 @pytest.mark.unit
 async def test_remove_temp_dlna_ip_with_model(respx_stash_client: StashClient) -> None:
     """Test removing temp DLNA IP with RemoveTempDLNAIPInput model."""
-    from stash_graphql_client.types import RemoveTempDLNAIPInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("removeTempDLNAIP", True))

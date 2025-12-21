@@ -20,6 +20,7 @@ from stash_graphql_client.types import (
     BulkGroupUpdateInput,
     BulkUpdateIds,
     Group,
+    GroupDescriptionInput,
     GroupDestroyInput,
     GroupSubGroupAddInput,
     GroupSubGroupRemoveInput,
@@ -577,8 +578,6 @@ async def test_add_group_sub_groups_with_input_type(
     respx_stash_client: StashClient,
 ) -> None:
     """Test adding sub groups with GroupSubGroupAddInput."""
-    from stash_graphql_client.types import GroupDescriptionInput
-
     respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json=create_graphql_response("addGroupSubGroups", True))

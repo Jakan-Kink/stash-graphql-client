@@ -10,6 +10,7 @@ from stash_graphql_client.types import (
     FindFilesResultType,
     Image,
     ImageFile,
+    Scene,
     VideoFile,
 )
 from stash_graphql_client.types.unset import UNSET
@@ -298,8 +299,6 @@ def test_from_graphql_typename_mismatch_non_polymorphic():
     """Test that from_graphql raises error for type mismatch on non-polymorphic types."""
     # Test line 227 in base.py - type mismatch error for non-polymorphic types
     # VideoFile has no subclasses, so it should reject mismatched __typename
-    from stash_graphql_client.types import Scene
-
     data = {
         "__typename": "Performer",  # Wrong type!
         "id": "1",

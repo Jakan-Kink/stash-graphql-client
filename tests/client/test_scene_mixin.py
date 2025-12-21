@@ -14,6 +14,7 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.types import (
     Scene,
     SceneDestroyInput,
+    SceneHashInput,
     SceneMergeInput,
     ScenesDestroyInput,
 )
@@ -982,8 +983,6 @@ async def test_find_scene_by_hash_with_model_input(
     respx_stash_client: StashClient,
 ) -> None:
     """Test finding a scene by hash using SceneHashInput model."""
-    from stash_graphql_client.types import SceneHashInput
-
     scene_data = create_scene_dict(id="123", title="Test Scene")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1047,8 +1046,6 @@ async def test_scenes_destroy_error(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_scene_merge(respx_stash_client: StashClient) -> None:
     """Test merging scenes."""
-    from stash_graphql_client.types import SceneMergeInput
-
     merged_scene_data = create_scene_dict(id="123", title="Merged Scene")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(

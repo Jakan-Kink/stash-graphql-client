@@ -26,6 +26,8 @@ from stash_graphql_client.types import (
     ImportMissingRefEnum,
     ImportObjectsInput,
     ScraperSourceInput,
+    SetupInput,
+    StashConfigInput,
 )
 from tests.fixtures import create_graphql_response
 
@@ -977,8 +979,6 @@ async def test_setup_with_dict(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_setup_with_model(respx_stash_client: StashClient) -> None:
     """Test setup with SetupInput model (covers lines 718-726)."""
-    from stash_graphql_client.types import SetupInput, StashConfigInput
-
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[httpx.Response(200, json=create_graphql_response("setup", True))]
     )

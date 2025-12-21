@@ -5,6 +5,7 @@ through the entire GraphQL client stack including serialization/deserialization.
 """
 
 import json
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkPerformerUpdateInput,
     BulkUpdateIds,
+    OnMultipleMatch,
     Performer,
     PerformerDestroyInput,
 )
@@ -1072,8 +1074,6 @@ async def test_map_performer_ids_string_input_multiple_matches_return_first(
         ]
     )
 
-    from stash_graphql_client.types import OnMultipleMatch
-
     result = await respx_stash_client.map_performer_ids(
         ["Common Name"], on_multiple=OnMultipleMatch.RETURN_FIRST
     )
@@ -1108,8 +1108,6 @@ async def test_map_performer_ids_string_input_multiple_matches_return_none(
         ]
     )
 
-    from stash_graphql_client.types import OnMultipleMatch
-
     result = await respx_stash_client.map_performer_ids(
         ["Ambiguous Name"], on_multiple=OnMultipleMatch.RETURN_NONE
     )
@@ -1143,8 +1141,6 @@ async def test_map_performer_ids_string_input_multiple_matches_default_fallback(
             )
         ]
     )
-
-    from stash_graphql_client.types import OnMultipleMatch
 
     # Use RETURN_LIST (which falls through to else branch)
     result = await respx_stash_client.map_performer_ids(
@@ -1327,8 +1323,6 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_none(
         ]
     )
 
-    from stash_graphql_client.types import OnMultipleMatch
-
     result = await respx_stash_client.map_performer_ids(
         [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_NONE
     )
@@ -1362,8 +1356,6 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_first(
             )
         ]
     )
-
-    from stash_graphql_client.types import OnMultipleMatch
 
     result = await respx_stash_client.map_performer_ids(
         [{"name": "Dict First"}], on_multiple=OnMultipleMatch.RETURN_FIRST
@@ -1639,8 +1631,6 @@ async def test_map_performer_ids_dict_input_multiple_matches_else_default(
         ]
     )
 
-    from stash_graphql_client.types import OnMultipleMatch
-
     # Use RETURN_LIST - falls through to else branch which defaults to first match
     result = await respx_stash_client.map_performer_ids(
         [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_LIST
@@ -1682,8 +1672,6 @@ async def test_map_performer_ids_exception_handling(
     We trigger an exception by returning malformed data that causes an AttributeError
     when accessing .id on the performer object.
     """
-    from unittest.mock import patch
-
     performer_data = create_performer_dict(id="p1", name="Valid Performer")
 
     # Mock find_performers to raise an exception for the first call

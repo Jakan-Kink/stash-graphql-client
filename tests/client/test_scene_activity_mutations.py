@@ -15,7 +15,7 @@ through the entire GraphQL client stack including serialization/deserialization.
 """
 
 import json
-from datetime import UTC
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -34,8 +34,6 @@ from tests.fixtures import create_graphql_response
 @pytest.mark.unit
 async def test_scene_add_o_with_current_time(respx_stash_client: StashClient) -> None:
     """Test adding O-count entry with current time."""
-    from datetime import datetime
-
     result_data = {
         "count": 1,
         "history": ["2024-01-15T10:30:00Z"],
@@ -455,8 +453,6 @@ async def test_scene_add_play_with_current_time(
     respx_stash_client: StashClient,
 ) -> None:
     """Test adding play count entry with current time."""
-    from datetime import datetime
-
     result_data = {
         "count": 1,
         "history": ["2024-01-15T10:30:00Z"],

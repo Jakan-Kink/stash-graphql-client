@@ -5,6 +5,7 @@ through the entire GraphQL client stack including serialization/deserialization.
 """
 
 import json
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -1013,8 +1014,6 @@ async def test_map_tag_ids_exception_handling(respx_stash_client: StashClient) -
 
     This covers lines 383-385: exception caught, logged, continue processing.
     """
-    from unittest.mock import patch
-
     tag_data = create_tag_dict(id="good_tag", name="GoodTag")
 
     # Mock find_tags to raise exception for first call, succeed for second
