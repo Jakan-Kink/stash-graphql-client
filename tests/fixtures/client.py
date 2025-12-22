@@ -22,6 +22,7 @@ __all__ = [
     "respx_stash_client",
     "respx_entity_store",
     "stash_cleanup_tracker",
+    "capture_graphql_calls",
     "mock_ws_transport",
     "mock_gql_ws_connect",
 ]
@@ -283,6 +284,7 @@ async def stash_cleanup_tracker():
             "galleries": [],
             "markers": [],
             "groups": [],
+            "saved_filters": [],
         }
         capture_mode = "with auto-capture" if auto_capture else "manual tracking"
         print(f"\n{'=' * 60}")
@@ -496,6 +498,20 @@ async def stash_cleanup_tracker():
                     except Exception as e:
                         errors.append(f"Tag {tag_id}: {e}")
 
+                # Delete saved filters
+                for filter_id in created_objects["saved_filters"]:
+                    try:
+                        await client.execute(
+                            """
+                            mutation DestroyFilter($id: ID!) {
+                                destroySavedFilter(input: { id: $id })
+                            }
+                            """,
+                            {"id": filter_id},
+                        )
+                    except Exception as e:
+                        errors.append(f"SavedFilter {filter_id}: {e}")
+
                 # Report any errors that occurred
                 if errors:
                     error_msg = f"Cleanup had {len(errors)} error(s):\n" + "\n".join(
@@ -582,3 +598,81 @@ def enable_scene_creation():
     """
     with patch.object(Scene, "__create_input_type__", SceneCreateInput):
         yield
+
+
+@contextlib.asynccontextmanager
+async def capture_graphql_calls(
+    stash_client: StashClient,
+) -> AsyncIterator[list[dict]]:
+    """Capture GraphQL calls made to Stash in integration tests.
+
+    This patches stash_client._session.execute to intercept and record all GraphQL
+    operations, variables, and raw responses from the gql library while still making
+    real calls to Stash. Captures at the gql boundary BEFORE StashClient error handling.
+
+    Args:
+        stash_client: The StashClient instance to monitor
+
+    Yields:
+        list: List of dicts with 'query', 'variables', 'result', and 'exception' for each call
+
+    Example:
+        ```python
+        async with stash_cleanup_tracker(stash_client) as cleanup:
+            async with capture_graphql_calls(stash_client) as calls:
+                # Make real calls to Stash
+                scene = await stash_client.find_scene("123")
+
+                # Verify call sequence (permanent assertion)
+                assert len(calls) == 1, "Expected 1 GraphQL call"
+                assert "findScene" in calls[0]["query"]
+                assert calls[0]["variables"]["id"] == "123"
+
+                # Verify result
+                assert calls[0]["result"] is not None
+                assert scene.id == "123"
+
+                # Check for errors
+                if calls[0]["exception"]:
+                    assert "GRAPHQL_VALIDATION_FAILED" in str(calls[0]["exception"])
+        ```
+    """
+    calls = []
+    original_session_execute = stash_client._session.execute
+
+    async def capture_session_execute(operation, **kwargs):
+        """Capture the call details at the gql boundary.
+
+        Captures raw gql operations and responses before StashClient error handling.
+        """
+        result = None
+        exception = None
+
+        # Extract variables from kwargs or operation
+        variable_values = kwargs.get("variable_values")
+        if variable_values is None and hasattr(operation, "variable_values"):
+            variable_values = operation.variable_values
+
+        try:
+            result = await original_session_execute(operation, **kwargs)
+        except Exception as e:
+            exception = e
+            raise
+        finally:
+            # Always log the call with raw gql result or exception
+            calls.append(
+                {
+                    "query": str(operation),  # Convert gql DocumentNode to string
+                    "variables": variable_values,
+                    "result": dict(result) if result else None,
+                    "exception": exception,
+                }
+            )
+
+        return result
+
+    # Patch the _session.execute method at the gql boundary
+    with patch.object(
+        stash_client._session, "execute", side_effect=capture_session_execute
+    ):
+        yield calls

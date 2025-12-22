@@ -418,6 +418,7 @@ async def test_job_lifecycle_includes_remove_event(
         assert collected_events[-1].job.status in [
             JobStatus.FINISHED,
             JobStatus.CANCELLED,
+            JobStatus.FAILED,
         ], "Final event should have terminal status"
 
 

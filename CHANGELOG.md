@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0b7] - 2025-12-22
+
+### Changed
+- **Integration Test Coverage**: Added comprehensive GraphQL call assertions to all 43 existing integration tests
+  - Tests now verify both request structure (query content, variables) and response handling (result, exception)
+  - Updated 9 integration test files: base, config, marker, performer, studio, tag, client, file
+  - Fixed test assertions to match actual client behavior:
+    - `find_job`: Corrected variable path to `input.id` wrapper structure
+    - `find_marker`: Updated to reflect v0.5.0b7 fix (now uses `findSceneMarkers` plural with `ids` filter)
+    - Query parameter tests: Fixed to expect `filter.q` nested structure
+  - All tests follow TESTING_REQUIREMENTS.md pattern: verify call count, query operation, variables, result, and exception
+  - Tests catch GraphQL schema issues early (e.g., invalid operation names, incorrect variable structures)
+
+### Removed
+- **CRITICAL - Destructive Integration Tests Removed**: Removed 14 dangerous integration tests that ran destructive operations against real Stash instances
+  - **Removed operations**:
+    - Metadata: `metadata_import`, `anonymise_database`, `migrate`, `migrate_hash_naming`, `migrate_scene_screenshots`, `migrate_blobs`, `optimise_database`, `setup` (11 tests)
+    - Configuration: `configure_general`, `configure_interface`, `configure_defaults` (3 tests)
+  - **Why removed**: These operations call GraphQL MUTATIONS that modify Stash settings, databases, and files
+    - Metadata operations: Anonymize databases, delete files, migrate schemas, reconfigure Stash instances
+    - Configuration operations: Modify settings (even with empty `{}` dicts - relies on undocumented API behavior)
+  - **Test instance impact**: A test Docker instance had its database path reconfigured and data deleted by `test_setup_with_config`
+  - **Lesson learned**: Integration tests must ONLY test safe, reversible operations (queries, exports, backups with dryRun=True). Never rely on undocumented API behavior for "safe" mutations.
+  - **Coverage maintained**: These operations are fully tested via unit tests with mocked GraphQL responses
+    - Metadata operations: `tests/client/test_metadata_client.py`
+    - Configuration operations: `tests/client/test_config_client.py`
+  - **Files affected**:
+    - `tests/integration/test_metadata_integration.py` - reduced from 24 tests to 13 safe tests
+    - `tests/integration/test_config_integration.py` - reduced from 4 tests to 1 safe test
+  - **Safe operations kept**:
+    - Metadata: Queries, exports, backups, auto-tagging, metadata identification, clean with dryRun=True
+    - Configuration: Read-only configuration defaults query only
+
 ## [0.5.0b5] - 2025-12-21
 
 ### Changed
@@ -90,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b7...HEAD
+[0.5.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...v0.5.0b7
 [0.5.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...v0.5.0b5
 [0.5.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...v0.5.0b4
 [0.5.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b2...v0.5.0b3

@@ -2,19 +2,23 @@
 
 Tests configuration operations against a real Stash instance.
 
-NOTE: Most configuration tests are READ-ONLY to avoid modifying the test
-Stash instance's configuration. Write tests that do modify configuration
-should restore the original values after testing.
+IMPORTANT: Configuration MUTATIONS have been removed from integration tests.
+All configure_* methods (configure_general, configure_interface, configure_defaults)
+call GraphQL MUTATIONS that can modify Stash settings. Even passing empty dicts {}
+relies on undocumented Stash API behavior and is unsafe.
+
+These operations are tested via unit tests with mocked responses in:
+  - tests/client/test_config_client.py
+
+The only safe configuration operation for integration tests is reading configuration
+defaults, which is a read-only query.
 """
 
 import pytest
 
 from stash_graphql_client import StashClient
-from stash_graphql_client.types import (
-    ConfigDefaultSettingsResult,
-    ConfigGeneralResult,
-    ConfigInterfaceResult,
-)
+from stash_graphql_client.types import ConfigDefaultSettingsResult
+from tests.fixtures import capture_graphql_calls
 
 
 # =============================================================================
@@ -27,10 +31,20 @@ from stash_graphql_client.types import (
 async def test_get_configuration_defaults(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test getting configuration defaults."""
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    """Test getting configuration defaults (read-only query)."""
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         result = await stash_client.get_configuration_defaults()
 
+        # Verify GraphQL call
+        assert len(calls) == 1, "Expected 1 GraphQL call for get_configuration_defaults"
+        assert "configuration" in calls[0]["query"]
+        assert calls[0]["result"] is not None
+        assert calls[0]["exception"] is None
+
+        # Verify response
         assert result is not None
         assert isinstance(result, ConfigDefaultSettingsResult)
         # Check that basic structure is present
@@ -39,68 +53,19 @@ async def test_get_configuration_defaults(
 
 
 # =============================================================================
-# Configure General tests
+# UNSAFE CONFIGURATION MUTATIONS - REMOVED
 # =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_configure_general_read_current(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test configuring general settings by reading and re-applying current config.
-
-    This is safe because we're just re-applying the same settings.
-    """
-    async with stash_cleanup_tracker(stash_client):
-        # First get current config by setting an empty dict (returns current)
-        result = await stash_client.configure_general({})
-
-        assert result is not None
-        assert isinstance(result, ConfigGeneralResult)
-        # Verify key fields are present
-        assert result.database_path is not None
-        assert result.generated_path is not None
-        assert isinstance(result.parallel_tasks, int)
-
-
+# The following operations are UNSAFE mutations that modify Stash configuration
+# and have been removed from integration tests:
+#
+# ❌ configure_general: Modifies general settings (database path, generated path, etc.)
+# ❌ configure_interface: Modifies UI settings (language, theme, etc.)
+# ❌ configure_defaults: Modifies default operation settings
+#
+# These operations are tested in:
+#   - tests/client/test_config_client.py (with mocked GraphQL responses)
+#
+# CRITICAL: These methods call MUTATIONS, not queries. Even passing empty dicts {}
+# relies on undocumented Stash GraphQL API behavior. If Stash changes how it handles
+# empty config inputs, these tests could modify production configuration.
 # =============================================================================
-# Configure Interface tests
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_configure_interface_read_current(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test configuring interface settings by reading current config."""
-    async with stash_cleanup_tracker(stash_client):
-        result = await stash_client.configure_interface({})
-
-        assert result is not None
-        assert isinstance(result, ConfigInterfaceResult)
-        # Verify key fields are present
-        assert result.language is not None
-        assert isinstance(result.sound_on_preview, bool)
-
-
-# =============================================================================
-# Configure Defaults tests
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_configure_defaults_read_current(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test configuring default settings by reading current config."""
-    async with stash_cleanup_tracker(stash_client):
-        result = await stash_client.configure_defaults({})
-
-        assert result is not None
-        assert isinstance(result, ConfigDefaultSettingsResult)
-        # Verify key fields are present
-        assert hasattr(result, "delete_file")
-        assert hasattr(result, "delete_generated")
