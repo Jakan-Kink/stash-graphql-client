@@ -45,7 +45,11 @@ async def test_find_marker(respx_stash_client: StashClient) -> None:
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
-                200, json=create_graphql_response("findSceneMarker", marker_data)
+                200,
+                json=create_graphql_response(
+                    "findSceneMarkers",
+                    create_find_markers_result(count=1, scene_markers=[marker_data]),
+                ),
             )
         ]
     )
@@ -61,7 +65,7 @@ async def test_find_marker(respx_stash_client: StashClient) -> None:
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert "findSceneMarker" in req["query"]
+    assert "findSceneMarkers" in req["query"]
     assert req["variables"]["id"] == "123"
 
 
@@ -71,7 +75,44 @@ async def test_find_marker_not_found(respx_stash_client: StashClient) -> None:
     """Test finding a marker that doesn't exist."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
-            httpx.Response(200, json=create_graphql_response("findSceneMarker", None))
+            httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "findSceneMarkers",
+                    create_find_markers_result(count=0, scene_markers=[]),
+                ),
+            )
+        ]
+    )
+
+    marker = await respx_stash_client.find_marker("999")
+
+    assert marker is None
+
+    # Verify GraphQL call
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_marker_empty_result(respx_stash_client: StashClient) -> None:
+    """Test finding a marker when query succeeds but scene_markers array is empty.
+
+    This specifically tests the branch where findSceneMarkers returns a valid
+    response structure but with an empty scene_markers array (32->36 branch).
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "findSceneMarkers": {
+                            "scene_markers": []  # Valid response, empty array
+                        }
+                    }
+                },
+            )
         ]
     )
 
@@ -287,7 +328,11 @@ async def test_find_marker_with_tags(respx_stash_client: StashClient) -> None:
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
-                200, json=create_graphql_response("findSceneMarker", marker_data)
+                200,
+                json=create_graphql_response(
+                    "findSceneMarkers",
+                    create_find_markers_result(count=1, scene_markers=[marker_data]),
+                ),
             )
         ]
     )
@@ -829,6 +874,82 @@ async def test_find_markers_none_result_returns_empty(
                 json={
                     "data": {"findSceneMarkers": None}
                 },  # Key exists but value is None
+            )
+        ]
+    )
+
+    result = await respx_stash_client.find_markers()
+
+    assert result.count == 0
+    assert result.scene_markers == []
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_marker_null_find_scene_markers_returns_none(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test find_marker returns None when findSceneMarkers is null.
+
+    This covers line 32 in marker.py - the branch where result exists but
+    result.get("findSceneMarkers") is falsy (None).
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "data": {"findSceneMarkers": None}
+                },  # Key exists but value is None
+            )
+        ]
+    )
+
+    marker = await respx_stash_client.find_marker("123")
+
+    assert marker is None
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_marker_null_result_returns_none(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test find_marker returns None when data itself is null.
+
+    This covers line 32 in marker.py - the branch where result is falsy (None).
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={"data": None},  # Entire data is None
+            )
+        ]
+    )
+
+    marker = await respx_stash_client.find_marker("123")
+
+    assert marker is None
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_markers_null_result_returns_empty(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test find_markers returns empty result when data itself is null.
+
+    This covers line 76 in marker.py - the branch where result is falsy (None).
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={"data": None},  # Entire data is None
             )
         ]
     )

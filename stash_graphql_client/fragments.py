@@ -783,8 +783,10 @@ MARKER_FIELDS = """
 # Marker query templates
 FIND_MARKER_QUERY = f"""
 query FindMarker($id: ID!) {{
-    findSceneMarker(id: $id) {{
-        {MARKER_FIELDS}
+    findSceneMarkers(ids: [$id]) {{
+        scene_markers {{
+            {MARKER_FIELDS}
+        }}
     }}
 }}
 """

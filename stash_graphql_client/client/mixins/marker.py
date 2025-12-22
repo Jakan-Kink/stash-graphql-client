@@ -29,8 +29,10 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.FIND_MARKER_QUERY,
                 {"id": id},
             )
-            if result and result.get("findSceneMarker"):
-                return self._decode_result(SceneMarker, result["findSceneMarker"])
+            if result and result.get("findSceneMarkers"):
+                markers = result["findSceneMarkers"].get("scene_markers", [])
+                if markers:
+                    return self._decode_result(SceneMarker, markers[0])
             return None
         except Exception as e:
             self.log.error(f"Failed to find marker {id}: {e}")
