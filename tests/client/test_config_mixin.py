@@ -1088,3 +1088,77 @@ async def test_remove_temp_dlna_ip_error_raises(
 
     with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.remove_temp_dlna_ip({"address": "192.168.1.100"})
+
+
+# =============================================================================
+# get_configuration tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_get_configuration(respx_stash_client: StashClient) -> None:
+    """Test getting full configuration."""
+    from tests.fixtures.stash.config_responses import create_config_result
+
+    config_data = create_config_result()
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("configuration", config_data)
+            )
+        ]
+    )
+
+    result = await respx_stash_client.get_configuration()
+
+    assert result is not None
+    assert result.general is not None
+    assert result.interface is not None
+    assert result.dlna is not None
+    assert result.scraping is not None
+    assert result.defaults is not None
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "configuration" in req["query"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_get_configuration_error_raises(respx_stash_client: StashClient) -> None:
+    """Test get_configuration raises on error."""
+    respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+        ]
+    )
+
+    with pytest.raises(StashGraphQLError, match="Server error"):
+        await respx_stash_client.get_configuration()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_get_configuration_calls_itself_a_teapot(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test get_configuration when server identifies as a teapot (RFC 2324/HTCPCP).
+
+    While Stash is definitely not a coffee pot, we should handle this status
+    gracefully in case someone's running Stash on IoT coffee pot hardware. ☕
+    """
+    respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                418,
+                json={"error": "I'm a teapot"},
+                headers={"Content-Type": "application/tea+json"},
+            )
+        ]
+    )
+
+    # Teapots can't serve GraphQL, so we expect an error
+    with pytest.raises(
+        Exception, match=r"I'm a teapot"
+    ):  # Will raise transport/HTTP error
+        await respx_stash_client.get_configuration()

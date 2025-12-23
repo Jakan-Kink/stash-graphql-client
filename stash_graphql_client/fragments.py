@@ -56,6 +56,159 @@ query ConfigurationDefaults {{
 }}
 """
 
+# Configuration sub-fragments
+CONFIG_GENERAL_FIELDS = """
+    databasePath
+    generatedPath
+    metadataPath
+    scrapersPath
+    cachePath
+    blobsPath
+    blobsStorage
+    calculateMD5
+    videoFileNamingAlgorithm
+    parallelTasks
+    previewAudio
+    previewSegments
+    previewSegmentDuration
+    previewExcludeStart
+    previewExcludeEnd
+    previewPreset
+    maxTranscodeSize
+    maxStreamingTranscodeSize
+    writeImageThumbnails
+    apiKey
+    username
+    password
+    maxSessionAge
+    logFile
+    logOut
+    logLevel
+    logAccess
+    createGalleriesFromFolders
+    galleryCoverRegex
+    videoExtensions
+    imageExtensions
+    galleryExtensions
+    excludes
+    imageExcludes
+    customPerformerImageLocation
+    pythonPath
+    transcodeInputArgs
+    transcodeOutputArgs
+    liveTranscodeInputArgs
+    liveTranscodeOutputArgs
+    drawFunscriptHeatmapRange
+    stashes {
+        path
+        excludeVideo
+        excludeImage
+    }
+    stashBoxes {
+        name
+        endpoint
+        api_key
+    }
+    scraperPackageSources {
+        name
+        url
+        local_path
+    }
+    pluginPackageSources {
+        name
+        url
+        local_path
+    }
+"""
+
+CONFIG_INTERFACE_FIELDS = """
+    menuItems
+    soundOnPreview
+    wallShowTitle
+    wallPlayback
+    showScrubber
+    maximumLoopDuration
+    noBrowser
+    notificationsEnabled
+    autostartVideo
+    autostartVideoOnPlaySelected
+    continuePlaylistDefault
+    showStudioAsText
+    css
+    cssEnabled
+    javascript
+    javascriptEnabled
+    customLocales
+    customLocalesEnabled
+    language
+    imageLightbox {
+        slideshowDelay
+        displayMode
+        scaleUp
+        resetZoomOnNav
+        scrollMode
+        scrollAttemptsBeforeChange
+    }
+    disableDropdownCreate {
+        performer
+        tag
+        studio
+    }
+    handyKey
+    funscriptOffset
+    useStashHostedFunscript
+"""
+
+CONFIG_DLNA_FIELDS = """
+    serverName
+    enabled
+    port
+    whitelistedIPs
+    interfaces
+    videoSortOrder
+"""
+
+CONFIG_SCRAPING_FIELDS = """
+    scraperUserAgent
+    scraperCertCheck
+    scraperCDPPath
+    excludeTagPatterns
+"""
+
+# Full configuration query with all sub-fragments
+CONFIGURATION_QUERY = f"""
+query Configuration {{
+    configuration {{
+        general {{
+            {CONFIG_GENERAL_FIELDS}
+        }}
+        interface {{
+            {CONFIG_INTERFACE_FIELDS}
+        }}
+        dlna {{
+            {CONFIG_DLNA_FIELDS}
+        }}
+        scraping {{
+            {CONFIG_SCRAPING_FIELDS}
+        }}
+        defaults {{
+            scan {{
+                {SCAN_METADATA_OPTIONS}
+            }}
+            autoTag {{
+                {AUTO_TAG_METADATA_OPTIONS}
+            }}
+            generate {{
+                {GENERATE_METADATA_OPTIONS}
+            }}
+            deleteFile
+            deleteGenerated
+        }}
+        ui
+    }}
+}}
+"""
+
 # Job fragments
 JOB_FIELDS = """
     __typename

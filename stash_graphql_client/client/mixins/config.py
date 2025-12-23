@@ -13,6 +13,7 @@ from ...types import (
     ConfigGeneralResult,
     ConfigInterfaceInput,
     ConfigInterfaceResult,
+    ConfigResult,
     ConfigScrapingInput,
     ConfigScrapingResult,
     DisableDLNAInput,
@@ -549,4 +550,53 @@ class ConfigClientMixin(StashClientProtocol):
             return bool(result.get("removeTempDLNAIP", False))
         except Exception as e:
             self.log.error(f"Failed to remove temp DLNA IP: {e}")
+            raise
+
+    async def get_configuration(self) -> ConfigResult:
+        """Get complete Stash configuration.
+
+        Returns:
+            ConfigResult containing all configuration sections:
+                - general: General settings (paths, logging, parallel tasks, etc.)
+                - interface: UI/UX settings (language, menus, previews, etc.)
+                - dlna: DLNA server configuration
+                - scraping: Scraper settings (user agent, cert check, etc.)
+                - defaults: Default settings for scan/identify/generate operations
+                - ui: UI customization settings (plugin configs, etc.)
+
+        Raises:
+            gql.TransportError: If the GraphQL request fails
+
+        Examples:
+            Get full configuration:
+            ```python
+            config = await client.get_configuration()
+            print(f"Database: {config.general.databasePath}")
+            print(f"Language: {config.interface.language}")
+            print(f"DLNA enabled: {config.dlna.enabled}")
+            ```
+
+            Check specific settings:
+            ```python
+            config = await client.get_configuration()
+            if config.general.parallelTasks < 4:
+                print("Consider increasing parallel tasks for better performance")
+
+            if not config.scraping.scraperCertCheck:
+                print("WARNING: SSL certificate checking is disabled!")
+            ```
+
+            Inspect plugin UI settings:
+            ```python
+            config = await client.get_configuration()
+            if config.ui:
+                for plugin_id, settings in config.ui.items():
+                    print(f"Plugin {plugin_id}: {settings}")
+            ```
+        """
+        try:
+            result = await self.execute(fragments.CONFIGURATION_QUERY)
+            return self._decode_result(ConfigResult, result["configuration"])
+        except Exception as e:
+            self.log.error(f"Failed to get configuration: {e}")
             raise
