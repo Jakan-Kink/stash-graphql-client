@@ -118,46 +118,44 @@ normalize_date(month_only, "day")   # "2024-03-01"
 ### Performer Birthdates
 
 ```python
+from stash_graphql_client.types import Performer
+
 async with StashContext(conn=conn) as client:
     # Exact birthdate known
     performer1 = await client.create_performer(
-        name="Jane Doe",
-        birthdate="1990-05-15"
+        Performer(name="Jane Doe", birthdate="1990-05-15")
     )
 
     # Only birth year known
     performer2 = await client.create_performer(
-        name="John Smith",
-        birthdate="1985"
+        Performer(name="John Smith", birthdate="1985")
     )
 
     # Birth year and month known
     performer3 = await client.create_performer(
-        name="Alice Johnson",
-        birthdate="1992-07"
+        Performer(name="Alice Johnson", birthdate="1992-07")
     )
 ```
 
 ### Scene Dates
 
 ```python
+from stash_graphql_client.types import Scene
+
 async with StashContext(conn=conn) as client:
     # Exact date
     scene1 = await client.update_scene(
-        id="scene-id-1",
-        date="2024-03-15"
+        Scene(id="scene-id-1", date="2024-03-15")
     )
 
     # Month precision
     scene2 = await client.update_scene(
-        id="scene-id-2",
-        date="2024-03"
+        Scene(id="scene-id-2", date="2024-03")
     )
 
     # Year only
     scene3 = await client.update_scene(
-        id="scene-id-3",
-        date="2024"
+        Scene(id="scene-id-3", date="2024")
     )
 ```
 
@@ -193,11 +191,12 @@ print(dt1 < dt2 < dt3)  # True
 When dates are completely unknown, use `None`:
 
 ```python
+from stash_graphql_client.types import Performer
+
 async with StashContext(conn=conn) as client:
     # Birthdate unknown
     performer = await client.create_performer(
-        name="Unknown Birthdate",
-        birthdate=None
+        Performer(name="Unknown Birthdate", birthdate=None)
     )
 
     # Check if birthdate is set
@@ -222,13 +221,13 @@ birthdate = "1990-07-01"  # Day unknown, shouldn't guess
 ### 2. Validate Before Saving
 
 ```python
-from stash_graphql_client.types import validate_fuzzy_date
+from stash_graphql_client.types import validate_fuzzy_date, Performer
 
 user_input = "2024-3"  # From user
 
 # ✅ Good - Validate first
 if validate_fuzzy_date(user_input):
-    await client.create_performer(name="Name", birthdate=user_input)
+    await client.create_performer(Performer(name="Name", birthdate=user_input))
 else:
     # Normalize or fix the input
     normalized = user_input if len(user_input.split('-')[1]) == 2 else f"2024-03"

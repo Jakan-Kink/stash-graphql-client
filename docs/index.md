@@ -25,6 +25,7 @@
 
 ```python
 from stash_graphql_client import StashClient, StashContext
+from stash_graphql_client.types import Tag
 
 # Using context manager (recommended)
 async with StashContext(conn={
@@ -37,7 +38,7 @@ async with StashContext(conn={
     print(f"Found {result.count} studios")
 
     # Create a new tag
-    tag = await client.create_tag(name="My Tag")
+    tag = await client.create_tag(Tag(name="My Tag"))
     print(f"Created tag: {tag.name}")
 ```
 
