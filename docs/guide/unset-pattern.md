@@ -962,3 +962,12 @@ def dec_hook(type, obj):
 6. **Let UUID4 auto-generate**: Don't manually set for new objects
 7. **Test all three field states**: value, None, UNSET
 8. **Trust the snapshot**: `mark_clean()` called automatically by `save()`
+
+---
+
+## See Also
+
+- **[Quick Reference](../reference/quick-reference.md)** - One-page cheat sheet for UNSET & UUID4 patterns
+- **[Usage Examples](usage-examples.md)** - Practical examples with ID mapping and convenience methods
+- **[Bidirectional Relationships](../architecture/bidirectional-relationships.md)** - How entity relationships work
+- **[StashEntityStore API](../api/store.md)** - Identity map and caching documentation

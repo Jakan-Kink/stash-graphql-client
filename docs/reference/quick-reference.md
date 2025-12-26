@@ -361,20 +361,94 @@ def process_field(value: str | None | UnsetType) -> Any:
 
 ## Summary
 
-| Pattern | Use When | Example |
-|---------|----------|---------|
-| **Set to value** | Field has a value | `scene.title = "Test"` |
-| **Set to null** | Want to clear server value | `scene.rating = None` |
-| **UNSET** | Don't touch server value | `scene.details = UNSET` |
-| **Auto UUID** | Creating new object | `scene = Scene(title="Test")` |
-| **is_new()** | Check if saved | `if scene.is_new(): ...` |
-| **update_id()** | After create (auto in save) | `scene.update_id("123")` |
+| Pattern          | Use When                    | Example                       |
+| ---------------- | --------------------------- | ----------------------------- |
+| **Set to value** | Field has a value           | `scene.title = "Test"`        |
+| **Set to null**  | Want to clear server value  | `scene.rating = None`         |
+| **UNSET**        | Don't touch server value    | `scene.details = UNSET`       |
+| **Auto UUID**    | Creating new object         | `scene = Scene(title="Test")` |
+| **is_new()**     | Check if saved              | `if scene.is_new(): ...`      |
+| **update_id()**  | After create (auto in save) | `scene.update_id("123")`      |
+
+---
+
+## Convenience Helper Methods
+
+Some entity types provide convenience methods for relationship management.
+
+### Scene Helpers (7 methods)
+
+```python
+# Add/remove entities from scene
+scene.add_to_gallery(gallery)        # Add scene to gallery
+scene.remove_from_gallery(gallery)   # Remove scene from gallery
+scene.add_performer(performer)       # Add performer to scene
+scene.remove_performer(performer)    # Remove performer from scene
+scene.add_tag(tag)                   # Add tag to scene
+scene.remove_tag(tag)                # Remove tag from scene
+scene.set_studio(studio)             # Set scene's studio
+```
+
+### Tag Helpers (6 methods)
+
+```python
+# Parent/child relationships (bidirectional)
+tag.add_parent(parent_tag)           # Add parent tag (syncs both sides)
+tag.remove_parent(parent_tag)        # Remove parent tag (syncs both sides)
+tag.add_child(child_tag)             # Add child tag (syncs both sides)
+tag.remove_child(child_tag)          # Remove child tag (syncs both sides)
+
+# Recursive hierarchy traversal
+descendants = tag.get_all_descendants()  # Get all descendant tags
+ancestors = tag.get_all_ancestors()      # Get all ancestor tags
+```
+
+### Entity Mapping Helpers
+
+Convert entity names to IDs with auto-creation support:
+
+```python
+# Map tag names to IDs
+tag_ids = await client.map_tag_ids(
+    ["Action", "Drama", "NewTag"],
+    create=True  # Auto-create missing tags
+)
+
+# Map studio names to IDs
+studio_ids = await client.map_studio_ids(
+    ["Studio A", "Studio B"],
+    create=True
+)
+
+# Map performer names to IDs (includes alias search)
+performer_ids = await client.map_performer_ids(
+    ["Jane Doe", "John Smith"],
+    create=True,
+    on_multiple=OnMultipleMatch.RETURN_FIRST  # Handle duplicates
+)
+```
+
+### Studio Hierarchy Helpers
+
+```python
+# Get full parent chain from root to studio
+hierarchy = await client.find_studio_hierarchy(studio_id)
+# Returns: [<Root Studio>, <Parent Studio>, <Child Studio>]
+
+# Find the top-level parent studio
+root = await client.find_studio_root(studio_id)
+```
+
+### Notes
+
+- **Group convenience helpers** are documented in [Bidirectional Relationships](../architecture/bidirectional-relationships.md) but not yet implemented. Currently, manage group relationships using direct field assignment with `containing_groups` and `sub_groups` fields.
+- **Other entity types** (Performer, Gallery, Image, etc.) do not have convenience helpers - use direct field assignment instead.
 
 ---
 
 ## Additional Resources
 
-- **Full Guide**: `/docs/UNSET_AND_UUID_PATTERNS.md`
-- **Architecture**: `/docs/ARCHITECTURAL_CHANGES_SUMMARY.md`
-- **Implementation**: `/IMPLEMENTATION_REPORT.md`
-- **Tests**: `/tests/types/test_unset_and_uuid_patterns.py`
+- **Full Guide**: [UNSET & UUID4 Patterns](../guide/unset-pattern.md) - Comprehensive guide with examples
+- **Usage Examples**: [Convenience Methods](../guide/usage-examples.md) - ID mapping, hierarchy navigation
+- **Architecture**: [Bidirectional Relationships](../architecture/bidirectional-relationships.md) - Entity relationship patterns
+- **API Reference**: [StashEntityStore](../api/store.md) - Identity map and caching

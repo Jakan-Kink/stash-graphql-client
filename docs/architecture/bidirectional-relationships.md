@@ -438,6 +438,8 @@ class Studio(StashObject):
 
 ### Complex Object Helpers
 
+> **Note**: The Group convenience helpers shown below are planned for future implementation. Currently, manage group relationships using direct field assignment with `containing_groups` and `sub_groups` fields. See [Quick Reference - Convenience Helpers](../reference/quick-reference.md#convenience-helper-methods) for currently implemented helpers.
+
 ```python
 class Group(StashObject):
     async def add_sub_group(
@@ -524,6 +526,13 @@ The new `RelationshipMetadata` class is designed to be backward compatible with 
 - [ ] Generate convenience helpers automatically
 - [ ] Add relationship validation (ensure IDs exist)
 - [ ] Performance optimization for bulk relationship queries
+
+## See Also
+
+- **[UNSET & UUID4 Guide](../guide/unset-pattern.md)** - Field management patterns used with relationships
+- **[Usage Examples](../guide/usage-examples.md)** - Practical examples using relationship helpers
+- **[Quick Reference](../reference/quick-reference.md)** - Quick lookup for core patterns
+- **[StashEntityStore API](../api/store.md)** - Identity map that powers bidirectional sync
 
 ## References
 
