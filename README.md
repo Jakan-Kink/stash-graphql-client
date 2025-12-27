@@ -98,7 +98,7 @@ Located in `stash_graphql_client/client/`, the client provides direct access to 
 ```python
 # Direct GraphQL operations
 scenes = await client.find_scenes()
-performer = await client.create_performer(name="Alice")
+performer = await client.create_performer(Performer(name="Alice"))
 job_id = await client.metadata_scan()
 ```
 
@@ -338,11 +338,8 @@ normalize_date("2024-03-15", "month")  # "2024-03"
 normalize_date("2024", "day")          # "2024-01-01"
 
 # Use in performer/scene data
-performer_data = {
-    "name": "John Doe",
-    "birthdate": "1990",  # Year-only birthdate
-}
-await client.create_performer(**performer_data)
+performer = Performer(name="John Doe", birthdate="1990")  # Year-only birthdate
+await client.create_performer(performer)
 
 scene_data = {
     "date": "2024-03",  # Month precision

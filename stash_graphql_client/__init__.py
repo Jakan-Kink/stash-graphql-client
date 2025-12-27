@@ -65,7 +65,7 @@ from stash_graphql_client.types import (
 from stash_graphql_client.utils import ScrapeParser
 
 
-__version__ = "0.1.0"
+__version__ = "0.5.0"
 
 __all__ = [
     # Version

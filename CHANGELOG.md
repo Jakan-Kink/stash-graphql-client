@@ -7,9 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-12-26
+
+### Added
+
+- **Convenience Helper Methods**: 15 synchronous relationship helper methods across 5 entity types
+
+  - **Performer** (2 methods): `add_tag()`, `remove_tag()`
+  - **Gallery** (4 methods): `add_performer()`, `remove_performer()`, `add_scene()`, `remove_scene()`
+  - **Image** (4 methods): `add_performer()`, `remove_performer()`, `add_gallery()`, `remove_gallery()`
+  - **Studio** (3 methods): `set_parent_studio()`, `add_child_studio()`, `remove_child_studio()` with bidirectional sync
+  - **Group** (2 methods): `add_sub_group()`, `remove_sub_group()` with GroupDescription wrapper support
+  - All helpers are in-memory operations with UNSET-aware initialization and ID-based deduplication
+  - Follows established patterns from Scene and Tag types
+
+- **Type Narrowing Support**: `is_set()` TypeGuard function for improved type safety
+  - Uses PEP 695 syntax (`def is_set[T](value: T | UnsetType) -> TypeGuard[T]`)
+  - Enables type checkers (Pylance, mypy) to narrow UNSET types in conditional checks
+  - Improves IDE autocomplete and type inference for field access after UNSET validation
+  - Exported from `stash_graphql_client.types` for public use
+
+### Changed
+
+- Enhanced type exports in `stash_graphql_client.types.__init__.py` to include `is_set` function
+
+### Testing
+
+- Added 6 new comprehensive test files with 55 tests total:
+  - `tests/types/test_performer_helpers.py` (7 tests)
+  - `tests/types/test_gallery_helpers.py` (13 tests)
+  - `tests/types/test_image_helpers.py` (13 tests)
+  - `tests/types/test_studio_helpers.py` (11 tests)
+  - `tests/types/test_group_helpers.py` (11 tests)
+  - `tests/types/test_unset.py` (11 tests including TypeGuard validation)
+- Maintained 100% test coverage (1700 tests passing, 6664/6664 statements, 1154/1154 branches)
+
+### Documentation
+
+- Fixed API signature errors in `docs/index.md` and `docs/guide/fuzzy-dates.md`
+- Corrected examples to use object-based parameters instead of kwargs
+- Reorganized documentation structure with enhanced reference materials
+
+### Notes
+
+- First stable release (0.5.0) after 7 beta iterations
+- Type narrowing refactoring for remaining codebase deferred to v0.6.0
+  - Would address 160 UNSET checks across codebase
+  - Would fix 110/170 mypy errors (65% reduction)
+  - Comprehensive migration plan documented in project
+
 ## [0.5.0b7] - 2025-12-22
 
 ### Changed
+
 - **Integration Test Coverage**: Added comprehensive GraphQL call assertions to all 43 existing integration tests
   - Tests now verify both request structure (query content, variables) and response handling (result, exception)
   - Updated 9 integration test files: base, config, marker, performer, studio, tag, client, file
@@ -21,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests catch GraphQL schema issues early (e.g., invalid operation names, incorrect variable structures)
 
 ### Removed
+
 - **CRITICAL - Destructive Integration Tests Removed**: Removed 14 dangerous integration tests that ran destructive operations against real Stash instances
   - **Removed operations**:
     - Metadata: `metadata_import`, `anonymise_database`, `migrate`, `migrate_hash_naming`, `migrate_scene_screenshots`, `migrate_blobs`, `optimise_database`, `setup` (11 tests)
@@ -43,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0b5] - 2025-12-21
 
 ### Changed
+
 - **PEP 8 Compliance**: Moved all function-level imports to module level across 13 production files (24 violations fixed)
   - Refactored `types/tag.py`, `types/performer.py`, `types/unset.py`, `types/base.py`, `types/scene.py`
   - Refactored `client/mixins/metadata.py`, `client/mixins/scene.py`, `client/__init__.py`, `client/base.py`
@@ -51,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed redundant inline imports where types were already imported at module level
 
 ### Technical Details
+
 - All imports verified for circular dependencies with no issues found
 - `fragments.py` contains only string constants, safe to import anywhere
 - All 1547 tests pass with 100% coverage maintained
@@ -59,16 +112,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0b4] - 2025-12-21
 
 ### Added
+
 - `__typename` field to all GraphQL fragments and queries for improved type safety
 - Type validation in `FromGraphQLMixin.from_graphql()` to verify GraphQL response types match Python classes
 - Polymorphic type support via `cls.__subclasses__()` check for interface/union types
 - Test coverage for type mismatch validation error paths
 
 ### Fixed
+
 - pytest-xdist worker state sharing bug that caused integration tests to skip in parallel mode
 - Added `pytest_configure_node()` hook to properly share Stash availability state between controller and workers
 
 ### Changed
+
 - All 16 fragment definitions now include `__typename` as first field
 - All nested inline objects in fragments include `__typename`
 - Dynamic query generation in `StashEntityStore.populate()` includes `__typename`
@@ -77,15 +133,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0b3] - 2025-12-21
 
 ### Fixed
+
 - Updated README.md license section from MIT to AGPL-3.0 (badge was correct, text section was outdated)
 - Regenerated poetry.lock after removing keyrings-codeartifact (-425 lines of AWS dependencies)
 
 ### Changed
+
 - Cleaned up transitive dependencies from poetry.lock after PyPI migration
 
 ## [0.5.0b2] - 2025-12-21
 
 ### Added
+
 - PyPI publishing support via GitHub Actions with Trusted Publishers (OIDC)
 - Automated publishing to TestPyPI on every push to `main`
 - Automated publishing to PyPI on version tags
@@ -94,18 +153,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PyPI badges in README (version, Python version, license, codecov)
 
 ### Changed
+
 - Migrated from AWS CodeArtifact to PyPI for package distribution
 - Changed license from MIT to AGPL-3.0-or-later to match Stash upstream
 - Updated README installation instructions to prioritize PyPI
 - Enhanced CONTRIBUTING.md with release process documentation
 
 ### Removed
+
 - AWS CodeArtifact repository source configuration
 - `keyrings-codeartifact` development dependency
 
 ## [0.5.0b1] - 2024-12-15
 
 ### Added
+
 - Full Pydantic v2 support with wrap validators
 - Identity map caching via `StashEntityStore`
 - UNSET pattern for distinguishing unqueried fields from null values
@@ -116,6 +178,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for Python 3.12+
 
 ### Technical Details
+
 - All entity types extend `StashObject` with `@model_validator(mode='wrap')`
 - Three-state field system: UNSET (not queried), None (null), or actual value
 - TTL-based entity caching with thread-safe RLock
@@ -123,7 +186,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b7...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b7...v0.5.0
 [0.5.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...v0.5.0b7
 [0.5.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...v0.5.0b5
 [0.5.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b3...v0.5.0b4
