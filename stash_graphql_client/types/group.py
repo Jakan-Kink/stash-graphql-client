@@ -211,6 +211,65 @@ class Group(StashObject):
         ),
     }
 
+    def add_sub_group(
+        self, group: Group | GroupDescription, description: str | None = None
+    ) -> None:
+        """Add a sub-group to this group.
+
+        In-memory operation only. Call store.save(group) to persist changes.
+        The backend automatically syncs group.containing_groups when you save.
+
+        Args:
+            group: The sub-group to add (Group or GroupDescription)
+            description: Optional description for the relationship (ignored if group is GroupDescription)
+
+        Example:
+            >>> parent_group.add_sub_group(child_group, "Part 2")
+            >>> await store.save(parent_group)  # Persist the change
+        """
+        if self.sub_groups is UNSET:
+            self.sub_groups = []
+
+        # Convert Group to GroupDescription if needed
+        if isinstance(group, Group):
+            group_desc = GroupDescription(group=group, description=description)
+        else:
+            group_desc = group
+
+        # Check if already present (by group ID)
+        if not any(
+            sg.group.id == group_desc.group.id
+            for sg in self.sub_groups
+            if sg.group is not UNSET and sg.group.id is not UNSET
+        ):
+            self.sub_groups.append(group_desc)
+
+    def remove_sub_group(self, group: Group | GroupDescription) -> None:
+        """Remove a sub-group from this group.
+
+        In-memory operation only. Call store.save(group) to persist changes.
+        The backend automatically syncs group.containing_groups when you save.
+
+        Args:
+            group: The sub-group to remove (Group or GroupDescription)
+
+        Example:
+            >>> parent_group.remove_sub_group(child_group)
+            >>> await store.save(parent_group)  # Persist the change
+        """
+        if self.sub_groups is UNSET:
+            return
+
+        # Get the group ID to match
+        group_id = group.group.id if isinstance(group, GroupDescription) else group.id
+
+        # Remove matching group
+        self.sub_groups = [
+            sg
+            for sg in self.sub_groups
+            if sg.group is UNSET or sg.group.id is UNSET or sg.group.id != group_id
+        ]
+
 
 class GroupDescriptionInput(StashInput):
     """Input for group description."""

@@ -26,7 +26,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeGuard
 
 from pydantic_core import core_schema
 
@@ -103,4 +103,36 @@ class UnsetType:
 # Singleton instance - use this throughout the codebase
 UNSET = UnsetType()
 
-__all__ = ["UNSET", "UnsetType"]
+
+def is_set[T](value: T | UnsetType) -> TypeGuard[T]:
+    """Type guard to narrow types when checking if a value is set (not UNSET).
+
+    This function helps type checkers like Pylance understand that after checking
+    `is_set(value)`, the value is definitively not UNSET and can be treated as type T.
+
+    Args:
+        value: A value that might be UNSET or an actual value of type T
+
+    Returns:
+        True if value is not UNSET, False if value is UNSET
+
+    Example:
+        >>> from stash_graphql_client.types import Scene, UNSET, is_set
+        >>> scene = Scene(id="1", title="Test", scenes=[])
+        >>>
+        >>> # Without type guard - Pylance shows error
+        >>> if scene.scenes is not UNSET:
+        ...     scene_obj in scene.scenes  # Error: "in" not supported for UnsetType
+        >>>
+        >>> # With type guard - Pylance understands the type
+        >>> if is_set(scene.scenes):
+        ...     scene_obj in scene.scenes  # OK! Pylance knows scenes is list[Scene]
+
+    Note:
+        This is a type guard function - it provides type narrowing information
+        to static type checkers. At runtime, it's equivalent to `value is not UNSET`.
+    """
+    return value is not UNSET
+
+
+__all__ = ["UNSET", "UnsetType", "is_set"]

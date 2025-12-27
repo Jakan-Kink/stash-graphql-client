@@ -314,7 +314,7 @@ from .tag import (
     TagsMergeInput,
     TagUpdateInput,
 )
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 from .version import LatestVersion, Version
 
 
@@ -645,6 +645,7 @@ __all__: list[str] = [
     "Version",
     "VideoFile",
     "VisualFile",
+    "is_set",
     "normalize_date",
     "parse_date_precision",
     "validate_fuzzy_date",

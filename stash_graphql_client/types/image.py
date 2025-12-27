@@ -179,6 +179,74 @@ class Image(StashObject):
         ),
     }
 
+    def add_performer(self, performer: Performer) -> None:
+        """Add a performer to this image.
+
+        In-memory operation only. Call store.save(image) to persist changes.
+        The backend automatically syncs performer.images when you save.
+
+        Args:
+            performer: The Performer instance to add
+
+        Example:
+            >>> image.add_performer(performer)
+            >>> await store.save(image)  # Persist the change
+        """
+        if self.performers is UNSET:
+            self.performers = []
+        if performer not in self.performers:
+            self.performers.append(performer)
+
+    def remove_performer(self, performer: Performer) -> None:
+        """Remove a performer from this image.
+
+        In-memory operation only. Call store.save(image) to persist changes.
+        The backend automatically syncs performer.images when you save.
+
+        Args:
+            performer: The Performer instance to remove
+
+        Example:
+            >>> image.remove_performer(performer)
+            >>> await store.save(image)  # Persist the change
+        """
+        if self.performers is not UNSET and performer in self.performers:
+            self.performers.remove(performer)
+
+    def add_to_gallery(self, gallery: Gallery) -> None:
+        """Add this image to a gallery.
+
+        In-memory operation only. Call store.save(image) to persist changes.
+        The backend automatically syncs gallery.images when you save.
+
+        Args:
+            gallery: The Gallery instance to add this image to
+
+        Example:
+            >>> image.add_to_gallery(gallery)
+            >>> await store.save(image)  # Persist the change
+        """
+        if self.galleries is UNSET:
+            self.galleries = []
+        if gallery not in self.galleries:
+            self.galleries.append(gallery)
+
+    def remove_from_gallery(self, gallery: Gallery) -> None:
+        """Remove this image from a gallery.
+
+        In-memory operation only. Call store.save(image) to persist changes.
+        The backend automatically syncs gallery.images when you save.
+
+        Args:
+            gallery: The Gallery instance to remove this image from
+
+        Example:
+            >>> image.remove_from_gallery(gallery)
+            >>> await store.save(image)  # Persist the change
+        """
+        if self.galleries is not UNSET and gallery in self.galleries:
+            self.galleries.remove(gallery)
+
     @field_validator("visual_files", mode="before")
     @classmethod
     def _discriminate_visual_file_types(cls, value: Any) -> Any:

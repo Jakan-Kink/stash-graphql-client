@@ -272,6 +272,40 @@ class Performer(StashObject):
         except Exception as e:
             raise ValueError(f"Failed to update avatar: {e}") from e
 
+    def add_tag(self, tag: Tag) -> None:
+        """Add a tag to this performer.
+
+        In-memory operation only. Call store.save(performer) to persist changes.
+        The backend automatically syncs tag.performer_count when you save.
+
+        Args:
+            tag: The Tag instance to add
+
+        Example:
+            >>> performer.add_tag(tag)
+            >>> await store.save(performer)  # Persist the change
+        """
+        if self.tags is UNSET:
+            self.tags = []
+        if tag not in self.tags:
+            self.tags.append(tag)
+
+    def remove_tag(self, tag: Tag) -> None:
+        """Remove a tag from this performer.
+
+        In-memory operation only. Call store.save(performer) to persist changes.
+        The backend automatically syncs tag.performer_count when you save.
+
+        Args:
+            tag: The Tag instance to remove
+
+        Example:
+            >>> performer.remove_tag(tag)
+            >>> await store.save(performer)  # Persist the change
+        """
+        if self.tags is not UNSET and tag in self.tags:
+            self.tags.remove(tag)
+
     # @classmethod
     # def from_account(cls, account: "Account") -> "Performer":
     #     """Create performer from account.

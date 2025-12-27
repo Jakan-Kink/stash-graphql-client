@@ -195,12 +195,73 @@ class Gallery(StashObject):
         # TODO: Implement this resolver
         raise NotImplementedError("image resolver not implemented")
 
-    # Note: from_content method removed - Post/Message types not available in this project
-    # @classmethod
-    # async def from_content(cls, content, performer=None, studio=None) -> "Gallery":
-    #     """Create gallery from post or message."""
-    #     # Implementation depends on Post/Message types from metadata module
-    #     pass
+    def add_performer(self, performer: Performer) -> None:
+        """Add a performer to this gallery.
+
+        In-memory operation only. Call store.save(gallery) to persist changes.
+        The backend automatically syncs performer.galleries when you save.
+
+        Args:
+            performer: The Performer instance to add
+
+        Example:
+            >>> gallery.add_performer(performer)
+            >>> await store.save(gallery)  # Persist the change
+        """
+        if isinstance(self.performers, UnsetType):
+            self.performers = []
+        if performer not in self.performers:
+            self.performers.append(performer)
+
+    def remove_performer(self, performer: Performer) -> None:
+        """Remove a performer from this gallery.
+
+        In-memory operation only. Call store.save(gallery) to persist changes.
+        The backend automatically syncs performer.galleries when you save.
+
+        Args:
+            performer: The Performer instance to remove
+
+        Example:
+            >>> gallery.remove_performer(performer)
+            >>> await store.save(gallery)  # Persist the change
+        """
+        if self.performers is not UNSET and performer in self.performers:
+            self.performers.remove(performer)
+
+    def add_scene(self, scene: Scene) -> None:
+        """Add a scene to this gallery.
+
+        In-memory operation only. Call store.save(gallery) to persist changes.
+        The backend automatically syncs scene.galleries when you save.
+
+        Args:
+            scene: The Scene instance to add
+
+        Example:
+            >>> gallery.add_scene(scene)
+            >>> await store.save(gallery)  # Persist the change
+        """
+        if self.scenes is UNSET:
+            self.scenes = []
+        if scene not in self.scenes:
+            self.scenes.append(scene)
+
+    def remove_scene(self, scene: Scene) -> None:
+        """Remove a scene from this gallery.
+
+        In-memory operation only. Call store.save(gallery) to persist changes.
+        The backend automatically syncs scene.galleries when you save.
+
+        Args:
+            scene: The Scene instance to remove
+
+        Example:
+            >>> gallery.remove_scene(scene)
+            >>> await store.save(gallery)  # Persist the change
+        """
+        if self.scenes is not UNSET and scene in self.scenes:
+            self.scenes.remove(scene)
 
     # Field definitions with their conversion functions
     __field_conversions__: ClassVar[dict] = {
