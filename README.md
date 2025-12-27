@@ -7,6 +7,15 @@
 
 Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 
+## 🔗 Quick Links
+
+- 📦 **[PyPI Package](https://pypi.org/project/stash-graphql-client/)** - Install via pip
+- 📚 **[Documentation](https://jakan-kink.github.io/stash-graphql-client/)** - Full API reference and guides
+- 🎬 **[Stash Project](https://github.com/stashapp/stash)** - Upstream media server this client connects to
+- 📝 **[Changelog](CHANGELOG.md)** - Version history and release notes
+- 🤝 **[Contributing](CONTRIBUTING.md)** - Development guide and contribution guidelines
+- 🔒 **[Security Policy](SECURITY.md)** - Vulnerability reporting and security best practices
+
 ## Features
 
 - **Async-first**: Built with `gql` + `HTTPXAsyncTransport` + `WebsocketsTransport`
