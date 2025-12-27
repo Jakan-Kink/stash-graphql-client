@@ -47,7 +47,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/Jakan-Kink/stash-graphql-client"
 Repository = "https://github.com/Jakan-Kink/stash-graphql-client"
-Documentation = "https://github.com/Jakan-Kink/stash-graphql-client/tree/main/docs"
+Documentation = "https://jakan-kink.github.io/stash-graphql-client/"
 Issues = "https://github.com/Jakan-Kink/stash-graphql-client/issues"
 Changelog = "https://github.com/Jakan-Kink/stash-graphql-client/blob/main/CHANGELOG.md"
 "Stash GitHub" = "https://github.com/stashapp/stash"
@@ -71,6 +71,7 @@ dev = [
     "mkdocs-material (>=9.7.0,<10.0.0)",
     "mkdocstrings[python] (>=1.0.0,<2.0.0)",
     "mkdocs-gen-files (>=0.6.0,<0.7.0)",
+    "mike (>=2.1.3,<3.0.0)",
 ]
 test = [
     "pytest-rerunfailures (>=16.1,<17.0)"
