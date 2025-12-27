@@ -11,7 +11,7 @@ from .base import RelationshipMetadata, StashInput, StashObject, StashResult
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -226,7 +226,7 @@ class Gallery(StashObject):
             >>> gallery.remove_performer(performer)
             >>> await store.save(gallery)  # Persist the change
         """
-        if self.performers is not UNSET and performer in self.performers:
+        if is_set(self.performers) and performer in self.performers:
             self.performers.remove(performer)
 
     def add_scene(self, scene: Scene) -> None:
@@ -242,7 +242,7 @@ class Gallery(StashObject):
             >>> gallery.add_scene(scene)
             >>> await store.save(gallery)  # Persist the change
         """
-        if self.scenes is UNSET:
+        if isinstance(self.scenes, UnsetType):
             self.scenes = []
         if scene not in self.scenes:
             self.scenes.append(scene)
@@ -260,7 +260,7 @@ class Gallery(StashObject):
             >>> gallery.remove_scene(scene)
             >>> await store.save(gallery)  # Persist the change
         """
-        if self.scenes is not UNSET and scene in self.scenes:
+        if is_set(self.scenes) and scene in self.scenes:
             self.scenes.remove(scene)
 
     # Field definitions with their conversion functions

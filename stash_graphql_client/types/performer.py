@@ -26,7 +26,7 @@ from .enums import CircumisedEnum, GenderEnum
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
 from .scalars import Map
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 # if _TYPE_CHECKING_METADATA:
@@ -285,7 +285,7 @@ class Performer(StashObject):
             >>> performer.add_tag(tag)
             >>> await store.save(performer)  # Persist the change
         """
-        if self.tags is UNSET:
+        if isinstance(self.tags, UnsetType):
             self.tags = []
         if tag not in self.tags:
             self.tags.append(tag)
@@ -303,7 +303,7 @@ class Performer(StashObject):
             >>> performer.remove_tag(tag)
             >>> await store.save(performer)  # Persist the change
         """
-        if self.tags is not UNSET and tag in self.tags:
+        if is_set(self.tags) and tag in self.tags:
             self.tags.remove(tag)
 
     # @classmethod

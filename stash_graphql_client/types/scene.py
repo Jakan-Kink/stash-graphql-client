@@ -18,7 +18,7 @@ from .base import (
 )
 from .files import StashID, StashIDInput, VideoFile
 from .scalars import Time
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -310,7 +310,7 @@ class Scene(StashObject):
             >>> scene.add_to_gallery(gallery)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.galleries is UNSET:
+        if isinstance(self.galleries, UnsetType):
             self.galleries = []
         if gallery not in self.galleries:
             self.galleries.append(gallery)
@@ -328,7 +328,7 @@ class Scene(StashObject):
             >>> scene.remove_from_gallery(gallery)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.galleries is not UNSET and gallery in self.galleries:
+        if is_set(self.galleries) and gallery in self.galleries:
             self.galleries.remove(gallery)
 
     def add_performer(self, performer: Performer) -> None:
@@ -344,7 +344,7 @@ class Scene(StashObject):
             >>> scene.add_performer(performer)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.performers is UNSET:
+        if isinstance(self.performers, UnsetType):
             self.performers = []
         if performer not in self.performers:
             self.performers.append(performer)
@@ -361,7 +361,7 @@ class Scene(StashObject):
             >>> scene.remove_performer(performer)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.performers is not UNSET and performer in self.performers:
+        if is_set(self.performers) and performer in self.performers:
             self.performers.remove(performer)
 
     def add_tag(self, tag: Tag) -> None:
@@ -377,7 +377,7 @@ class Scene(StashObject):
             >>> scene.add_tag(tag)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.tags is UNSET:
+        if isinstance(self.tags, UnsetType):
             self.tags = []
         if tag not in self.tags:
             self.tags.append(tag)
@@ -395,7 +395,7 @@ class Scene(StashObject):
             >>> scene.remove_tag(tag)
             >>> await store.save(scene)  # Persist the change
         """
-        if self.tags is not UNSET and tag in self.tags:
+        if is_set(self.tags) and tag in self.tags:
             self.tags.remove(tag)
 
     def set_studio(self, studio: Studio | None) -> None:

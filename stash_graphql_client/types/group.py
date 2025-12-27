@@ -15,7 +15,7 @@ from .base import (
     StashResult,
 )
 from .enums import BulkUpdateIdMode
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -227,7 +227,7 @@ class Group(StashObject):
             >>> parent_group.add_sub_group(child_group, "Part 2")
             >>> await store.save(parent_group)  # Persist the change
         """
-        if self.sub_groups is UNSET:
+        if isinstance(self.sub_groups, UnsetType):
             self.sub_groups = []
 
         # Convert Group to GroupDescription if needed
@@ -240,7 +240,7 @@ class Group(StashObject):
         if not any(
             sg.group.id == group_desc.group.id
             for sg in self.sub_groups
-            if sg.group is not UNSET and sg.group.id is not UNSET
+            if is_set(sg.group) and is_set(sg.group.id)
         ):
             self.sub_groups.append(group_desc)
 
@@ -257,7 +257,7 @@ class Group(StashObject):
             >>> parent_group.remove_sub_group(child_group)
             >>> await store.save(parent_group)  # Persist the change
         """
-        if self.sub_groups is UNSET:
+        if isinstance(self.sub_groups, UnsetType):
             return
 
         # Get the group ID to match
@@ -267,7 +267,9 @@ class Group(StashObject):
         self.sub_groups = [
             sg
             for sg in self.sub_groups
-            if sg.group is UNSET or sg.group.id is UNSET or sg.group.id != group_id
+            if isinstance(sg.group, UnsetType)
+            or isinstance(sg.group.id, UnsetType)
+            or sg.group.id != group_id
         ]
 
 

@@ -16,7 +16,7 @@ from .base import (
     StashResult,
 )
 from .files import ImageFile, VideoFile
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -192,7 +192,7 @@ class Image(StashObject):
             >>> image.add_performer(performer)
             >>> await store.save(image)  # Persist the change
         """
-        if self.performers is UNSET:
+        if isinstance(self.performers, UnsetType):
             self.performers = []
         if performer not in self.performers:
             self.performers.append(performer)
@@ -210,7 +210,7 @@ class Image(StashObject):
             >>> image.remove_performer(performer)
             >>> await store.save(image)  # Persist the change
         """
-        if self.performers is not UNSET and performer in self.performers:
+        if is_set(self.performers) and performer in self.performers:
             self.performers.remove(performer)
 
     def add_to_gallery(self, gallery: Gallery) -> None:
@@ -226,7 +226,7 @@ class Image(StashObject):
             >>> image.add_to_gallery(gallery)
             >>> await store.save(image)  # Persist the change
         """
-        if self.galleries is UNSET:
+        if isinstance(self.galleries, UnsetType):
             self.galleries = []
         if gallery not in self.galleries:
             self.galleries.append(gallery)
@@ -244,7 +244,7 @@ class Image(StashObject):
             >>> image.remove_from_gallery(gallery)
             >>> await store.save(image)  # Persist the change
         """
-        if self.galleries is not UNSET and gallery in self.galleries:
+        if is_set(self.galleries) and gallery in self.galleries:
             self.galleries.remove(gallery)
 
     @field_validator("visual_files", mode="before")

@@ -15,7 +15,7 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -201,7 +201,7 @@ class Studio(StashObject):
             >>> parent_studio.add_child_studio(child_studio)
             >>> await store.save(child_studio)  # Save the child with updated parent
         """
-        if self.child_studios is UNSET or self.child_studios is None:
+        if isinstance(self.child_studios, UnsetType) or self.child_studios is None:
             self.child_studios = []
         if child not in self.child_studios:
             self.child_studios.append(child)
@@ -221,7 +221,7 @@ class Studio(StashObject):
             >>> await store.save(child_studio)  # Save the child with cleared parent
         """
         if (
-            self.child_studios is not UNSET
+            is_set(self.child_studios)
             and self.child_studios is not None
             and child in self.child_studios
         ):
