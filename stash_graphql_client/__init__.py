@@ -62,7 +62,6 @@ from stash_graphql_client.types import (
     TagCreateInput,
     TagUpdateInput,
 )
-from stash_graphql_client.utils import ScrapeParser
 
 
 __version__ = "0.5.0"
@@ -76,8 +75,6 @@ __all__ = [
     # Store
     "StashEntityStore",
     "CacheEntry",
-    # Utils
-    "ScrapeParser",
     # Logging
     "stash_logger",
     "client_logger",

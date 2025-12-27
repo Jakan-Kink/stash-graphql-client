@@ -24,7 +24,7 @@ from ...types import (
     ScanMetadataOptions,
     SetupInput,
 )
-from ...types.unset import UNSET
+from ...types.unset import is_set
 from ..protocols import StashClientProtocol
 
 
@@ -199,7 +199,7 @@ class MetadataClientMixin(StashClientProtocol):
             )
 
             # ConfigResult has a defaults field - Pydantic handles all nested objects
-            if config and config.defaults is not UNSET:
+            if config and is_set(config.defaults):
                 return config.defaults
 
             # Fallback to defaults
