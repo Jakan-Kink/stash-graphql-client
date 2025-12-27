@@ -3,6 +3,9 @@ name: Deploy Documentation
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*.*.*'
+      - '*.*.*'
   workflow_dispatch:
 
 permissions:
@@ -25,5 +28,38 @@ jobs:
       - name: Install dependencies
         run: poetry install --with dev
 
-      - name: Build and deploy docs
-        run: poetry run mkdocs gh-deploy --force
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch git tags
+        run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+
+      - name: Deploy docs with mike
+        run: |
+          # Extract version from pyproject.toml
+          VERSION=$(poetry version -s)
+
+          # Check if current commit is tagged (indicates a release)
+          if TAG=$(git describe --exact-match --tags HEAD 2>/dev/null); then
+            # Remove 'v' prefix if present for version check
+            TAG_VERSION="${TAG#v}"
+
+            # Check if this is a pre-release (alpha, beta, rc, dev)
+            if [[ "$TAG_VERSION" =~ (a|alpha|b|beta|rc|dev) ]]; then
+              echo "🧪 Deploying pre-release version: $VERSION"
+              # Deploy to version-specific alias WITHOUT updating 'latest'
+              poetry run mike deploy --push $VERSION
+            else
+              echo "📦 Deploying stable release version: $VERSION"
+              # Deploy to version-specific alias and update 'latest'
+              poetry run mike deploy --push --update-aliases $VERSION latest
+              # Set 'latest' as the default version
+              poetry run mike set-default --push latest
+            fi
+          else
+            echo "🚧 Deploying development version: dev"
+            # Deploy to 'dev' for unreleased changes
+            poetry run mike deploy --push dev
+          fi
