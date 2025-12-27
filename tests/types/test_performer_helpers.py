@@ -5,7 +5,7 @@ These tests verify that the helper methods:
 2. Are synchronous (not async)
 """
 
-from stash_graphql_client.types import UNSET
+from stash_graphql_client.types import UNSET, UnsetType, is_set
 from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.tag import Tag
 
@@ -22,6 +22,7 @@ class TestPerformerHelperMethods:
         performer.add_tag(tag)
 
         # Verify tag was added
+        assert is_set(performer.tags)
         assert tag in performer.tags
 
     def test_add_tag_deduplication(self):
@@ -34,6 +35,7 @@ class TestPerformerHelperMethods:
         performer.add_tag(tag)
 
         # Should only have one entry
+        assert is_set(performer.tags)
         assert len(performer.tags) == 1
 
     def test_remove_tag(self):
@@ -45,6 +47,7 @@ class TestPerformerHelperMethods:
         performer.remove_tag(tag)
 
         # Verify tag was removed
+        assert is_set(performer.tags)
         assert tag not in performer.tags
 
     def test_remove_tag_noop_if_not_present(self):
@@ -55,6 +58,7 @@ class TestPerformerHelperMethods:
         # Remove tag that's not in the list - should be no-op
         performer.remove_tag(tag)
 
+        assert is_set(performer.tags)
         assert tag not in performer.tags
 
     def test_add_tag_when_tags_is_unset(self):
@@ -64,13 +68,13 @@ class TestPerformerHelperMethods:
         tag = Tag(id="2", name="Tag 1", parents=[], children=[])
 
         # Verify tags is UNSET before adding
-        assert performer.tags is UNSET
+        assert isinstance(performer.tags, UnsetType)
 
         # Add tag - should initialize list first
         performer.add_tag(tag)
 
         # Verify tags was initialized and tag was added
-        assert performer.tags is not UNSET
+        assert is_set(performer.tags)
         assert isinstance(performer.tags, list)
         assert tag in performer.tags
 
@@ -84,7 +88,7 @@ class TestPerformerHelperMethods:
         performer.remove_tag(tag)
 
         # tags should still be UNSET
-        assert performer.tags is UNSET
+        assert isinstance(performer.tags, UnsetType)
 
     def test_helpers_are_sync_not_async(self):
         """Test that helper methods are synchronous (not coroutines)."""

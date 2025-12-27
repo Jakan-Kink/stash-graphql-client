@@ -476,7 +476,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         populate_by_name=True,  # Accept both snake_case and camelCase
     )
 
-    id: str  # Only required field
+    id: str | None = None  # Accepts None (auto-generates UUID) or str
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
     updated_at: Time | UnsetType = UNSET  # Time! - Stash internal
 
@@ -577,7 +577,8 @@ class StashObject(FromGraphQLMixin, BaseModel):
         if is_new_object:
             object.__setattr__(self, "_is_new", True)
         else:
-            # Existing object - check if it has a UUID (legacy)
+            # Type narrowing: id is always str here (validated/set above)
+            assert self.id is not None  # noqa: S101
             object.__setattr__(
                 self,
                 "_is_new",

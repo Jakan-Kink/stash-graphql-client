@@ -5,7 +5,7 @@ These tests verify that the helper methods:
 2. Are synchronous (not async)
 """
 
-from stash_graphql_client.types import Scene
+from stash_graphql_client.types import Scene, UnsetType, is_set
 from stash_graphql_client.types.gallery import Gallery
 from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.studio import Studio
@@ -24,6 +24,7 @@ class TestSceneHelperMethods:
         scene.add_to_gallery(gallery)
 
         # Verify gallery was added
+        assert is_set(scene.galleries)
         assert gallery in scene.galleries
 
     def test_add_to_gallery_deduplication(self):
@@ -36,6 +37,7 @@ class TestSceneHelperMethods:
         scene.add_to_gallery(gallery)
 
         # Should only have one entry
+        assert is_set(scene.galleries)
         assert len(scene.galleries) == 1
 
     def test_remove_from_gallery(self):
@@ -49,6 +51,7 @@ class TestSceneHelperMethods:
         scene.remove_from_gallery(gallery)
 
         # Verify gallery was removed
+        assert is_set(scene.galleries)
         assert gallery not in scene.galleries
 
     def test_remove_from_gallery_noop_if_not_present(self):
@@ -59,6 +62,7 @@ class TestSceneHelperMethods:
         # Remove gallery that's not in the list - should be no-op
         scene.remove_from_gallery(gallery)
 
+        assert is_set(scene.galleries)
         assert gallery not in scene.galleries
 
     def test_add_performer(self):
@@ -70,6 +74,7 @@ class TestSceneHelperMethods:
         scene.add_performer(performer)
 
         # Verify performer was added
+        assert is_set(scene.performers)
         assert performer in scene.performers
 
     def test_add_performer_deduplication(self):
@@ -82,6 +87,7 @@ class TestSceneHelperMethods:
         scene.add_performer(performer)
 
         # Should only have one entry
+        assert is_set(scene.performers)
         assert len(scene.performers) == 1
 
     def test_remove_performer(self):
@@ -95,6 +101,7 @@ class TestSceneHelperMethods:
         scene.remove_performer(performer)
 
         # Verify performer was removed
+        assert is_set(scene.performers)
         assert performer not in scene.performers
 
     def test_remove_performer_noop_if_not_present(self):
@@ -105,6 +112,7 @@ class TestSceneHelperMethods:
         # Remove performer that's not in the list - should be no-op
         scene.remove_performer(performer)
 
+        assert is_set(scene.performers)
         assert performer not in scene.performers
 
     def test_add_tag(self):
@@ -116,6 +124,7 @@ class TestSceneHelperMethods:
         scene.add_tag(tag)
 
         # Verify tag was added
+        assert is_set(scene.tags)
         assert tag in scene.tags
 
     def test_add_tag_deduplication(self):
@@ -128,6 +137,7 @@ class TestSceneHelperMethods:
         scene.add_tag(tag)
 
         # Should only have one entry
+        assert is_set(scene.tags)
         assert len(scene.tags) == 1
 
     def test_remove_tag(self):
@@ -139,6 +149,7 @@ class TestSceneHelperMethods:
         scene.remove_tag(tag)
 
         # Verify tag was removed
+        assert is_set(scene.tags)
         assert tag not in scene.tags
 
     def test_remove_tag_noop_if_not_present(self):
@@ -149,6 +160,7 @@ class TestSceneHelperMethods:
         # Remove tag that's not in the list - should be no-op
         scene.remove_tag(tag)
 
+        assert is_set(scene.tags)
         assert tag not in scene.tags
 
     def test_set_studio(self):
@@ -212,13 +224,13 @@ class TestSceneHelperMethods:
         performer = Performer(id="2", name="Performer 1")
 
         # Verify performers is UNSET before adding
-        assert scene.performers is UNSET
+        assert isinstance(scene.performers, UnsetType)
 
         # Add performer - should initialize list first
         scene.add_performer(performer)
 
         # Verify performers was initialized and performer was added
-        assert scene.performers is not UNSET
+        assert is_set(scene.performers)
         assert isinstance(scene.performers, list)
         assert performer in scene.performers
 
@@ -236,12 +248,12 @@ class TestSceneHelperMethods:
         tag = Tag(id="2", name="Tag 1", parents=[], children=[])
 
         # Verify tags is UNSET before adding
-        assert scene.tags is UNSET
+        assert isinstance(scene.tags, UnsetType)
 
         # Add tag - should initialize list first
         scene.add_tag(tag)
 
         # Verify tags was initialized and tag was added
-        assert scene.tags is not UNSET
+        assert is_set(scene.tags)
         assert isinstance(scene.tags, list)
         assert tag in scene.tags

@@ -5,7 +5,9 @@ These tests verify that the helper methods:
 2. Are synchronous (not async)
 """
 
-from stash_graphql_client.types import UNSET, Scene
+import inspect
+
+from stash_graphql_client.types import UNSET, Scene, UnsetType, is_set
 from stash_graphql_client.types.gallery import Gallery
 from stash_graphql_client.types.performer import Performer
 
@@ -22,6 +24,7 @@ class TestGalleryHelperMethods:
         gallery.add_performer(performer)
 
         # Verify performer was added
+        assert is_set(gallery.performers)
         assert performer in gallery.performers
 
     def test_add_performer_deduplication(self):
@@ -34,6 +37,7 @@ class TestGalleryHelperMethods:
         gallery.add_performer(performer)
 
         # Should only have one entry
+        assert is_set(gallery.performers)
         assert len(gallery.performers) == 1
 
     def test_remove_performer(self):
@@ -45,6 +49,7 @@ class TestGalleryHelperMethods:
         gallery.remove_performer(performer)
 
         # Verify performer was removed
+        assert is_set(gallery.performers)
         assert performer not in gallery.performers
 
     def test_remove_performer_noop_if_not_present(self):
@@ -55,6 +60,7 @@ class TestGalleryHelperMethods:
         # Remove performer that's not in the list - should be no-op
         gallery.remove_performer(performer)
 
+        assert is_set(gallery.performers)
         assert performer not in gallery.performers
 
     def test_add_performer_when_performers_is_unset(self):
@@ -63,13 +69,13 @@ class TestGalleryHelperMethods:
         performer = Performer(id="2", name="Performer 1")
 
         # Verify performers is UNSET before adding
-        assert gallery.performers is UNSET
+        assert isinstance(gallery.performers, UnsetType)
 
         # Add performer - should initialize list first
         gallery.add_performer(performer)
 
         # Verify performers was initialized and performer was added
-        assert gallery.performers is not UNSET
+        assert is_set(gallery.performers)
         assert isinstance(gallery.performers, list)
         assert performer in gallery.performers
 
@@ -82,7 +88,7 @@ class TestGalleryHelperMethods:
         gallery.remove_performer(performer)
 
         # performers should still be UNSET
-        assert gallery.performers is UNSET
+        assert isinstance(gallery.performers, UnsetType)
 
     def test_add_scene(self):
         """Test that add_scene adds scene to gallery.scenes list."""
@@ -93,6 +99,7 @@ class TestGalleryHelperMethods:
         gallery.add_scene(scene)
 
         # Verify scene was added
+        assert is_set(gallery.scenes)
         assert scene in gallery.scenes
 
     def test_add_scene_deduplication(self):
@@ -105,6 +112,7 @@ class TestGalleryHelperMethods:
         gallery.add_scene(scene)
 
         # Should only have one entry
+        assert is_set(gallery.scenes)
         assert len(gallery.scenes) == 1
 
     def test_remove_scene(self):
@@ -116,6 +124,7 @@ class TestGalleryHelperMethods:
         gallery.remove_scene(scene)
 
         # Verify scene was removed
+        assert is_set(gallery.scenes)
         assert scene not in gallery.scenes
 
     def test_remove_scene_noop_if_not_present(self):
@@ -126,6 +135,7 @@ class TestGalleryHelperMethods:
         # Remove scene that's not in the list - should be no-op
         gallery.remove_scene(scene)
 
+        assert is_set(gallery.scenes)
         assert scene not in gallery.scenes
 
     def test_add_scene_when_scenes_is_unset(self):
@@ -134,13 +144,13 @@ class TestGalleryHelperMethods:
         scene = Scene(id="2", title="Scene 1", organized=False, urls=[])
 
         # Verify scenes is UNSET before adding
-        assert gallery.scenes is UNSET
+        assert isinstance(gallery.scenes, UnsetType)
 
         # Add scene - should initialize list first
         gallery.add_scene(scene)
 
         # Verify scenes was initialized and scene was added
-        assert gallery.scenes is not UNSET
+        assert is_set(gallery.scenes)
         assert isinstance(gallery.scenes, list)
         assert scene in gallery.scenes
 
@@ -153,12 +163,10 @@ class TestGalleryHelperMethods:
         gallery.remove_scene(scene)
 
         # scenes should still be UNSET
-        assert gallery.scenes is UNSET
+        assert isinstance(gallery.scenes, UnsetType)
 
     def test_helpers_are_sync_not_async(self):
         """Test that helper methods are synchronous (not coroutines)."""
-        import inspect
-
         gallery = Gallery(id="1", title="Gallery 1", performers=[], scenes=[], urls=[])
         performer = Performer(id="2", name="Performer 1")
         scene = Scene(id="3", title="Scene 1", organized=False, urls=[])

@@ -6,7 +6,7 @@ These tests verify that the helper methods:
 3. Handle bidirectional parent-child relationships correctly
 """
 
-from stash_graphql_client.types import UNSET
+from stash_graphql_client.types import UNSET, UnsetType, is_set
 from stash_graphql_client.types.studio import Studio
 
 
@@ -44,6 +44,8 @@ class TestStudioHelperMethods:
         parent.add_child_studio(child)
 
         # Verify child was added
+        assert is_set(parent.child_studios)
+        assert parent.child_studios is not None
         assert child in parent.child_studios
         # Verify bidirectional sync - child's parent should be set
         assert child.parent_studio == parent
@@ -58,6 +60,8 @@ class TestStudioHelperMethods:
         parent.add_child_studio(child)
 
         # Should only have one entry
+        assert is_set(parent.child_studios)
+        assert parent.child_studios is not None
         assert len(parent.child_studios) == 1
 
     def test_remove_child_studio(self):
@@ -69,6 +73,8 @@ class TestStudioHelperMethods:
         parent.remove_child_studio(child)
 
         # Verify child was removed
+        assert is_set(parent.child_studios)
+        assert parent.child_studios is not None
         assert child not in parent.child_studios
         # Verify bidirectional sync - child's parent should be None
         assert child.parent_studio is None
@@ -81,6 +87,8 @@ class TestStudioHelperMethods:
         # Remove child that's not in the list - should be no-op
         parent.remove_child_studio(child)
 
+        assert is_set(parent.child_studios)
+        assert parent.child_studios is not None
         assert child not in parent.child_studios
 
     def test_add_child_studio_when_child_studios_is_unset(self):
@@ -91,13 +99,13 @@ class TestStudioHelperMethods:
         child = Studio(id="2", name="Child Studio")
 
         # Verify child_studios is UNSET before adding
-        assert parent.child_studios is UNSET
+        assert isinstance(parent.child_studios, UnsetType)
 
         # Add child - should initialize list first
         parent.add_child_studio(child)
 
         # Verify child_studios was initialized and child was added
-        assert parent.child_studios is not UNSET
+        assert is_set(parent.child_studios)
         assert isinstance(parent.child_studios, list)
         assert child in parent.child_studios
 
@@ -127,7 +135,7 @@ class TestStudioHelperMethods:
         parent.remove_child_studio(child)
 
         # child_studios should still be UNSET
-        assert parent.child_studios is UNSET
+        assert isinstance(parent.child_studios, UnsetType)
 
     def test_remove_child_studio_when_child_studios_is_none(self):
         """Test that remove_child_studio is no-op when child_studios is None."""

@@ -68,7 +68,7 @@ class TestIsSetTypeGuard:
         values = [UNSET, None, "", 0, False, [], {}, "value", 42]
 
         for value in values:
-            assert is_set(value) == (value is not UNSET)
+            assert is_set(value) == (not isinstance(value, UnsetType))
 
     def test_is_set_with_list_field(self):
         """Test is_set with list fields (common pattern in types)."""
@@ -106,4 +106,4 @@ class TestIsSetTypeGuard:
             pytest.fail("Should not enter this block when tags is UNSET")
         else:
             # This branch is taken
-            assert scene2.tags is UNSET
+            assert isinstance(scene2.tags, UnsetType)

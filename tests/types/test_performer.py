@@ -17,8 +17,8 @@ import pytest
 import respx
 from pydantic import ValidationError
 
-from stash_graphql_client.types import UNSET
 from stash_graphql_client.types.performer import Performer
+from stash_graphql_client.types.unset import UNSET, UnsetType
 from tests.fixtures import create_find_performers_result, create_performer_dict
 
 
@@ -311,7 +311,7 @@ def test_performer_alias_list_accepts_unset() -> None:
     performer = Performer(id="p3", name="Test Performer", alias_list=UNSET)
 
     # Verify alias_list is UNSET
-    assert performer.alias_list is UNSET
+    assert isinstance(performer.alias_list, UnsetType)
 
 
 @pytest.mark.unit

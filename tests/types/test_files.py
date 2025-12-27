@@ -6,7 +6,6 @@ Tests file types including fingerprint_resolver, BaseFile.to_input(), and Folder
 import pytest
 from pydantic import ValidationError
 
-from stash_graphql_client.types import UNSET
 from stash_graphql_client.types.files import (
     BaseFile,
     Fingerprint,
@@ -14,6 +13,7 @@ from stash_graphql_client.types.files import (
     ImageFile,
     fingerprint_resolver,
 )
+from stash_graphql_client.types.unset import UNSET, UnsetType
 
 
 @pytest.mark.unit
@@ -194,7 +194,7 @@ def test_image_file_format_accepts_unset() -> None:
     image = ImageFile(id="img2", format=UNSET, width=1920, height=1080)
 
     # Verify format is UNSET
-    assert image.format is UNSET
+    assert isinstance(image.format, UnsetType)
 
 
 @pytest.mark.unit
@@ -208,7 +208,7 @@ def test_image_file_format_rejects_none() -> None:
     # Attempt to create ImageFile with format=None
     # This should raise ValidationError because format is non-nullable
     with pytest.raises(ValidationError) as exc_info:
-        ImageFile(id="img3", format=None, width=1920, height=1080)
+        ImageFile(id="img3", format=None, width=1920, height=1080)  # type: ignore[arg-type]
 
     # Verify the error is about format field
     errors = exc_info.value.errors()

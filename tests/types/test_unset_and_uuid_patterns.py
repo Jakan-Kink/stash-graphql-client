@@ -7,9 +7,9 @@ and UUID4 auto-generation for new objects.
 from __future__ import annotations
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
-from stash_graphql_client.types import UNSET, UnsetType
-from stash_graphql_client.types.tag import Tag
+from stash_graphql_client.types import UNSET, Tag, UnsetType, is_set
 
 
 class TestUnsetSentinel:
@@ -17,8 +17,6 @@ class TestUnsetSentinel:
 
     def test_unset_is_singleton(self):
         """UNSET should be a singleton."""
-        from stash_graphql_client.types.unset import UnsetType
-
         unset1 = UnsetType()
         unset2 = UnsetType()
 
@@ -53,7 +51,7 @@ class TestUnsetSentinel:
         assert value is not None
 
         # Type narrowing example
-        if value is not UNSET:
+        if is_set(value):
             # In this block, value is not UNSET
             pass
         else:
@@ -81,7 +79,6 @@ class TestUnsetSentinel:
         This covers lines 82-88 in unset.py - the validate_unset function
         inside __get_pydantic_core_schema__.
         """
-        from pydantic import BaseModel
 
         class TestModel(BaseModel):
             """Test model with UnsetType field."""
@@ -105,7 +102,6 @@ class TestUnsetSentinel:
 
         This covers line 86-88 in unset.py - the ValueError raise in validate_unset.
         """
-        from pydantic import BaseModel, ValidationError
 
         class TestModel(BaseModel):
             """Test model with UnsetType field."""
@@ -114,7 +110,7 @@ class TestUnsetSentinel:
 
         # Try to create with invalid type - should raise ValidationError
         with pytest.raises(ValidationError) as exc_info:
-            TestModel(field="not_an_unset_type")
+            TestModel(field="not_an_unset_type")  # type: ignore[arg-type]
 
         # Verify it's from our custom validator
         error = exc_info.value.errors()[0]
@@ -134,7 +130,7 @@ class TestUUID4Generation:
 
     def test_new_object_with_id_none(self):
         """Objects with id=None should auto-generate UUID4."""
-        tag = Tag(id=None, name="Test Tag")
+        tag = Tag(id=None, name="Test Tag")  # type: ignore[arg-type]
 
         assert tag.id is not None
         assert len(tag.id) == 32
@@ -169,6 +165,7 @@ class TestUUID4Generation:
         original_id = tag.id
 
         assert tag.is_new() is True
+        assert original_id is not None
         assert len(original_id) == 32
 
         # Update with server ID
@@ -203,7 +200,7 @@ class TestFieldStatePatterns:
 
         def describe_field(field_value):
             """Describe the state of a field value."""
-            if field_value is UNSET:
+            if isinstance(field_value, UnsetType):
                 return "UNSET"
             if field_value is None:
                 return "NULL"
@@ -220,7 +217,7 @@ class TestFieldStatePatterns:
         tag = Tag(name="Test")
 
         # Pattern 1: Check if field was touched
-        if tag.name is not UNSET:
+        if is_set(tag.name):
             assert True  # Field was set
         else:
             pytest.fail("Field should be set")
@@ -233,7 +230,7 @@ class TestFieldStatePatterns:
             pytest.fail("Field should be None")
 
         # Pattern 3: Check for UNSET
-        if tag.aliases is UNSET:
+        if isinstance(tag.aliases, UnsetType):
             assert True  # Field was never touched
         else:
             pytest.fail("Field should be UNSET")
@@ -243,7 +240,7 @@ class TestFieldStatePatterns:
 
         def process_field(value):
             """Process a field value, handling all three states."""
-            if value is UNSET:
+            if isinstance(value, UnsetType):
                 return None  # Don't process UNSET fields
             if value is None:
                 return "NULL_VALUE"  # Special handling for null
@@ -286,13 +283,13 @@ class TestToInputPatterns:
             """Build input dict, excluding UNSET fields."""
             data = {}
 
-            if name is not UNSET:
+            if is_set(name):
                 data["name"] = name
 
-            if description is not UNSET:
+            if is_set(description):
                 data["description"] = description  # Could be None or value
 
-            if aliases is not UNSET:
+            if is_set(aliases):
                 data["aliases"] = aliases
 
             return data
@@ -318,6 +315,7 @@ class TestIntegrationPatterns:
 
         assert tag.is_new() is True
         original_id = tag.id
+        assert original_id is not None
         assert len(original_id) == 32
 
         # 2. Set some fields, leave others UNSET

@@ -6,8 +6,9 @@ These tests verify that the helper methods:
 3. Handle GroupDescription wrappers correctly
 """
 
-from stash_graphql_client.types import UNSET
-from stash_graphql_client.types.group import Group, GroupDescription
+import inspect
+
+from stash_graphql_client.types import UNSET, Group, GroupDescription, UnsetType, is_set
 
 
 class TestGroupHelperMethods:
@@ -22,6 +23,7 @@ class TestGroupHelperMethods:
         parent.add_sub_group(child, "Part 2")
 
         # Verify sub-group was added
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
         assert isinstance(parent.sub_groups[0], GroupDescription)
         assert parent.sub_groups[0].group == child
@@ -37,6 +39,7 @@ class TestGroupHelperMethods:
         parent.add_sub_group(child_desc)
 
         # Verify sub-group was added
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
         assert parent.sub_groups[0] == child_desc
 
@@ -50,6 +53,7 @@ class TestGroupHelperMethods:
         parent.add_sub_group(child, "Part 2")
 
         # Should only have one entry (deduplicated by ID)
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
 
     def test_remove_sub_group_with_group_object(self):
@@ -62,6 +66,7 @@ class TestGroupHelperMethods:
         parent.remove_sub_group(child)
 
         # Verify sub-group was removed
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 0
 
     def test_remove_sub_group_with_group_description_object(self):
@@ -74,6 +79,7 @@ class TestGroupHelperMethods:
         parent.remove_sub_group(child_desc)
 
         # Verify sub-group was removed
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 0
 
     def test_remove_sub_group_noop_if_not_present(self):
@@ -84,6 +90,7 @@ class TestGroupHelperMethods:
         # Remove sub-group that's not in the list - should be no-op
         parent.remove_sub_group(child)
 
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 0
 
     def test_add_sub_group_when_sub_groups_is_unset(self):
@@ -92,14 +99,15 @@ class TestGroupHelperMethods:
         child = Group(id="2", name="Child Group")
 
         # Verify sub_groups is UNSET before adding
-        assert parent.sub_groups is UNSET
+        assert isinstance(parent.sub_groups, UnsetType)
 
         # Add sub-group - should initialize list first
         parent.add_sub_group(child, "Part 1")
 
         # Verify sub_groups was initialized and sub-group was added
-        assert parent.sub_groups is not UNSET
+        assert is_set(parent.sub_groups)
         assert isinstance(parent.sub_groups, list)
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
 
     def test_remove_sub_group_when_sub_groups_is_unset(self):
@@ -111,7 +119,7 @@ class TestGroupHelperMethods:
         parent.remove_sub_group(child)
 
         # sub_groups should still be UNSET
-        assert parent.sub_groups is UNSET
+        assert isinstance(parent.sub_groups, UnsetType)
 
     def test_add_sub_group_without_description(self):
         """Test that add_sub_group works without description parameter."""
@@ -122,6 +130,7 @@ class TestGroupHelperMethods:
         parent.add_sub_group(child)
 
         # Verify sub-group was added with None description
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
         assert parent.sub_groups[0].group == child
         assert parent.sub_groups[0].description is None
@@ -139,12 +148,11 @@ class TestGroupHelperMethods:
         parent.remove_sub_group(other_child)
 
         # Original entry should still be there (since it has UNSET id)
+        assert is_set(parent.sub_groups)
         assert len(parent.sub_groups) == 1
 
     def test_helpers_are_sync_not_async(self):
         """Test that helper methods are synchronous (not coroutines)."""
-        import inspect
-
         parent = Group(id="1", name="Parent Group", sub_groups=[])
         child = Group(id="2", name="Child Group")
 
