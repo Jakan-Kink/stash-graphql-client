@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-12-29
+
+### Added
+
+- **Type Stubs Support**: Added `py.typed` marker file for mypy compatibility
+  - Enables type checkers to recognize inline type annotations
+  - Eliminates "missing library stubs" warnings in mypy
+  - No code changes - purely packaging improvement for better IDE/mypy integration
+
+### Changed
+
+- Updated dependencies via `poetry update` for security patches
+
 ## [0.5.0] - 2025-12-26
 
 ### Added
@@ -186,7 +199,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b7...v0.5.0
 [0.5.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...v0.5.0b7
 [0.5.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b4...v0.5.0b5
