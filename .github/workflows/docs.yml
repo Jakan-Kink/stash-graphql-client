@@ -33,8 +33,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Fetch git tags
-        run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      - name: Fetch git tags and gh-pages branch
+        run: |
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+          git fetch origin gh-pages --depth=1
 
       - name: Deploy docs with mike
         run: |
