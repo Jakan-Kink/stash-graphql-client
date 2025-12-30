@@ -357,4 +357,6 @@ class TestAsyncLruCache:
             return x * 2
 
         assert documented_function.__name__ == "documented_function"
-        assert "documentation" in documented_function.__doc__
+        docstring = documented_function.__doc__
+        assert docstring is not None
+        assert "documentation" in docstring

@@ -5,6 +5,7 @@ and async context manager support for StashClient.
 """
 
 import asyncio
+import logging
 
 import httpx
 import pytest
@@ -314,8 +315,6 @@ class TestStashContextClose:
 
         This tests lines 167-179: warning log when close is called with active refs.
         """
-        import logging
-
         caplog.set_level(logging.WARNING)
 
         context = StashContext(conn={"Host": "localhost", "Port": 9999})

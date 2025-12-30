@@ -7,11 +7,17 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field
 
-from .base import RelationshipMetadata, StashInput, StashObject, StashResult
+from .base import (
+    BulkUpdateIds,
+    RelationshipMetadata,
+    StashInput,
+    StashObject,
+    StashResult,
+)
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
-from .unset import UNSET, UnsetType, is_set
+from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
@@ -195,73 +201,29 @@ class Gallery(StashObject):
         # TODO: Implement this resolver
         raise NotImplementedError("image resolver not implemented")
 
-    def add_performer(self, performer: Performer) -> None:
-        """Add a performer to this gallery.
+    async def add_performer(self, performer: Performer) -> None:
+        """Add performer (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("performers", performer)
 
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs performer.galleries when you save.
+    async def remove_performer(self, performer: Performer) -> None:
+        """Remove performer (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("performers", performer)
 
-        Args:
-            performer: The Performer instance to add
+    async def add_scene(self, scene: Scene) -> None:
+        """Add scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scenes", scene)
 
-        Example:
-            >>> gallery.add_performer(performer)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if isinstance(self.performers, UnsetType):
-            self.performers = []
-        if performer not in self.performers:
-            self.performers.append(performer)
+    async def remove_scene(self, scene: Scene) -> None:
+        """Remove scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scenes", scene)
 
-    def remove_performer(self, performer: Performer) -> None:
-        """Remove a performer from this gallery.
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
 
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs performer.galleries when you save.
-
-        Args:
-            performer: The Performer instance to remove
-
-        Example:
-            >>> gallery.remove_performer(performer)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if is_set(self.performers) and performer in self.performers:
-            self.performers.remove(performer)
-
-    def add_scene(self, scene: Scene) -> None:
-        """Add a scene to this gallery.
-
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs scene.galleries when you save.
-
-        Args:
-            scene: The Scene instance to add
-
-        Example:
-            >>> gallery.add_scene(scene)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if isinstance(self.scenes, UnsetType):
-            self.scenes = []
-        if scene not in self.scenes:
-            self.scenes.append(scene)
-
-    def remove_scene(self, scene: Scene) -> None:
-        """Remove a scene from this gallery.
-
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs scene.galleries when you save.
-
-        Args:
-            scene: The Scene instance to remove
-
-        Example:
-            >>> gallery.remove_scene(scene)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if is_set(self.scenes) and scene in self.scenes:
-            self.scenes.remove(scene)
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
 
     # Field definitions with their conversion functions
     __field_conversions__: ClassVar[dict] = {
@@ -328,13 +290,6 @@ class BulkUpdateStrings(StashInput):
     """Input for bulk string updates."""
 
     values: list[str]  # [String!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
-class BulkUpdateIds(StashInput):
-    """Input for bulk ID updates."""
-
-    ids: list[str]  # [ID!]!
     mode: BulkUpdateIdMode  # BulkUpdateIdMode!
 
 

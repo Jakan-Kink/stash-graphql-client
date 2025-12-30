@@ -18,6 +18,7 @@ from stash_graphql_client.types import (
     SceneMergeInput,
     ScenesDestroyInput,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_scenes_result,
     create_graphql_response,
@@ -98,7 +99,7 @@ async def test_find_scene_none_id_raises_value_error(
 ) -> None:
     """Test that find_scene raises ValueError for None ID."""
     with pytest.raises(ValueError, match="Scene ID cannot be empty"):
-        await respx_stash_client.find_scene(None)
+        await respx_stash_client.find_scene(None)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -175,6 +176,7 @@ async def test_find_scenes_empty(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_scenes()
 
     assert result.count == 0
+    assert is_set(result.scenes)
     assert len(result.scenes) == 0
 
     # Verify GraphQL call
@@ -202,6 +204,7 @@ async def test_find_scenes_with_filter(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_scenes(filter_={"per_page": 10, "page": 1})
 
     assert result.count == 1
+    assert is_set(result.scenes)
     assert result.scenes[0].title == "Filtered Scene"
 
     # Verify GraphQL call
@@ -232,6 +235,7 @@ async def test_find_scenes_with_query(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_scenes(q="Search Result")
 
     assert result.count == 1
+    assert is_set(result.scenes)
     assert result.scenes[0].title == "Search Result Scene"
 
     # Verify GraphQL call includes q parameter
@@ -261,6 +265,7 @@ async def test_find_scenes_with_scene_filter(respx_stash_client: StashClient) ->
     result = await respx_stash_client.find_scenes(scene_filter={"organized": True})
 
     assert result.count == 1
+    assert is_set(result.scenes)
     assert result.scenes[0].organized is True
 
     # Verify GraphQL call includes scene_filter
@@ -282,6 +287,7 @@ async def test_find_scenes_error_returns_empty(respx_stash_client: StashClient) 
     result = await respx_stash_client.find_scenes()
 
     assert result.count == 0
+    assert is_set(result.scenes)
     assert len(result.scenes) == 0
     assert result.duration == 0
     assert result.filesize == 0
@@ -310,6 +316,7 @@ async def test_find_scene_with_studio(respx_stash_client: StashClient) -> None:
 
     assert scene is not None
     assert scene.studio is not None
+    assert is_set(scene.studio)
     assert scene.studio.id == "studio_123"
     assert scene.studio.name == "Test Studio"
 
@@ -339,6 +346,7 @@ async def test_find_scene_with_performers(respx_stash_client: StashClient) -> No
     scene = await respx_stash_client.find_scene("123")
 
     assert scene is not None
+    assert is_set(scene.performers)
     assert len(scene.performers) == 2
     assert scene.performers[0].id == "perf_1"
     assert scene.performers[1].id == "perf_2"
@@ -369,6 +377,7 @@ async def test_find_scene_with_tags(respx_stash_client: StashClient) -> None:
     scene = await respx_stash_client.find_scene("123")
 
     assert scene is not None
+    assert is_set(scene.tags)
     assert len(scene.tags) == 2
     assert scene.tags[0].id == "tag_1"
     assert scene.tags[1].id == "tag_2"

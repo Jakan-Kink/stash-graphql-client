@@ -4,7 +4,14 @@ This module tests the RelationshipMetadata class which documents
 bidirectional relationships between Stash entity types.
 """
 
-from stash_graphql_client.types import RelationshipMetadata
+from typing import ClassVar
+from unittest.mock import patch
+
+import pytest
+
+from stash_graphql_client.errors import StashIntegrationError
+from stash_graphql_client.types import UNSET, RelationshipMetadata
+from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.files import StashIDInput
 
 
@@ -432,3 +439,227 @@ class TestRelationshipMetadataDocumentation:
         assert len(rel.notes) > 0
         assert "filter-based queries" in rel.notes
         assert "findScenes" in rel.notes
+
+
+# Test fixture entities for generic machinery tests
+class TestEntityMissingField(StashObject):
+    """Test entity with field missing from __relationships__."""
+
+    __type_name__ = "TestMissing"
+    __relationships__: ClassVar[dict] = {}  # Empty
+
+
+class TestEntityOldTupleSyntax(StashObject):
+    """Test entity with old tuple syntax."""
+
+    __type_name__ = "TestOldSyntax"
+    __relationships__: ClassVar[dict] = {
+        "old_field": ("target", True),  # Old tuple syntax
+    }
+
+
+class TestEntityProper(StashObject):
+    """Test entity with proper RelationshipMetadata."""
+
+    __type_name__ = "TestEntity"
+    __relationships__: ClassVar[dict] = {
+        "list_rel": RelationshipMetadata(
+            target_field="list_ids",
+            is_list=True,
+            query_field="list_rel",
+            inverse_type="TestEntity",
+            inverse_query_field="inverse_list",
+        ),
+        "single_rel": RelationshipMetadata(
+            target_field="single_id",
+            is_list=False,
+            query_field="single_rel",
+            inverse_type="TestEntity",
+            inverse_query_field="inverse_single",
+        ),
+        # IMPORTANT: Inverse fields ALSO need metadata for line 634/706 to execute
+        "inverse_list": RelationshipMetadata(
+            target_field="inverse_ids",
+            is_list=True,
+            query_field="inverse_list",
+            inverse_type="TestEntity",
+            inverse_query_field="list_rel",
+        ),
+        "inverse_single": RelationshipMetadata(
+            target_field="inverse_id",
+            is_list=False,
+            query_field="inverse_single",
+            inverse_type="TestEntity",
+            inverse_query_field="single_rel",
+        ),
+        # Many-to-one: list field with single object inverse
+        "many_to_one": RelationshipMetadata(
+            target_field="many_ids",
+            is_list=True,
+            query_field="many_to_one",
+            inverse_type="TestEntity",
+            inverse_query_field="one_to_many",  # Single object inverse
+        ),
+        "one_to_many": RelationshipMetadata(
+            target_field="one_id",
+            is_list=False,
+            query_field="one_to_many",
+            inverse_type="TestEntity",
+            inverse_query_field="many_to_one",  # List inverse
+        ),
+    }
+
+    list_rel: list | None = None
+    single_rel: "TestEntityProper | None" = None
+    inverse_list: list | None = None
+    inverse_single: "TestEntityProper | None" = None
+    many_to_one: list | None = None
+    one_to_many: "TestEntityProper | None" = None
+
+
+class TestGenericRelationshipMachinery:
+    """Test generic _add_to_relationship and _remove_from_relationship methods."""
+
+    @pytest.mark.asyncio
+    async def test_add_missing_field_raises_value_error(self):
+        """Test _add_to_relationship raises ValueError when field not in __relationships__ (line 584)."""
+        entity = TestEntityMissingField.model_construct(id="1")
+        related = TestEntityMissingField.model_construct(id="2")
+
+        with pytest.raises(
+            ValueError,
+            match="No relationship metadata for field 'missing'",
+        ):
+            await entity._add_to_relationship("missing", related)
+
+    @pytest.mark.asyncio
+    async def test_add_old_tuple_syntax_raises_value_error(self):
+        """Test _add_to_relationship raises ValueError for old tuple syntax (line 590)."""
+        entity = TestEntityOldTupleSyntax.model_construct(id="1")
+        related = TestEntityOldTupleSyntax.model_construct(id="2")
+
+        with pytest.raises(
+            ValueError,
+            match="Field 'old_field' uses old tuple syntax",
+        ):
+            await entity._add_to_relationship("old_field", related)
+
+    @pytest.mark.asyncio
+    async def test_add_store_none_raises_integration_error(self):
+        """Test _add_to_relationship raises StashIntegrationError when store is None (line 600)."""
+        with patch.object(TestEntityProper, "_store", None):
+            entity = TestEntityProper.model_construct(id="1", list_rel=UNSET)
+            related = TestEntityProper.model_construct(id="2")
+
+            with pytest.raises(
+                StashIntegrationError,
+                match="Cannot add to 'list_rel': store not available",
+            ):
+                await entity._add_to_relationship("list_rel", related)
+
+    @pytest.mark.asyncio
+    async def test_add_inverse_store_none_raises_integration_error(self):
+        """Test _add_to_relationship raises StashIntegrationError when inverse store is None (line 619)."""
+        entity = TestEntityProper.model_construct(id="1", list_rel=[])
+
+        with patch.object(TestEntityProper, "_store", None):
+            related = TestEntityProper.model_construct(id="2", inverse_list=UNSET)
+
+            with pytest.raises(
+                StashIntegrationError,
+                match="Cannot sync inverse 'inverse_list': store not available",
+            ):
+                await entity._add_to_relationship("list_rel", related)
+
+    @pytest.mark.asyncio
+    async def test_add_initializes_inverse_to_empty_list(self):
+        """Test _add_to_relationship initializes inverse field to [] when None (line 634)."""
+        entity = TestEntityProper.model_construct(id="1", list_rel=[])
+        related = TestEntityProper.model_construct(id="2", inverse_list=None)
+
+        # Verify inverse_list starts as None
+        assert related.inverse_list is None
+
+        await entity._add_to_relationship("list_rel", related)
+
+        # Line 634 initializes to [], then sync adds entity
+        assert isinstance(related.inverse_list, list)
+        assert entity in related.inverse_list
+
+    @pytest.mark.asyncio
+    async def test_remove_missing_field_raises_value_error(self):
+        """Test _remove_from_relationship raises ValueError when field not in __relationships__ (line 673)."""
+        entity = TestEntityMissingField.model_construct(id="1")
+        related = TestEntityMissingField.model_construct(id="2")
+
+        with pytest.raises(
+            ValueError,
+            match="No relationship metadata for field 'missing'",
+        ):
+            await entity._remove_from_relationship("missing", related)
+
+    @pytest.mark.asyncio
+    async def test_remove_old_tuple_syntax_raises_value_error(self):
+        """Test _remove_from_relationship raises ValueError for old tuple syntax (line 679)."""
+        entity = TestEntityOldTupleSyntax.model_construct(id="1")
+        related = TestEntityOldTupleSyntax.model_construct(id="2")
+
+        with pytest.raises(
+            ValueError,
+            match="Field 'old_field' uses old tuple syntax",
+        ):
+            await entity._remove_from_relationship("old_field", related)
+
+    @pytest.mark.asyncio
+    async def test_remove_from_list_sets_single_object_inverse_to_none(self):
+        """Test _remove_from_relationship sets single object inverse to None (line 706).
+
+        Scenario: Remove from LIST field where inverse is SINGLE object (many-to-one).
+        """
+        # One entity (parent)
+        one = TestEntityProper.model_construct(id="1")
+        # Many entity (child) - uses object.__setattr__ to bypass sync
+        many = TestEntityProper.model_construct(id="2", many_to_one=[one])
+
+        # Set up single object inverse manually
+        object.__setattr__(one, "one_to_many", many)
+
+        # Remove from list field (many.many_to_one)
+        await many._remove_from_relationship("many_to_one", one)
+
+        # Line 706 sets inverse single object to None
+        assert one.one_to_many is None
+        assert many.many_to_one is not None
+        assert one not in many.many_to_one
+
+    @pytest.mark.asyncio
+    async def test_remove_single_object_sets_field_to_none(self):
+        """Test _remove_from_relationship sets single object field to None (lines 708-709)."""
+        entity = TestEntityProper.model_construct(id="1")
+        related = TestEntityProper.model_construct(id="2")
+
+        # Set up single object relationship bypassing auto-sync
+        object.__setattr__(entity, "single_rel", related)
+        object.__setattr__(related, "inverse_single", entity)
+
+        # Remove - should hit lines 708-709
+        await entity._remove_from_relationship("single_rel", related)
+
+        # Field set to None
+        assert entity.single_rel is None
+
+    @pytest.mark.asyncio
+    async def test_remove_single_object_no_match_early_exit(self):
+        """Test _remove_from_relationship early exit when single object doesn't match (708->exit)."""
+        entity = TestEntityProper.model_construct(id="1")
+        related = TestEntityProper.model_construct(id="2")
+        other = TestEntityProper.model_construct(id="3")
+
+        # Set up relationship with different object
+        object.__setattr__(entity, "single_rel", other)
+
+        # Try to remove different object - should be no-op (708->exit)
+        await entity._remove_from_relationship("single_rel", related)
+
+        # Field unchanged
+        assert entity.single_rel is other

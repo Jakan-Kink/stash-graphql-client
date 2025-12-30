@@ -16,6 +16,9 @@ R = TypeVar("R")
 class AsyncCachedFunction(Protocol):
     """Protocol for async functions decorated with async_lru_cache."""
 
+    __name__: str
+    __doc__: str | None
+
     def __call__(self, *args: Any, **kwargs: Any) -> Awaitable[Any]:
         """Call the cached function."""
         ...

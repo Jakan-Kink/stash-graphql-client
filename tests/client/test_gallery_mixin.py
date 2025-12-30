@@ -15,8 +15,10 @@ from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkGalleryUpdateInput,
     BulkUpdateIdMode,
+    BulkUpdateIds,
     Gallery,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_galleries_result,
     create_gallery_dict,
@@ -289,6 +291,7 @@ async def test_find_gallery_with_studio(respx_stash_client: StashClient) -> None
 
     assert gallery is not None
     assert gallery.studio is not None
+    assert is_set(gallery.studio)
     assert gallery.studio.id == "studio_123"
     assert gallery.studio.name == "Test Studio"
 
@@ -320,6 +323,7 @@ async def test_find_gallery_with_performers(respx_stash_client: StashClient) -> 
     gallery = await respx_stash_client.find_gallery("123")
 
     assert gallery is not None
+    assert is_set(gallery.performers)
     assert len(gallery.performers) == 2
     assert gallery.performers[0].id == "perf_1"
     assert gallery.performers[1].id == "perf_2"
@@ -352,6 +356,7 @@ async def test_find_gallery_with_tags(respx_stash_client: StashClient) -> None:
     gallery = await respx_stash_client.find_gallery("123")
 
     assert gallery is not None
+    assert is_set(gallery.tags)
     assert len(gallery.tags) == 2
     assert gallery.tags[0].id == "tag_1"
     assert gallery.tags[1].id == "tag_2"
@@ -985,7 +990,7 @@ async def test_bulk_gallery_update_success(respx_stash_client: StashClient) -> N
 
     input_data = BulkGalleryUpdateInput(
         ids=["1", "2"],
-        tag_ids={"ids": ["tag1"], "mode": BulkUpdateIdMode.ADD},
+        tag_ids=BulkUpdateIds(ids=["tag1"], mode=BulkUpdateIdMode.ADD),
         organized=True,
     )
 

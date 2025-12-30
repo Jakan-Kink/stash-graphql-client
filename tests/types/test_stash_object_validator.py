@@ -23,6 +23,14 @@ from stash_graphql_client.types.tag import Tag
 from stash_graphql_client.types.unset import UNSET, UnsetType
 
 
+# Test model for from_graphql union type testing
+class TestModelMultiUnion(FromGraphQLMixin, BaseModel):
+    """Test model with multi-type union field."""
+
+    id: str
+    mixed_field: str | int | None | UnsetType = UNSET  # 4-way union!
+
+
 class TestIdentityMapValidator:
     """Test identity map validator behavior in StashObject."""
 
@@ -112,15 +120,11 @@ class TestFromGraphQLMixin:
         so len(non_none_args) == 1 is False, triggering branch 138->145.
         """
 
-        # Create test model with multi-type union field
-        class TestModel(FromGraphQLMixin, BaseModel):
-            id: str
-            mixed_field: str | int | None | UnsetType = UNSET  # 4-way union!
-
         # Test data with string value for mixed_field
         data = {"id": "test-123", "mixed_field": "string-value"}
 
-        result = TestModel.from_graphql(data)
+        # Known mypy limitation with @classmethod + TypeVar (see base.py:from_graphql)
+        result = TestModelMultiUnion.from_graphql(data)  # type: ignore[misc]
 
         # Verify the field wasn't unwrapped (branch 138->145 taken)
         assert result.id == "test-123"

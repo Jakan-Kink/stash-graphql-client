@@ -8,6 +8,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures.stash.graphql_responses import create_graphql_response
 
 
@@ -158,6 +159,7 @@ async def test_dlna_status_success(respx_stash_client: StashClient) -> None:
     # Time fields are parsed to datetime objects
     assert result.until == datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
     assert result.recent_ip_addresses == ["192.168.1.100", "192.168.1.101"]
+    assert is_set(result.allowed_ip_addresses)
     assert len(result.allowed_ip_addresses) == 2
     assert result.allowed_ip_addresses[0].ip_address == "192.168.1.0/24"
     assert result.allowed_ip_addresses[0].until is None

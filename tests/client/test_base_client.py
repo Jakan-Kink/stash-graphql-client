@@ -384,7 +384,7 @@ async def test_ensure_initialized_sets_log_if_missing() -> None:
 
     # Set required attributes to avoid other RuntimeErrors
     client._initialized = True
-    client.transport_config = {}
+    client.transport_config = {}  # type: ignore[typeddict-item]
     client.url = "http://localhost:9999/graphql"
 
     # Call _ensure_initialized - should set log (line 304)
@@ -457,7 +457,7 @@ async def test_ensure_initialized_raises_when_no_url() -> None:
 
     # Set _initialized and transport_config but remove url
     client._initialized = True
-    client.transport_config = {}
+    client.transport_config = {}  # type: ignore[typeddict-item]
     if hasattr(client, "url"):
         delattr(client, "url")
 
@@ -615,7 +615,7 @@ async def test_get_configuration_defaults_uses_fallback_when_no_defaults(
     and return hardcoded defaults.
     """
     # Mock HTTP response with config but no defaults
-    response_data = {"data": {"configuration": {"general": {}}}}
+    response_data: dict = {"data": {"configuration": {"general": {}}}}
 
     with respx.mock:
         route = respx.post("http://localhost:9999/graphql").mock(

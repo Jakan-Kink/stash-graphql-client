@@ -22,6 +22,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -351,7 +352,7 @@ async def test_scene_streams_none_id_returns_empty_list(
     )
 
     # None is passed through to GraphQL, which returns an error
-    result = await respx_stash_client.scene_streams(None)
+    result = await respx_stash_client.scene_streams(None)  # type: ignore[arg-type]
 
     # Current behavior: returns empty list on error
     assert result == []
@@ -392,6 +393,7 @@ async def test_scene_streams_special_characters_in_url(
 
     # Verify URL with query parameters preserved
     assert len(result) == 1
+    assert is_set(result[0].url)
     assert "token=abc123" in result[0].url
     assert "quality=high" in result[0].url
 
@@ -428,6 +430,7 @@ async def test_scene_streams_long_labels(respx_stash_client: StashClient) -> Non
 
     # Verify long label preserved
     assert len(result) == 1
+    assert is_set(result[0].label)
     assert result[0].label == long_label
     assert len(result[0].label) > 100  # Verify it's actually long
 

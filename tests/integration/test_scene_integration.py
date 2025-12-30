@@ -12,6 +12,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Scene, Studio
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -33,8 +34,10 @@ async def test_find_scene_by_id(
     ):
         # Get a scene from find_scenes first
         result = await stash_client.find_scenes(filter_={"per_page": 1})
+        assert is_set(result.count), "result.count should be set"
         assert result.count > 0, "No scenes available in test Stash instance"
 
+        assert is_set(result.scenes), "result.scenes should be set"
         scene_id = result.scenes[0].id
 
         # Clear calls from find_scenes
@@ -80,7 +83,9 @@ async def test_find_scenes_with_pagination(
 
         # Verify response
         assert result is not None
+        assert is_set(result.count), "result.count should be set"
         assert result.count > 0
+        assert is_set(result.scenes), "result.scenes should be set"
         assert len(result.scenes) > 0
         assert all(isinstance(scene, Scene) for scene in result.scenes)
 
@@ -124,6 +129,7 @@ async def test_create_and_find_scene(
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scene"
         assert "findScene" in calls[0]["query"]
+        assert found_scene is not None, "Scene should be found"
         assert found_scene.id == created_scene.id
 
 
@@ -262,6 +268,7 @@ async def test_create_scene_with_studio(
         assert created_scene.title == f"Scene with Studio {test_uid}"
 
         # Invalidate cache and refetch to verify studio relationship
+        assert Scene._store is not None, "Scene._store should be initialized"
         Scene._store.invalidate(Scene, created_scene.id)
         calls.clear()
         found_scene = await stash_client.find_scene(created_scene.id)
@@ -271,7 +278,7 @@ async def test_create_scene_with_studio(
         assert found_scene is not None
 
         # Verify studio relationship if present in response
-        if found_scene.studio is not None:
+        if is_set(found_scene.studio) and found_scene.studio is not None:
             assert found_scene.studio.id == created_studio.id
 
 
@@ -391,6 +398,7 @@ async def test_find_scenes_with_filter(
 
         # Verify response
         assert result is not None
+        assert is_set(result.count), "result.count should be set"
         assert result.count >= 0
         assert isinstance(result.scenes, list)
 

@@ -19,6 +19,7 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.types import (
     FindScenesResultType,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_scenes_result,
     create_graphql_response,
@@ -103,6 +104,7 @@ async def test_find_scenes_with_comprehensive_spies(
     # =========================================================================
     # Spy on GQL session.execute
     # =========================================================================
+    assert respx_stash_client._session is not None
     original_session_execute = respx_stash_client._session.execute
     gql_execute_count = 0
 
@@ -215,6 +217,7 @@ async def test_find_scenes_with_comprehensive_spies(
     assert result is not None
     assert isinstance(result, FindScenesResultType)
     assert result.count == 1
+    assert is_set(result.scenes)
     assert len(result.scenes) == 1
     assert result.scenes[0].id == "123"
     assert result.scenes[0].title == "Test Scene"

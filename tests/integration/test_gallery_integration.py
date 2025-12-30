@@ -10,6 +10,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Gallery, GalleryChapter
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -155,6 +156,7 @@ async def test_create_and_find_gallery(
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_gallery"
         assert "findGallery" in calls[0]["query"]
+        assert found_gallery is not None
         assert found_gallery.id == created_gallery.id
 
 
@@ -316,7 +318,11 @@ async def test_set_and_reset_gallery_cover(
 
         # Fetch real images from Stash
         images_result = await stash_client.find_images(filter_={"per_page": 1})
-        cover_image_id = images_result.images[0].id if images_result.images else None
+        cover_image_id = (
+            images_result.images[0].id
+            if (is_set(images_result.images) and images_result.images)
+            else None
+        )
         calls.clear()
 
         if cover_image_id:
@@ -370,7 +376,11 @@ async def test_add_and_remove_gallery_images(
 
         # Fetch real images from Stash
         images_result = await stash_client.find_images(filter_={"per_page": 2})
-        image_ids = [img.id for img in images_result.images[:2]]
+        image_ids = (
+            [img.id for img in images_result.images[:2]]
+            if is_set(images_result.images)
+            else []
+        )
         calls.clear()
 
         # Add images to gallery
@@ -422,7 +432,11 @@ async def test_update_gallery_images_add_mode(
 
         # Fetch real images from Stash
         images_result = await stash_client.find_images(filter_={"per_page": 1})
-        image_ids = [img.id for img in images_result.images[:1]]
+        image_ids = (
+            [img.id for img in images_result.images[:1]]
+            if is_set(images_result.images)
+            else []
+        )
         calls.clear()
 
         # Update gallery images in ADD mode
@@ -459,7 +473,11 @@ async def test_update_gallery_images_remove_mode(
 
         # Fetch real images from Stash to add first
         images_result = await stash_client.find_images(filter_={"per_page": 1})
-        image_ids = [img.id for img in images_result.images[:1]]
+        image_ids = (
+            [img.id for img in images_result.images[:1]]
+            if is_set(images_result.images)
+            else []
+        )
         calls.clear()
 
         # Update gallery images in REMOVE mode
@@ -496,7 +514,11 @@ async def test_update_gallery_images_set_mode(
 
         # Fetch real images from Stash
         images_result = await stash_client.find_images(filter_={"per_page": 2})
-        image_ids = [img.id for img in images_result.images[:2]]
+        image_ids = (
+            [img.id for img in images_result.images[:2]]
+            if is_set(images_result.images)
+            else []
+        )
         calls.clear()
 
         # Update gallery images in SET mode
@@ -564,7 +586,7 @@ async def test_create_and_destroy_gallery_chapter(
 
         # Fetch real images and add to gallery first
         images_result = await stash_client.find_images(filter_={"per_page": 1})
-        if images_result.images:
+        if is_set(images_result.images) and images_result.images:
             image_ids = [img.id for img in images_result.images[:1]]
             await stash_client.add_gallery_images(created_gallery.id, image_ids)
             calls.clear()
@@ -625,7 +647,7 @@ async def test_create_and_update_gallery_chapter(
 
         # Fetch real images and add to gallery first
         images_result = await stash_client.find_images(filter_={"per_page": 5})
-        if images_result.images:
+        if is_set(images_result.images) and images_result.images:
             image_ids = [img.id for img in images_result.images[:5]]
             await stash_client.add_gallery_images(created_gallery.id, image_ids)
             calls.clear()

@@ -15,7 +15,7 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
-from .unset import UNSET, UnsetType, is_set
+from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
@@ -155,6 +155,15 @@ class Studio(StashObject):
             query_strategy="direct_field",
             notes="Self-referential parent/child hierarchy",
         ),
+        "child_studios": RelationshipMetadata(
+            target_field="child_ids",
+            is_list=True,
+            query_field="child_studios",
+            inverse_type="Studio",  # Self-referential
+            inverse_query_field="parent_studio",
+            query_strategy="direct_field",
+            notes="Self-referential parent/child hierarchy",
+        ),
         "tags": RelationshipMetadata(
             target_field="tag_ids",
             is_list=True,
@@ -173,60 +182,20 @@ class Studio(StashObject):
         ),
     }
 
-    def set_parent_studio(self, parent: Studio | None) -> None:
-        """Set the parent studio for this studio.
+    async def set_parent_studio(self, parent: Studio | None) -> None:
+        """Set parent studio (syncs inverse automatically, call save() to persist)."""
+        if parent is None:
+            self.parent_studio = None
+        else:
+            await self._add_to_relationship("parent_studio", parent)
 
-        In-memory operation only. Call store.save(studio) to persist changes.
-        The backend automatically syncs parent_studio.child_studios when you save.
+    async def add_child_studio(self, child: Studio) -> None:
+        """Add child studio (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("child_studios", child)
 
-        Args:
-            parent: The parent Studio instance, or None to remove parent
-
-        Example:
-            >>> studio.set_parent_studio(parent_studio)
-            >>> await store.save(studio)  # Persist the change
-        """
-        self.parent_studio = parent
-
-    def add_child_studio(self, child: Studio) -> None:
-        """Add a child studio to this studio.
-
-        In-memory operation only. Call store.save(child) to persist changes.
-        The backend automatically syncs studio.parent_studio when you save the child.
-
-        Args:
-            child: The child Studio instance to add
-
-        Example:
-            >>> parent_studio.add_child_studio(child_studio)
-            >>> await store.save(child_studio)  # Save the child with updated parent
-        """
-        if isinstance(self.child_studios, UnsetType) or self.child_studios is None:
-            self.child_studios = []
-        if child not in self.child_studios:
-            self.child_studios.append(child)
-            child.parent_studio = self
-
-    def remove_child_studio(self, child: Studio) -> None:
-        """Remove a child studio from this studio.
-
-        In-memory operation only. Call store.save(child) to persist changes.
-        The backend automatically syncs studio.parent_studio when you save the child.
-
-        Args:
-            child: The child Studio instance to remove
-
-        Example:
-            >>> parent_studio.remove_child_studio(child_studio)
-            >>> await store.save(child_studio)  # Save the child with cleared parent
-        """
-        if (
-            is_set(self.child_studios)
-            and self.child_studios is not None
-            and child in self.child_studios
-        ):
-            self.child_studios.remove(child)
-            child.parent_studio = None
+    async def remove_child_studio(self, child: Studio) -> None:
+        """Remove child studio (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("child_studios", child)
 
 
 class BulkStudioUpdateInput(StashInput):

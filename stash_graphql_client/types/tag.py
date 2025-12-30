@@ -18,7 +18,7 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -93,8 +93,6 @@ class Tag(StashObject):
     description: str | None | UnsetType = UNSET  # String
     aliases: list[str] | None | UnsetType = UNSET  # [String!]!
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean!
-    created_at: str | None | UnsetType = UNSET  # Time!
-    updated_at: str | None | UnsetType = UNSET  # Time!
     favorite: bool | None | UnsetType = UNSET  # Boolean!
     stash_ids: list[StashID] | None | UnsetType = UNSET  # [StashID!]!
     image_path: str | None | UnsetType = UNSET  # String (Resolver)
@@ -166,85 +164,21 @@ class Tag(StashObject):
     # Convenience Helper Methods for Self-Referential Relationships
     # =========================================================================
 
-    def add_parent(self, parent_tag: Tag) -> None:
-        """Add a parent tag to this tag's parents list.
+    async def add_parent(self, parent_tag: Tag) -> None:
+        """Add parent tag (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("parents", parent_tag)
 
-        In-memory operation only. Call store.save(tag) to persist changes.
-        Automatically maintains bidirectional consistency by updating parent_tag.children.
+    async def remove_parent(self, parent_tag: Tag) -> None:
+        """Remove parent tag (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("parents", parent_tag)
 
-        Args:
-            parent_tag: The Tag instance to add as a parent
+    async def add_child(self, child_tag: Tag) -> None:
+        """Add child tag (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("children", child_tag)
 
-        Example:
-            >>> child_tag = await client.find_tag("child_id")
-            >>> parent_tag = await client.find_tag("parent_id")
-            >>> child_tag.add_parent(parent_tag)  # Also updates parent_tag.children
-            >>> await store.save(child_tag)  # Persist the change
-        """
-        if parent_tag not in self.parents:
-            self.parents.append(parent_tag)
-            # Maintain bidirectional consistency
-            if self not in parent_tag.children:
-                parent_tag.children.append(self)
-
-    def remove_parent(self, parent_tag: Tag) -> None:
-        """Remove a parent tag from this tag's parents list.
-
-        In-memory operation only. Call store.save(tag) to persist changes.
-        Automatically maintains bidirectional consistency by updating parent_tag.children.
-
-        Args:
-            parent_tag: The Tag instance to remove as a parent
-
-        Example:
-            >>> child_tag.remove_parent(parent_tag)  # Also updates parent_tag.children
-            >>> await store.save(child_tag)  # Persist the change
-        """
-        if parent_tag in self.parents:
-            self.parents.remove(parent_tag)
-            # Maintain bidirectional consistency
-            if self in parent_tag.children:
-                parent_tag.children.remove(self)
-
-    def add_child(self, child_tag: Tag) -> None:
-        """Add a child tag to this tag's children list.
-
-        In-memory operation only. Call store.save(tag) to persist changes.
-        Automatically maintains bidirectional consistency by updating child_tag.parents.
-
-        Args:
-            child_tag: The Tag instance to add as a child
-
-        Example:
-            >>> parent_tag = await client.find_tag("parent_id")
-            >>> child_tag = await client.find_tag("child_id")
-            >>> parent_tag.add_child(child_tag)  # Also updates child_tag.parents
-            >>> await store.save(parent_tag)  # Persist the change
-        """
-        if child_tag not in self.children:
-            self.children.append(child_tag)
-            # Maintain bidirectional consistency
-            if self not in child_tag.parents:
-                child_tag.parents.append(self)
-
-    def remove_child(self, child_tag: Tag) -> None:
-        """Remove a child tag from this tag's children list.
-
-        In-memory operation only. Call store.save(tag) to persist changes.
-        Automatically maintains bidirectional consistency by updating child_tag.parents.
-
-        Args:
-            child_tag: The Tag instance to remove as a child
-
-        Example:
-            >>> parent_tag.remove_child(child_tag)  # Also updates child_tag.parents
-            >>> await store.save(parent_tag)  # Persist the change
-        """
-        if child_tag in self.children:
-            self.children.remove(child_tag)
-            # Maintain bidirectional consistency
-            if self in child_tag.parents:
-                child_tag.parents.remove(self)
+    async def remove_child(self, child_tag: Tag) -> None:
+        """Remove child tag (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("children", child_tag)
 
     async def get_all_descendants(self) -> list[Tag]:
         """Get all descendant tags recursively (children, grandchildren, etc.).
@@ -257,11 +191,14 @@ class Tag(StashObject):
 
         async def collect_descendants(tag: Tag) -> None:
             """Recursively collect all descendants."""
-            for child in tag.children:
-                if child.id not in visited:
-                    visited.add(child.id)
-                    descendants.append(child)
-                    await collect_descendants(child)
+            # Type narrowing: check if children is set and not None
+            if is_set(tag.children) and tag.children is not None:
+                for child in tag.children:
+                    # Type narrowing: child.id should always be set for persisted tags
+                    if child.id is not None and child.id not in visited:
+                        visited.add(child.id)
+                        descendants.append(child)
+                        await collect_descendants(child)
 
         await collect_descendants(self)
         return descendants
@@ -277,11 +214,14 @@ class Tag(StashObject):
 
         async def collect_ancestors(tag: Tag) -> None:
             """Recursively collect all ancestors."""
-            for parent in tag.parents:
-                if parent.id not in visited:
-                    visited.add(parent.id)
-                    ancestors.append(parent)
-                    await collect_ancestors(parent)
+            # Type narrowing: check if parents is set and not None
+            if is_set(tag.parents) and tag.parents is not None:
+                for parent in tag.parents:
+                    # Type narrowing: parent.id should always be set for persisted tags
+                    if parent.id is not None and parent.id not in visited:
+                        visited.add(parent.id)
+                        ancestors.append(parent)
+                        await collect_ancestors(parent)
 
         await collect_ancestors(self)
         return ancestors

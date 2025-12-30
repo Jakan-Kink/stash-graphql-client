@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -205,6 +206,7 @@ async def test_get_plugin_tasks(respx_stash_client: StashClient) -> None:
     assert len(tasks) == 1
     assert tasks[0].name == "scan_library"
     assert tasks[0].description == "Scan the library"
+    assert is_set(tasks[0].plugin)
     assert tasks[0].plugin.id == "plugin-123"
     assert tasks[0].plugin.name == "Test Plugin"
 
@@ -240,8 +242,10 @@ async def test_get_plugin_tasks_multiple(respx_stash_client: StashClient) -> Non
 
     assert len(tasks) == 2
     assert tasks[0].name == "scan"
+    assert is_set(tasks[0].plugin)
     assert tasks[0].plugin.id == "plugin-1"
     assert tasks[1].name == "clean"
+    assert is_set(tasks[1].plugin)
     assert tasks[1].plugin.id == "plugin-2"
 
     assert len(graphql_route.calls) == 1

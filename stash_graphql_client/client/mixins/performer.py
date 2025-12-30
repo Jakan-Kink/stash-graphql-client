@@ -10,6 +10,7 @@ from ...types import (
     Performer,
     PerformerDestroyInput,
 )
+from ...types.unset import UnsetType, is_set
 from ..protocols import StashClientProtocol
 
 
@@ -79,8 +80,14 @@ class PerformerClientMixin(StashClientProtocol):
                     result = await self.find_performers(
                         performer_filter={"name": {"value": name, "modifier": "EQUALS"}}
                     )
-                    if result.count > 0:
-                        return result.performers[0]
+                    performers = result.performers
+                    count = result.count
+                    if (
+                        not isinstance(count, UnsetType)
+                        and count > 0
+                        and not isinstance(performers, UnsetType)
+                    ):
+                        return performers[0]
 
                     # Try by alias
                     result = await self.find_performers(
@@ -88,18 +95,24 @@ class PerformerClientMixin(StashClientProtocol):
                             "aliases": {"value": name, "modifier": "INCLUDES"}
                         }
                     )
-                    if result.count > 0:
-                        return result.performers[0]
+                    performers = result.performers
+                    count = result.count
+                    if (
+                        not isinstance(count, UnsetType)
+                        and count > 0
+                        and not isinstance(performers, UnsetType)
+                    ):
+                        return performers[0]
 
                     return None
             else:
                 # If it's an ID, use direct lookup
-                result = await self.execute(
+                raw_result = await self.execute(
                     fragments.FIND_PERFORMER_QUERY,
                     {"id": str(parsed_input)},
                 )
-                if result and result.get("findPerformer"):
-                    return self._decode_result(Performer, result["findPerformer"])
+                if raw_result and raw_result.get("findPerformer"):
+                    return self._decode_result(Performer, raw_result["findPerformer"])
                 return None
             return None
         except Exception as e:
@@ -291,13 +304,17 @@ class PerformerClientMixin(StashClientProtocol):
                 )
                 # Clear both performer caches since we have a new performer
                 # Try to find the existing performer with exact name match
-                result = await self.find_performers(
+                find_result = await self.find_performers(
                     performer_filter={
                         "name": {"value": performer.name, "modifier": "EQUALS"}
                     },
                 )
-                if result.count > 0:
-                    return result.performers[0]
+                if (
+                    is_set(find_result.count)
+                    and find_result.count > 0
+                    and is_set(find_result.performers)
+                ):
+                    return find_result.performers[0]
                 raise  # Re-raise if we couldn't find the performer
 
             self.log.error(f"Failed to create performer: {e}")
@@ -635,7 +652,8 @@ class PerformerClientMixin(StashClientProtocol):
                         performer_ids.append(performer_input.id)
                         continue
                     # Otherwise search by name
-                    performer_name = performer_input.name or ""
+                    if is_set(performer_input.name):
+                        performer_name = performer_input.name or ""
 
                 # Handle string input (performer name)
                 if isinstance(performer_input, str):
@@ -650,7 +668,7 @@ class PerformerClientMixin(StashClientProtocol):
                     )
 
                     # If not found by name, try aliases
-                    if results.count == 0:
+                    if is_set(results.count) and results.count == 0:
                         results = await self.find_performers(
                             performer_filter={
                                 "aliases": {
@@ -660,7 +678,7 @@ class PerformerClientMixin(StashClientProtocol):
                             }
                         )
 
-                    if results.count > 1:
+                    if is_set(results.count) and results.count > 1:
                         # Handle multiple matches based on strategy
                         if on_multiple == OnMultipleMatch.RETURN_NONE:
                             self.log.warning(
@@ -671,16 +689,19 @@ class PerformerClientMixin(StashClientProtocol):
                             self.log.warning(
                                 f"Multiple performers matched '{performer_name}', using first match"
                             )
-                            performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
+                            if is_set(results.performers):
+                                performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
                         # RETURN_LIST not applicable here since we're building a flat ID list
                         else:
                             self.log.warning(
                                 f"Multiple performers matched '{performer_name}', using first match"
                             )
-                            performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
+                            if is_set(results.performers):
+                                performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
 
-                    elif results.count == 1:
-                        performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
+                    elif is_set(results.count) and results.count == 1:
+                        if is_set(results.performers):
+                            performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
                     elif create:
                         # Create new performer
                         self.log.info(f"Creating missing performer: '{performer_name}'")
@@ -703,7 +724,7 @@ class PerformerClientMixin(StashClientProtocol):
                             }
                         )
 
-                        if results.count > 1:
+                        if is_set(results.count) and results.count > 1:
                             if on_multiple == OnMultipleMatch.RETURN_NONE:
                                 self.log.warning(
                                     f"Multiple performers matched '{name}', skipping (on_multiple=RETURN_NONE)"
@@ -713,15 +734,18 @@ class PerformerClientMixin(StashClientProtocol):
                                 self.log.warning(
                                     f"Multiple performers matched '{name}', using first match"
                                 )
-                                performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
+                                if is_set(results.performers):
+                                    performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
                             else:
                                 # Default behavior: use first match
                                 self.log.warning(
                                     f"Multiple performers matched '{name}', using first match"
                                 )
+                                if is_set(results.performers):
+                                    performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
+                        elif is_set(results.count) and results.count == 1:
+                            if is_set(results.performers):
                                 performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
-                        elif results.count == 1:
-                            performer_ids.append(results.performers[0].id)  # type: ignore[union-attr]
                         elif create:
                             self.log.info(f"Creating missing performer: '{name}'")
                             new_performer = await self.create_performer(

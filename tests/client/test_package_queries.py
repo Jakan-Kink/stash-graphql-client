@@ -12,6 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import PackageType
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -180,8 +181,10 @@ async def test_installed_packages_with_dependencies(
 
     packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
 
+    assert is_set(packages)
     assert len(packages) == 1
     assert packages[0].package_id == "main-pkg"
+    assert is_set(packages[0].requires)
     assert len(packages[0].requires) == 1
     assert packages[0].requires[0].package_id == "dep-1"
 
@@ -217,8 +220,11 @@ async def test_installed_packages_with_source_package(
 
     packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
 
+    assert is_set(packages)
     assert len(packages) == 1
     assert packages[0].package_id == "derived-pkg"
+    assert packages[0].source_package is not None
+    assert is_set(packages[0].source_package)
     assert packages[0].source_package.package_id == "source-1"
     assert packages[0].source_package.version == "1.5.0"
 
@@ -252,8 +258,10 @@ async def test_installed_packages_with_metadata(
 
     packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
 
+    assert is_set(packages)
     assert len(packages) == 1
     assert packages[0].package_id == "pkg-meta"
+    assert is_set(packages[0].metadata)
     assert packages[0].metadata["author"] == "Test Author"
     assert "test" in packages[0].metadata["tags"]
 

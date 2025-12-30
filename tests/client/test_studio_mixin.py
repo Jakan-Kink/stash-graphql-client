@@ -5,6 +5,7 @@ through the entire GraphQL client stack including serialization/deserialization.
 """
 
 import json
+from typing import Any
 from unittest.mock import patch
 
 import httpx
@@ -15,10 +16,12 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkStudioUpdateInput,
+    BulkUpdateIdMode,
     BulkUpdateIds,
     Studio,
     StudioDestroyInput,
 )
+from stash_graphql_client.types.unset import UNSET, is_set
 from tests.fixtures import (
     create_find_studios_result,
     create_graphql_response,
@@ -113,6 +116,8 @@ async def test_find_studios(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_studios()
 
     assert result.count == 1
+    assert is_set(result.studios)
+    assert result.studios is not None
     assert len(result.studios) == 1
     assert result.studios[0].id == "123"
 
@@ -140,6 +145,8 @@ async def test_find_studios_with_q_parameter(respx_stash_client: StashClient) ->
     result = await respx_stash_client.find_studios(q="Search Result")
 
     assert result.count == 1
+    assert is_set(result.studios)
+    assert result.studios is not None
     assert result.studios[0].name == "Search Result"
 
     # Verify q was passed in filter
@@ -171,6 +178,8 @@ async def test_find_studios_with_custom_filter(respx_stash_client: StashClient) 
     )
 
     assert result.count == 1
+    assert is_set(result.studios)
+    assert result.studios is not None
     assert result.studios[0].name == "Paginated Result"
 
     # Verify the custom filter was passed
@@ -195,6 +204,8 @@ async def test_find_studios_error_returns_empty(
     result = await respx_stash_client.find_studios()
 
     assert result.count == 0
+    assert is_set(result.studios)
+    assert result.studios is not None
     assert len(result.studios) == 0
 
     assert len(graphql_route.calls) == 1
@@ -499,7 +510,7 @@ async def test_bulk_studio_update_with_input_type(
 
     input_data = BulkStudioUpdateInput(
         ids=["s1", "s2"],
-        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD"),
+        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
     result = await respx_stash_client.bulk_studio_update(input_data)
@@ -1089,9 +1100,8 @@ async def test_map_studio_ids_invalid_input_type(
     Invalid types are silently skipped.
     """
     # Pass invalid types that don't match any isinstance checks
-    result = await respx_stash_client.map_studio_ids(
-        [123, None, [], object()]  # type: ignore[list-item]
-    )
+    invalid_inputs: list[Any] = [123, None, [], object()]
+    result = await respx_stash_client.map_studio_ids(invalid_inputs)
 
     # All invalid inputs should be skipped
     assert result == []
@@ -1174,3 +1184,32 @@ async def test_map_studio_ids_exception_handling_patched(
 
     # Verify the HTTP route was called
     assert len(graphql_route.calls) == 1  # Only one HTTP call (second studio)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_studio_ids_studio_object_with_id_but_name_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_studio_ids with NEW Studio object that has name=UNSET.
+
+    This covers lines 389->393 FALSE: when Studio is new (not from server) and name is UNSET,
+    the is_set(studio_input.name) check is False, so studio_name remains None and
+    the code skips name-based lookup entirely, skipping this studio.
+    """
+    # Create NEW Studio with name=UNSET using model_construct
+    # The _is_new flag makes is_new() return True
+    studio = Studio.model_construct(name=UNSET, _is_new=True)
+
+    # No HTTP calls should be made - name lookup is skipped for UNSET name
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[httpx.Response(200, json={})]
+    )
+
+    result = await respx_stash_client.map_studio_ids([studio])
+
+    # Studio with UNSET name is skipped - no ID added
+    assert len(result) == 0
+
+    # Verify NO HTTP calls were made (name lookup was skipped)
+    assert len(graphql_route.calls) == 0

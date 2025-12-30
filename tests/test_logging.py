@@ -40,10 +40,12 @@ def test_configure_logging_with_defaults() -> None:
 
     # Verify formatter was set with default format
     assert handler.formatter is not None
-    assert "%(asctime)s" in handler.formatter._fmt
-    assert "%(name)s" in handler.formatter._fmt
-    assert "%(levelname)s" in handler.formatter._fmt
-    assert "%(message)s" in handler.formatter._fmt
+    fmt = handler.formatter._fmt
+    assert fmt is not None
+    assert "%(asctime)s" in fmt
+    assert "%(name)s" in fmt
+    assert "%(levelname)s" in fmt
+    assert "%(message)s" in fmt
 
     # Verify level was set
     assert stash_logger.level == logging.INFO
@@ -68,6 +70,7 @@ def test_configure_logging_with_custom_format() -> None:
     configure_logging(format_string=custom_format)
 
     handler = stash_logger.handlers[0]
+    assert handler.formatter is not None
     assert handler.formatter._fmt == custom_format
 
 
@@ -85,7 +88,10 @@ def test_configure_logging_with_custom_handler() -> None:
     # Verify custom handler was used
     assert len(stash_logger.handlers) == 1
     assert stash_logger.handlers[0] is custom_handler
-    assert stash_logger.handlers[0].stream is custom_stream
+    # Type narrow to StreamHandler to access stream attribute
+    handler = stash_logger.handlers[0]
+    assert isinstance(handler, logging.StreamHandler)
+    assert handler.stream is custom_stream
 
 
 @pytest.mark.unit

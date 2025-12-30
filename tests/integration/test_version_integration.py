@@ -7,6 +7,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import LatestVersion, Version
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -34,10 +35,13 @@ async def test_version_returns_current_version(
 
         # Verify required fields are present and non-empty
         assert version.version is not None
+        assert is_set(version.version)
         assert len(version.version) > 0
         assert version.hash is not None
+        assert is_set(version.hash)
         assert len(version.hash) > 0
         assert version.build_time is not None
+        assert is_set(version.build_time)
         assert len(version.build_time) > 0
 
         # Version should follow semantic versioning pattern (v0.0.0 or similar)
@@ -67,13 +71,13 @@ async def test_latestversion_returns_github_version(
         assert isinstance(latest, LatestVersion)
 
         # Verify required fields are present and non-empty
-        assert latest.version is not None
+        assert is_set(latest.version)
         assert len(latest.version) > 0
-        assert latest.shorthash is not None
+        assert is_set(latest.shorthash)
         assert len(latest.shorthash) > 0
-        assert latest.release_date is not None
+        assert is_set(latest.release_date)
         assert len(latest.release_date) > 0
-        assert latest.url is not None
+        assert is_set(latest.url)
         assert len(latest.url) > 0
 
         # URL should be a valid GitHub release URL
@@ -108,7 +112,8 @@ async def test_version_and_latestversion_compatibility(
 
         # Both should return valid version strings that can be compared
         assert current.version is not None
-        assert latest.version is not None
+        assert is_set(current.version)
+        assert is_set(latest.version)
 
         # Both should have version info in similar format
         # (both start with 'v' or both are numeric)

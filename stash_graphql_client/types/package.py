@@ -28,7 +28,7 @@ class PackageSpecInput(StashInput):
     """Input for specifying a package from schema/types/package.graphql."""
 
     id: str  # String!
-    source_url: str = Field(alias="sourceURL")  # String! (camelCase in schema)
+    source_url: str = Field(..., alias="sourceURL")  # String! (camelCase in schema)
 
 
 class PackageSource(FromGraphQLMixin, BaseModel):

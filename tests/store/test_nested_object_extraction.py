@@ -501,13 +501,13 @@ class TestStoreContextInjection:
         # Ensure no store context is set (completely naked creation)
         with patch.object(StashObject, "_store", None):
             # Create scene directly, bypassing store
-            scene_dict = {
+            scene_dict: dict[str, object] = {
                 "id": "s1",
                 "title": "Direct Scene",
                 "studio": {"id": "st1", "name": "Direct Studio"},
             }
 
-            scene = Scene(**scene_dict)
+            scene = Scene(**scene_dict)  # type: ignore[arg-type]
 
             # Scene should be created
             assert scene.id == "s1"
@@ -606,7 +606,7 @@ class TestReceivedFieldsWithNestedExtraction:
 
         # Verify _received_fields includes "studio"
         assert scene is not None
-        received = getattr(scene, "_received_fields", set())
+        received: set[str] = getattr(scene, "_received_fields", set())
         assert "studio" in received
 
     @pytest.mark.asyncio
@@ -641,7 +641,7 @@ class TestReceivedFieldsWithNestedExtraction:
 
         # Verify studio has _received_fields
         assert scene.studio is not None
-        studio_received = getattr(scene.studio, "_received_fields", set())
+        studio_received: set[str] = getattr(scene.studio, "_received_fields", set())
         assert "id" in studio_received
         assert "name" in studio_received
         assert "url" in studio_received

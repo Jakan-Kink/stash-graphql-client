@@ -12,6 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import ScrapeContentType
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -84,8 +85,12 @@ async def test_list_scrapers_single_type(respx_stash_client: StashClient) -> Non
     assert scrapers[0].id == "scraper-1"
     assert scrapers[0].name == "Scene Scraper"
     assert scrapers[0].scene is not None
+    assert is_set(scrapers[0].scene)
+    assert is_set(scrapers[0].scene.urls)
+    assert scrapers[0].scene.urls is not None
     assert len(scrapers[0].scene.urls) == 1
     assert scrapers[0].scene.urls[0] == "https://example.com"
+    assert is_set(scrapers[0].scene.supported_scrapes)
     assert len(scrapers[0].scene.supported_scrapes) == 3
 
     assert len(graphql_route.calls) == 1

@@ -14,6 +14,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import Tag, TagDestroyInput
+from stash_graphql_client.types.unset import UNSET
 from tests.fixtures import (
     create_find_tags_result,
     create_graphql_response,
@@ -1126,3 +1127,31 @@ async def test_map_tag_ids_dict_not_found_no_create(
     assert len(result) == 0
 
     assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_tag_ids_tag_object_with_id_but_name_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_tag_ids with Tag object with NO id and name=UNSET.
+
+    This covers lines 347->351 FALSE: when Tag has no ID (falsy) and name is UNSET,
+    the is_set(tag_input.name) check is False, so tag_name remains None and
+    the code skips name-based lookup entirely, skipping this tag.
+    """
+    # Create Tag with NO ID (empty string is falsy) and name=UNSET
+    tag = Tag.model_construct(id="", name=UNSET)
+
+    # No HTTP calls should be made - name lookup is skipped for UNSET name
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[httpx.Response(200, json={})]
+    )
+
+    result = await respx_stash_client.map_tag_ids([tag])
+
+    # Tag with no ID and UNSET name is skipped - no ID added
+    assert len(result) == 0
+
+    # Verify NO HTTP calls were made (name lookup was skipped)
+    assert len(graphql_route.calls) == 0

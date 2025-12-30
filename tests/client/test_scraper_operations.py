@@ -23,6 +23,7 @@ from stash_graphql_client.types import (
     ScrapeSingleSceneInput,
     ScrapeSingleStudioInput,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -399,6 +400,8 @@ async def test_scrape_single_studio(respx_stash_client: StashClient) -> None:
 
     assert len(studios) == 1
     assert studios[0].name == "Test Studio"
+    assert is_set(studios[0].urls)
+    assert studios[0].urls is not None
     assert len(studios[0].urls) == 1
 
     assert len(graphql_route.calls) == 1

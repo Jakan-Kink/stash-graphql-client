@@ -110,7 +110,7 @@ async def test_subscribe_to_jobs_yields_updates(
     """Test that subscribe_to_jobs yields JobStatusUpdate objects."""
     # Set up WebSocket session with test responses
     respx_stash_client._ws_session = MockWebSocketSession(
-        [  # type: ignore[assignment]
+        [
             {
                 "jobsSubscribe": {
                     "type": "ADD",

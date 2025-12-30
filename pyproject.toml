@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.5.0"
+version = "0.6.0b1"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -41,7 +41,8 @@ dependencies = [
     "httpx-retries (>=0.4.3)",
     "pydantic (>=2.6.4)",
     "pydantic-extra-types (>=2.10.6)",
-    "multidict (>=6.7.0)"
+    "multidict (>=6.7.0)",
+    "loguru (>=0.7.3,<0.8.0)"
 ]
 
 [project.urls]
@@ -200,7 +201,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 "tests/conftest.py" = ["F403", "F405"]  # Star imports and undefined names from star imports
 "tests/**/test_*.py" = ["N815", "A002","S101"]  # Tests use schema-matching names
 "tests/fixtures/__init__.py" = ["F401", "F403", "F405", "RUF022"]  # Unused imports, star imports, undefined names, categorized __all__
-"tests/fixtures/*.py" = ["RUF022", "N815"]  # Allow categorized __all__ lists for readability
+"tests/fixtures/*.py" = ["RUF022", "N815", "S101"]  # Allow asserts and categorized __all__ lists for readability
 "tests/fixtures/stash/graphql_responses.py" = ["N815", "A002"]  # mixed-case for GraphQL
 "tests/fixtures/stash_server/__init__.py" = ["F401", "F403", "F405", "RUF022"]  # Star imports + categorized __all__
 "tests/fixtures/stash_server/*.py" = ["SIM105", "N815"]  # try/except cleanup in fixtures is clearer than contextlib

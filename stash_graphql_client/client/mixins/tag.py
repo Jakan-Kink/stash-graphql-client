@@ -4,6 +4,7 @@ from typing import Any
 
 from ... import fragments
 from ...types import FindTagsResultType, Tag, TagDestroyInput
+from ...types.unset import is_set
 from ..protocols import StashClientProtocol
 
 
@@ -343,7 +344,8 @@ class TagClientMixin(StashClientProtocol):
                         tag_ids.append(tag_input.id)
                         continue
                     # Otherwise search by name
-                    tag_name = tag_input.name or ""
+                    if is_set(tag_input.name):
+                        tag_name = tag_input.name or ""
 
                 # Handle string input (tag name)
                 if isinstance(tag_input, str):

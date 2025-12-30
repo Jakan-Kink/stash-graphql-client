@@ -16,6 +16,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import JobStatus, JobStatusUpdate, LogEntry
+from stash_graphql_client.types.unset import is_set
 
 
 # =============================================================================
@@ -280,6 +281,8 @@ async def test_subscribe_to_logs_during_activity(
                     "Warning",
                     "Error",
                 ], f"Invalid log level: {entry.level}"
+                assert is_set(entry.message), "Log message should be set"
+                assert entry.message is not None, "Log message should not be null"
                 assert len(entry.message) > 0, "Log message should not be empty"
 
 

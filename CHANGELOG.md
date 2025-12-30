@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0b1] - 2025-12-30
+
+### Added
+
+- **Complete Type Safety**: Achieved 0 mypy errors across entire codebase (163 source files)
+  - Full type annotations for all test files (102 test modules)
+  - Strict type checking with no suppressions or ignores (except intentional test cases)
+  - Enhanced type narrowing with `is_set()` TypeGuard throughout codebase
+
+### Changed
+
+- **UNSET Type Narrowing**: Comprehensive use of `is_set()` guards in helper methods
+  - All `map_*_ids()` helper methods now properly narrow UNSET types before operations
+  - Studio, Tag, Performer, Gallery, Image, and Group mixins updated with type guards
+  - Prevents runtime errors when accessing potentially UNSET fields
+  - Improved type inference for IDEs (Pylance, mypy)
+
+- **GraphQL Input Type Naming**: Fixed parameter naming consistency
+  - INPUT types now consistently use camelCase (matching GraphQL schema)
+  - OUTPUT types continue using snake_case with Pydantic aliases
+  - Examples: `backupPath`, `deleteFiles`, `deleteOld` instead of snake_case variants
+
+- **Protocol Enhancements**: Added missing attributes to AsyncCachedFunction Protocol
+  - Added `__name__` and `__doc__` attributes to match functools.wraps behavior
+  - Enables proper type checking for decorated async functions
+
+### Fixed
+
+- **Type Annotation Errors**: Resolved 700+ mypy errors across codebase
+  - Fixed UnsetType narrowing in 78+ integration tests
+  - Corrected None checks in client mixins
+  - Added proper type annotations for test variables
+  - Fixed lambda return types in entity store filters
+
+- **Test Type Safety**: Enhanced test suite with proper type handling
+  - Added `type: ignore[arg-type]` for intentional ValidationError tests
+  - Fixed argument order in method calls (client-first pattern)
+  - Resolved @classmethod + TypeVar mypy limitations with explanatory comments
+
+- **Coverage Gaps**: Added tests for edge cases in helper methods
+  - 100% branch coverage on Studio, Tag, and Performer mixins
+  - Tests for NEW objects with UNSET name fields
+  - Tests for UNSET performers in search results
+  - 9 new edge-case tests covering falsy path branches
+
+### Testing
+
+- **Improved Test Coverage**: Achieved 100% branch coverage on critical mixins
+  - Studio mixin: 100.00% coverage (118 statements, 38 branches)
+  - Tag mixin: 100.00% coverage (129 statements, 46 branches)
+  - Performer mixin: 100.00% coverage (174 statements, 72 branches)
+  - Added 9 new tests for UNSET field handling edge cases
+  - All 1686 tests passing with enhanced type safety
+
+- **Test Pattern Improvements**: Consistent use of type narrowing in test assertions
+  - Added `is_set()` guards before list operations (len, indexing, iteration)
+  - Added `is not None` checks before attribute access
+  - Two-stage narrowing for `T | UnsetType | None` types
+
+### Internal
+
+- **Code Quality**: Enhanced maintainability and type safety
+  - Zero mypy errors across entire project
+  - Consistent type narrowing patterns throughout
+  - Better error messages with type guards
+  - Improved IDE support and autocomplete
+
 ## [0.5.0] - 2025-12-26
 
 ### Added

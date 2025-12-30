@@ -9,6 +9,7 @@ Following TESTING_REQUIREMENTS.md:
 """
 
 import base64
+import json
 import tempfile
 from pathlib import Path
 
@@ -56,8 +57,6 @@ async def test_performer_update_avatar_success(respx_stash_client) -> None:
             request = route.calls[0].request
 
             # Verify mutation and variables
-            import json
-
             body = json.loads(request.content)
             assert "performerUpdate" in body["query"]
             assert body["variables"]["input"]["id"] == "123"
@@ -126,8 +125,6 @@ async def test_performer_update_avatar_with_png(respx_stash_client) -> None:
 
             # Verify MIME type is image/png
             assert len(route.calls) == 1
-            import json
-
             body = json.loads(route.calls[0].request.content)
             image_url = body["variables"]["input"]["image"]
             assert image_url.startswith("data:image/png;base64,")
@@ -199,8 +196,6 @@ async def test_performer_find_by_name_found(respx_stash_client) -> None:
         assert len(route.calls) == 1
 
         # Verify query and variables
-        import json
-
         body = json.loads(route.calls[0].request.content)
         assert "findPerformers" in body["query"]
         assert body["variables"]["performer_filter"]["name"]["value"] == "Jane Doe"
@@ -325,7 +320,7 @@ def test_performer_alias_list_rejects_none() -> None:
     # Attempt to create Performer with alias_list=None
     # This should raise ValidationError because alias_list is non-nullable
     with pytest.raises(ValidationError) as exc_info:
-        Performer(id="p4", name="Test Performer", alias_list=None)
+        Performer(id="p4", name="Test Performer", alias_list=None)  # type: ignore[arg-type]
 
     # Verify the error is about alias_list field
     errors = exc_info.value.errors()

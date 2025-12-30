@@ -256,7 +256,9 @@ class FindFilesResultType(StashResult):
             return value
 
         # Type mapping for BaseFile interface
-        type_map = {
+        type_map: dict[
+            str, type[VideoFile] | type[ImageFile] | type[GalleryFile] | type[BasicFile]
+        ] = {
             "VideoFile": VideoFile,
             "ImageFile": ImageFile,
             "GalleryFile": GalleryFile,

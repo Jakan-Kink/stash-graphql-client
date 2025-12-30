@@ -7,6 +7,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures.stash.graphql_responses import create_graphql_response
 
 
@@ -37,6 +38,8 @@ async def test_sql_query_basic(respx_stash_client: StashClient) -> None:
 
     # Verify response data
     assert result.columns == ["id", "title", "rating100"]
+    assert is_set(result.rows)
+    assert result.rows is not None
     assert len(result.rows) == 3
     assert result.rows[0] == ["1", "Scene 1", 85]
     assert result.rows[1] == ["2", "Scene 2", 90]
@@ -82,6 +85,8 @@ async def test_sql_query_no_args(respx_stash_client: StashClient) -> None:
 
     # Verify response data
     assert result.columns == ["gender", "count"]
+    assert is_set(result.rows)
+    assert result.rows is not None
     assert len(result.rows) == 3
     assert result.rows[0] == ["MALE", 15]
     assert result.rows[1] == ["FEMALE", 25]
@@ -161,6 +166,8 @@ async def test_sql_query_multiple_args(respx_stash_client: StashClient) -> None:
 
     # Verify response data
     assert result.columns == ["id", "title", "rating100", "date"]
+    assert is_set(result.rows)
+    assert result.rows is not None
     assert len(result.rows) == 2
     assert result.rows[0][1] == "High Rated Scene"
     assert result.rows[1][1] == "Another Great Scene"
@@ -404,6 +411,8 @@ async def test_sql_query_complex_data_types(respx_stash_client: StashClient) -> 
     )
 
     # Verify response data with various types
+    assert is_set(result.rows)
+    assert result.rows is not None
     assert len(result.rows) == 3
     assert result.rows[0] == ["1", "Scene 1", 85.5, 1800.0, "2024-01-15", True]
     assert result.rows[1] == ["2", "Scene 2", 90.0, 2400.5, "2024-02-20", False]

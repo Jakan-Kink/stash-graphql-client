@@ -26,7 +26,7 @@ from .enums import CircumisedEnum, GenderEnum
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
 from .scalars import Map
-from .unset import UNSET, UnsetType, is_set
+from .unset import UNSET, UnsetType
 
 
 # if _TYPE_CHECKING_METADATA:
@@ -272,81 +272,13 @@ class Performer(StashObject):
         except Exception as e:
             raise ValueError(f"Failed to update avatar: {e}") from e
 
-    def add_tag(self, tag: Tag) -> None:
-        """Add a tag to this performer.
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag to performer (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
 
-        In-memory operation only. Call store.save(performer) to persist changes.
-        The backend automatically syncs tag.performer_count when you save.
-
-        Args:
-            tag: The Tag instance to add
-
-        Example:
-            >>> performer.add_tag(tag)
-            >>> await store.save(performer)  # Persist the change
-        """
-        if isinstance(self.tags, UnsetType):
-            self.tags = []
-        if tag not in self.tags:
-            self.tags.append(tag)
-
-    def remove_tag(self, tag: Tag) -> None:
-        """Remove a tag from this performer.
-
-        In-memory operation only. Call store.save(performer) to persist changes.
-        The backend automatically syncs tag.performer_count when you save.
-
-        Args:
-            tag: The Tag instance to remove
-
-        Example:
-            >>> performer.remove_tag(tag)
-            >>> await store.save(performer)  # Persist the change
-        """
-        if is_set(self.tags) and tag in self.tags:
-            self.tags.remove(tag)
-
-    # @classmethod
-    # def from_account(cls, account: "Account") -> "Performer":
-    #     """Create performer from account.
-
-    #     Args:
-    #         account: Account to convert
-
-    #     Returns:
-    #         New performer instance
-    #     """
-    #     # Ensure we have a name (fallback to "Unknown" if all are None)
-    #     performer_name = (
-    #         account.display_name or account.username or account.screen_name or "Unknown"
-    #     )
-
-    #     # Handle alias list with proper None checking
-    #     alias_list = []
-    #     if (
-    #         account.display_name is not None
-    #         and account.username is not None
-    #         and account.display_name.lower() != account.username.lower()
-    #     ):
-    #         alias_list = [account.username]
-
-    #     # Build URLs list - Account objects don't have direct URLs
-    #     urls: list[str] = []
-
-    #     return cls(
-    #         id="new",  # Will be replaced on save
-    #         name=performer_name,
-    #         alias_list=alias_list,  # Only add username as alias if using display_name and it's different (case-insensitive)
-    #         urls=urls,
-    #         country="",
-    #         details=account.bio or "",
-    #         gender=GenderEnum.FEMALE,  # Default assumption for missF content creators
-    #         # Required fields with defaults
-    #         tags=[],  # Empty list of tags to start
-    #         scenes=[],
-    #         groups=[],  # Required relationship
-    #         stash_ids=[],  # Required relationship
-    #     )
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag from performer (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
 
     # Field definitions with their conversion functions
     __field_conversions__ = {

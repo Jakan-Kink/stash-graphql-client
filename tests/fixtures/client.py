@@ -21,6 +21,7 @@ __all__ = [
     "stash_client",
     "respx_stash_client",
     "respx_entity_store",
+    "mock_entity_store",
     "stash_cleanup_tracker",
     "capture_graphql_calls",
     "mock_ws_transport",
@@ -231,6 +232,96 @@ async def respx_entity_store(
 
 
 @pytest_asyncio.fixture
+async def mock_entity_store(
+    stash_context: StashContext,
+    respx_stash_client: StashClient,
+) -> AsyncGenerator[StashEntityStore, None]:
+    """Get a StashEntityStore with populate() patched to avoid GraphQL calls.
+
+    This fixture is for unit tests (like helper method tests) that need
+    a store reference but don't want to make real GraphQL calls when
+    UNSET fields are populated. The patched populate() simply initializes
+    UNSET relationship fields to empty values ([] or None) based on metadata.
+
+    Args:
+        stash_context: The StashContext fixture
+        respx_stash_client: The respx-enabled client (ensures initialization)
+
+    Yields:
+        StashEntityStore: The store with populate() patched to avoid GraphQL
+
+    Example:
+        ```python
+        @pytest.mark.asyncio
+        async def test_add_parent(mock_entity_store):
+            # Create entities directly (not via GraphQL)
+            parent = Tag(id="1", name="Parent", children=[])
+            child = Tag(id="2", name="Child", parents=[])
+
+            # Helper calls store.populate() but it won't hit GraphQL
+            await child.add_parent(parent)
+
+            assert parent in child.parents
+            assert child in parent.children
+        ```
+    """
+    if stash_context._store is None:
+        raise RuntimeError("Store not initialized - this should not happen")
+
+    store = stash_context._store
+
+    async def mock_populate(obj, fields=None, force_refetch=False):
+        """Mock populate that initializes UNSET fields without GraphQL."""
+        from stash_graphql_client.types.base import RelationshipMetadata
+        from stash_graphql_client.types.unset import UNSET, UnsetType
+
+        if fields is None:
+            return obj
+
+        # Initialize each requested field if it's UNSET
+        for field_name in fields:
+            current_value = getattr(obj, field_name, UNSET)
+
+            # Only initialize if field is currently UNSET
+            if isinstance(current_value, UnsetType):
+                # Check if field has relationship metadata
+                if (
+                    hasattr(obj, "__relationships__")
+                    and field_name in obj.__relationships__
+                ):
+                    metadata = obj.__relationships__[field_name]
+
+                    # Initialize based on metadata
+                    if isinstance(metadata, RelationshipMetadata):
+                        if metadata.is_list:
+                            setattr(obj, field_name, [])
+                        else:
+                            setattr(obj, field_name, None)
+                    else:
+                        # Old tuple format - assume list if it's a many relationship
+                        setattr(obj, field_name, [])
+                # No metadata - check field annotation to determine type
+                # Get field info from model fields
+                elif hasattr(obj, "model_fields") and field_name in obj.model_fields:
+                    field_info = obj.model_fields[field_name]
+                    # Check if annotation contains list
+                    annotation_str = str(field_info.annotation)
+                    if "list[" in annotation_str.lower():
+                        setattr(obj, field_name, [])
+                    else:
+                        setattr(obj, field_name, None)
+                else:
+                    # Default to None as fallback
+                    setattr(obj, field_name, None)
+
+        return obj
+
+    # Patch the populate method
+    with patch.object(store, "populate", side_effect=mock_populate):
+        yield store
+
+
+@pytest_asyncio.fixture
 async def stash_cleanup_tracker():
     """Fixture that provides a cleanup context manager for Stash objects.
 
@@ -292,6 +383,7 @@ async def stash_cleanup_tracker():
         print(f"{'=' * 60}")
 
         if auto_capture:
+            assert client._session is not None
             original_execute = client._session.execute
 
             async def execute_with_capture(document, *args, **kwargs):
@@ -580,7 +672,6 @@ def enable_scene_creation():
         @pytest.mark.asyncio
         async def test_save_with_scene(respx_stash_client, enable_scene_creation):
             # Can also be used with store.save()
-            import uuid
             scene = Scene(id=uuid.uuid4().hex, title="New Scene")
             scene._is_new = True
 
@@ -638,6 +729,7 @@ async def capture_graphql_calls(
         ```
     """
     calls = []
+    assert stash_client._session is not None
     original_session_execute = stash_client._session.execute
 
     async def capture_session_execute(operation, **kwargs):

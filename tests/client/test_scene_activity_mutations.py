@@ -22,6 +22,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -49,6 +50,7 @@ async def test_scene_add_o_with_current_time(respx_stash_client: StashClient) ->
 
     # Verify result
     assert result.count == 1
+    assert is_set(result.history)
     assert len(result.history) == 1
     # history contains datetime objects, not strings
     expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
@@ -86,6 +88,7 @@ async def test_scene_add_o_with_specific_times(respx_stash_client: StashClient) 
 
     # Verify result
     assert result.count == 3
+    assert is_set(result.history)
     assert len(result.history) == 3
 
     # Verify GraphQL call
@@ -135,6 +138,7 @@ async def test_scene_delete_o_removes_last_entry(
 
     # Verify result
     assert result.count == 1
+    assert is_set(result.history)
     assert len(result.history) == 1
 
     # Verify GraphQL call
@@ -169,6 +173,7 @@ async def test_scene_delete_o_with_specific_timestamp(
 
     # Verify result
     assert result.count == 1
+    assert is_set(result.history)
     assert len(result.history) == 1
 
     # Verify GraphQL call
@@ -470,6 +475,7 @@ async def test_scene_add_play_with_current_time(
 
     # Verify result
     assert result.count == 1
+    assert is_set(result.history)
     assert len(result.history) == 1
     # history contains datetime objects, not strings
     expected_dt = datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)
@@ -507,6 +513,7 @@ async def test_scene_add_play_with_specific_times(
 
     # Verify result
     assert result.count == 2
+    assert is_set(result.history)
     assert len(result.history) == 2
 
     # Verify GraphQL call
@@ -558,6 +565,7 @@ async def test_scene_delete_play_removes_last_entry(
 
     # Verify result
     assert result.count == 1
+    assert is_set(result.history)
     assert len(result.history) == 1
 
     # Verify GraphQL call
@@ -592,6 +600,7 @@ async def test_scene_delete_play_with_specific_timestamp(
 
     # Verify result
     assert result.count == 0
+    assert is_set(result.history)
     assert len(result.history) == 0
 
     # Verify GraphQL call

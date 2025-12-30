@@ -15,6 +15,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -111,6 +112,7 @@ async def test_directory_with_parent(respx_stash_client: StashClient) -> None:
     assert result is not None
     assert result.path == "/media/stash/scenes"
     assert result.parent == "/media/stash"
+    assert is_set(result.directories)
     assert len(result.directories) == 3
     assert "2024" in result.directories
     assert len(graphql_route.calls) == 1
@@ -138,6 +140,7 @@ async def test_directory_root(respx_stash_client: StashClient) -> None:
     assert result is not None
     assert result.path == "/"
     assert result.parent is None
+    assert is_set(result.directories)
     assert len(result.directories) == 4
     assert "home" in result.directories
     assert len(graphql_route.calls) == 1
@@ -365,5 +368,6 @@ async def test_directory_unicode_path(respx_stash_client: StashClient) -> None:
     assert result is not None
     assert result.path == "/home/用户/视频"
     assert result.parent == "/home/用户"
+    assert is_set(result.directories)
     assert "电影" in result.directories
     assert len(graphql_route.calls) == 1

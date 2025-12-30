@@ -308,7 +308,9 @@ class ImageClientMixin(StashClientProtocol):
 
             images_data = result.get("imagesUpdate", [])
             return [
-                self._decode_result(Image, img) if img else None for img in images_data
+                img_obj
+                for img in images_data
+                if (img_obj := self._decode_result(Image, img)) is not None
             ]
         except Exception as e:
             self.log.error(f"Failed to update images: {e}")

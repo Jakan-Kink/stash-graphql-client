@@ -30,6 +30,7 @@ from stash_graphql_client.types import (
     RemoveTempDLNAIPInput,
     StashBoxInput,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_config_defaults_result,
     create_config_dlna_result,
@@ -83,7 +84,7 @@ async def test_configure_general_with_model(respx_stash_client: StashClient) -> 
     )
 
     input_data = ConfigGeneralInput(
-        ffmpeg_path="/custom/ffmpeg", ffprobePath="/custom/ffprobe"
+        ffmpegPath="/custom/ffmpeg", ffprobePath="/custom/ffprobe"
     )
     result = await respx_stash_client.configure_general(input_data)
 
@@ -149,7 +150,7 @@ async def test_configure_interface_with_model(respx_stash_client: StashClient) -
         ]
     )
 
-    input_data = ConfigInterfaceInput(css_enabled=True, javascriptEnabled=True)
+    input_data = ConfigInterfaceInput(cssEnabled=True, javascriptEnabled=True)
     result = await respx_stash_client.configure_interface(input_data)
 
     assert result is not None
@@ -218,12 +219,13 @@ async def test_configure_dlna_with_model(respx_stash_client: StashClient) -> Non
     )
 
     input_data = ConfigDLNAInput(
-        server_name="my-stash", whitelisted_ips=["192.168.1.100"]
+        serverName="my-stash", whitelistedIPs=["192.168.1.100"]
     )
     result = await respx_stash_client.configure_dlna(input_data)
 
     assert result is not None
     assert result.server_name == "my-stash"
+    assert is_set(result.whitelisted_ips)
     assert "192.168.1.100" in result.whitelisted_ips
     assert len(graphql_route.calls) == 1
 
@@ -287,7 +289,7 @@ async def test_configure_defaults_with_model(respx_stash_client: StashClient) ->
         ]
     )
 
-    input_data = ConfigDefaultSettingsInput(delete_file=False, deleteGenerated=False)
+    input_data = ConfigDefaultSettingsInput(deleteFile=False, deleteGenerated=False)
     result = await respx_stash_client.configure_defaults(input_data)
 
     assert result is not None
@@ -751,7 +753,7 @@ async def test_configure_scraping_with_model(respx_stash_client: StashClient) ->
     )
 
     input_data = ConfigScrapingInput(
-        scraper_user_agent="MyAgent/2.0", scraper_cert_check=False
+        scraperUserAgent="MyAgent/2.0", scraperCertCheck=False
     )
     result = await respx_stash_client.configure_scraping(input_data)
 
