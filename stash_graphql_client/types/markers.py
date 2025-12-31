@@ -13,7 +13,6 @@ from .base import (
     StashObject,
     StashResult,
 )
-from .scalars import Time
 from .unset import UNSET, UnsetType
 
 
@@ -108,8 +107,6 @@ class SceneMarker(StashObject):
     end_seconds: float | None | UnsetType = (
         UNSET  # Float (The optional end time of the marker (in seconds). Supports decimals.)
     )
-    created_at: Time | None | UnsetType = UNSET  # Time!
-    updated_at: Time | None | UnsetType = UNSET  # Time!
 
     # Field definitions with their conversion functions
     __field_conversions__ = {

@@ -660,18 +660,6 @@ class ConfigResult(FromGraphQLMixin, BaseModel):
     )
     ui: dict[str, Any] | UnsetType = UNSET  # Map!
 
-    def plugins(self, include: list[str] | None = None) -> dict[str, dict[str, Any]]:
-        """Get plugin configuration.
-
-        Args:
-            include: Optional list of plugin IDs to include
-
-        Returns:
-            Plugin configuration map
-        """
-        # TODO: Implement plugin filtering
-        return {}
-
 
 class Directory(BaseModel):
     """Directory structure of a path."""

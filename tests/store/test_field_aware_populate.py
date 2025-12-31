@@ -15,6 +15,8 @@ This follows TESTING_REQUIREMENTS.md:
 - Verify field tracking and selective fetching behavior
 """
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -82,7 +84,7 @@ class TestPopulateWithFieldsParameter:
         assert scene is not None
 
         # Verify initial _received_fields
-        received = getattr(scene, "_received_fields", set())
+        received: set[str] = getattr(scene, "_received_fields", set())
         assert "id" in received
         assert "title" in received
         assert "studio" not in received
@@ -97,7 +99,7 @@ class TestPopulateWithFieldsParameter:
         assert len(scene.performers) >= 1
 
         # Verify _received_fields now includes the new fields
-        received_after = getattr(scene, "_received_fields", set())
+        received_after: set[str] = getattr(scene, "_received_fields", set())
         assert "studio" in received_after
         assert "performers" in received_after
         # Original fields should still be present
@@ -144,8 +146,6 @@ class TestPopulateWithFieldsParameter:
         # Debug: Print all GraphQL calls made
         print(f"\n=== GraphQL Calls Made: {len(graphql_route.calls)} ===")
         for i, call in enumerate(graphql_route.calls):
-            import json
-
             req_body = json.loads(call.request.content)
             print(f"\nCall {i}:")
             print(f"  Query: {req_body.get('query', '')[:100]}...")
@@ -259,13 +259,13 @@ class TestFieldMergingOnRefetch:
         )
 
         scene = await store.get(Scene, "s1")
-        initial_received = getattr(scene, "_received_fields", set()).copy()
+        initial_received: set[str] = getattr(scene, "_received_fields", set()).copy()
 
         # Populate with new fields
         scene = await store.populate(scene, fields=["studio", "rating100"])
 
         # Verify fields are merged (union)
-        final_received = getattr(scene, "_received_fields", set())
+        final_received: set[str] = getattr(scene, "_received_fields", set())
 
         # Should have original fields
         for field in initial_received:
@@ -324,7 +324,7 @@ class TestFieldMergingOnRefetch:
         scene = await store.populate(scene, fields=["performers"])
 
         # Verify studio is still in _received_fields (not lost)
-        final_received = getattr(scene, "_received_fields", set())
+        final_received: set[str] = getattr(scene, "_received_fields", set())
         assert "studio" in final_received
         assert "performers" in final_received
 
@@ -663,7 +663,7 @@ class TestPopulateIntegrationWithPhase2:
         assert populated_studio.details == "Studio details"
 
         # Verify _received_fields includes new fields
-        studio_received = getattr(populated_studio, "_received_fields", set())
+        studio_received: set[str] = getattr(populated_studio, "_received_fields", set())
         assert "urls" in studio_received
         assert "details" in studio_received
 

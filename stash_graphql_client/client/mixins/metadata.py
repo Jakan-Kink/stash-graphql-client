@@ -24,7 +24,7 @@ from ...types import (
     ScanMetadataOptions,
     SetupInput,
 )
-from ...types.unset import UNSET
+from ...types.unset import is_set
 from ..protocols import StashClientProtocol
 
 
@@ -116,24 +116,13 @@ class MetadataClientMixin(StashClientProtocol):
         """Start a metadata scan job.
 
         Args:
-            paths: List of paths to scan (empty for all paths)
-            flags: Optional scan flags matching ScanMetadataInput schema:
-                - rescan: bool
-                - scanGenerateCovers: bool
-                - scanGeneratePreviews: bool
-                - scanGenerateImagePreviews: bool
-                - scanGenerateSprites: bool
-                - scanGeneratePhashes: bool
-                - scanGenerateThumbnails: bool
-                - scanGenerateClipPreviews: bool
-                - filter: ScanMetaDataFilterInput
+            paths: List of paths to scan (None = all paths)
+            flags: Dict of scan flags to override defaults (rescan, scanGenerateCovers, etc.)
 
         Returns:
             Job ID for the scan operation
         """
         # Get scan input object with defaults from config
-        if flags is None:
-            flags = {}
         if paths is None:
             paths = []
         try:
@@ -199,7 +188,7 @@ class MetadataClientMixin(StashClientProtocol):
             )
 
             # ConfigResult has a defaults field - Pydantic handles all nested objects
-            if config and config.defaults is not UNSET:
+            if config and is_set(config.defaults):
                 return config.defaults
 
             # Fallback to defaults

@@ -50,6 +50,7 @@ from pydantic import (
 )
 
 from stash_graphql_client import fragments
+from stash_graphql_client.errors import StashIntegrationError
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
 from stash_graphql_client.types.unset import UNSET, UnsetType
@@ -196,7 +197,7 @@ class FromGraphQLMixin:
     """
 
     @classmethod
-    def from_graphql(cls: type[T], data: dict[str, Any]) -> T:
+    def from_graphql(cls: type[T], data: dict[str, Any]) -> T:  # type: ignore[misc]
         """Deserialize from GraphQL response data.
 
         This method provides symmetric deserialization to complement
@@ -244,7 +245,7 @@ class FromGraphQLMixin:
         Returns:
             Dictionary with nested dicts preprocessed via from_graphql
         """
-        processed = {}
+        processed: dict[str, Any] = {}
 
         for field_name, value in data.items():
             if value is None:
@@ -252,8 +253,8 @@ class FromGraphQLMixin:
                 continue
 
             # Check if this field should be a StashObject type
-            if field_name in cls.model_fields:
-                field_info = cls.model_fields[field_name]
+            if field_name in cls.model_fields:  # type: ignore[attr-defined]
+                field_info = cls.model_fields[field_name]  # type: ignore[attr-defined]
                 annotation = field_info.annotation
 
                 # Handle Optional[Type], Type | None, and List[Type]
@@ -303,7 +304,7 @@ class FromGraphQLMixin:
         return processed
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
+    def from_dict(cls, data: dict[str, Any]) -> Self:  # type: ignore[misc]
         """Alias for from_graphql() for backwards compatibility.
 
         Args:
@@ -312,7 +313,7 @@ class FromGraphQLMixin:
         Returns:
             Instance of the type with data validated
         """
-        return cls.from_graphql(data)
+        return cls.from_graphql(data)  # type: ignore[arg-type,misc]
 
 
 class StashInput(BaseModel):
@@ -476,7 +477,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         populate_by_name=True,  # Accept both snake_case and camelCase
     )
 
-    id: str  # Only required field
+    id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
     updated_at: Time | UnsetType = UNSET  # Time! - Stash internal
 
@@ -547,6 +548,166 @@ class StashObject(FromGraphQLMixin, BaseModel):
             # Use object.__setattr__ to avoid triggering another sync
             object.__setattr__(related_obj, inverse_field, self)
 
+    # =========================================================================
+    # Generic Relationship Management Helpers
+    # =========================================================================
+
+    async def _add_to_relationship(
+        self, field_name: str, related_obj: StashObject
+    ) -> None:
+        """Add an object to a relationship field (generic helper).
+
+        This method leverages RelationshipMetadata to:
+        1. Fetch the field from store if UNSET
+        2. Fetch the inverse field from store if UNSET (for bidirectional sync)
+        3. Initialize to [] if None (for list relationships)
+        4. Add object if not already present
+        5. Sync inverse relationship automatically
+
+        Args:
+            field_name: Name of the relationship field (e.g., "parents", "galleries")
+            related_obj: The object to add to the relationship
+
+        Raises:
+            ValueError: If field_name is not in __relationships__
+            StashIntegrationError: If store is not available when needed
+
+        Example:
+            >>> tag = await client.find_tag("child_id")
+            >>> parent = await client.find_tag("parent_id")
+            >>> await tag._add_to_relationship("parents", parent)
+            >>> await store.save(tag)
+        """
+
+        # 1. Validate field has metadata
+        if field_name not in self.__relationships__:
+            raise ValueError(
+                f"No relationship metadata for field '{field_name}' on {self.__type_name__}"
+            )
+
+        metadata = self.__relationships__[field_name]
+        if not isinstance(metadata, RelationshipMetadata):
+            raise ValueError(
+                f"Field '{field_name}' uses old tuple syntax, not RelationshipMetadata"
+            )
+
+        # 2. Get current value of the field
+        current_value = getattr(self, field_name)
+
+        # 3. If UNSET, fetch from store
+        if isinstance(current_value, UnsetType):
+            if self._store is None:
+                raise StashIntegrationError(
+                    f"Cannot add to '{field_name}': store not available. "
+                    f"Ensure the {self.__type_name__} was loaded through a StashEntityStore."
+                )
+            await self._store.populate(self, fields=[field_name])
+            current_value = getattr(self, field_name)
+
+        # 4. Initialize to [] if None (for list relationships)
+        if current_value is None and metadata.is_list:
+            current_value = []
+            setattr(self, field_name, current_value)
+
+        # 5. Fetch inverse field if UNSET (for bidirectional sync)
+        if metadata.inverse_query_field:
+            inverse_field = metadata.inverse_query_field
+            inverse_value = getattr(related_obj, inverse_field, UNSET)
+
+            if isinstance(inverse_value, UnsetType):
+                if related_obj._store is None:
+                    raise StashIntegrationError(
+                        f"Cannot sync inverse '{inverse_field}': store not available. "
+                        f"Ensure the {metadata.inverse_type} was loaded through a StashEntityStore."
+                    )
+                await related_obj._store.populate(related_obj, fields=[inverse_field])
+
+            # Initialize inverse to [] if None
+            inverse_value = getattr(related_obj, inverse_field)
+            if inverse_value is None:
+                # Check if inverse is a list relationship
+                inverse_meta = related_obj.__relationships__.get(inverse_field)
+                if (
+                    isinstance(inverse_meta, RelationshipMetadata)
+                    and inverse_meta.is_list
+                ):
+                    setattr(related_obj, inverse_field, [])
+
+        # 6. Add to list or set single value
+        if metadata.is_list:
+            current_value = getattr(self, field_name)
+            if current_value is not None and related_obj not in current_value:
+                current_value.append(related_obj)
+                # Manually sync inverse since append() doesn't trigger __setattr__
+                self._sync_inverse_relationship(field_name, current_value)
+        else:
+            # Setting triggers __setattr__ -> _sync_inverse_relationship()
+            setattr(self, field_name, related_obj)
+
+    async def _remove_from_relationship(
+        self, field_name: str, related_obj: StashObject
+    ) -> None:
+        """Remove an object from a relationship field (generic helper).
+
+        This method leverages RelationshipMetadata to:
+        1. Skip if field is UNSET (nothing to remove)
+        2. Skip if field is None (nothing to remove)
+        3. Remove object if present
+        4. Sync inverse relationship automatically
+
+        Args:
+            field_name: Name of the relationship field (e.g., "parents", "galleries")
+            related_obj: The object to remove from the relationship
+
+        Raises:
+            ValueError: If field_name is not in __relationships__
+
+        Example:
+            >>> tag = await client.find_tag("child_id")
+            >>> parent = await client.find_tag("parent_id")
+            >>> await tag._remove_from_relationship("parents", parent)
+            >>> await store.save(tag)
+        """
+        # 1. Validate field has metadata
+        if field_name not in self.__relationships__:
+            raise ValueError(
+                f"No relationship metadata for field '{field_name}' on {self.__type_name__}"
+            )
+
+        metadata = self.__relationships__[field_name]
+        if not isinstance(metadata, RelationshipMetadata):
+            raise ValueError(
+                f"Field '{field_name}' uses old tuple syntax, not RelationshipMetadata"
+            )
+
+        # 2. Get current value
+        current_value = getattr(self, field_name)
+
+        # 3. Skip if UNSET or None (nothing to remove)
+        if isinstance(current_value, UnsetType) or current_value is None:
+            return
+
+        # 4. Remove from list or clear single value
+        if metadata.is_list:
+            if isinstance(current_value, list) and related_obj in current_value:
+                current_value.remove(related_obj)
+                # Sync inverse (removing this object from related_obj's inverse field)
+                if metadata.inverse_query_field:
+                    inverse_field = metadata.inverse_query_field
+                    inverse_value = getattr(related_obj, inverse_field, UNSET)
+                    if (
+                        not isinstance(inverse_value, UnsetType)
+                        and inverse_value is not None
+                    ):
+                        if isinstance(inverse_value, list) and self in inverse_value:
+                            inverse_value.remove(self)
+                        elif inverse_value is self:
+                            # Single object inverse - set to None
+                            setattr(related_obj, inverse_field, None)
+        # Single object - set to None if it matches
+        elif current_value is related_obj:
+            setattr(self, field_name, None)
+
     def __init__(self, **data: Any) -> None:
         """Initialize StashObject with UUID4 auto-generation for new objects.
 
@@ -558,7 +719,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
             **data: Field values for the object
         """
         # Save original state before modifying data
-        is_new_object = "id" not in data or data.get("id") is None
+        is_new_object = (
+            "id" not in data or data.get("id") is None or data.get("id") == ""
+        )
 
         # Auto-generate UUID4 for new objects without an ID
         if is_new_object:
@@ -577,7 +740,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         if is_new_object:
             object.__setattr__(self, "_is_new", True)
         else:
-            # Existing object - check if it has a UUID (legacy)
+            # Type narrowing: id is always str (and non-empty) here after UUID generation
             object.__setattr__(
                 self,
                 "_is_new",
@@ -689,7 +852,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     )
                     # Merge new fields from data into cached instance
                     # Track old and new received fields
-                    old_received = getattr(cached_obj, "_received_fields", set())
+                    old_received: set[str] = getattr(
+                        cached_obj, "_received_fields", set()
+                    )
                     new_fields = set(data.keys())
 
                     # Process nested lookups for new data
@@ -1163,7 +1328,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Returns:
             Dictionary of processed fields (UNSET fields excluded)
         """
-        data = {}
+        data: dict[str, Any] = {}
         for field in fields_to_process:
             if field not in self.__field_conversions__:
                 continue

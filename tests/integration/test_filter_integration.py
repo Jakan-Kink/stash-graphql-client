@@ -15,6 +15,7 @@ from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     DestroyFilterInput,
     FilterMode,
+    FindFilterType,
     SavedFilter,
     SaveFilterInput,
 )
@@ -176,7 +177,7 @@ async def test_save_filter_with_find_filter(
         input_data = SaveFilterInput(
             mode=FilterMode.SCENES,
             name=unique_name,
-            find_filter={"per_page": 50, "page": 1},
+            find_filter=FindFilterType(per_page=50, page=1),
         )
 
         saved_filter = await stash_client.save_filter(input_data)

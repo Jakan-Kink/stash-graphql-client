@@ -296,7 +296,7 @@ class TestInverseSyncEdgeCases:
         parent = Tag(name="Parent", parents=[], children=[])
 
         # Set a field to UNSET explicitly - should trigger early return
-        parent.parents = UNSET  # type: ignore[assignment]
+        parent.parents = UNSET
 
         # Should not crash, UNSET is preserved
         assert isinstance(parent.parents, UnsetType)

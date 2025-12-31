@@ -146,7 +146,7 @@ class TestFieldNames:
         class TestModel(StashObject):
             __type_name__ = "TestModel"
             __update_input_type__ = BaseModel
-            id: str | None = None
+            id: str = ""
             name: str | None = None
 
         # Delete __field_names__ if it exists to force computation
@@ -201,7 +201,7 @@ class TestFindById:
         )
 
         # Call find_by_id
-        result = await Tag.find_by_id("tag-error", respx_stash_client)
+        result = await Tag.find_by_id(respx_stash_client, "tag-error")
 
         # Should return None instead of raising
         assert result is None

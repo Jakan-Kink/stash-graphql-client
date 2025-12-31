@@ -450,7 +450,7 @@ class StashEntityStore:
                 obj = fresh_obj  # type: ignore[assignment]
 
         # Save merged received fields before processing nested objects
-        final_received = getattr(obj, "_received_fields", set())
+        final_received: set[str] = getattr(obj, "_received_fields", set())
 
         # Only populate nested objects if we actually fetched new data or if in heuristic mode
         # If user specified fields and they're already present, don't deep-populate nested objects

@@ -15,8 +15,6 @@ from ..types import (
     GenerateMetadataOptions,
     Job,
     JobStatus,
-    ScanMetadataInput,
-    ScanMetadataOptions,
 )
 from ..types.metadata import SystemStatus
 
@@ -64,6 +62,22 @@ class StashClientProtocol(Protocol):
         ...
 
     # Core execution methods
+    @overload
+    async def execute(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+        result_type: None = None,
+    ) -> dict[str, Any]: ...
+
+    @overload
+    async def execute(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+        result_type: type[T] = ...,
+    ) -> T: ...
+
     async def execute(
         self,
         query: str,
@@ -103,11 +117,6 @@ class StashClientProtocol(Protocol):
     @overload
     def _decode_result(self, type_: type[T], data: None) -> None:
         """Decode GraphQL result dict to typed object (None data)."""
-        ...
-
-    @overload
-    def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
-        """Decode GraphQL result dict to typed object (optional data)."""
         ...
 
     def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
@@ -161,14 +170,14 @@ class StashClientProtocol(Protocol):
 
     async def metadata_scan(
         self,
-        options: ScanMetadataOptions | dict[str, Any] | None = None,
-        input_data: ScanMetadataInput | dict[str, Any] | None = None,
+        paths: list[str] | None = None,
+        flags: dict[str, Any] | None = None,
     ) -> str:
         """Scan for new/changed media.
 
         Args:
-            options: Scan options
-            input_data: Input data specifying what to scan
+            paths: List of paths to scan (None = all paths)
+            flags: Dict of scan flags to override defaults
 
         Returns:
             Job ID for the scan task

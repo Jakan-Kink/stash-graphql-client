@@ -362,7 +362,7 @@ async def test_metadata_clean_with_model(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    input_data = CleanMetadataInput(paths=["/another/path"], dry_run=True)
+    input_data = CleanMetadataInput(paths=["/another/path"], dryRun=True)
     job_id = await respx_stash_client.metadata_clean(input_data)
 
     assert job_id == "job-456"
@@ -432,7 +432,7 @@ async def test_metadata_clean_generated_with_model(
     )
 
     input_data = CleanGeneratedInput(
-        blob_files=True, image_thumbnails=True, markers=False, dry_run=True
+        blobFiles=True, imageThumbnails=True, markers=False, dryRun=True
     )
     job_id = await respx_stash_client.metadata_clean_generated(input_data)
 
@@ -500,7 +500,7 @@ async def test_export_objects_with_model(respx_stash_client: StashClient) -> Non
 
     input_data = ExportObjectsInput(
         performers=ExportObjectTypeInput(ids=["1", "2", "3"]),
-        include_dependencies=True,
+        includeDependencies=True,
     )
     token = await respx_stash_client.export_objects(input_data)
 
@@ -571,8 +571,8 @@ async def test_import_objects_with_model(respx_stash_client: StashClient) -> Non
 
     input_data = ImportObjectsInput(
         file="/path/to/data.json",
-        duplicate_behaviour=ImportDuplicateEnum.OVERWRITE,
-        missing_ref_behaviour=ImportMissingRefEnum.CREATE,
+        duplicateBehaviour=ImportDuplicateEnum.OVERWRITE,
+        missingRefBehaviour=ImportMissingRefEnum.CREATE,
     )
     job_id = await respx_stash_client.import_objects(input_data)
 
@@ -985,10 +985,10 @@ async def test_setup_with_model(respx_stash_client: StashClient) -> None:
 
     input_data = SetupInput(
         stashes=[
-            StashConfigInput(path="/media/videos", exclude_video=False),
+            StashConfigInput(path="/media/videos", excludeVideo=False),
         ],
-        database_file="/data/stash.db",
-        generated_location="/data/generated",
+        databaseFile="/data/stash.db",
+        generatedLocation="/data/generated",
     )
     result = await respx_stash_client.setup(input_data)
 

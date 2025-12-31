@@ -12,6 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import DestroyFilterInput, FilterMode, SaveFilterInput
+from stash_graphql_client.types.filters import FindFilterType
 from tests.fixtures import create_graphql_response
 
 
@@ -56,7 +57,7 @@ async def test_save_filter_create_new(respx_stash_client: StashClient) -> None:
     input_data = SaveFilterInput(
         mode=FilterMode.SCENES,
         name="My Scenes Filter",
-        find_filter={"page": 1, "per_page": 25},
+        find_filter=FindFilterType(page=1, per_page=25),
         object_filter={"is_missing": "performers"},
         ui_options={"display_mode": "grid"},
     )

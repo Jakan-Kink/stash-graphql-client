@@ -7,7 +7,13 @@ from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel, Field
 
-from .base import RelationshipMetadata, StashInput, StashObject, StashResult
+from .base import (
+    BulkUpdateIds,
+    RelationshipMetadata,
+    StashInput,
+    StashObject,
+    StashResult,
+)
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
@@ -191,77 +197,107 @@ class Gallery(StashObject):
     paths: GalleryPathsType | UnsetType = UNSET
 
     async def image(self, index: int) -> Image:
-        """Get image at index."""
-        # TODO: Implement this resolver
-        raise NotImplementedError("image resolver not implemented")
+        """Get image at index from this gallery.
 
-    def add_performer(self, performer: Performer) -> None:
-        """Add a performer to this gallery.
-
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs performer.galleries when you save.
+        Uses the GraphQL `gallery.image(index)` resolver to fetch a specific image
+        by its position in the gallery.
 
         Args:
-            performer: The Performer instance to add
+            index: Zero-based index of the image in the gallery
 
-        Example:
-            >>> gallery.add_performer(performer)
-            >>> await store.save(gallery)  # Persist the change
+        Returns:
+            Image object at the specified index
+
+        Raises:
+            ValueError: If gallery ID is not set or index is out of bounds
+            RuntimeError: If no StashEntityStore is configured
+
+        Examples:
+            ```python
+            gallery = await client.find_gallery("123")
+
+            # Get first image
+            first_image = await gallery.image(0)
+
+            # Get last image (if you know the count)
+            if is_set(gallery.image_count):
+                last_image = await gallery.image(gallery.image_count - 1)
+            ```
         """
-        if isinstance(self.performers, UnsetType):
-            self.performers = []
-        if performer not in self.performers:
-            self.performers.append(performer)
+        from stash_graphql_client import fragments
+        from stash_graphql_client.types.unset import is_set
 
-    def remove_performer(self, performer: Performer) -> None:
-        """Remove a performer from this gallery.
+        # Validate gallery has ID
+        if not is_set(self.id) or self.id is None:
+            raise ValueError("Cannot get image: gallery ID is not set")
 
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs performer.galleries when you save.
+        # Validate store is configured
+        if self._store is None:
+            raise RuntimeError(
+                "Cannot get image: no StashEntityStore configured. "
+                "Use StashContext to properly initialize the entity store."
+            )
 
-        Args:
-            performer: The Performer instance to remove
-
-        Example:
-            >>> gallery.remove_performer(performer)
-            >>> await store.save(gallery)  # Persist the change
+        # Query the gallery.image(index) resolver via store's client
+        query = f"""
+        {fragments.IMAGE_QUERY_FRAGMENTS}
+        query GalleryImage($galleryId: ID!, $index: Int!) {{
+            findGallery(id: $galleryId) {{
+                image(index: $index) {{
+                    ...ImageFragment
+                }}
+            }}
+        }}
         """
-        if self.performers is not UNSET and performer in self.performers:
-            self.performers.remove(performer)
 
-    def add_scene(self, scene: Scene) -> None:
-        """Add a scene to this gallery.
+        try:
+            result = await self._store._client.execute(
+                query, {"galleryId": self.id, "index": index}
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to fetch image at index {index} from gallery {self.id}: {e}"
+            ) from e
 
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs scene.galleries when you save.
+        # Extract image data
+        gallery_data = result.get("findGallery")
+        if not gallery_data:
+            raise ValueError(f"Gallery {self.id} not found")
 
-        Args:
-            scene: The Scene instance to add
+        image_data = gallery_data.get("image")
+        if not image_data:
+            raise ValueError(
+                f"No image found at index {index} in gallery {self.id}. "
+                f"Gallery has {self.image_count if is_set(self.image_count) else 'unknown'} images."
+            )
 
-        Example:
-            >>> gallery.add_scene(scene)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if self.scenes is UNSET:
-            self.scenes = []
-        if scene not in self.scenes:
-            self.scenes.append(scene)
+        # Use from_graphql() - the canonical method for GraphQL responses
+        # This ensures proper _received_fields tracking and identity map integration
+        return Image.from_graphql(image_data)
 
-    def remove_scene(self, scene: Scene) -> None:
-        """Remove a scene from this gallery.
+    async def add_performer(self, performer: Performer) -> None:
+        """Add performer (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("performers", performer)
 
-        In-memory operation only. Call store.save(gallery) to persist changes.
-        The backend automatically syncs scene.galleries when you save.
+    async def remove_performer(self, performer: Performer) -> None:
+        """Remove performer (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("performers", performer)
 
-        Args:
-            scene: The Scene instance to remove
+    async def add_scene(self, scene: Scene) -> None:
+        """Add scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scenes", scene)
 
-        Example:
-            >>> gallery.remove_scene(scene)
-            >>> await store.save(gallery)  # Persist the change
-        """
-        if self.scenes is not UNSET and scene in self.scenes:
-            self.scenes.remove(scene)
+    async def remove_scene(self, scene: Scene) -> None:
+        """Remove scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scenes", scene)
+
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
+
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
 
     # Field definitions with their conversion functions
     __field_conversions__: ClassVar[dict] = {
@@ -328,13 +364,6 @@ class BulkUpdateStrings(StashInput):
     """Input for bulk string updates."""
 
     values: list[str]  # [String!]!
-    mode: BulkUpdateIdMode  # BulkUpdateIdMode!
-
-
-class BulkUpdateIds(StashInput):
-    """Input for bulk ID updates."""
-
-    ids: list[str]  # [ID!]!
     mode: BulkUpdateIdMode  # BulkUpdateIdMode!
 
 

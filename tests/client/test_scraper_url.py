@@ -14,6 +14,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import ScrapeContentType
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
 
@@ -430,8 +431,10 @@ async def test_scrape_scene_url_with_nested_data(
     assert result is not None
     assert result.title == "Complex Scene"
     assert result.studio is not None
+    assert is_set(result.studio)
     assert result.studio.name == "Test Studio"
     assert result.tags is not None
+    assert is_set(result.tags)
     assert len(result.tags) == 2
 
     assert len(graphql_route.calls) == 1

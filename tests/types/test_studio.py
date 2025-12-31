@@ -6,7 +6,7 @@ Tests studio types including Studio, StudioCreateInput, StudioUpdateInput and re
 import pytest
 from pydantic import BaseModel
 
-from stash_graphql_client.types import UNSET
+from stash_graphql_client.types import UnsetType
 from stash_graphql_client.types.base import RelationshipMetadata
 from stash_graphql_client.types.studio import (
     FindStudiosResultType,
@@ -188,9 +188,9 @@ def test_studio_instantiation() -> None:
     assert studio.id == "123"
     assert studio.name == "Test Studio"
     # Studio list fields default to UNSET (not [] or None) for fragment-based loading
-    assert studio.aliases is UNSET
-    assert studio.tags is UNSET
-    assert studio.stash_ids is UNSET
+    assert isinstance(studio.aliases, UnsetType)
+    assert isinstance(studio.tags, UnsetType)
+    assert isinstance(studio.stash_ids, UnsetType)
 
 
 @pytest.mark.unit
@@ -262,7 +262,7 @@ def test_studio_handle_deprecated_url_migration() -> None:
     This covers lines 131-137 in studio.py - url migration logic.
     """
     # Test migrating single url to urls array via Studio instantiation
-    studio = Studio(id="1", url="https://example.com", name="Test Studio")
+    studio = Studio(id="1", url="https://example.com", name="Test Studio")  # type: ignore[call-arg]
 
     # url should be migrated to urls
     assert studio.urls == ["https://example.com"]
@@ -277,7 +277,7 @@ def test_studio_handle_deprecated_url_merge() -> None:
     # Test merging url into existing urls if not present
     studio = Studio(
         id="1",
-        url="https://example.com",
+        url="https://example.com",  # type: ignore[call-arg]
         urls=["https://other.com"],
         name="Test Studio",
     )
@@ -295,7 +295,7 @@ def test_studio_handle_deprecated_url_already_in_urls() -> None:
     # Test when url is already in urls
     studio = Studio(
         id="1",
-        url="https://example.com",
+        url="https://example.com",  # type: ignore[call-arg]
         urls=["https://example.com", "https://other.com"],
         name="Test Studio",
     )
@@ -311,10 +311,10 @@ def test_studio_handle_deprecated_url_empty_string() -> None:
     This covers line 133 in studio.py - removing empty url.
     """
     # Test with empty string url
-    studio = Studio(id="1", name="Test Studio", url="")
+    studio = Studio(id="1", name="Test Studio", url="")  # type: ignore[call-arg]
 
     # Empty url should be removed, urls should be UNSET
-    assert studio.urls is UNSET
+    assert isinstance(studio.urls, UnsetType)
 
 
 @pytest.mark.unit
@@ -328,4 +328,4 @@ def test_studio_handle_deprecated_url_none() -> None:
     studio = Studio(id="1", name="Test Studio")
 
     # Should have UNSET urls (no url field provided)
-    assert studio.urls is UNSET
+    assert isinstance(studio.urls, UnsetType)

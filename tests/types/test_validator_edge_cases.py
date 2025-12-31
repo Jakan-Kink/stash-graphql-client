@@ -12,8 +12,9 @@ from stash_graphql_client.types import (
     ImageFile,
     Scene,
     VideoFile,
+    is_set,
 )
-from stash_graphql_client.types.unset import UNSET
+from stash_graphql_client.types.unset import UnsetType
 
 
 # =============================================================================
@@ -107,7 +108,7 @@ def test_image_visual_files_none():
     try:
         image = Image.model_validate(data)
         # If accepted, verify it's None or UNSET
-        assert image.visual_files is None or image.visual_files is UNSET
+        assert image.visual_files is None or isinstance(image.visual_files, UnsetType)
     except ValidationError:
         # Also acceptable - None might not be allowed
         pass
@@ -131,7 +132,7 @@ def test_image_visual_files_unset():
 
     image = Image.model_validate(data)
     # Omitted field should be UNSET
-    assert image.visual_files is UNSET
+    assert isinstance(image.visual_files, UnsetType)
 
 
 def test_image_visual_files_not_a_list():
@@ -197,6 +198,8 @@ def test_image_visual_files_unknown_typename():
     image = Image.model_validate(data)
 
     # Only the ImageFile should be included, unknown type skipped
+    assert is_set(image.visual_files)
+    assert image.visual_files is not None
     assert len(image.visual_files) == 1
     assert isinstance(image.visual_files[0], ImageFile)
 
@@ -243,6 +246,8 @@ def test_image_visual_files_already_constructed():
 
     image = Image.model_validate(data)
 
+    assert is_set(image.visual_files)
+    assert image.visual_files is not None
     assert len(image.visual_files) == 1
     assert isinstance(image.visual_files[0], VideoFile)
     assert image.visual_files[0] is video_file  # Should be same instance
@@ -285,6 +290,8 @@ def test_image_visual_files_no_typename():
 
     # Without __typename, the dict is passed through as-is
     # Pydantic will try to construct it - might succeed or fail depending on structure
+    assert is_set(image.visual_files)
+    assert image.visual_files is not None
     assert len(image.visual_files) == 1
     # The item should still be in the list (passed through)
     assert image.visual_files[0] is not None

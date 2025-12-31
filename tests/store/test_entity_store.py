@@ -907,7 +907,10 @@ class TestFilterWithExpiredEntries:
             time.sleep(0.01)  # Ensure expiration
 
             # Filter should skip expired entry
-            favorites = store.filter(Performer, lambda p: p.favorite)
+            favorites = store.filter(
+                Performer,
+                lambda p: p.favorite is True,  # Narrow bool | UnsetType to bool
+            )
 
             assert len(favorites) == 0
 

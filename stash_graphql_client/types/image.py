@@ -179,73 +179,29 @@ class Image(StashObject):
         ),
     }
 
-    def add_performer(self, performer: Performer) -> None:
-        """Add a performer to this image.
+    async def add_performer(self, performer: Performer) -> None:
+        """Add performer (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("performers", performer)
 
-        In-memory operation only. Call store.save(image) to persist changes.
-        The backend automatically syncs performer.images when you save.
+    async def remove_performer(self, performer: Performer) -> None:
+        """Remove performer (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("performers", performer)
 
-        Args:
-            performer: The Performer instance to add
+    async def add_to_gallery(self, gallery: Gallery) -> None:
+        """Add gallery (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("galleries", gallery)
 
-        Example:
-            >>> image.add_performer(performer)
-            >>> await store.save(image)  # Persist the change
-        """
-        if self.performers is UNSET:
-            self.performers = []
-        if performer not in self.performers:
-            self.performers.append(performer)
+    async def remove_from_gallery(self, gallery: Gallery) -> None:
+        """Remove gallery (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("galleries", gallery)
 
-    def remove_performer(self, performer: Performer) -> None:
-        """Remove a performer from this image.
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
 
-        In-memory operation only. Call store.save(image) to persist changes.
-        The backend automatically syncs performer.images when you save.
-
-        Args:
-            performer: The Performer instance to remove
-
-        Example:
-            >>> image.remove_performer(performer)
-            >>> await store.save(image)  # Persist the change
-        """
-        if self.performers is not UNSET and performer in self.performers:
-            self.performers.remove(performer)
-
-    def add_to_gallery(self, gallery: Gallery) -> None:
-        """Add this image to a gallery.
-
-        In-memory operation only. Call store.save(image) to persist changes.
-        The backend automatically syncs gallery.images when you save.
-
-        Args:
-            gallery: The Gallery instance to add this image to
-
-        Example:
-            >>> image.add_to_gallery(gallery)
-            >>> await store.save(image)  # Persist the change
-        """
-        if self.galleries is UNSET:
-            self.galleries = []
-        if gallery not in self.galleries:
-            self.galleries.append(gallery)
-
-    def remove_from_gallery(self, gallery: Gallery) -> None:
-        """Remove this image from a gallery.
-
-        In-memory operation only. Call store.save(image) to persist changes.
-        The backend automatically syncs gallery.images when you save.
-
-        Args:
-            gallery: The Gallery instance to remove this image from
-
-        Example:
-            >>> image.remove_from_gallery(gallery)
-            >>> await store.save(image)  # Persist the change
-        """
-        if self.galleries is not UNSET and gallery in self.galleries:
-            self.galleries.remove(gallery)
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
 
     @field_validator("visual_files", mode="before")
     @classmethod
@@ -262,7 +218,7 @@ class Image(StashObject):
             return value
 
         # Type mapping for VisualFile union
-        type_map = {
+        type_map: dict[str, type[VideoFile] | type[ImageFile]] = {
             "VideoFile": VideoFile,
             "ImageFile": ImageFile,
         }

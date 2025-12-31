@@ -61,7 +61,7 @@ async def test_migrate_with_model(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    input_data = MigrateInput(backup_path="/backup/path/db.sqlite3")
+    input_data = MigrateInput(backupPath="/backup/path/db.sqlite3")
     job_id = await respx_stash_client.migrate(input_data)
 
     assert job_id == "migrate-job-456"
@@ -172,9 +172,7 @@ async def test_migrate_scene_screenshots_with_model(
         ]
     )
 
-    input_data = MigrateSceneScreenshotsInput(
-        delete_files=False, overwriteExisting=True
-    )
+    input_data = MigrateSceneScreenshotsInput(deleteFiles=False, overwriteExisting=True)
     job_id = await respx_stash_client.migrate_scene_screenshots(input_data)
 
     assert job_id == "ss-job-456"
@@ -238,7 +236,7 @@ async def test_migrate_blobs_with_model(respx_stash_client: StashClient) -> None
         ]
     )
 
-    input_data = MigrateBlobsInput(delete_old=False)
+    input_data = MigrateBlobsInput(deleteOld=False)
     job_id = await respx_stash_client.migrate_blobs(input_data)
 
     assert job_id == "blob-job-456"

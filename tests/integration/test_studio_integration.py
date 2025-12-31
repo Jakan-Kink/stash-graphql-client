@@ -6,6 +6,7 @@ Tests studio operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -28,7 +29,11 @@ async def test_find_studios_returns_results(
         assert calls[0]["exception"] is None
 
         # Result should be valid even if empty
+        assert is_set(result.count)
+        assert result.count is not None
         assert result.count >= 0
+        assert is_set(result.studios)
+        assert result.studios is not None
         assert isinstance(result.studios, list)
 
 
@@ -53,6 +58,8 @@ async def test_find_studios_with_pagination(
         assert calls[0]["exception"] is None
 
         # Verify response
+        assert is_set(result.studios)
+        assert result.studios is not None
         assert len(result.studios) <= 10
 
 
@@ -99,5 +106,9 @@ async def test_find_studios_with_q_parameter(
         assert calls[0]["exception"] is None
 
         # Should return valid result (may or may not have matches)
+        assert is_set(result.count)
+        assert result.count is not None
         assert result.count >= 0
+        assert is_set(result.studios)
+        assert result.studios is not None
         assert isinstance(result.studios, list)

@@ -8,6 +8,8 @@ Following TESTING_REQUIREMENTS.md:
 - Verify GraphQL requests and responses
 """
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -39,8 +41,6 @@ async def test_tag_find_by_name_exact_match(respx_stash_client) -> None:
         assert len(route.calls) == 1
 
         # Verify query and variables
-        import json
-
         body = json.loads(route.calls[0].request.content)
         assert "findTags" in body["query"]
         assert body["variables"]["tag_filter"]["name"]["value"] == "Action"
@@ -80,8 +80,6 @@ async def test_tag_find_by_name_case_insensitive_match(respx_stash_client) -> No
         assert len(route.calls) == 2
 
         # Verify first call: exact match with EQUALS
-        import json
-
         body1 = json.loads(route.calls[0].request.content)
         assert body1["variables"]["tag_filter"]["name"]["modifier"] == "EQUALS"
 

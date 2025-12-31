@@ -13,6 +13,7 @@ Skip with: pytest -m "not integration"
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -36,8 +37,10 @@ async def test_find_scenes_returns_expected_count(
         assert calls[0]["exception"] is None
 
         # Dynamic assertion: count should match scenes list length
+        assert is_set(result.scenes)
         assert result.count == len(result.scenes)
         # Sanity check: should have at least some scenes
+        assert is_set(result.count)
         assert result.count > 0
 
 
@@ -53,6 +56,7 @@ async def test_find_scenes_with_pagination(
     ):
         # First query without pagination to get total count
         full_result = await stash_client.find_scenes()
+        assert is_set(full_result.count)
         total_count = full_result.count
 
         # Verify first call
@@ -78,10 +82,12 @@ async def test_find_scenes_with_pagination(
 
         # Pagination should report same total count (allow +/- 1 for concurrent test activity)
         # Note: Other tests running in parallel may create scenes between queries
+        assert is_set(paginated_result.count)
         assert abs(paginated_result.count - total_count) <= 1, (
             f"Count changed significantly between queries: {total_count} -> {paginated_result.count}"
         )
         # But only return requested page size (or less if fewer scenes exist)
+        assert is_set(paginated_result.scenes)
         assert len(paginated_result.scenes) <= 10, (
             f"Expected at most 10 scenes, got {len(paginated_result.scenes)}"
         )
@@ -99,6 +105,7 @@ async def test_find_scene_by_id(
         capture_graphql_calls(stash_client) as calls,
     ):
         result = await stash_client.find_scenes(filter_={"per_page": 1})
+        assert is_set(result.scenes)
         assert len(result.scenes) > 0
 
         scene_id = result.scenes[0].id
@@ -144,8 +151,10 @@ async def test_find_images_returns_expected_count(
         assert calls[0]["exception"] is None
 
         # Dynamic assertion: count should match images list length
+        assert is_set(result.images)
         assert result.count == len(result.images)
         # Sanity check: should have at least some images
+        assert is_set(result.count)
         assert result.count > 0
 
 
@@ -161,6 +170,7 @@ async def test_find_images_with_pagination(
     ):
         # First query without pagination to get total count
         full_result = await stash_client.find_images()
+        assert is_set(full_result.count)
         total_count = full_result.count
 
         # Verify first call
@@ -187,7 +197,9 @@ async def test_find_images_with_pagination(
         # Pagination should report same total count
         assert paginated_result.count == total_count
         # But only return requested page size (or less if fewer images exist)
-        assert len(paginated_result.images) == min(50, total_count)
+        assert is_set(paginated_result.images)
+        assert is_set(paginated_result.count)
+        assert len(paginated_result.images) == min(50, paginated_result.count)
 
 
 @pytest.mark.integration
@@ -202,6 +214,7 @@ async def test_find_image_by_id(
         capture_graphql_calls(stash_client) as calls,
     ):
         result = await stash_client.find_images(filter_={"per_page": 1})
+        assert is_set(result.images)
         assert len(result.images) > 0
 
         image_id = result.images[0].id

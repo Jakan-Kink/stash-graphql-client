@@ -15,11 +15,14 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkPerformerUpdateInput,
+    BulkUpdateIdMode,
     BulkUpdateIds,
+    GenderEnum,
     OnMultipleMatch,
     Performer,
     PerformerDestroyInput,
 )
+from stash_graphql_client.types.unset import UNSET, is_set
 from tests.fixtures import (
     create_find_performers_result,
     create_graphql_response,
@@ -261,6 +264,7 @@ async def test_find_performers(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_performers()
 
     assert result.count == 1
+    assert is_set(result.performers)
     assert len(result.performers) == 1
     assert result.performers[0].id == "123"
 
@@ -293,6 +297,7 @@ async def test_find_performers_with_q_parameter(
     result = await respx_stash_client.find_performers(q="Search Result")
 
     assert result.count == 1
+    assert is_set(result.performers)
     assert result.performers[0].name == "Search Result"
 
     # Verify q was passed in filter
@@ -330,6 +335,7 @@ async def test_find_performers_with_custom_filter(
     )
 
     assert result.count == 1
+    assert is_set(result.performers)
     assert result.performers[0].name == "Paginated Result"
 
     # Verify the custom filter was passed
@@ -356,6 +362,7 @@ async def test_find_performers_error_returns_empty(
     result = await respx_stash_client.find_performers()
 
     assert result.count == 0
+    assert is_set(result.performers)
     assert len(result.performers) == 0
 
     assert len(graphql_route.calls) == 1
@@ -388,7 +395,7 @@ async def test_create_performer(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    performer = Performer(id="new", name="New Performer", gender="FEMALE")
+    performer = Performer(id="new", name="New Performer", gender=GenderEnum.FEMALE)
     result = await respx_stash_client.create_performer(performer)
 
     assert result is not None
@@ -560,7 +567,7 @@ async def test_update_performer(respx_stash_client: StashClient) -> None:
 
     performer = Performer(id="123", name="Original Name")
     performer.name = "Updated Performer"
-    performer.gender = "MALE"
+    performer.gender = GenderEnum.MALE
 
     result = await respx_stash_client.update_performer(performer)
 
@@ -850,7 +857,7 @@ async def test_bulk_performer_update_with_input_type(
 
     input_data = BulkPerformerUpdateInput(
         ids=["p1", "p2"],
-        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD"),
+        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
     result = await respx_stash_client.bulk_performer_update(input_data)
@@ -886,7 +893,7 @@ async def test_bulk_performer_update_error_raises(
 
     input_data = BulkPerformerUpdateInput(
         ids=["p1", "p2"],
-        gender="FEMALE",
+        gender=GenderEnum.FEMALE,
     )
 
     with pytest.raises(StashGraphQLError):
@@ -1715,3 +1722,232 @@ async def test_map_performer_ids_exception_handling(
 
     # Verify the HTTP route was called
     assert len(graphql_route.calls) == 1  # Only one HTTP call (second performer)
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_performer_object_with_id_but_name_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids with NEW Performer object that has name=UNSET.
+
+    This covers lines 655->659 FALSE: when Performer is new (not from server) and name is UNSET,
+    the is_set(performer_input.name) check is False, so performer_name remains None and
+    the code skips name-based lookup entirely, skipping this performer.
+    """
+    # Create NEW Performer with name=UNSET using model_construct
+    # The _is_new flag makes is_new() return True
+    performer = Performer.model_construct(name=UNSET, _is_new=True)
+
+    # No HTTP calls should be made - name lookup is skipped for UNSET name
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[httpx.Response(200, json={})]
+    )
+
+    result = await respx_stash_client.map_performer_ids([performer])
+
+    # Performer with UNSET name is skipped - no ID added
+    assert len(result) == 0
+
+    # Verify NO HTTP calls were made (name lookup was skipped)
+    assert len(graphql_route.calls) == 0
+
+
+# =============================================================================
+# map_performer_ids: Missing branches - performers=UNSET tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_string_multiple_matches_return_first_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids when multiple matches found but performers=UNSET.
+
+    This covers line 692->645: Multiple matches with RETURN_FIRST, but results.performers
+    is UNSET (not queried in GraphQL). When is_set(results.performers) is False, the code
+    skips appending an ID and continues to the next iteration.
+    """
+    # Mock find_performers to return count=2 but performers=UNSET
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count but performers=UNSET
+        return FindPerformersResultType.model_construct(count=2, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids(
+            ["Multiple Matches"], on_multiple=OnMultipleMatch.RETURN_FIRST
+        )
+
+    # When performers is UNSET, no ID is added (line 692 condition is False)
+    assert result == []
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_string_multiple_matches_else_branch_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids when multiple matches found (else branch) but performers=UNSET.
+
+    This covers line 699->645: Multiple matches with else branch (RETURN_LIST), but
+    results.performers is UNSET. When is_set(results.performers) is False, the code
+    skips appending an ID and continues to the next iteration.
+    """
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count but performers=UNSET
+        return FindPerformersResultType.model_construct(count=2, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids(
+            ["Multiple Matches"], on_multiple=OnMultipleMatch.RETURN_LIST
+        )
+
+    # When performers is UNSET, no ID is added (line 699 condition is False)
+    assert result == []
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_string_single_match_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids when single match found but performers=UNSET.
+
+    This covers line 703->645: Single match (count=1), but results.performers is UNSET
+    (not queried in GraphQL). When is_set(results.performers) is False, the code skips
+    appending an ID and continues to the next iteration.
+    """
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count=1 but performers=UNSET
+        return FindPerformersResultType.model_construct(count=1, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids(["Single Match"])
+
+    # When performers is UNSET, no ID is added (line 703 condition is False)
+    assert result == []
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_dict_multiple_matches_return_first_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids dict input when multiple matches found but performers=UNSET.
+
+    This covers line 737->645: Dict input, multiple matches with RETURN_FIRST, but
+    results.performers is UNSET. When is_set(results.performers) is False, the code
+    skips appending an ID and continues to the next iteration.
+    """
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count=2 but performers=UNSET
+        return FindPerformersResultType.model_construct(count=2, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_FIRST
+        )
+
+    # When performers is UNSET, no ID is added (line 737 condition is False)
+    assert result == []
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_dict_multiple_matches_else_branch_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids dict input when multiple matches (else branch) but performers=UNSET.
+
+    This covers line 744->645: Dict input, multiple matches with else branch (RETURN_LIST),
+    but results.performers is UNSET. When is_set(results.performers) is False, the code
+    skips appending an ID and continues to the next iteration.
+    """
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count=2 but performers=UNSET
+        return FindPerformersResultType.model_construct(count=2, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_LIST
+        )
+
+    # When performers is UNSET, no ID is added (line 744 condition is False)
+    assert result == []
+    assert call_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_map_performer_ids_dict_single_match_performers_unset(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test map_performer_ids dict input when single match found but performers=UNSET.
+
+    This covers line 747->645: Dict input, single match (count=1), but results.performers
+    is UNSET (not queried in GraphQL). When is_set(results.performers) is False, the code
+    skips appending an ID and continues to the next iteration.
+    """
+    from stash_graphql_client.types import FindPerformersResultType
+
+    call_count = 0
+
+    async def mock_find_performers(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        # Return result with count=1 but performers=UNSET
+        return FindPerformersResultType.model_construct(count=1, performers=UNSET)
+
+    with patch.object(
+        respx_stash_client, "find_performers", side_effect=mock_find_performers
+    ):
+        result = await respx_stash_client.map_performer_ids([{"name": "Dict Single"}])
+
+    # When performers is UNSET, no ID is added (line 747 condition is False)
+    assert result == []
+    assert call_count == 1

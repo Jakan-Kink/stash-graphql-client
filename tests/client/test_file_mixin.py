@@ -14,9 +14,11 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     AssignSceneFileInput,
+    CriterionModifier,
     FileSetFingerprintsInput,
     MoveFilesInput,
     SetFingerprintsInput,
+    StringCriterionInput,
 )
 from stash_graphql_client.types.filters import FolderFilterType
 from tests.fixtures import (
@@ -813,7 +815,9 @@ async def test_find_folders_with_folder_filter_type(
         ]
     )
 
-    folder_filter = FolderFilterType(path={"value": "/videos", "modifier": "INCLUDES"})
+    folder_filter = FolderFilterType(
+        path=StringCriterionInput(value="/videos", modifier=CriterionModifier.INCLUDES)
+    )
     result = await respx_stash_client.find_folders(folder_filter=folder_filter)
 
     assert result.count == 1

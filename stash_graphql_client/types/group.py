@@ -211,64 +211,187 @@ class Group(StashObject):
         ),
     }
 
-    def add_sub_group(
-        self, group: Group | GroupDescription, description: str | None = None
+    async def add_sub_group(
+        self, sub_group: Group | GroupDescription, description: str | None = None
     ) -> None:
-        """Add a sub-group to this group.
-
-        In-memory operation only. Call store.save(group) to persist changes.
-        The backend automatically syncs group.containing_groups when you save.
+        """Add sub-group (syncs inverse automatically, call save() to persist).
 
         Args:
-            group: The sub-group to add (Group or GroupDescription)
-            description: Optional description for the relationship (ignored if group is GroupDescription)
-
-        Example:
-            >>> parent_group.add_sub_group(child_group, "Part 2")
-            >>> await store.save(parent_group)  # Persist the change
+            sub_group: Either a Group object or a GroupDescription object
+            description: Optional description for the relationship (only used if sub_group is a Group)
         """
-        if self.sub_groups is UNSET:
-            self.sub_groups = []
+        from stash_graphql_client.errors import StashIntegrationError
 
-        # Convert Group to GroupDescription if needed
-        if isinstance(group, Group):
-            group_desc = GroupDescription(group=group, description=description)
+        # Get current sub_groups value
+        current = self.sub_groups
+
+        # If UNSET, fetch from store
+        if isinstance(current, UnsetType):
+            if self._store is None:
+                raise StashIntegrationError(
+                    "Cannot add sub-group: store not available. "
+                    f"Ensure the {self.__type_name__} was loaded through a StashEntityStore."
+                )
+            await self._store.populate(self, fields=["sub_groups"])
+            current = self.sub_groups
+
+        # Initialize to [] if None or still UNSET after populate
+        if current is None or isinstance(current, UnsetType):
+            current = []
+
+        # Wrap plain Group in GroupDescription
+        if isinstance(sub_group, Group):
+            sub_group_desc = GroupDescription(group=sub_group, description=description)
         else:
-            group_desc = group
+            sub_group_desc = sub_group
 
-        # Check if already present (by group ID)
-        if not any(
-            sg.group.id == group_desc.group.id
-            for sg in self.sub_groups
-            if sg.group is not UNSET and sg.group.id is not UNSET
-        ):
-            self.sub_groups.append(group_desc)
+        # Deduplicate by group ID
+        group_id = (
+            sub_group_desc.group.id if hasattr(sub_group_desc.group, "id") else None
+        )
+        if group_id:
+            # Remove existing entry with same group ID
+            current = [
+                sg
+                for sg in current
+                if not (
+                    hasattr(sg, "group")
+                    and hasattr(sg.group, "id")
+                    and sg.group.id == group_id
+                )
+            ]
 
-    def remove_sub_group(self, group: Group | GroupDescription) -> None:
-        """Remove a sub-group from this group.
+        # Add the new entry
+        current.append(sub_group_desc)
 
-        In-memory operation only. Call store.save(group) to persist changes.
-        The backend automatically syncs group.containing_groups when you save.
+        # Update the field
+        self.sub_groups = current
+
+    async def remove_sub_group(self, sub_group: Group | GroupDescription) -> None:
+        """Remove sub-group (syncs inverse automatically, call save() to persist).
 
         Args:
-            group: The sub-group to remove (Group or GroupDescription)
-
-        Example:
-            >>> parent_group.remove_sub_group(child_group)
-            >>> await store.save(parent_group)  # Persist the change
+            sub_group: Either a Group object or GroupDescription object to remove
         """
-        if self.sub_groups is UNSET:
+        current = self.sub_groups
+
+        # Skip if UNSET or None
+        if isinstance(current, UnsetType) or current is None:
             return
 
-        # Get the group ID to match
-        group_id = group.group.id if isinstance(group, GroupDescription) else group.id
+        # Extract group ID to match against
+        if isinstance(sub_group, Group):
+            group_id = sub_group.id if hasattr(sub_group, "id") else None
+        else:  # GroupDescription
+            group_id = sub_group.group.id if hasattr(sub_group.group, "id") else None
 
-        # Remove matching group
-        self.sub_groups = [
-            sg
-            for sg in self.sub_groups
-            if sg.group is UNSET or sg.group.id is UNSET or sg.group.id != group_id
-        ]
+        if group_id:
+            # Remove by matching group ID
+            self.sub_groups = [
+                sg
+                for sg in current
+                if not (
+                    hasattr(sg, "group")
+                    and hasattr(sg.group, "id")
+                    and sg.group.id == group_id
+                )
+            ]
+
+    async def add_containing_group(
+        self, containing_group: Group | GroupDescription
+    ) -> None:
+        """Add containing group (syncs inverse automatically, call save() to persist).
+
+        Args:
+            containing_group: Either a Group object (will be wrapped with None description)
+                             or a GroupDescription object (used as-is)
+        """
+        from stash_graphql_client.errors import StashIntegrationError
+
+        # Get current containing_groups value
+        current = self.containing_groups
+
+        # If UNSET, fetch from store
+        if isinstance(current, UnsetType):
+            if self._store is None:
+                raise StashIntegrationError(
+                    "Cannot add containing group: store not available. "
+                    f"Ensure the {self.__type_name__} was loaded through a StashEntityStore."
+                )
+            await self._store.populate(self, fields=["containing_groups"])
+            current = self.containing_groups
+
+        # Initialize to [] if None or still UNSET after populate
+        if current is None or isinstance(current, UnsetType):
+            current = []
+
+        # Wrap plain Group in GroupDescription
+        if isinstance(containing_group, Group):
+            containing_group_desc = GroupDescription(
+                group=containing_group, description=None
+            )
+        else:
+            containing_group_desc = containing_group
+
+        # Deduplicate by group ID
+        group_id = (
+            containing_group_desc.group.id
+            if hasattr(containing_group_desc.group, "id")
+            else None
+        )
+        if group_id:
+            # Remove existing entry with same group ID
+            current = [
+                cg
+                for cg in current
+                if not (
+                    hasattr(cg, "group")
+                    and hasattr(cg.group, "id")
+                    and cg.group.id == group_id
+                )
+            ]
+
+        # Add the new entry
+        current.append(containing_group_desc)
+
+        # Update the field
+        self.containing_groups = current
+
+    async def remove_containing_group(
+        self, containing_group: Group | GroupDescription
+    ) -> None:
+        """Remove containing group (syncs inverse automatically, call save() to persist).
+
+        Args:
+            containing_group: Either a Group object or GroupDescription object to remove
+        """
+        current = self.containing_groups
+
+        # Skip if UNSET or None
+        if isinstance(current, UnsetType) or current is None:
+            return
+
+        # Extract group ID to match against
+        if isinstance(containing_group, Group):
+            group_id = containing_group.id if hasattr(containing_group, "id") else None
+        else:  # GroupDescription
+            group_id = (
+                containing_group.group.id
+                if hasattr(containing_group.group, "id")
+                else None
+            )
+
+        if group_id:
+            # Remove by matching group ID
+            self.containing_groups = [
+                cg
+                for cg in current
+                if not (
+                    hasattr(cg, "group")
+                    and hasattr(cg.group, "id")
+                    and cg.group.id == group_id
+                )
+            ]
 
 
 class GroupDescriptionInput(StashInput):

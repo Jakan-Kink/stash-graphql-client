@@ -79,8 +79,8 @@ async def test_install_packages_plugin_string_input_objects(
     )
 
     packages = [
-        PackageSpecInput(id="plugin-1", source_url="https://example.com/plugin1.yml"),
-        PackageSpecInput(id="plugin-2", source_url="https://example.com/plugin2.yml"),
+        PackageSpecInput(id="plugin-1", sourceURL="https://example.com/plugin1.yml"),
+        PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
     job_id = await respx_stash_client.install_packages("Plugin", packages)
@@ -277,8 +277,8 @@ async def test_update_packages_specific_input_objects(
     )
 
     packages = [
-        PackageSpecInput(id="plugin-1", source_url="https://example.com/plugin1.yml"),
-        PackageSpecInput(id="plugin-2", source_url="https://example.com/plugin2.yml"),
+        PackageSpecInput(id="plugin-1", sourceURL="https://example.com/plugin1.yml"),
+        PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
     job_id = await respx_stash_client.update_packages(PackageType.PLUGIN, packages)
@@ -398,8 +398,8 @@ async def test_uninstall_packages_plugin_string_input_objects(
     )
 
     packages = [
-        PackageSpecInput(id="plugin-1", source_url="https://example.com/plugin1.yml"),
-        PackageSpecInput(id="plugin-2", source_url="https://example.com/plugin2.yml"),
+        PackageSpecInput(id="plugin-1", sourceURL="https://example.com/plugin1.yml"),
+        PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
     job_id = await respx_stash_client.uninstall_packages("Plugin", packages)

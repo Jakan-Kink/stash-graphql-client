@@ -6,6 +6,7 @@ Tests scene marker operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -28,6 +29,8 @@ async def test_find_markers_returns_results(
         assert calls[0]["exception"] is None
 
         # Result should be valid even if empty
+        assert is_set(result.count)
+        assert result.count is not None
         assert result.count >= 0
         assert isinstance(result.scene_markers, list)
 
@@ -53,6 +56,8 @@ async def test_find_markers_with_pagination(
         assert calls[0]["exception"] is None
 
         # Verify response
+        assert is_set(result.scene_markers)
+        assert result.scene_markers is not None
         assert len(result.scene_markers) <= 10
 
 
@@ -103,6 +108,7 @@ async def test_scene_marker_tags_for_scene(
         if scenes.count == 0:
             pytest.skip("No scenes in test Stash instance")
 
+        assert is_set(scenes.scenes)
         scene_id = scenes.scenes[0].id
 
         # Clear calls from find_scenes

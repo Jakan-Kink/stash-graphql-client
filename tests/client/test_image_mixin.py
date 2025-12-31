@@ -20,6 +20,7 @@ from stash_graphql_client.types import (
     ImagesDestroyInput,
     ImageUpdateInput,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_images_result,
     create_graphql_response,
@@ -119,6 +120,7 @@ async def test_find_images(respx_stash_client: StashClient) -> None:
 
     # Verify the results
     assert result.count == 1
+    assert is_set(result.images)
     assert len(result.images) == 1
     assert result.images[0].id == "123"
     assert result.images[0].title == "Test Image"
@@ -150,6 +152,7 @@ async def test_find_images_empty(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_images()
 
     assert result.count == 0
+    assert is_set(result.images)
     assert len(result.images) == 0
 
     # Verify GraphQL call
@@ -177,6 +180,7 @@ async def test_find_images_with_filter(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_images(filter_={"per_page": 10, "page": 1})
 
     assert result.count == 1
+    assert is_set(result.images)
     assert result.images[0].title == "Filtered Image"
 
     # Verify GraphQL call
@@ -207,6 +211,7 @@ async def test_find_images_with_query(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_images(q="Search Result")
 
     assert result.count == 1
+    assert is_set(result.images)
     assert result.images[0].title == "Search Result Image"
 
     # Verify GraphQL call includes q parameter
@@ -256,6 +261,7 @@ async def test_find_images_error_returns_empty(respx_stash_client: StashClient) 
     result = await respx_stash_client.find_images()
 
     assert result.count == 0
+    assert is_set(result.images)
     assert len(result.images) == 0
     assert result.megapixels == 0.0
     assert result.filesize == 0.0
@@ -283,6 +289,7 @@ async def test_find_image_with_studio(respx_stash_client: StashClient) -> None:
     image = await respx_stash_client.find_image("123")
 
     assert image is not None
+    assert is_set(image.studio)
     assert image.studio is not None
     assert image.studio.id == "studio_123"
     assert image.studio.name == "Test Studio"
@@ -313,6 +320,7 @@ async def test_find_image_with_performers(respx_stash_client: StashClient) -> No
     image = await respx_stash_client.find_image("123")
 
     assert image is not None
+    assert is_set(image.performers)
     assert len(image.performers) == 2
     assert image.performers[0].id == "perf_1"
     assert image.performers[1].id == "perf_2"
@@ -343,6 +351,7 @@ async def test_find_image_with_tags(respx_stash_client: StashClient) -> None:
     image = await respx_stash_client.find_image("123")
 
     assert image is not None
+    assert is_set(image.tags)
     assert len(image.tags) == 2
     assert image.tags[0].id == "tag_1"
     assert image.tags[1].id == "tag_2"
@@ -636,7 +645,7 @@ async def test_bulk_image_update_error(respx_stash_client: StashClient) -> None:
     )
 
     input_data = BulkImageUpdateInput(
-        ids=["1", "2"], tag_ids=BulkUpdateIds(ids=["tag1"], mode="ADD")
+        ids=["1", "2"], tag_ids=BulkUpdateIds(ids=["tag1"], mode=BulkUpdateIdMode.ADD)
     )
 
     with pytest.raises(StashGraphQLError, match="Failed to bulk update images"):

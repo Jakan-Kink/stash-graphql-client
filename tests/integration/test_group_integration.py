@@ -16,6 +16,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Group
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -43,6 +44,7 @@ async def test_find_groups_returns_results(
         assert calls[0]["exception"] is None
 
         # Result should be valid even if empty
+        assert is_set(result.count)
         assert result.count >= 0
         assert isinstance(result.groups, list)
 
@@ -67,6 +69,7 @@ async def test_find_groups_with_pagination(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
+        assert is_set(result.groups)
         assert len(result.groups) <= 10
 
 
@@ -110,6 +113,7 @@ async def test_find_groups_with_q_parameter(
         assert calls[0]["exception"] is None
 
         # Should return valid result (may or may not have matches)
+        assert is_set(result.count)
         assert result.count >= 0
         assert isinstance(result.groups, list)
 
@@ -139,6 +143,7 @@ async def test_find_groups_with_filter(
         assert calls[0]["exception"] is None
 
         assert result.count == 0
+        assert is_set(result.groups)
         assert len(result.groups) == 0
 
 
@@ -385,6 +390,7 @@ async def test_create_group_with_urls(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
+        assert is_set(created_group.urls)
         assert len(created_group.urls) == 2
         assert "https://example.com/group1" in created_group.urls
 
@@ -499,6 +505,8 @@ async def test_add_and_remove_sub_groups(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
+        assert updated_parent is not None
+        assert is_set(updated_parent.sub_groups)
         assert len(updated_parent.sub_groups) == 2
 
         # Remove one sub-group
@@ -526,6 +534,8 @@ async def test_add_and_remove_sub_groups(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
+        assert updated_parent is not None
+        assert is_set(updated_parent.sub_groups)
         assert len(updated_parent.sub_groups) == 1
 
 
@@ -647,4 +657,5 @@ async def test_find_group_by_id_returns_complete_data(
         assert found.rating100 == 90
         assert found.director == "Test Director"
         assert found.synopsis == "A complete test group with all fields"
+        assert is_set(found.urls)
         assert len(found.urls) == 1

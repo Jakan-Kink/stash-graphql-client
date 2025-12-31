@@ -18,6 +18,7 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkGroupUpdateInput,
+    BulkUpdateIdMode,
     BulkUpdateIds,
     Group,
     GroupDescriptionInput,
@@ -26,6 +27,7 @@ from stash_graphql_client.types import (
     GroupSubGroupRemoveInput,
     ReorderSubGroupsInput,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_groups_result,
     create_graphql_response,
@@ -128,6 +130,7 @@ async def test_find_groups(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_groups()
 
     assert result.count == 1
+    assert is_set(result.groups)
     assert len(result.groups) == 1
     assert result.groups[0].name == "Test Group"
 
@@ -205,6 +208,7 @@ async def test_find_groups_empty(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_groups()
 
     assert result.count == 0
+    assert is_set(result.groups)
     assert len(result.groups) == 0
     assert len(graphql_route.calls) == 1
 
@@ -224,6 +228,7 @@ async def test_find_groups_error_returns_empty(
     result = await respx_stash_client.find_groups()
 
     assert result.count == 0
+    assert is_set(result.groups)
     assert len(result.groups) == 0
     assert len(graphql_route.calls) == 1
 
@@ -285,6 +290,7 @@ async def test_create_group_with_tags(respx_stash_client: StashClient) -> None:
     created = await respx_stash_client.create_group(group)
 
     assert created.id == "123"
+    assert is_set(created.tags)
     assert len(created.tags) == 1
     assert created.tags[0].name == "Action"
 
@@ -522,7 +528,7 @@ async def test_bulk_group_update_with_input_type(
 
     input_data = BulkGroupUpdateInput(
         ids=["1", "2"],
-        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD"),
+        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
     result = await respx_stash_client.bulk_group_update(input_data)
 

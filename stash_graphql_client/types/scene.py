@@ -295,122 +295,32 @@ class Scene(StashObject):
     # Convenience Helper Methods for Bidirectional Relationships
     # =========================================================================
 
-    def add_to_gallery(self, gallery: Gallery) -> None:
-        """Add this scene to a gallery.
+    async def add_to_gallery(self, gallery: Gallery) -> None:
+        """Add scene to gallery (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("galleries", gallery)
 
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs gallery.scenes when you save.
+    async def remove_from_gallery(self, gallery: Gallery) -> None:
+        """Remove scene from gallery (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("galleries", gallery)
 
-        Args:
-            gallery: The Gallery instance to add this scene to
+    async def add_performer(self, performer: Performer) -> None:
+        """Add performer to scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("performers", performer)
 
-        Example:
-            >>> scene = await client.find_scene("scene_id")
-            >>> gallery = await client.find_gallery("gallery_id")
-            >>> scene.add_to_gallery(gallery)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.galleries is UNSET:
-            self.galleries = []
-        if gallery not in self.galleries:
-            self.galleries.append(gallery)
+    async def remove_performer(self, performer: Performer) -> None:
+        """Remove performer from scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("performers", performer)
 
-    def remove_from_gallery(self, gallery: Gallery) -> None:
-        """Remove this scene from a gallery.
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag to scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
 
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs gallery.scenes when you save.
-
-        Args:
-            gallery: The Gallery instance to remove this scene from
-
-        Example:
-            >>> scene.remove_from_gallery(gallery)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.galleries is not UNSET and gallery in self.galleries:
-            self.galleries.remove(gallery)
-
-    def add_performer(self, performer: Performer) -> None:
-        """Add a performer to this scene.
-
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs performer.scenes when you save.
-
-        Args:
-            performer: The Performer instance to add
-
-        Example:
-            >>> scene.add_performer(performer)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.performers is UNSET:
-            self.performers = []
-        if performer not in self.performers:
-            self.performers.append(performer)
-
-    def remove_performer(self, performer: Performer) -> None:
-        """Remove a performer from this scene.
-
-        In-memory operation only. Call store.save(scene) to persist changes.
-
-        Args:
-            performer: The Performer instance to remove
-
-        Example:
-            >>> scene.remove_performer(performer)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.performers is not UNSET and performer in self.performers:
-            self.performers.remove(performer)
-
-    def add_tag(self, tag: Tag) -> None:
-        """Add a tag to this scene.
-
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs tag.scene_count when you save.
-
-        Args:
-            tag: The Tag instance to add
-
-        Example:
-            >>> scene.add_tag(tag)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.tags is UNSET:
-            self.tags = []
-        if tag not in self.tags:
-            self.tags.append(tag)
-
-    def remove_tag(self, tag: Tag) -> None:
-        """Remove a tag from this scene.
-
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs tag.scene_count when you save.
-
-        Args:
-            tag: The Tag instance to remove
-
-        Example:
-            >>> scene.remove_tag(tag)
-            >>> await store.save(scene)  # Persist the change
-        """
-        if self.tags is not UNSET and tag in self.tags:
-            self.tags.remove(tag)
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag from scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
 
     def set_studio(self, studio: Studio | None) -> None:
-        """Set the studio for this scene.
-
-        In-memory operation only. Call store.save(scene) to persist changes.
-        The backend automatically syncs studio.scene_count when you save.
-
-        Args:
-            studio: The Studio instance to set, or None to remove
-
-        Example:
-            >>> scene.set_studio(studio)
-            >>> await store.save(scene)  # Persist the change
-        """
+        """Set scene studio (call save() to persist)."""
         self.studio = studio
 
 

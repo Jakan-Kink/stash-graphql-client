@@ -396,6 +396,7 @@ class FileClientMixin(StashClientProtocol):
         """
         try:
             # Convert FolderFilterType to dict if needed
+            folder_filter_dict: dict[str, Any] | None = None
             if isinstance(folder_filter, FolderFilterType):
                 folder_filter_dict = folder_filter.to_graphql()
             else:

@@ -9,6 +9,7 @@ from ...types import (
     Studio,
     StudioDestroyInput,
 )
+from ...types.unset import UnsetType, is_set
 from ..protocols import StashClientProtocol
 
 
@@ -274,7 +275,11 @@ class StudioClientMixin(StashClientProtocol):
         while current:  # pragma: no branch
             hierarchy.append(current)
             # Check if parent_studio exists and is not UNSET/None
-            if current.parent_studio and hasattr(current.parent_studio, "id"):
+            if (
+                is_set(current.parent_studio)
+                and current.parent_studio
+                and hasattr(current.parent_studio, "id")
+            ):
                 current = current.parent_studio
             else:
                 break
@@ -381,7 +386,8 @@ class StudioClientMixin(StashClientProtocol):
                         studio_ids.append(studio_input.id)
                         continue
                     # Otherwise search by name
-                    studio_name = studio_input.name or ""
+                    if is_set(studio_input.name):
+                        studio_name = studio_input.name or ""
 
                 # Handle string input (studio name)
                 if isinstance(studio_input, str):
@@ -394,8 +400,14 @@ class StudioClientMixin(StashClientProtocol):
                             "name": {"value": studio_name, "modifier": "EQUALS"}
                         }
                     )
-                    if results.count > 0:
-                        studio_ids.append(results.studios[0].id)  # type: ignore[union-attr]
+                    studios_list = results.studios
+                    count = results.count
+                    if (
+                        not isinstance(count, (UnsetType, type(None)))
+                        and count > 0
+                        and not isinstance(studios_list, (UnsetType, type(None)))
+                    ):
+                        studio_ids.append(studios_list[0].id)  # type: ignore[union-attr]
                     elif create:
                         # Create new studio
                         self.log.info(f"Creating missing studio: '{studio_name}'")
@@ -415,8 +427,14 @@ class StudioClientMixin(StashClientProtocol):
                                 "name": {"value": name, "modifier": "EQUALS"}
                             }
                         )
-                        if results.count > 0:
-                            studio_ids.append(results.studios[0].id)  # type: ignore[union-attr]
+                        studios_list = results.studios
+                        count = results.count
+                        if (
+                            not isinstance(count, (UnsetType, type(None)))
+                            and count > 0
+                            and not isinstance(studios_list, (UnsetType, type(None)))
+                        ):
+                            studio_ids.append(studios_list[0].id)  # type: ignore[union-attr]
                         elif create:
                             self.log.info(f"Creating missing studio: '{name}'")
                             new_studio = await self.create_studio(Studio(name=name))

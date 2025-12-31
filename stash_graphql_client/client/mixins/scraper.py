@@ -927,7 +927,7 @@ class ScraperClientMixin(StashClientProtocol):
                 data = result["scrapeURL"]
                 typename = data.get("__typename", "")
 
-                type_map = {
+                type_map: dict[str, type] = {
                     "ScrapedStudio": ScrapedStudio,
                     "ScrapedScene": ScrapedScene,
                     "ScrapedGallery": ScrapedGallery,
@@ -939,7 +939,7 @@ class ScraperClientMixin(StashClientProtocol):
 
                 result_type = type_map.get(typename)
                 if result_type:
-                    return self._decode_result(result_type, data)
+                    return self._decode_result(result_type, data)  # type: ignore[arg-type]
 
             return None
         except Exception as e:

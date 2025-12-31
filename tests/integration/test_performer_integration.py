@@ -6,6 +6,7 @@ Tests performer operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
 
@@ -28,6 +29,7 @@ async def test_find_performers_returns_results(
         assert calls[0]["exception"] is None
 
         # Result should be valid even if empty
+        assert is_set(result.count)
         assert result.count >= 0
         assert isinstance(result.performers, list)
 
@@ -53,6 +55,7 @@ async def test_find_performers_with_pagination(
         assert calls[0]["exception"] is None
 
         # Verify response
+        assert is_set(result.performers)
         assert len(result.performers) <= 10
 
 
@@ -105,6 +108,7 @@ async def test_find_performer_by_name_filter(
 
         # Verify response
         assert result.count == 0
+        assert is_set(result.performers)
         assert len(result.performers) == 0
 
 
@@ -129,5 +133,6 @@ async def test_find_performers_with_q_parameter(
         assert calls[0]["exception"] is None
 
         # Should return valid result (may or may not have matches)
+        assert is_set(result.count)
         assert result.count >= 0
         assert isinstance(result.performers, list)

@@ -39,16 +39,14 @@ Usage:
 from typing import Any
 
 
-def create_graphql_response(
-    operation: str, data: dict[str, Any] | None = None
-) -> dict[str, Any]:
+def create_graphql_response(operation: str, data: Any = None) -> dict[str, Any]:
     """Create a GraphQL response envelope.
 
     GraphQL responses have the format: {"data": {operationName: resultData}}
 
     Args:
         operation: The GraphQL operation name (e.g., "findTags", "tagCreate")
-        data: The operation result data
+        data: The operation result data (can be dict, list, bool, str, int, or None)
 
     Returns:
         Complete GraphQL response dict

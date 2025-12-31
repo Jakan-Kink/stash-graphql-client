@@ -6,148 +6,155 @@ These tests verify that the helper methods:
 3. Mark tags as dirty when relationships change
 """
 
+import inspect
+
 import pytest
 
-from stash_graphql_client.types import Tag
+from stash_graphql_client.types import UNSET, Tag
 
 
+@pytest.mark.usefixtures("mock_entity_store")
 class TestTagHelperMethods:
     """Test Tag convenience helper methods."""
 
-    def test_add_parent_maintains_bidirectional_consistency(self):
+    @pytest.mark.asyncio
+    async def test_add_parent_maintains_bidirectional_consistency(self):
         """Test that add_parent updates both child.parents and parent.children."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
-        # Add parent (sync method, not async)
-        child.add_parent(parent)
+        # Add parent (async method now, uses generic machinery)
+        await child.add_parent(parent)
 
         # Verify bidirectional consistency
         assert parent in child.parents
         assert child in parent.children
 
-    def test_add_parent_deduplication(self):
+    @pytest.mark.asyncio
+    async def test_add_parent_deduplication(self):
         """Test that add_parent doesn't create duplicates."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Add same parent twice
-        child.add_parent(parent)
-        child.add_parent(parent)
+        await child.add_parent(parent)
+        await child.add_parent(parent)
 
         # Should only have one entry on both sides
         assert len(child.parents) == 1
         assert len(parent.children) == 1
 
-    def test_remove_parent_maintains_bidirectional_consistency(self):
+    @pytest.mark.asyncio
+    async def test_remove_parent_maintains_bidirectional_consistency(self):
         """Test that remove_parent updates both child.parents and parent.children."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Set up relationship
-        child.add_parent(parent)
+        await child.add_parent(parent)
 
-        # Remove parent (sync method, not async)
-        child.remove_parent(parent)
+        # Remove parent (async method now, uses generic machinery)
+        await child.remove_parent(parent)
 
         # Verify bidirectional consistency
         assert parent not in child.parents
         assert child not in parent.children
 
-    def test_remove_parent_noop_if_not_present(self):
+    @pytest.mark.asyncio
+    async def test_remove_parent_noop_if_not_present(self):
         """Test that remove_parent is no-op if parent not in list."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Remove parent that's not in the list - should be no-op
-        child.remove_parent(parent)
+        await child.remove_parent(parent)
 
         assert parent not in child.parents
         assert child not in parent.children
 
-    def test_add_child_maintains_bidirectional_consistency(self):
+    @pytest.mark.asyncio
+    async def test_add_child_maintains_bidirectional_consistency(self):
         """Test that add_child updates both parent.children and child.parents."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
-        # Add child (sync method, not async)
-        parent.add_child(child)
+        # Add child (async method now, uses generic machinery)
+        await parent.add_child(child)
 
         # Verify bidirectional consistency
         assert child in parent.children
         assert parent in child.parents
 
-    def test_add_child_deduplication(self):
+    @pytest.mark.asyncio
+    async def test_add_child_deduplication(self):
         """Test that add_child doesn't create duplicates."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Add same child twice
-        parent.add_child(child)
-        parent.add_child(child)
+        await parent.add_child(child)
+        await parent.add_child(child)
 
         # Should only have one entry on both sides
         assert len(parent.children) == 1
         assert len(child.parents) == 1
 
-    def test_remove_child_maintains_bidirectional_consistency(self):
+    @pytest.mark.asyncio
+    async def test_remove_child_maintains_bidirectional_consistency(self):
         """Test that remove_child updates both parent.children and child.parents."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Set up relationship
-        parent.add_child(child)
+        await parent.add_child(child)
 
-        # Remove child (sync method, not async)
-        parent.remove_child(child)
+        # Remove child (async method now, uses generic machinery)
+        await parent.remove_child(child)
 
         # Verify bidirectional consistency
         assert child not in parent.children
         assert parent not in child.parents
 
-    def test_remove_child_noop_if_not_present(self):
+    @pytest.mark.asyncio
+    async def test_remove_child_noop_if_not_present(self):
         """Test that remove_child is no-op if child not in list."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Remove child that's not in the list - should be no-op
-        parent.remove_child(child)
+        await parent.remove_child(child)
 
         assert child not in parent.children
         assert parent not in child.parents
 
-    def test_helper_methods_with_multi_level_hierarchy(self):
+    @pytest.mark.asyncio
+    async def test_helper_methods_with_multi_level_hierarchy(self):
         """Test that helper methods work correctly in multi-level hierarchies."""
         grandparent = Tag(id="1", name="Grandparent", parents=[], children=[])
         parent = Tag(id="2", name="Parent", parents=[], children=[])
         child = Tag(id="3", name="Child", parents=[], children=[])
 
         # Build hierarchy using helper methods
-        parent.add_parent(grandparent)
-        child.add_parent(parent)
+        await parent.add_parent(grandparent)
+        await child.add_parent(parent)
 
         # Verify multi-level traversal works
         assert grandparent.children[0].children[0] == child
         assert child.parents[0].parents[0] == grandparent
 
-    def test_helpers_are_sync_not_async(self):
-        """Test that helper methods are synchronous (not coroutines)."""
-        import inspect
-
+    def test_helpers_are_async_not_sync(self):
+        """Test that helper methods are now async coroutines (use generic machinery)."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
 
-        # These should all be regular methods, not coroutines
-        assert not inspect.iscoroutinefunction(child.add_parent)
-        assert not inspect.iscoroutinefunction(child.remove_parent)
-        assert not inspect.iscoroutinefunction(parent.add_child)
-        assert not inspect.iscoroutinefunction(parent.remove_child)
+        # These should all be coroutine functions (async methods)
+        assert inspect.iscoroutinefunction(child.add_parent)
+        assert inspect.iscoroutinefunction(child.remove_parent)
+        assert inspect.iscoroutinefunction(parent.add_child)
+        assert inspect.iscoroutinefunction(parent.remove_child)
 
-        # Calling them should not return coroutines
-        result = child.add_parent(parent)
-        assert result is None  # Sync methods return None, not a coroutine
-
-    def test_add_parent_when_inverse_already_exists(self):
+    @pytest.mark.asyncio
+    async def test_add_parent_when_inverse_already_exists(self):
         """Test add_parent when parent.children already contains child."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
@@ -156,7 +163,7 @@ class TestTagHelperMethods:
         parent.children.append(child)
 
         # Now call add_parent - should only update child.parents
-        child.add_parent(parent)
+        await child.add_parent(parent)
 
         # Both sides should be set
         assert parent in child.parents
@@ -164,20 +171,22 @@ class TestTagHelperMethods:
         # Should not have duplicates
         assert len(parent.children) == 1
 
-    def test_remove_parent_when_inverse_not_exists(self):
+    @pytest.mark.asyncio
+    async def test_remove_parent_when_inverse_not_exists(self):
         """Test remove_parent when parent.children doesn't contain child."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[parent], children=[])
 
         # parent.children is empty (no inverse)
         # Call remove_parent
-        child.remove_parent(parent)
+        await child.remove_parent(parent)
 
         # Should still remove from child.parents
         assert parent not in child.parents
         assert child not in parent.children
 
-    def test_add_child_when_inverse_already_exists(self):
+    @pytest.mark.asyncio
+    async def test_add_child_when_inverse_already_exists(self):
         """Test add_child when child.parents already contains parent."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
@@ -186,7 +195,7 @@ class TestTagHelperMethods:
         child.parents.append(parent)
 
         # Now call add_child - should only update parent.children
-        parent.add_child(child)
+        await parent.add_child(child)
 
         # Both sides should be set
         assert child in parent.children
@@ -194,7 +203,8 @@ class TestTagHelperMethods:
         # Should not have duplicates
         assert len(child.parents) == 1
 
-    def test_remove_child_when_inverse_not_exists(self):
+    @pytest.mark.asyncio
+    async def test_remove_child_when_inverse_not_exists(self):
         """Test remove_child when child.parents doesn't contain parent."""
         parent = Tag(id="1", name="Parent", parents=[], children=[])
         child = Tag(id="2", name="Child", parents=[], children=[])
@@ -204,13 +214,14 @@ class TestTagHelperMethods:
 
         # child.parents is empty (no inverse)
         # Call remove_child
-        parent.remove_child(child)
+        await parent.remove_child(child)
 
         # Should still remove from parent.children
         assert child not in parent.children
         assert parent not in child.parents
 
 
+@pytest.mark.usefixtures("mock_entity_store")
 class TestTagRecursiveMethods:
     """Test Tag recursive hierarchy traversal methods."""
 
@@ -230,8 +241,8 @@ class TestTagRecursiveMethods:
         child1 = Tag(id="2", name="Child1", parents=[], children=[])
         child2 = Tag(id="3", name="Child2", parents=[], children=[])
 
-        parent.add_child(child1)
-        parent.add_child(child2)
+        await parent.add_child(child1)
+        await parent.add_child(child2)
 
         descendants = await parent.get_all_descendants()
 
@@ -247,9 +258,9 @@ class TestTagRecursiveMethods:
         child = Tag(id="3", name="Child", parents=[], children=[])
         grandchild = Tag(id="4", name="Grandchild", parents=[], children=[])
 
-        grandparent.add_child(parent)
-        parent.add_child(child)
-        child.add_child(grandchild)
+        await grandparent.add_child(parent)
+        await parent.add_child(child)
+        await child.add_child(grandchild)
 
         descendants = await grandparent.get_all_descendants()
 
@@ -275,8 +286,8 @@ class TestTagRecursiveMethods:
         parent1 = Tag(id="2", name="Parent1", parents=[], children=[])
         parent2 = Tag(id="3", name="Parent2", parents=[], children=[])
 
-        child.add_parent(parent1)
-        child.add_parent(parent2)
+        await child.add_parent(parent1)
+        await child.add_parent(parent2)
 
         ancestors = await child.get_all_ancestors()
 
@@ -292,9 +303,9 @@ class TestTagRecursiveMethods:
         parent = Tag(id="3", name="Parent", parents=[], children=[])
         grandparent = Tag(id="4", name="Grandparent", parents=[], children=[])
 
-        grandchild.add_parent(child)
-        child.add_parent(parent)
-        parent.add_parent(grandparent)
+        await grandchild.add_parent(child)
+        await child.add_parent(parent)
+        await parent.add_parent(grandparent)
 
         ancestors = await grandchild.get_all_ancestors()
 
@@ -318,10 +329,10 @@ class TestTagRecursiveMethods:
 
         # Build diamond: parent -> child1 -> grandchild
         #                       -> child2 -> grandchild (shared)
-        parent.add_child(child1)
-        parent.add_child(child2)
-        child1.add_child(grandchild)
-        child2.add_child(grandchild)  # Same grandchild from different path
+        await parent.add_child(child1)
+        await parent.add_child(child2)
+        await child1.add_child(grandchild)
+        await child2.add_child(grandchild)  # Same grandchild from different path
 
         descendants = await parent.get_all_descendants()
 
@@ -347,10 +358,10 @@ class TestTagRecursiveMethods:
 
         # Build diamond: child -> parent1 -> grandparent
         #                      -> parent2 -> grandparent (shared)
-        child.add_parent(parent1)
-        child.add_parent(parent2)
-        parent1.add_parent(grandparent)
-        parent2.add_parent(grandparent)  # Same grandparent from different path
+        await child.add_parent(parent1)
+        await child.add_parent(parent2)
+        await parent1.add_parent(grandparent)
+        await parent2.add_parent(grandparent)  # Same grandparent from different path
 
         ancestors = await child.get_all_ancestors()
 
@@ -361,3 +372,39 @@ class TestTagRecursiveMethods:
         assert grandparent in ancestors
         # Verify grandparent appears only once despite two paths to it
         assert ancestors.count(grandparent) == 1
+
+    @pytest.mark.asyncio
+    async def test_get_all_descendants_with_unset_children(self):
+        """Test get_all_descendants when a child tag has UNSET children (early exit).
+
+        This covers the 195->exit branch: when tag.children is UNSET, the recursion
+        stops early without trying to iterate.
+        """
+        # Create child with UNSET children (not loaded from GraphQL)
+        child = Tag.model_construct(id="2", name="Child", children=UNSET, parents=[])
+        parent = Tag(id="1", name="Parent", children=[child], parents=[])
+
+        # Should not crash, recursion stops at child (early exit)
+        descendants = await parent.get_all_descendants()
+
+        # Should only have the one child (recursion stopped)
+        assert len(descendants) == 1
+        assert descendants[0] == child
+
+    @pytest.mark.asyncio
+    async def test_get_all_ancestors_with_unset_parents(self):
+        """Test get_all_ancestors when a parent tag has UNSET parents (early exit).
+
+        This covers the 218->exit branch: when tag.parents is UNSET, the recursion
+        stops early without trying to iterate.
+        """
+        # Create parent with UNSET parents (not loaded from GraphQL)
+        parent = Tag.model_construct(id="2", name="Parent", parents=UNSET, children=[])
+        child = Tag(id="1", name="Child", parents=[parent], children=[])
+
+        # Should not crash, recursion stops at parent (early exit)
+        ancestors = await child.get_all_ancestors()
+
+        # Should only have the one parent (recursion stopped)
+        assert len(ancestors) == 1
+        assert ancestors[0] == parent

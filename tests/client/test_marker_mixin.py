@@ -14,11 +14,13 @@ from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import (
     BulkSceneMarkerUpdateInput,
+    BulkUpdateIdMode,
     BulkUpdateIds,
     Scene,
     SceneMarker,
     Tag,
 )
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_markers_result,
     create_graphql_response,
@@ -165,6 +167,8 @@ async def test_find_markers(respx_stash_client: StashClient) -> None:
 
     # Verify the results
     assert result.count == 1
+    assert is_set(result.scene_markers)
+    assert result.scene_markers is not None
     assert len(result.scene_markers) == 1
     assert result.scene_markers[0].id == "123"
     assert result.scene_markers[0].title == "Test Marker"
@@ -194,6 +198,8 @@ async def test_find_markers_empty(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_markers()
 
     assert result.count == 0
+    assert is_set(result.scene_markers)
+    assert result.scene_markers is not None
     assert len(result.scene_markers) == 0
 
     # Verify GraphQL call
@@ -221,6 +227,8 @@ async def test_find_markers_with_filter(respx_stash_client: StashClient) -> None
     result = await respx_stash_client.find_markers(filter_={"per_page": 10, "page": 1})
 
     assert result.count == 1
+    assert is_set(result.scene_markers)
+    assert result.scene_markers is not None
     assert result.scene_markers[0].title == "Filtered Marker"
 
     # Verify GraphQL call
@@ -251,6 +259,8 @@ async def test_find_markers_with_query(respx_stash_client: StashClient) -> None:
     result = await respx_stash_client.find_markers(q="Search Result")
 
     assert result.count == 1
+    assert is_set(result.scene_markers)
+    assert result.scene_markers is not None
     assert result.scene_markers[0].title == "Search Result Marker"
 
     # Verify GraphQL call includes q parameter
@@ -304,6 +314,8 @@ async def test_find_markers_error_returns_empty(
     result = await respx_stash_client.find_markers()
 
     assert result.count == 0
+    assert is_set(result.scene_markers)
+    assert result.scene_markers is not None
     assert len(result.scene_markers) == 0
 
     assert len(graphql_route.calls) == 1
@@ -340,8 +352,11 @@ async def test_find_marker_with_tags(respx_stash_client: StashClient) -> None:
     marker = await respx_stash_client.find_marker("123")
 
     assert marker is not None
+    assert is_set(marker.primary_tag)
     assert marker.primary_tag is not None
     assert marker.primary_tag.id == "primary_tag"
+    assert is_set(marker.tags)
+    assert marker.tags is not None
     assert len(marker.tags) == 2
     assert marker.tags[0].id == "tag_1"
     assert marker.tags[1].id == "tag_2"
@@ -733,7 +748,7 @@ async def test_bulk_scene_marker_update_with_input_type(
     input_data = BulkSceneMarkerUpdateInput(
         ids=["m1", "m2"],
         title="Updated Title",
-        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD"),
+        tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
     result = await respx_stash_client.bulk_scene_marker_update(input_data)

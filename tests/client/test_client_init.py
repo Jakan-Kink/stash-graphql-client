@@ -45,6 +45,7 @@ class TestStashClientInit:
         # The client should be created successfully with the API key
         # We can't directly check headers here, but we verify initialization works
         assert client.url == "http://localhost:9999/graphql"
+        assert client._init_args[0] is not None
         assert client._init_args[0]["ApiKey"] == "test-api-key-12345"
 
     def test_init_with_https_scheme(self) -> None:

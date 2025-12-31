@@ -66,7 +66,7 @@ def test_time_scalar_in_pydantic() -> None:
         timestamp: Time
 
     # Test with string
-    model1 = TestModel(timestamp="2024-01-15T10:30:00")
+    model1 = TestModel(timestamp="2024-01-15T10:30:00")  # type: ignore[arg-type]
     assert isinstance(model1.timestamp, datetime)
 
     # Test with datetime
@@ -172,11 +172,11 @@ def test_timestamp_scalar_in_pydantic() -> None:
         created: Timestamp
 
     # Test with RFC3339 string
-    model1 = TestModel(created="2024-01-15T10:30:00")
+    model1 = TestModel(created="2024-01-15T10:30:00")  # type: ignore[arg-type]
     assert isinstance(model1.created, datetime)
 
     # Test with relative time
-    model2 = TestModel(created="<1h")
+    model2 = TestModel(created="<1h")  # type: ignore[arg-type]
     assert isinstance(model2.created, datetime)
     # Should be in the past
     assert model2.created < datetime.now(UTC)
@@ -204,12 +204,12 @@ def test_serialize_timestamp_invalid_type() -> None:
     with pytest.raises(
         StashIntegrationError, match="expected datetime for serialization"
     ):
-        _serialize_timestamp("not a datetime")
+        _serialize_timestamp("not a datetime")  # type: ignore[arg-type]
 
     with pytest.raises(
         StashIntegrationError, match="expected datetime for serialization"
     ):
-        _serialize_timestamp(123)
+        _serialize_timestamp(123)  # type: ignore[arg-type]
 
 
 @pytest.mark.unit

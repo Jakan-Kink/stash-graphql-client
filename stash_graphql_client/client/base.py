@@ -327,6 +327,22 @@ class StashClientBase:
             raise StashConnectionError(f"Request to {self.url} timed out")
         raise StashError(f"Unexpected error during request ({type(e).__name__}): {e}")
 
+    @overload
+    async def execute(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+        result_type: None = None,
+    ) -> dict[str, Any]: ...
+
+    @overload
+    async def execute(
+        self,
+        query: str,
+        variables: dict[str, Any] | None = None,
+        result_type: type[T] = ...,
+    ) -> T: ...
+
     async def execute(
         self,
         query: str,
