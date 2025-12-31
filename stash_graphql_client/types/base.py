@@ -1000,18 +1000,31 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Args:
             _context: Pydantic context (unused but required by signature)
         """
-        # Store snapshot of initial state using Pydantic's serialization
-        # This leverages Pydantic's tested model_dump() which handles
-        # nested objects, lists, and complex types correctly
-        self._snapshot = self.model_dump()
+        # Store snapshot of initial state by capturing field values directly
+        # This avoids circular reference errors when model_dump() would recurse
+        # into bidirectional relationships (e.g., Scene.performers ↔ Performer.scenes)
+        self._snapshot = {
+            field: getattr(self, field, UNSET) for field in self.__tracked_fields__
+        }
 
     def is_dirty(self) -> bool:
-        """Check if object has unsaved changes.
+        """Check if tracked fields have unsaved changes.
+
+        Compares current field values with snapshot using object identity for
+        StashObjects to avoid circular reference errors during comparison.
 
         Returns:
-            True if object has unsaved changes (current state != snapshot)
+            True if any tracked field has changed since last snapshot
         """
-        return self.model_dump() != self._snapshot
+        for field in self.__tracked_fields__:
+            current_value = getattr(self, field, UNSET)
+            snapshot_value = self._snapshot.get(field, UNSET)
+
+            # Direct comparison - uses __eq__ which compares by ID for StashObjects
+            if current_value != snapshot_value:
+                return True
+
+        return False
 
     def get_changed_fields(self) -> dict[str, Any]:
         """Get fields that have changed since last snapshot.
@@ -1019,21 +1032,15 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Returns:
             Dictionary of field names to current values for changed fields
         """
-        current = self.model_dump()
         changed = {}
 
         for field in self.__tracked_fields__:
-            if field not in current:
-                continue
+            current_value = getattr(self, field, UNSET)
+            snapshot_value = self._snapshot.get(field, UNSET)
 
-            # Field was added after snapshot
-            if field not in self._snapshot:
-                changed[field] = current[field]
-                continue
-
-            # Field value changed
-            if current[field] != self._snapshot[field]:
-                changed[field] = current[field]
+            # Field value changed (uses __eq__ which compares by ID for StashObjects)
+            if current_value != snapshot_value:
+                changed[field] = current_value
 
         return changed
 
@@ -1042,7 +1049,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         Updates the snapshot to match the current state.
         """
-        self._snapshot = self.model_dump()
+        # Capture current field values directly to avoid circular reference errors
+        self._snapshot = {
+            field: getattr(self, field, UNSET) for field in self.__tracked_fields__
+        }
 
     def mark_dirty(self) -> None:
         """Mark object as having unsaved changes.

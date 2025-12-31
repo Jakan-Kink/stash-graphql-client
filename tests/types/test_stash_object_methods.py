@@ -663,3 +663,129 @@ class TestToInputAll:
         # Try to create input for new object
         with pytest.raises(ValueError, match="objects cannot be created, only updated"):
             await obj._to_input_all()
+
+
+class TestCircularReferenceProtection:
+    """Test that dirty checking works with bidirectional relationships."""
+
+    def test_is_dirty_with_circular_reference(self) -> None:
+        """Test is_dirty() doesn't fail when bidirectional relationships exist."""
+        from stash_graphql_client.types.performer import Performer
+        from stash_graphql_client.types.scene import Scene
+
+        # Create scene and performer with bidirectional relationship
+        scene = Scene.model_construct(
+            id="scene-1",
+            title="Test Scene",
+            urls=[],
+            performers=[],
+        )
+        performer = Performer.model_construct(
+            id="perf-1",
+            name="Test Performer",
+            tags=[],
+            parents=[],
+            children=[],
+            scenes=[],
+        )
+
+        # Take initial snapshot
+        scene._snapshot = {
+            field: getattr(scene, field, None) for field in scene.__tracked_fields__
+        }
+        performer._snapshot = {
+            field: getattr(performer, field, None)
+            for field in performer.__tracked_fields__
+        }
+
+        # Create bidirectional relationship (this would cause circular ref with model_dump)
+        scene.performers = [performer]
+        performer.scenes = [scene]
+
+        # is_dirty() should work without ValueError: Circular reference detected
+        try:
+            scene_dirty = scene.is_dirty()
+            perf_dirty = performer.is_dirty()
+
+            # Scene should be dirty (performers is tracked)
+            # Performer should NOT be dirty (scenes is NOT tracked - read-only field)
+            assert scene_dirty is True
+            assert perf_dirty is False  # scenes not in __tracked_fields__
+        except ValueError as e:
+            if "Circular reference" in str(e):
+                pytest.fail(f"is_dirty() raised circular reference error: {e}")
+            raise
+
+    def test_get_changed_fields_with_circular_reference(self) -> None:
+        """Test get_changed_fields() works with bidirectional relationships."""
+        from stash_graphql_client.types.performer import Performer
+        from stash_graphql_client.types.scene import Scene
+
+        # Create scene with snapshot
+        scene = Scene.model_construct(
+            id="scene-2",
+            title="Original Title",
+            urls=[],
+            performers=[],
+        )
+        scene._snapshot = {
+            field: getattr(scene, field, None) for field in scene.__tracked_fields__
+        }
+
+        # Create performer and link bidirectionally
+        performer = Performer.model_construct(
+            id="perf-2",
+            name="Test Performer",
+            tags=[],
+            parents=[],
+            children=[],
+            scenes=[scene],
+        )
+        scene.performers = [performer]
+
+        # get_changed_fields() should work without circular reference error
+        try:
+            changed = scene.get_changed_fields()
+
+            # Should detect performers changed
+            assert "performers" in changed
+            assert changed["performers"] == [performer]
+        except ValueError as e:
+            if "Circular reference" in str(e):
+                pytest.fail(
+                    f"get_changed_fields() raised circular reference error: {e}"
+                )
+            raise
+
+    def test_mark_clean_with_circular_reference(self) -> None:
+        """Test mark_clean() works with bidirectional relationships."""
+        from stash_graphql_client.types.performer import Performer
+        from stash_graphql_client.types.scene import Scene
+
+        # Create bidirectional relationship
+        scene = Scene.model_construct(
+            id="scene-3",
+            title="Test",
+            urls=[],
+            performers=[],
+        )
+        performer = Performer.model_construct(
+            id="perf-3",
+            name="Test",
+            tags=[],
+            parents=[],
+            children=[],
+            scenes=[scene],
+        )
+        scene.performers = [performer]
+
+        # mark_clean() should work without circular reference error
+        try:
+            scene.mark_clean()
+
+            # After marking clean, should not be dirty
+            assert scene.is_dirty() is False
+        except ValueError as e:
+            if "Circular reference" in str(e):
+                pytest.fail(f"mark_clean() raised circular reference error: {e}")
+            raise
