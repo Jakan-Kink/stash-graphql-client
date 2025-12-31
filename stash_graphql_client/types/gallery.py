@@ -197,9 +197,83 @@ class Gallery(StashObject):
     paths: GalleryPathsType | UnsetType = UNSET
 
     async def image(self, index: int) -> Image:
-        """Get image at index."""
-        # TODO: Implement this resolver
-        raise NotImplementedError("image resolver not implemented")
+        """Get image at index from this gallery.
+
+        Uses the GraphQL `gallery.image(index)` resolver to fetch a specific image
+        by its position in the gallery.
+
+        Args:
+            index: Zero-based index of the image in the gallery
+
+        Returns:
+            Image object at the specified index
+
+        Raises:
+            ValueError: If gallery ID is not set or index is out of bounds
+            RuntimeError: If no StashEntityStore is configured
+
+        Examples:
+            ```python
+            gallery = await client.find_gallery("123")
+
+            # Get first image
+            first_image = await gallery.image(0)
+
+            # Get last image (if you know the count)
+            if is_set(gallery.image_count):
+                last_image = await gallery.image(gallery.image_count - 1)
+            ```
+        """
+        from stash_graphql_client import fragments
+        from stash_graphql_client.types.unset import is_set
+
+        # Validate gallery has ID
+        if not is_set(self.id) or self.id is None:
+            raise ValueError("Cannot get image: gallery ID is not set")
+
+        # Validate store is configured
+        if self._store is None:
+            raise RuntimeError(
+                "Cannot get image: no StashEntityStore configured. "
+                "Use StashContext to properly initialize the entity store."
+            )
+
+        # Query the gallery.image(index) resolver via store's client
+        query = f"""
+        {fragments.IMAGE_QUERY_FRAGMENTS}
+        query GalleryImage($galleryId: ID!, $index: Int!) {{
+            findGallery(id: $galleryId) {{
+                image(index: $index) {{
+                    ...ImageFragment
+                }}
+            }}
+        }}
+        """
+
+        try:
+            result = await self._store._client.execute(
+                query, {"galleryId": self.id, "index": index}
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Failed to fetch image at index {index} from gallery {self.id}: {e}"
+            ) from e
+
+        # Extract image data
+        gallery_data = result.get("findGallery")
+        if not gallery_data:
+            raise ValueError(f"Gallery {self.id} not found")
+
+        image_data = gallery_data.get("image")
+        if not image_data:
+            raise ValueError(
+                f"No image found at index {index} in gallery {self.id}. "
+                f"Gallery has {self.image_count if is_set(self.image_count) else 'unknown'} images."
+            )
+
+        # Use from_graphql() - the canonical method for GraphQL responses
+        # This ensures proper _received_fields tracking and identity map integration
+        return Image.from_graphql(image_data)
 
     async def add_performer(self, performer: Performer) -> None:
         """Add performer (syncs inverse automatically, call save() to persist)."""

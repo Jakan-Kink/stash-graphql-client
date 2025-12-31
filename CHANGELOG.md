@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0b1] - 2025-12-30
+## [0.6.0] - 2025-12-30
 
 ### Added
 
@@ -266,8 +266,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.6.0b1...HEAD
-[0.6.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.1...v0.6.0b1
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b7...v0.5.0
 [0.5.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.5.0b5...v0.5.0b7
