@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-12-31
+
+### Changed
+
+- **BREAKING**: `find_scenes_by_path_regex()` now returns `FindScenesResultType` instead of `list[Scene]`
+  - Provides consistent API with other find methods (`find_scenes()`, `find_performers()`, etc.)
+  - Exposes result metadata: `count`, `duration`, `filesize`
+  - Uses `result_type` parameter for automatic type-safe deserialization
+  - **Migration**: Change `scenes = await client.find_scenes_by_path_regex(filter_)` to `result = await client.find_scenes_by_path_regex(filter_)` and access scenes via `result.scenes`
+
+### Fixed
+
+- **Critical Bug**: `find_scenes_by_path_regex()` was incorrectly iterating over result wrapper dict instead of nested scenes list
+  - Previously returned empty list on all calls (silent failure)
+  - Now correctly extracts and returns scenes from GraphQL response
+  - Affects downstream projects relying on this method (e.g., fansly-downloader-ng)
+
 ## [0.6.0] - 2025-12-30
 
 ### Added
