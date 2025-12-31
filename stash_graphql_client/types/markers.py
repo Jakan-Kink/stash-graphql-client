@@ -143,6 +143,16 @@ class SceneMarker(StashObject):
         ),
     }
 
+    # Convenience Helper Methods
+
+    async def add_tag(self, tag: Tag) -> None:
+        """Add tag to scene marker (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("tags", tag)
+
+    async def remove_tag(self, tag: Tag) -> None:
+        """Remove tag from scene marker (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("tags", tag)
+
 
 class FindSceneMarkersResultType(StashResult):
     """Result type for finding scene markers from schema/types/scene-marker.graphql."""
