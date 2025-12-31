@@ -340,6 +340,80 @@ class TestSaveMethod:
         with pytest.raises(ValueError, match="Failed to save Tag"):
             await tag.save(respx_stash_client)
 
+    @pytest.mark.asyncio
+    async def test_save_new_object_updates_id_and_marks_clean(
+        self, respx_stash_client, respx_entity_store
+    ) -> None:
+        """Test save() updates ID and marks clean for new objects - covers lines 1192-1193."""
+        # Create a new tag (will have UUID)
+        tag = Tag.new(name="New Tag")
+        original_id = tag.id
+        assert tag.is_new()
+
+        # Mock successful create response
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "tagCreate": {
+                            "id": "server-assigned-123",
+                            "name": "New Tag",
+                        }
+                    }
+                },
+            )
+        )
+
+        # Save should update ID and mark clean
+        await tag.save(respx_stash_client)
+
+        # Verify ID was updated from UUID to server ID
+        assert tag.id == "server-assigned-123"
+        assert tag.id != original_id
+        assert not tag.is_new()
+
+        # Verify object is marked clean
+        assert not tag.is_dirty()
+
+    @pytest.mark.asyncio
+    async def test_save_existing_object_skips_update_id_and_marks_clean(
+        self, respx_stash_client, respx_entity_store
+    ) -> None:
+        """Test save() skips update_id for existing objects - covers lines 1192->1196."""
+        # Create an existing tag (not new)
+        tag = Tag.from_graphql({"id": "existing-123", "name": "Existing Tag"})
+        tag.mark_clean()
+
+        # Modify the tag to make it dirty
+        tag.name = "Updated Tag"
+        assert tag.is_dirty()
+        assert not tag.is_new()
+
+        # Mock successful update response
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "tagUpdate": {
+                            "id": "existing-123",
+                            "name": "Updated Tag",
+                        }
+                    }
+                },
+            )
+        )
+
+        # Save should NOT update ID (already has server ID) but should mark clean
+        await tag.save(respx_stash_client)
+
+        # Verify ID was NOT changed
+        assert tag.id == "existing-123"
+
+        # Verify object is marked clean
+        assert not tag.is_dirty()
+
 
 class TestGetId:
     """Test _get_id() static method."""
@@ -641,6 +715,30 @@ class TestProcessFields:
 
             # rating100 should not be in result (converter returned None)
             assert "rating100" not in result
+
+    @pytest.mark.asyncio
+    async def test_process_fields_skips_field_without_conversion(
+        self, respx_entity_store
+    ) -> None:
+        """Test _process_fields() skips fields not in __field_conversions__ - covers line 1344."""
+        # Create a tag
+        tag = Tag.from_graphql({"id": "tag-1", "name": "Test", "favorite": False})
+        tag.mark_clean()
+
+        # Modify a field that's tracked but NOT in __field_conversions__
+        tag.favorite = (
+            True  # favorite is in __tracked_fields__ but NOT __field_conversions__
+        )
+
+        # Get dirty fields
+        dirty_fields = set(tag.get_changed_fields().keys())
+        assert "favorite" in dirty_fields
+
+        # Process these fields - favorite should be skipped (not in conversions)
+        result = await tag._process_fields(dirty_fields)
+
+        # favorite should not be in result (it was skipped by the continue)
+        assert "favorite" not in result
 
 
 class TestToInputAll:
