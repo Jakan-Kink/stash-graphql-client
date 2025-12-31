@@ -1982,8 +1982,6 @@ class TestStoreThreadSafety:
                     id=f"performer-{thread_id}",
                     name=f"Performer {thread_id}",
                     tags=[],
-                    parents=[],
-                    children=[],
                 )
 
                 # Add to cache
@@ -2031,8 +2029,6 @@ class TestStoreThreadSafety:
                 id=f"performer-{i}",
                 name=f"Performer {i}",
                 tags=[],
-                parents=[],
-                children=[],
             )
             store._cache_entity(performer)
 
@@ -2065,8 +2061,6 @@ class TestStoreThreadSafety:
                 id=f"performer-{i}",
                 name=f"Performer {i}",
                 tags=[],
-                parents=[],
-                children=[],
             )
             store._cache_entity(performer)
 
