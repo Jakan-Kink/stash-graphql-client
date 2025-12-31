@@ -6,6 +6,7 @@ and query capabilities for Stash GraphQL entities.
 
 from __future__ import annotations
 
+import threading
 import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
@@ -133,13 +134,15 @@ class StashEntityStore:
         self._cache: dict[tuple[str, str], CacheEntry[Any]] = {}
         # Per-type TTL overrides
         self._type_ttls: dict[str, timedelta | None] = {}
+        # Thread-safety lock (reentrant to allow nested calls)
+        self._lock = threading.RLock()
 
     # ─── Read-through by ID ───────────────────────────────────
 
     async def get(
         self, entity_type: type[T], entity_id: str, fields: list[str] | None = None
     ) -> T | None:
-        """Get entity by ID. Checks cache first, fetches if missing/expired.
+        """Get entity by ID. Checks cache first, fetches if missing/expired (thread-safe).
 
         Args:
             entity_type: The Stash entity type (e.g., Performer, Scene)
@@ -158,29 +161,36 @@ class StashEntityStore:
             log.debug(f"Fetching {type_name} {entity_id} with fields: {fields}")
             entity = await self._fetch_with_fields(entity_type, entity_id, fields)
             if entity is not None:
-                self._cache_entity(entity)
+                self._cache_entity(entity)  # _cache_entity is thread-safe
             return entity
 
-        # Check cache
-        if cache_key in self._cache:
-            entry = self._cache[cache_key]
-            if not entry.is_expired():
-                log.debug(f"Cache hit: {type_name} {entity_id}")
-                return entry.entity  # type: ignore[return-value]
-            log.debug(f"Cache expired: {type_name} {entity_id}")
-            del self._cache[cache_key]
+        # Check cache (lock → check → unlock)
+        cache_hit = False
+        with self._lock:
+            if cache_key in self._cache:
+                entry = self._cache[cache_key]
+                if not entry.is_expired():
+                    log.debug(f"Cache hit: {type_name} {entity_id}")
+                    cached_entity = entry.entity
+                    cache_hit = True
+                else:
+                    log.debug(f"Cache expired: {type_name} {entity_id}")
+                    del self._cache[cache_key]
 
-        # Cache miss - fetch from GraphQL
+        if cache_hit:
+            return cached_entity  # type: ignore[return-value]
+
+        # Cache miss - fetch from GraphQL (no lock during await!)
         log.debug(f"Cache miss: {type_name} {entity_id}")
         entity = await entity_type.find_by_id(self._client, entity_id)
 
         if entity is not None:
-            self._cache_entity(entity)
+            self._cache_entity(entity)  # _cache_entity is thread-safe
 
         return entity
 
     async def get_many(self, entity_type: type[T], ids: list[str]) -> list[T]:
-        """Batch get entities. Returns cached + fetches missing in single query.
+        """Batch get entities. Returns cached + fetches missing in single query (thread-safe).
 
         Args:
             entity_type: The Stash entity type
@@ -193,25 +203,26 @@ class StashEntityStore:
         results: list[T] = []
         missing_ids: list[str] = []
 
-        # Check cache for each ID
-        for eid in ids:
-            cache_key = (type_name, eid)
-            if cache_key in self._cache:
-                entry = self._cache[cache_key]
-                if not entry.is_expired():
-                    results.append(entry.entity)  # type: ignore[arg-type]
+        # Check cache for each ID (lock → check all → unlock)
+        with self._lock:
+            for eid in ids:
+                cache_key = (type_name, eid)
+                if cache_key in self._cache:
+                    entry = self._cache[cache_key]
+                    if not entry.is_expired():
+                        results.append(entry.entity)  # type: ignore[arg-type]
+                    else:
+                        del self._cache[cache_key]
+                        missing_ids.append(eid)
                 else:
-                    del self._cache[cache_key]
                     missing_ids.append(eid)
-            else:
-                missing_ids.append(eid)
 
-        # Fetch missing IDs
+        # Fetch missing IDs (no lock during await!)
         if missing_ids:
             log.debug(f"Fetching {len(missing_ids)} missing {type_name} entities")
             fetched = await self._execute_find_by_ids(entity_type, missing_ids)
             for entity in fetched:
-                self._cache_entity(entity)
+                self._cache_entity(entity)  # _cache_entity is thread-safe
                 results.append(entity)
 
         return results
@@ -332,7 +343,7 @@ class StashEntityStore:
     # ─── Query cached objects only (no network) ───────────────
 
     def filter(self, entity_type: type[T], predicate: Callable[[T], bool]) -> list[T]:
-        """Filter cached objects with Python lambda. No network call.
+        """Filter cached objects with Python lambda. No network call (thread-safe).
 
         Args:
             entity_type: The Stash entity type
@@ -344,7 +355,12 @@ class StashEntityStore:
         type_name = entity_type.__type_name__
         results: list[T] = []
 
-        for (cached_type, _), entry in self._cache.items():
+        # Snapshot cache entries while holding lock
+        with self._lock:
+            cache_snapshot = list(self._cache.items())
+
+        # Process snapshot without holding lock (predicate may be slow)
+        for (cached_type, _), entry in cache_snapshot:
             if cached_type != type_name:
                 continue
             if entry.is_expired():
@@ -592,7 +608,7 @@ class StashEntityStore:
     # ─── Cache control ────────────────────────────────────────
 
     def invalidate(self, entity_type: type[T], entity_id: str) -> None:
-        """Remove specific object from cache.
+        """Remove specific object from cache (thread-safe).
 
         Args:
             entity_type: The Stash entity type
@@ -600,26 +616,29 @@ class StashEntityStore:
         """
         type_name = entity_type.__type_name__
         cache_key = (type_name, entity_id)
-        if cache_key in self._cache:
-            del self._cache[cache_key]
-            log.debug(f"Invalidated: {type_name} {entity_id}")
+        with self._lock:
+            if cache_key in self._cache:
+                del self._cache[cache_key]
+                log.debug(f"Invalidated: {type_name} {entity_id}")
 
     def invalidate_type(self, entity_type: type[T]) -> None:
-        """Remove all objects of a type from cache.
+        """Remove all objects of a type from cache (thread-safe).
 
         Args:
             entity_type: The Stash entity type to clear
         """
         type_name = entity_type.__type_name__
-        keys_to_delete = [key for key in self._cache if key[0] == type_name]
-        for key in keys_to_delete:
-            del self._cache[key]
+        with self._lock:
+            keys_to_delete = [key for key in self._cache if key[0] == type_name]
+            for key in keys_to_delete:
+                del self._cache[key]
         log.debug(f"Invalidated all {type_name}: {len(keys_to_delete)} entries")
 
     def invalidate_all(self) -> None:
-        """Clear entire cache."""
-        count = len(self._cache)
-        self._cache.clear()
+        """Clear entire cache (thread-safe)."""
+        with self._lock:
+            count = len(self._cache)
+            self._cache.clear()
         log.debug(f"Invalidated all cache: {count} entries")
 
     def set_ttl(self, entity_type: type[T], ttl: timedelta | None) -> None:
@@ -741,26 +760,29 @@ class StashEntityStore:
                     f"after cascade: {unsaved_desc}. This indicates cascade failed."
                 )
 
-        # If it was a new object, update cache key from temp UUID to real ID
+        # If it was a new object, update cache key from temp UUID to real ID (thread-safe)
         if was_new and old_id != obj.id:
             old_key = (obj.__type_name__, old_id)
             new_key = (obj.__type_name__, obj.id)
 
-            if old_key in self._cache:
-                # Add new key FIRST (both keys point to same object during transition)
-                entry = self._cache[old_key]
-                self._cache[new_key] = entry
-                log.debug(
-                    f"Added new cache key: {obj.__type_name__} {obj.id} (old: {old_id[:8]}...)"
-                )
+            with self._lock:
+                if old_key in self._cache:
+                    # Add new key FIRST (both keys point to same object during transition)
+                    entry = self._cache[old_key]
+                    self._cache[new_key] = entry
+                    log.debug(
+                        f"Added new cache key: {obj.__type_name__} {obj.id} (old: {old_id[:8]}...)"
+                    )
 
-                # Now remove old UUID key
-                del self._cache[old_key]
-                log.debug(f"Removed old cache key: {obj.__type_name__} {old_id[:8]}...")
-            else:
-                # Not in cache - add it now with real ID
-                self._cache_entity(obj)
-                log.debug(f"Cached {obj.__type_name__} {obj.id} after save")
+                    # Now remove old UUID key
+                    del self._cache[old_key]
+                    log.debug(
+                        f"Removed old cache key: {obj.__type_name__} {old_id[:8]}..."
+                    )
+                else:
+                    # Not in cache - add it now with real ID
+                    self._cache_entity(obj)
+                    log.debug(f"Cached {obj.__type_name__} {obj.id} after save")
 
     def _find_unsaved_related_objects(self, obj: StashObject) -> list[StashObject]:
         """Find related StashObjects that have UUID IDs (unsaved).
@@ -893,7 +915,7 @@ class StashEntityStore:
     # ─── Cache inspection ─────────────────────────────────────
 
     def is_cached(self, entity_type: type[T], entity_id: str) -> bool:
-        """Check if object is in cache and not expired.
+        """Check if object is in cache and not expired (thread-safe).
 
         Args:
             entity_type: The Stash entity type
@@ -905,40 +927,43 @@ class StashEntityStore:
         type_name = entity_type.__type_name__
         cache_key = (type_name, entity_id)
 
-        if cache_key not in self._cache:
-            return False
-
-        return not self._cache[cache_key].is_expired()
+        with self._lock:
+            if cache_key not in self._cache:
+                return False
+            return not self._cache[cache_key].is_expired()
 
     def cache_stats(self) -> CacheStats:
-        """Get cache statistics.
+        """Get cache statistics (thread-safe).
 
         Returns:
             CacheStats with total entries, by-type counts, and expired count
         """
         stats = CacheStats()
-        stats.total_entries = len(self._cache)
 
-        for (type_name, _), entry in self._cache.items():
-            stats.by_type[type_name] = stats.by_type.get(type_name, 0) + 1
-            if entry.is_expired():
-                stats.expired_count += 1
+        with self._lock:
+            stats.total_entries = len(self._cache)
+
+            for (type_name, _), entry in self._cache.items():
+                stats.by_type[type_name] = stats.by_type.get(type_name, 0) + 1
+                if entry.is_expired():
+                    stats.expired_count += 1
 
         return stats
 
     @property
     def cache_size(self) -> int:
-        """Get number of entities in cache (deprecated, use cache_stats).
+        """Get number of entities in cache (deprecated, use cache_stats) (thread-safe).
 
         Returns:
             Number of cached entities
         """
-        return len(self._cache)
+        with self._lock:
+            return len(self._cache)
 
     # ─── Internal helpers ─────────────────────────────────────
 
     def _cache_entity(self, entity: StashObject) -> None:
-        """Add entity to cache with appropriate TTL."""
+        """Add entity to cache with appropriate TTL (thread-safe)."""
         type_name = entity.__type_name__
         cache_key = (type_name, entity.id)
 
@@ -946,11 +971,12 @@ class StashEntityStore:
         ttl = self._type_ttls.get(type_name, self._default_ttl)
         ttl_seconds = ttl.total_seconds() if ttl is not None else None
 
-        self._cache[cache_key] = CacheEntry(
-            entity=entity,
-            cached_at=time.monotonic(),
-            ttl_seconds=ttl_seconds,
-        )
+        with self._lock:
+            self._cache[cache_key] = CacheEntry(
+                entity=entity,
+                cached_at=time.monotonic(),
+                ttl_seconds=ttl_seconds,
+            )
 
     def _get_ttl_for_type(self, type_name: str) -> timedelta | None:
         """Get TTL for a type, falling back to default."""
