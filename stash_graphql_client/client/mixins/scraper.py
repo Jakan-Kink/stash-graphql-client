@@ -12,6 +12,7 @@ from ...types import (
     ScrapedPerformer,
     ScrapedScene,
     ScrapedStudio,
+    ScrapedTag,
     ScrapeMultiPerformersInput,
     ScrapeMultiScenesInput,
     Scraper,
@@ -23,6 +24,7 @@ from ...types import (
     ScrapeSinglePerformerInput,
     ScrapeSingleSceneInput,
     ScrapeSingleStudioInput,
+    ScrapeSingleTagInput,
     StashBoxDraftSubmissionInput,
     StashBoxFingerprintSubmissionInput,
 )
@@ -350,6 +352,66 @@ class ScraperClientMixin(StashClientProtocol):
             return []
         except Exception as e:
             self.log.error(f"Failed to scrape single studio: {e}")
+            return []
+
+    async def scrape_single_tag(
+        self,
+        source: ScraperSourceInput,
+        input: ScrapeSingleTagInput,
+    ) -> list[ScrapedTag]:
+        """Scrape for a single tag.
+
+        Args:
+            source: Scraper source (scraper_id or stash_box_endpoint)
+            input: Tag scraping input (query - can be name or Stash ID)
+
+        Returns:
+            List of ScrapedTag objects
+
+        Examples:
+            Scrape tag by name:
+            ```python
+            source = ScraperSourceInput(scraper_id="scraper-123")
+            input = ScrapeSingleTagInput(query="Tag Name")
+            tags = await client.scrape_single_tag(source, input)
+            ```
+
+            Scrape from StashBox:
+            ```python
+            source = ScraperSourceInput(stash_box_endpoint="https://stashdb.org")
+            input = ScrapeSingleTagInput(query="Tag Name")
+            tags = await client.scrape_single_tag(source, input)
+            ```
+        """
+        query = """
+            query ScrapeSingleTag($source: ScraperSourceInput!, $input: ScrapeSingleTagInput!) {
+                scrapeSingleTag(source: $source, input: $input) {
+                    stored_id
+                    name
+                    remote_site_id
+                }
+            }
+        """
+        try:
+            result = await self.execute(
+                query,
+                {
+                    "source": source.to_graphql()
+                    if hasattr(source, "to_graphql")
+                    else source,
+                    "input": input.to_graphql()
+                    if hasattr(input, "to_graphql")
+                    else input,
+                },
+            )
+            if result and result.get("scrapeSingleTag"):
+                return [
+                    self._decode_result(ScrapedTag, tag_data)
+                    for tag_data in result["scrapeSingleTag"]
+                ]
+            return []
+        except Exception as e:
+            self.log.error(f"Failed to scrape single tag: {e}")
             return []
 
     async def scrape_single_performer(

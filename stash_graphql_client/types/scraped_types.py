@@ -388,6 +388,14 @@ class ScrapeSingleStudioInput(StashInput):
     )
 
 
+class ScrapeSingleTagInput(StashInput):
+    """Input for scraping a single tag from schema/types/scraper.graphql."""
+
+    query: str | None | UnsetType = (
+        UNSET  # String - Query can be either a name or a Stash ID
+    )
+
+
 class ScrapeSinglePerformerInput(StashInput):
     """Input for scraping a single performer from schema/types/scraper.graphql."""
 

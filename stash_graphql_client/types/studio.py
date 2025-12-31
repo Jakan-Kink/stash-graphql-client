@@ -156,13 +156,13 @@ class Studio(StashObject):
             notes="Self-referential parent/child hierarchy",
         ),
         "child_studios": RelationshipMetadata(
-            target_field="child_ids",
+            target_field="",  # Read-only: no child_ids in StudioInput (managed via parent_id on children)
             is_list=True,
             query_field="child_studios",
             inverse_type="Studio",  # Self-referential
             inverse_query_field="parent_studio",
             query_strategy="direct_field",
-            notes="Self-referential parent/child hierarchy",
+            notes="Self-referential parent/child hierarchy. Children managed via parent_id on child studios.",
         ),
         "tags": RelationshipMetadata(
             target_field="tag_ids",
