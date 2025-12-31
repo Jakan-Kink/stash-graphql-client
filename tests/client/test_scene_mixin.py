@@ -1298,16 +1298,22 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
 
     This covers lines 1091-1100: successful retrieval.
     """
-    scenes_data = [
-        create_scene_dict(id="s1", title="Scene 1", urls=[]),
-        create_scene_dict(id="s2", title="Scene 2", urls=[]),
-    ]
+    # Actual API response structure from findScenesByPathRegex
+    result_data = {
+        "count": 2,
+        "duration": 240.5,
+        "filesize": 1024000,
+        "scenes": [
+            create_scene_dict(id="s1", title="Scene 1", urls=[]),
+            create_scene_dict(id="s2", title="Scene 2", urls=[]),
+        ],
+    }
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
-                json=create_graphql_response("findScenesByPathRegex", scenes_data),
+                json=create_graphql_response("findScenesByPathRegex", result_data),
             )
         ]
     )
@@ -1316,11 +1322,15 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
         filter_={"path": ".*test.*"}
     )
 
-    assert len(result) == 2
-    assert result[0].id == "s1"
-    assert result[0].title == "Scene 1"
-    assert result[1].id == "s2"
-    assert result[1].title == "Scene 2"
+    # Verify FindScenesResultType structure
+    assert result.count == 2
+    assert result.duration == 240.5
+    assert result.filesize == 1024000
+    assert len(result.scenes) == 2
+    assert result.scenes[0].id == "s1"
+    assert result.scenes[0].title == "Scene 1"
+    assert result.scenes[1].id == "s2"
+    assert result.scenes[1].title == "Scene 2"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -1333,7 +1343,7 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
 async def test_find_scenes_by_path_regex_error_returns_empty(
     respx_stash_client: StashClient,
 ) -> None:
-    """Test that find_scenes_by_path_regex returns empty list on error.
+    """Test that find_scenes_by_path_regex returns empty result on error.
 
     This covers lines 1098-1100: exception handling.
     """
@@ -1347,7 +1357,10 @@ async def test_find_scenes_by_path_regex_error_returns_empty(
         filter_={"path": ".*test.*"}
     )
 
-    assert result == []
+    assert result.count == 0
+    assert result.duration == 0
+    assert result.filesize == 0
+    assert result.scenes == []
     assert len(graphql_route.calls) == 1
 
 

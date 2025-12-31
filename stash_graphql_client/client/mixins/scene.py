@@ -1085,25 +1085,28 @@ class SceneClientMixin(StashClientProtocol):
     async def find_scenes_by_path_regex(
         self,
         filter_: dict[str, Any] | None = None,
-    ) -> list[Scene]:
+    ) -> FindScenesResultType:
         """Find scenes by path regex pattern.
 
         Args:
             filter_: Filter parameters
 
         Returns:
-            List of Scene objects matching the path pattern
+            FindScenesResultType containing:
+                - count: Total number of matches
+                - duration: Total duration in seconds
+                - filesize: Total file size in bytes
+                - scenes: List of Scene objects matching the path pattern
         """
         try:
-            result = await self.execute(
+            return await self.execute(
                 fragments.FIND_SCENES_BY_PATH_REGEX_QUERY,
                 {"filter": filter_},
+                result_type=FindScenesResultType,
             )
-            scenes_data = result.get("findScenesByPathRegex", [])
-            return [self._decode_result(Scene, s) for s in scenes_data]
         except Exception as e:
             self.log.error(f"Failed to find scenes by path regex: {e}")
-            return []
+            return FindScenesResultType(count=0, duration=0, filesize=0, scenes=[])
 
     async def scene_streams(self, scene_id: str) -> list["SceneStreamEndpoint"]:
         """Get streaming endpoints for a scene.
