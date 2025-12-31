@@ -1326,6 +1326,7 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
     assert result.count == 2
     assert result.duration == 240.5
     assert result.filesize == 1024000
+    assert isinstance(result.scenes, list)  # Type narrowing for mypy
     assert len(result.scenes) == 2
     assert result.scenes[0].id == "s1"
     assert result.scenes[0].title == "Scene 1"

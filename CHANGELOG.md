@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Thread-Safety**: StashEntityStore now supports concurrent access from multi-threaded applications
+  - Uses reentrant lock (RLock) for all cache operations
+  - Lock-free async patterns prevent event loop blocking
+  - Snapshot-based predicate evaluation for safe concurrent access
+  - Full thread-safety test coverage with ThreadPoolExecutor
+
+- **SceneMarker Helpers**: Added missing convenience methods for tag management
+  - `add_tag()`: Add tag to marker with automatic deduplication
+  - `remove_tag()`: Remove tag from marker (no-op if not present)
+  - UNSET-aware initialization (converts UNSET to empty list)
+  - Consistent with Scene and Tag helper method patterns
+
+### Fixed
+
+- **Type Safety**: Resolved mypy errors in test files
+  - Removed invalid `parents` and `children` kwargs from Performer test fixtures
+  - Added type narrowing (`isinstance` check) for UNSET field access
+  - Added return type annotations (`-> None`) to test methods
+
+### Testing
+
+- **Coverage Gaps**: Added 8 targeted tests for previously uncovered code paths
+  - scraper.py: `scrape_single_tag()` error handling (empty results, exceptions)
+  - scalars.py: `_serialize_time()` success and error paths
+  - base.py: `save()` create vs update branches, `_process_fields()` skip logic
+  - Returns to 100% test coverage (1716 tests passing)
+
+- **Type Compliance**: Returns to 100% mypy compliance (164 source files checked)
+
 ## [0.7.1] - 2025-12-31
 
 ### Fixed

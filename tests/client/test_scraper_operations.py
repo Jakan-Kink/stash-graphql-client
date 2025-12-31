@@ -22,6 +22,7 @@ from stash_graphql_client.types import (
     ScrapeSinglePerformerInput,
     ScrapeSingleSceneInput,
     ScrapeSingleStudioInput,
+    ScrapeSingleTagInput,
 )
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
@@ -821,4 +822,71 @@ async def test_reload_scrapers_error_returns_false(
     result = await respx_stash_client.reload_scrapers()
 
     assert result is False
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scrape_single_tag(respx_stash_client: StashClient) -> None:
+    """Test scraping single tag."""
+    tag_data = create_scraped_tag_dict(
+        name="Test Tag",
+    )
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("scrapeSingleTag", [tag_data])
+            )
+        ]
+    )
+
+    source = ScraperSourceInput(scraper_id="scraper-123")
+    input_data = ScrapeSingleTagInput(query="Test Tag")
+
+    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+
+    assert len(tags) == 1
+    assert tags[0].name == "Test Tag"
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "scrapeSingleTag" in req["query"]
+    assert req["variables"]["source"]["scraper_id"] == "scraper-123"
+    assert req["variables"]["input"]["query"] == "Test Tag"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scrape_single_tag_empty_result(respx_stash_client: StashClient) -> None:
+    """Test scrape_single_tag with empty result."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("scrapeSingleTag", None))
+        ]
+    )
+
+    source = ScraperSourceInput(scraper_id="scraper-123")
+    input_data = ScrapeSingleTagInput(query="Nonexistent Tag")
+
+    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+
+    assert len(tags) == 0
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scrape_single_tag_exception(respx_stash_client: StashClient) -> None:
+    """Test scrape_single_tag exception handling."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=httpx.HTTPError("Network error")
+    )
+
+    source = ScraperSourceInput(scraper_id="scraper-123")
+    input_data = ScrapeSingleTagInput(query="Test Tag")
+
+    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+
+    assert len(tags) == 0
     assert len(graphql_route.calls) == 1

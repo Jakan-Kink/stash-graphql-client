@@ -281,6 +281,7 @@ from .scraped_types import (
     ScrapeSinglePerformerInput,
     ScrapeSingleSceneInput,
     ScrapeSingleStudioInput,
+    ScrapeSingleTagInput,
     ScrapeType,
     StashBoxBatchTagInput,
     StashBoxFingerprint,
@@ -581,6 +582,7 @@ __all__: list[str] = [
     "ScrapeSinglePerformerInput",
     "ScrapeSingleSceneInput",
     "ScrapeSingleStudioInput",
+    "ScrapeSingleTagInput",
     "ScrapeType",
     "ScrapedGallery",
     "ScrapedGalleryInput",
@@ -805,6 +807,7 @@ ScrapedGroupInput.model_rebuild()
 ScrapeSingleSceneInput.model_rebuild()
 ScrapeMultiScenesInput.model_rebuild()
 ScrapeSingleStudioInput.model_rebuild()
+ScrapeSingleTagInput.model_rebuild()
 ScrapeSinglePerformerInput.model_rebuild()
 ScrapeMultiPerformersInput.model_rebuild()
 ScrapeSingleGalleryInput.model_rebuild()

@@ -73,7 +73,7 @@ class TestUnsetSentinel:
         }
         assert state_map[UNSET] == "never touched"
 
-    def test_unset_pydantic_schema_integration(self):
+    def test_unset_pydantic_schema_integration(self) -> None:
         """Test UnsetType works with Pydantic's core schema.
 
         This covers lines 82-88 in unset.py - the validate_unset function
@@ -97,7 +97,7 @@ class TestUnsetSentinel:
         model3 = TestModel(field="value")
         assert model3.field == "value"
 
-    def test_unset_validation_error_on_invalid_type(self):
+    def test_unset_validation_error_on_invalid_type(self) -> None:
         """Test that UnsetType validator raises error for invalid types.
 
         This covers line 86-88 in unset.py - the ValueError raise in validate_unset.

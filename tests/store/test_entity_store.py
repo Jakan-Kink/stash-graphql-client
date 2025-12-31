@@ -1950,3 +1950,132 @@ class TestGetOrCreateMethod:
 
         assert result.name == "Dave"
         assert result._is_new is True
+
+
+# =============================================================================
+# Thread-Safety Tests
+# =============================================================================
+
+
+class TestStoreThreadSafety:
+    """Test StashEntityStore thread-safety.
+
+    These tests verify that concurrent access to the cache from multiple threads
+    doesn't cause race conditions or data corruption.
+    """
+
+    def test_concurrent_cache_access(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test that concurrent cache operations don't cause race conditions."""
+        import concurrent.futures
+
+        store = respx_entity_store
+        errors = []
+        results = []
+
+        def cache_operations(thread_id: int) -> None:
+            """Perform various cache operations from a thread."""
+            try:
+                # Create test entity
+                performer = Performer(
+                    id=f"performer-{thread_id}",
+                    name=f"Performer {thread_id}",
+                    tags=[],
+                )
+
+                # Add to cache
+                store._cache_entity(performer)
+
+                # Check if cached
+                is_cached = store.is_cached(Performer, performer.id)
+                assert is_cached is True
+
+                # Get stats
+                stats = store.cache_stats()
+                assert stats.total_entries > 0
+
+                # Filter cache
+                filtered = store.filter(Performer, lambda p: p.id == performer.id)
+                assert len(filtered) == 1
+
+                # Invalidate
+                store.invalidate(Performer, performer.id)
+
+                results.append(f"Thread {thread_id} completed")
+            except Exception as e:
+                errors.append(f"Thread {thread_id} error: {e}")
+
+        # Run 20 threads concurrently
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            futures = [executor.submit(cache_operations, i) for i in range(20)]
+            concurrent.futures.wait(futures)
+
+        # Verify no errors occurred
+        assert len(errors) == 0, f"Errors in threads: {errors}"
+        assert len(results) == 20
+
+    def test_concurrent_invalidation(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test that concurrent invalidation doesn't cause issues."""
+        import concurrent.futures
+
+        store = respx_entity_store
+
+        # Pre-populate cache with 100 entities
+        for i in range(100):
+            performer = Performer(
+                id=f"performer-{i}",
+                name=f"Performer {i}",
+                tags=[],
+            )
+            store._cache_entity(performer)
+
+        assert store.cache_size == 100
+
+        def invalidate_batch(start_id: int, count: int) -> None:
+            """Invalidate a batch of entities."""
+            for i in range(start_id, start_id + count):
+                store.invalidate(Performer, f"performer-{i}")
+
+        # Invalidate from multiple threads simultaneously
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(invalidate_batch, i * 10, 10) for i in range(10)]
+            concurrent.futures.wait(futures)
+
+        # All should be invalidated
+        assert store.cache_size == 0
+
+    def test_concurrent_stats_collection(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test that concurrent stats collection is consistent."""
+        import concurrent.futures
+
+        store = respx_entity_store
+
+        # Pre-populate cache
+        for i in range(50):
+            performer = Performer(
+                id=f"performer-{i}",
+                name=f"Performer {i}",
+                tags=[],
+            )
+            store._cache_entity(performer)
+
+        stats_results = []
+
+        def get_stats() -> None:
+            """Get stats from multiple threads."""
+            stats = store.cache_stats()
+            stats_results.append(stats.total_entries)
+
+        # Collect stats from 10 threads simultaneously
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(get_stats) for _ in range(10)]
+            concurrent.futures.wait(futures)
+
+        # All stats should show same count (50 entities)
+        assert all(count == 50 for count in stats_results)
+        assert len(stats_results) == 10
