@@ -1790,7 +1790,7 @@ queries for data you don't need.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get number of entities in cache (deprecated, use cache_stats).</p>
+        <p>Get number of entities in cache (deprecated, use cache_stats) (thread-safe).</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -1843,7 +1843,7 @@ queries for data you don't need.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get entity by ID. Checks cache first, fetches if missing/expired.</p>
+        <p>Get entity by ID. Checks cache first, fetches if missing/expired (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1954,7 +1954,7 @@ queries for data you don't need.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Batch get entities. Returns cached + fetches missing in single query.</p>
+        <p>Batch get entities. Returns cached + fetches missing in single query (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2408,7 +2408,7 @@ find(Scene, studio__null=True)          # IS_NULL</p>
 
     <div class="doc doc-contents ">
 
-        <p>Filter cached objects with Python lambda. No network call.</p>
+        <p>Filter cached objects with Python lambda. No network call (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2890,7 +2890,7 @@ if missing:
 
     <div class="doc doc-contents ">
 
-        <p>Remove specific object from cache.</p>
+        <p>Remove specific object from cache (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2957,7 +2957,7 @@ if missing:
 
     <div class="doc doc-contents ">
 
-        <p>Remove all objects of a type from cache.</p>
+        <p>Remove all objects of a type from cache (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3008,7 +3008,7 @@ if missing:
 
     <div class="doc doc-contents ">
 
-        <p>Clear entire cache.</p>
+        <p>Clear entire cache (thread-safe).</p>
 
 
     </div>
@@ -3444,7 +3444,7 @@ Call store.save() or entity.save() to persist to Stash.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Check if object is in cache and not expired.</p>
+        <p>Check if object is in cache and not expired (thread-safe).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3534,7 +3534,7 @@ Call store.save() or entity.save() to persist to Stash.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get cache statistics.</p>
+        <p>Get cache statistics (thread-safe).</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
