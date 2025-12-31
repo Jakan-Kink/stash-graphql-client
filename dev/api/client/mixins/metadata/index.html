@@ -1997,7 +1997,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of paths to scan (empty for all paths)</p>
+                <p>List of paths to scan (None = all paths)</p>
               </div>
             </td>
             <td>
@@ -2013,16 +2013,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional scan flags matching ScanMetadataInput schema:
-- rescan: bool
-- scanGenerateCovers: bool
-- scanGeneratePreviews: bool
-- scanGenerateImagePreviews: bool
-- scanGenerateSprites: bool
-- scanGeneratePhashes: bool
-- scanGenerateThumbnails: bool
-- scanGenerateClipPreviews: bool
-- filter: ScanMetaDataFilterInput</p>
+                <p>Dict of scan flags to override defaults (rescan, scanGenerateCovers, etc.)</p>
               </div>
             </td>
             <td>

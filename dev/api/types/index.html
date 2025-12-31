@@ -2633,11 +2633,12 @@ server-assigned ID after save operations.</p>
 
 
   <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
   </span>
 
 <a href="#stash_graphql_client.types.base.StashObject.id" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4429,61 +4430,18 @@ functionality like find_by_id, save, and to_input methods.</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_to_gallery</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.add_to_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_to_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add this scene to a gallery.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs gallery.scenes when you save.</p>
+        <p>Add scene to gallery (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>gallery</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Gallery instance to add this scene to</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene = await client.find_scene("scene_id")
-gallery = await client.find_gallery("gallery_id")
-scene.add_to_gallery(gallery)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4496,59 +4454,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_from_gallery</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.remove_from_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_from_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove this scene from a gallery.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs gallery.scenes when you save.</p>
+        <p>Remove scene from gallery (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>gallery</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Gallery instance to remove this scene from</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.remove_from_gallery(gallery)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4561,59 +4478,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.add_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a performer to this scene.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs performer.scenes when you save.</p>
+        <p>Add performer to scene (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.add_performer(performer)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4626,58 +4502,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.remove_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a performer from this scene.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.</p>
+        <p>Remove performer from scene (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.remove_performer(performer)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4690,59 +4526,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_tag</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.add_tag" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a tag to this scene.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs tag.scene_count when you save.</p>
+        <p>Add tag to scene (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.add_tag(tag)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4755,59 +4550,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_tag</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.scene.Scene.remove_tag" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a tag from this scene.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs tag.scene_count when you save.</p>
+        <p>Remove tag from scene (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.remove_tag(tag)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -4826,53 +4580,8 @@ await store.save(scene)  # Persist the change</p>
 
     <div class="doc doc-contents ">
 
-        <p>Set the studio for this scene.</p>
-<p>In-memory operation only. Call store.save(scene) to persist changes.
-The backend automatically syncs studio.scene_count when you save.</p>
+        <p>Set scene studio (call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>studio</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Studio instance to set, or None to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>scene.set_studio(studio)
-await store.save(scene)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -6077,59 +5786,18 @@ await store.save(scene)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_tag</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.performer.Performer.add_tag" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a tag to this performer.</p>
-<p>In-memory operation only. Call store.save(performer) to persist changes.
-The backend automatically syncs tag.performer_count when you save.</p>
+        <p>Add tag to performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>performer.add_tag(tag)
-await store.save(performer)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -6142,59 +5810,18 @@ await store.save(performer)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_tag</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.performer.Performer.remove_tag" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a tag from this performer.</p>
-<p>In-memory operation only. Call store.save(performer) to persist changes.
-The backend automatically syncs tag.performer_count when you save.</p>
+        <p>Remove tag from performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>performer.remove_tag(tag)
-await store.save(performer)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -6867,7 +6494,108 @@ await store.save(performer)  # Persist the change</p>
 
     <div class="doc doc-contents ">
 
-        <p>Get image at index.</p>
+        <p>Get image at index from this gallery.</p>
+<p>Uses the GraphQL <code>gallery.image(index)</code> resolver to fetch a specific image
+by its position in the gallery.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>index</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Zero-based index of the image in the gallery</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Image object at the specified index</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If gallery ID is not set or index is out of bounds</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="RuntimeError">RuntimeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If no StashEntityStore is configured</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">gallery</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_gallery</span><span class="p">(</span><span class="s2">&quot;123&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Get first image</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">first_image</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gallery</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Get last image (if you know the count)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">if</span> <span class="n">is_set</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">image_count</span><span class="p">):</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">last_image</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gallery</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">image_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></code></pre></div>
 
 
     </div>
@@ -6881,59 +6609,18 @@ await store.save(performer)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.gallery.Gallery.add_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a performer to this gallery.</p>
-<p>In-memory operation only. Call store.save(gallery) to persist changes.
-The backend automatically syncs performer.galleries when you save.</p>
+        <p>Add performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>gallery.add_performer(performer)
-await store.save(gallery)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -6946,59 +6633,18 @@ await store.save(gallery)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.gallery.Gallery.remove_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a performer from this gallery.</p>
-<p>In-memory operation only. Call store.save(gallery) to persist changes.
-The backend automatically syncs performer.galleries when you save.</p>
+        <p>Remove performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>gallery.remove_performer(performer)
-await store.save(gallery)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -7011,59 +6657,18 @@ await store.save(gallery)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_scene</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.gallery.Gallery.add_scene" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a scene to this gallery.</p>
-<p>In-memory operation only. Call store.save(gallery) to persist changes.
-The backend automatically syncs scene.galleries when you save.</p>
+        <p>Add scene (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>scene</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Scene instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>gallery.add_scene(scene)
-await store.save(gallery)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -7076,59 +6681,66 @@ await store.save(gallery)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_scene</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.gallery.Gallery.remove_scene" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a scene from this gallery.</p>
-<p>In-memory operation only. Call store.save(gallery) to persist changes.
-The backend automatically syncs scene.galleries when you save.</p>
+        <p>Remove scene (syncs inverse automatically, call save() to persist).</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>scene</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Scene instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
 
 
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>gallery.remove_scene(scene)
-await store.save(gallery)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
+<h5 id="stash_graphql_client.types.gallery.Gallery.add_tag" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_tag</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.add_tag" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add tag (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.gallery.Gallery.remove_tag" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_tag</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.remove_tag" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove tag (syncs inverse automatically, call save() to persist).</p>
+
 
     </div>
 
@@ -7618,59 +7230,18 @@ await store.save(gallery)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.image.Image.add_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a performer to this image.</p>
-<p>In-memory operation only. Call store.save(image) to persist changes.
-The backend automatically syncs performer.images when you save.</p>
+        <p>Add performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>image.add_performer(performer)
-await store.save(image)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -7683,59 +7254,18 @@ await store.save(image)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_performer</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.image.Image.remove_performer" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a performer from this image.</p>
-<p>In-memory operation only. Call store.save(image) to persist changes.
-The backend automatically syncs performer.images when you save.</p>
+        <p>Remove performer (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>performer</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Performer instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>image.remove_performer(performer)
-await store.save(image)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -7748,59 +7278,18 @@ await store.save(image)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_to_gallery</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.image.Image.add_to_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_to_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add this image to a gallery.</p>
-<p>In-memory operation only. Call store.save(image) to persist changes.
-The backend automatically syncs gallery.images when you save.</p>
+        <p>Add gallery (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>gallery</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Gallery instance to add this image to</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>image.add_to_gallery(gallery)
-await store.save(image)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -7813,59 +7302,66 @@ await store.save(image)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_from_gallery</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.image.Image.remove_from_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_from_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove this image from a gallery.</p>
-<p>In-memory operation only. Call store.save(image) to persist changes.
-The backend automatically syncs gallery.images when you save.</p>
+        <p>Remove gallery (syncs inverse automatically, call save() to persist).</p>
 
 
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>gallery</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Gallery instance to remove this image from</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
 
 
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>image.remove_from_gallery(gallery)
-await store.save(image)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
+<h5 id="stash_graphql_client.types.image.Image.add_tag" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_tag</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.image.Image.add_tag" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add tag (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.image.Image.remove_tag" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_tag</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.image.Image.remove_tag" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove tag (syncs inverse automatically, call save() to persist).</p>
+
 
     </div>
 
@@ -8473,18 +7969,20 @@ await store.save(image)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_sub_group</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.group.Group.add_sub_group" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_sub_group</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">sub_group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">description</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a sub-group to this group.</p>
-<p>In-memory operation only. Call store.save(group) to persist changes.
-The backend automatically syncs group.containing_groups when you save.</p>
+        <p>Add sub-group (syncs inverse automatically, call save() to persist).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8500,14 +7998,14 @@ The backend automatically syncs group.containing_groups when you save.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>group</code>
+                <code>sub_group</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a> | <span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The sub-group to add (Group or GroupDescription)</p>
+                <p>Either a Group object or a GroupDescription object</p>
               </div>
             </td>
             <td>
@@ -8523,7 +8021,7 @@ The backend automatically syncs group.containing_groups when you save.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional description for the relationship (ignored if group is GroupDescription)</p>
+                <p>Optional description for the relationship (only used if sub_group is a Group)</p>
               </div>
             </td>
             <td>
@@ -8533,18 +8031,6 @@ The backend automatically syncs group.containing_groups when you save.</p>
       </tbody>
     </table>
 
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_group.add_sub_group(child_group, "Part 2")
-await store.save(parent_group)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -8557,15 +8043,19 @@ await store.save(parent_group)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_sub_group</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.group.Group.remove_sub_group" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_sub_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_sub_group</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">sub_group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a sub-group from this group.</p>
-<p>In-memory operation only. Call store.save(group) to persist changes.
-The backend automatically syncs group.containing_groups when you save.</p>
+        <p>Remove sub-group (syncs inverse automatically, call save() to persist).</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8581,14 +8071,14 @@ The backend automatically syncs group.containing_groups when you save.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                <code>group</code>
+                <code>sub_group</code>
             </td>
             <td>
                   <code><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a> | <span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The sub-group to remove (Group or GroupDescription)</p>
+                <p>Either a Group object or GroupDescription object to remove</p>
               </div>
             </td>
             <td>
@@ -8599,17 +8089,120 @@ The backend automatically syncs group.containing_groups when you save.</p>
     </table>
 
 
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_group.remove_sub_group(child_group)
-await store.save(parent_group)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.group.Group.add_containing_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_containing_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.group.Group.add_containing_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_containing_group</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">containing_group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add containing group (syncs inverse automatically, call save() to persist).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>containing_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a> | <span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Either a Group object (will be wrapped with None description)
+             or a GroupDescription object (used as-is)</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.group.Group.remove_containing_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_containing_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.group.Group.remove_containing_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_containing_group</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">containing_group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span> <span class="o">|</span> <span class="n"><span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove containing group (syncs inverse automatically, call save() to persist).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>containing_group</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a> | <span title="stash_graphql_client.types.group.GroupDescription">GroupDescription</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Either a Group object or GroupDescription object to remove</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -9241,59 +8834,18 @@ await store.save(parent_group)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_parent_studio</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.studio.Studio.set_parent_studio" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_parent_studio</span><span class="p">(</span><span class="n">parent</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Set the parent studio for this studio.</p>
-<p>In-memory operation only. Call store.save(studio) to persist changes.
-The backend automatically syncs parent_studio.child_studios when you save.</p>
+        <p>Set parent studio (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>parent</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a> | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The parent Studio instance, or None to remove parent</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>studio.set_parent_studio(parent_studio)
-await store.save(studio)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -9306,59 +8858,18 @@ await store.save(studio)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_child_studio</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.studio.Studio.add_child_studio" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_child_studio</span><span class="p">(</span><span class="n">child</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a child studio to this studio.</p>
-<p>In-memory operation only. Call store.save(child) to persist changes.
-The backend automatically syncs studio.parent_studio when you save the child.</p>
+        <p>Add child studio (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>child</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The child Studio instance to add</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_studio.add_child_studio(child_studio)
-await store.save(child_studio)  # Save the child with updated parent</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -9371,59 +8882,18 @@ await store.save(child_studio)  # Save the child with updated parent</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_child_studio</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.studio.Studio.remove_child_studio" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_child_studio</span><span class="p">(</span><span class="n">child</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a child studio from this studio.</p>
-<p>In-memory operation only. Call store.save(child) to persist changes.
-The backend automatically syncs studio.parent_studio when you save the child.</p>
+        <p>Remove child studio (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>child</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The child Studio instance to remove</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_studio.remove_child_studio(child_studio)
-await store.save(child_studio)  # Save the child with cleared parent</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -9602,62 +9072,6 @@ await store.save(child_studio)  # Save the child with cleared parent</p>
 
 <a href="#stash_graphql_client.types.tag.Tag.ignore_auto_tag" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ignore_auto_tag</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
-
-
-  
-      module-attribute
-   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="stash_graphql_client.types.tag.Tag.created_at" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">created_at</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#stash_graphql_client.types.tag.Tag.created_at" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">created_at</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
-
-
-  
-      module-attribute
-   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="stash_graphql_client.types.tag.Tag.updated_at" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">updated_at</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#stash_graphql_client.types.tag.Tag.updated_at" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">updated_at</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   
@@ -10091,61 +9505,18 @@ await store.save(child_studio)  # Save the child with cleared parent</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_parent</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.tag.Tag.add_parent" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_parent</span><span class="p">(</span><span class="n">parent_tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a parent tag to this tag's parents list.</p>
-<p>In-memory operation only. Call store.save(tag) to persist changes.
-Automatically maintains bidirectional consistency by updating parent_tag.children.</p>
+        <p>Add parent tag (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>parent_tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to add as a parent</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>child_tag = await client.find_tag("child_id")
-parent_tag = await client.find_tag("parent_id")
-child_tag.add_parent(parent_tag)  # Also updates parent_tag.children
-await store.save(child_tag)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -10158,59 +9529,18 @@ await store.save(child_tag)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_parent</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.tag.Tag.remove_parent" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_parent</span><span class="p">(</span><span class="n">parent_tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a parent tag from this tag's parents list.</p>
-<p>In-memory operation only. Call store.save(tag) to persist changes.
-Automatically maintains bidirectional consistency by updating parent_tag.children.</p>
+        <p>Remove parent tag (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>parent_tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to remove as a parent</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>child_tag.remove_parent(parent_tag)  # Also updates parent_tag.children
-await store.save(child_tag)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -10223,61 +9553,18 @@ await store.save(child_tag)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_child</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.tag.Tag.add_child" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_child</span><span class="p">(</span><span class="n">child_tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Add a child tag to this tag's children list.</p>
-<p>In-memory operation only. Call store.save(tag) to persist changes.
-Automatically maintains bidirectional consistency by updating child_tag.parents.</p>
+        <p>Add child tag (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>child_tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to add as a child</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_tag = await client.find_tag("parent_id")
-child_tag = await client.find_tag("child_id")
-parent_tag.add_child(child_tag)  # Also updates child_tag.parents
-await store.save(parent_tag)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -10290,59 +9577,18 @@ await store.save(parent_tag)  # Persist the change</p>
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_child</span>
 
 
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
 <a href="#stash_graphql_client.types.tag.Tag.remove_child" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_child</span><span class="p">(</span><span class="n">child_tag</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Remove a child tag from this tag's children list.</p>
-<p>In-memory operation only. Call store.save(tag) to persist changes.
-Automatically maintains bidirectional consistency by updating child_tag.parents.</p>
+        <p>Remove child tag (syncs inverse automatically, call save() to persist).</p>
 
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>child_tag</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="            Tag (stash_graphql_client.types.tag.Tag)" href="#stash_graphql_client.types.tag.Tag">Tag</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The Tag instance to remove as a child</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="example" open>
-  <summary>Example</summary>
-  <blockquote>
-<blockquote>
-<blockquote>
-<p>parent_tag.remove_child(child_tag)  # Also updates child_tag.parents
-await store.save(parent_tag)  # Persist the change</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</details>
 
     </div>
 
@@ -10822,62 +10068,6 @@ await store.save(parent_tag)  # Persist the change</p>
 
 <a href="#stash_graphql_client.types.markers.SceneMarker.end_seconds" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">end_seconds</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
-
-
-  
-      module-attribute
-   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="stash_graphql_client.types.markers.SceneMarker.created_at" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">created_at</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#stash_graphql_client.types.markers.SceneMarker.created_at" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">created_at</span><span class="p">:</span> <span class="n"><span title="stash_graphql_client.types.scalars.Time">Time</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
-
-
-  
-      module-attribute
-   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h5 id="stash_graphql_client.types.markers.SceneMarker.updated_at" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">updated_at</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
-      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
-  </span>
-
-<a href="#stash_graphql_client.types.markers.SceneMarker.updated_at" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">updated_at</span><span class="p">:</span> <span class="n"><span title="stash_graphql_client.types.scalars.Time">Time</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   
@@ -28942,83 +28132,7 @@ scenes: List of scenes</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.config.ConfigResult-functions">Functions<a href="#stash_graphql_client.types.config.ConfigResult-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
-<div class="doc doc-object doc-function">
-
-
-<h5 id="stash_graphql_client.types.config.ConfigResult.plugins" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">plugins</span>
-
-
-<a href="#stash_graphql_client.types.config.ConfigResult.plugins" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">plugins</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">include</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Get plugin configuration.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>include</code>
-            </td>
-            <td>
-                  <code><span title="list">list</span>[<span title="str">str</span>] | None</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Optional list of plugin IDs to include</p>
-              </div>
-            </td>
-            <td>
-                  <code>None</code>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Plugin configuration map</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
 
 
 
