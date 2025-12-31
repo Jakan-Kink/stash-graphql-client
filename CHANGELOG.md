@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2025-12-31
+
+### Fixed
+
+- **Critical Bug**: Fixed `ValueError: Circular reference detected` in dirty checking when saving objects with bidirectional relationships
+  - `is_dirty()`, `get_changed_fields()`, and `mark_clean()` now use direct field comparison instead of `model_dump()` serialization
+  - Prevents circular reference errors when Scene.performers ↔ Performer.scenes or similar relationships exist
+  - `save()` now works correctly on existing objects with relationships (previously failed with ValueError)
+  - No performance impact - direct field access is faster than serialization
+
 ## [0.7.0] - 2025-12-31
 
 ### Changed
