@@ -376,17 +376,20 @@ def process_field(value: str | None | UnsetType) -> Any:
 
 Some entity types provide convenience methods for relationship management.
 
-### Scene Helpers (7 methods)
+### Scene Helpers (5 methods)
 
 ```python
-# Add/remove entities from scene
+# Add entities to scene
 scene.add_to_gallery(gallery)        # Add scene to gallery
 scene.remove_from_gallery(gallery)   # Remove scene from gallery
 scene.add_performer(performer)       # Add performer to scene
-scene.remove_performer(performer)    # Remove performer from scene
 scene.add_tag(tag)                   # Add tag to scene
-scene.remove_tag(tag)                # Remove tag from scene
 scene.set_studio(studio)             # Set scene's studio
+
+# To remove performers/tags, use direct list manipulation:
+scene.performers.remove(performer)   # Remove performer
+scene.tags.remove(tag)               # Remove tag
+await scene.save(client)             # Save changes
 ```
 
 ### Tag Helpers (6 methods)
