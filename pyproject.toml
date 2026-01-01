@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.7.1"
+version = "0.7.2"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -80,8 +80,23 @@ test = [
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=2.0.0,<3.0.0", "poetry-dynamic-versioning>=1.9.0,<2.0.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry-dynamic-versioning]
+enable = true
+# Use the version from pyproject.toml, not from VCS tags
+vcs = "any"
+# Disable git-based versioning - use pyproject.toml as source of truth
+metadata = false
+# Don't modify version during build
+strict = false
+# Keep version format simple (no git hash suffixes)
+style = "pep440"
+
+[tool.poetry-dynamic-versioning.substitution]
+# Replace __version__ in these files during build
+files = ["stash_graphql_client/__init__.py"]
 
 [tool.ruff]
 # Set the maximum line length to 88 (Black compatible)

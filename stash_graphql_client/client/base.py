@@ -129,14 +129,14 @@ class StashClientBase:
         self.log = conn.get("Logger", client_logger)
 
         # Build URLs
-        scheme = conn.get("Scheme", "http")
-        ws_scheme = "ws" if scheme == "http" else "wss"
+        self.scheme = conn.get("Scheme", "http")
+        ws_scheme = "ws" if self.scheme == "http" else "wss"
         host = conn.get("Host", "localhost")
         if host == "0.0.0.0":  # nosec B104  # noqa: S104  # Converting all-interfaces to localhost
             host = "127.0.0.1"
         port = conn.get("Port", 9999)
 
-        self.url = f"{scheme}://{host}:{port}/graphql"
+        self.url = f"{self.scheme}://{host}:{port}/graphql"
         self.ws_url = f"{ws_scheme}://{host}:{port}/graphql"
 
         # Set up headers
@@ -166,14 +166,23 @@ class StashClientBase:
                 max_keepalive_connections=20,  # Keep connections alive for reuse
             ),
         )
-        self.ws_transport = WebsocketsTransport(
-            url=self.ws_url,
-            headers=headers,
-            ssl=verify_ssl,
-            connect_args={
+        # Build WebSocket transport configuration
+        # IMPORTANT: The websockets library rejects ANY ssl parameter (even ssl=False)
+        # for ws:// URLs. Only pass ssl parameter for wss:// (HTTPS) connections.
+        # See: https://websockets.readthedocs.io/en/stable/howto/encryption.html
+        ws_kwargs: dict[str, Any] = {
+            "url": self.ws_url,
+            "headers": headers,
+            "connect_args": {
                 "max_size": 50 * 1024 * 1024,  # 50 MB limit for large GraphQL responses
             },
-        )
+        }
+
+        # Only add ssl parameter for wss:// URLs (HTTPS connections)
+        if ws_scheme == "wss":
+            ws_kwargs["ssl"] = verify_ssl
+
+        self.ws_transport = WebsocketsTransport(**ws_kwargs)
 
         # Create persistent GQL client that manages the transport lifecycle
         # This avoids "already connected" errors by keeping client alive
