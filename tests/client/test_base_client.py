@@ -1091,3 +1091,183 @@ async def test_aenter_initializes_when_not_initialized() -> None:
     # Verify initialize was called and client is now initialized
     assert init_called
     assert client._initialized
+
+
+# =============================================================================
+# WebSocket SSL Configuration Tests (Bug Fix for ws:// vs wss://)
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_http_websocket_does_not_pass_ssl_parameter(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that HTTP (ws://) connections do NOT pass ssl parameter to WebsocketsTransport.
+
+    This covers the bug fix in lines 169-185 in client/base.py:
+    - For HTTP connections (scheme="http"), ws_url uses "ws://" scheme
+    - The ssl parameter MUST NOT be passed to WebsocketsTransport for ws:// URLs
+    - The websockets library (v15.0.1+) raises ValueError if ssl is passed for ws://
+
+    Bug Context:
+    - Before fix: Always passed ssl=verify_ssl (even for ws://)
+    - After fix: Only pass ssl parameter for wss:// URLs
+
+    See: https://websockets.readthedocs.io/en/stable/howto/encryption.html
+    """
+    # Create context with HTTP scheme (should use ws:// for WebSocket)
+    context = StashContext(
+        conn={
+            "Scheme": "http",  # HTTP → ws:// WebSocket
+            "Host": "localhost",
+            "Port": 9999,
+        },
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client = await context.get_client()
+
+        # Verify WebSocket URL uses ws:// scheme
+        assert client.ws_url == "ws://localhost:9999/graphql"
+
+        # Verify WebsocketsTransport was called WITHOUT ssl parameter
+        assert mock_ws_transport.called
+        call_kwargs = mock_ws_transport.call_args.kwargs
+
+        # CRITICAL: ssl parameter MUST NOT be present for ws:// URLs
+        assert "ssl" not in call_kwargs, (
+            "ssl parameter should NOT be passed for ws:// URLs - "
+            "this causes ValueError in websockets library"
+        )
+
+        # Verify other parameters are correctly passed
+        assert call_kwargs["url"] == "ws://localhost:9999/graphql"
+        assert call_kwargs["headers"] is not None
+        assert "max_size" in call_kwargs["connect_args"]
+
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_https_websocket_passes_ssl_parameter(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that HTTPS (wss://) connections DO pass ssl parameter to WebsocketsTransport.
+
+    This covers the bug fix in lines 169-185 in client/base.py:
+    - For HTTPS connections (scheme="https"), ws_url uses "wss://" scheme
+    - The ssl parameter MUST be passed to WebsocketsTransport for wss:// URLs
+    - The ssl parameter enables SSL certificate validation
+
+    Bug Context:
+    - Before fix: Always passed ssl=verify_ssl (correct for HTTPS)
+    - After fix: Only pass ssl parameter for wss:// URLs (same behavior preserved)
+    """
+    # Create context with HTTPS scheme (should use wss:// for WebSocket)
+    context = StashContext(
+        conn={
+            "Scheme": "https",  # HTTPS → wss:// WebSocket
+            "Host": "localhost",
+            "Port": 9999,
+        },
+        verify_ssl=True,  # Enable SSL verification
+    )
+
+    with respx.mock:
+        client = await context.get_client()
+
+        # Verify WebSocket URL uses wss:// scheme
+        assert client.ws_url == "wss://localhost:9999/graphql"
+
+        # Verify WebsocketsTransport was called WITH ssl parameter
+        assert mock_ws_transport.called
+        call_kwargs = mock_ws_transport.call_args.kwargs
+
+        # CRITICAL: ssl parameter MUST be present for wss:// URLs
+        assert "ssl" in call_kwargs, "ssl parameter is required for wss:// URLs"
+        assert call_kwargs["ssl"] is True  # verify_ssl=True
+
+        # Verify other parameters are correctly passed
+        assert call_kwargs["url"] == "wss://localhost:9999/graphql"
+        assert call_kwargs["headers"] is not None
+        assert "max_size" in call_kwargs["connect_args"]
+
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_https_websocket_with_verify_ssl_false(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that HTTPS with verify_ssl=False still passes ssl parameter.
+
+    This covers the bug fix in lines 169-185 in client/base.py:
+    - For HTTPS connections with verify_ssl=False (self-signed certs)
+    - The ssl parameter is still passed, but set to False
+    - This allows connections to servers with self-signed certificates
+    """
+    # Create context with HTTPS scheme but SSL verification disabled
+    context = StashContext(
+        conn={
+            "Scheme": "https",  # HTTPS → wss:// WebSocket
+            "Host": "localhost",
+            "Port": 9999,
+        },
+        verify_ssl=False,  # Disable SSL verification (self-signed certs)
+    )
+
+    with respx.mock:
+        client = await context.get_client()
+
+        # Verify WebSocket URL uses wss:// scheme
+        assert client.ws_url == "wss://localhost:9999/graphql"
+
+        # Verify WebsocketsTransport was called WITH ssl=False
+        assert mock_ws_transport.called
+        call_kwargs = mock_ws_transport.call_args.kwargs
+
+        # CRITICAL: ssl parameter MUST be present for wss:// URLs
+        assert "ssl" in call_kwargs, "ssl parameter is required for wss:// URLs"
+        assert call_kwargs["ssl"] is False  # verify_ssl=False
+
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scheme_attribute_stored_during_init(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that client stores scheme as instance attribute during initialization.
+
+    This verifies line 132 in client/base.py:
+    - self.scheme = conn.get("Scheme", "http")
+
+    The scheme is now stored as an instance attribute so it can be used
+    when configuring WebSocket transport.
+    """
+    # Test with HTTP
+    context_http = StashContext(
+        conn={"Scheme": "http", "Host": "localhost", "Port": 9999},
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client_http = await context_http.get_client()
+        assert client_http.scheme == "http"
+        await context_http.close()
+
+    # Test with HTTPS
+    context_https = StashContext(
+        conn={"Scheme": "https", "Host": "localhost", "Port": 9999},
+        verify_ssl=True,
+    )
+
+    with respx.mock:
+        client_https = await context_https.get_client()
+        assert client_https.scheme == "https"
+        await context_https.close()

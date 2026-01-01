@@ -7,9 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-01-01
+
+### Fixed
+
+- **Critical Bug**: Fixed `ValueError: ssl argument is incompatible with a ws:// URI` when connecting to HTTP-configured Stash servers
+  - WebSocket transport now conditionally passes SSL parameter based on URL scheme
+  - HTTP (`ws://`) connections: SSL parameter is NOT passed (per websockets library requirements)
+  - HTTPS (`wss://`) connections: SSL parameter is passed for certificate validation
+  - Affects Docker/Kubernetes deployments with reverse proxy SSL termination, development environments, and internal service-to-service communication
+  - Location: `stash_graphql_client/client/base.py:169-185`
+
+### Changed
+
+- **Version Management**: Implemented automatic version synchronization with poetry-dynamic-versioning
+  - `__version__` now dynamically loads from package metadata via `importlib.metadata`
+  - Single source of truth: only `pyproject.toml` needs updating (`poetry version patch`)
+  - Eliminates manual version sync between `pyproject.toml` and `__init__.py`
+  - Build system integration ensures consistency across development and PyPI releases
+
 ### Added
 
 - **Thread-Safety**: StashEntityStore now supports concurrent access from multi-threaded applications
+
   - Uses reentrant lock (RLock) for all cache operations
   - Lock-free async patterns prevent event loop blocking
   - Snapshot-based predicate evaluation for safe concurrent access
@@ -21,20 +41,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - UNSET-aware initialization (converts UNSET to empty list)
   - Consistent with Scene and Tag helper method patterns
 
-### Fixed
-
-- **Type Safety**: Resolved mypy errors in test files
-  - Removed invalid `parents` and `children` kwargs from Performer test fixtures
-  - Added type narrowing (`isinstance` check) for UNSET field access
-  - Added return type annotations (`-> None`) to test methods
-
 ### Testing
 
+- **WebSocket SSL Tests**: Added 4 comprehensive test cases for WebSocket connection handling
+
+  - HTTP (`ws://`) connections without SSL parameter
+  - HTTPS (`wss://`) connections with SSL parameter
+  - HTTPS with `verify_ssl=False` (self-signed certificates)
+  - Scheme attribute storage during initialization
+
 - **Coverage Gaps**: Added 8 targeted tests for previously uncovered code paths
+
   - scraper.py: `scrape_single_tag()` error handling (empty results, exceptions)
   - scalars.py: `_serialize_time()` success and error paths
   - base.py: `save()` create vs update branches, `_process_fields()` skip logic
-  - Returns to 100% test coverage (1716 tests passing)
+  - Returns to 100% test coverage (1720 tests passing)
 
 - **Type Compliance**: Returns to 100% mypy compliance (164 source files checked)
 
@@ -77,12 +98,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **UNSET Type Narrowing**: Comprehensive use of `is_set()` guards in helper methods
+
   - All `map_*_ids()` helper methods now properly narrow UNSET types before operations
   - Studio, Tag, Performer, Gallery, Image, and Group mixins updated with type guards
   - Prevents runtime errors when accessing potentially UNSET fields
   - Improved type inference for IDEs (Pylance, mypy)
 
 - **GraphQL Input Type Naming**: Fixed parameter naming consistency
+
   - INPUT types now consistently use camelCase (matching GraphQL schema)
   - OUTPUT types continue using snake_case with Pydantic aliases
   - Examples: `backupPath`, `deleteFiles`, `deleteOld` instead of snake_case variants
@@ -94,12 +117,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Type Annotation Errors**: Resolved 700+ mypy errors across codebase
+
   - Fixed UnsetType narrowing in 78+ integration tests
   - Corrected None checks in client mixins
   - Added proper type annotations for test variables
   - Fixed lambda return types in entity store filters
 
 - **Test Type Safety**: Enhanced test suite with proper type handling
+
   - Added `type: ignore[arg-type]` for intentional ValidationError tests
   - Fixed argument order in method calls (client-first pattern)
   - Resolved @classmethod + TypeVar mypy limitations with explanatory comments
@@ -113,6 +138,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 
 - **Improved Test Coverage**: Achieved 100% branch coverage on critical mixins
+
   - Studio mixin: 100.00% coverage (118 statements, 38 branches)
   - Tag mixin: 100.00% coverage (129 statements, 46 branches)
   - Performer mixin: 100.00% coverage (174 statements, 72 branches)

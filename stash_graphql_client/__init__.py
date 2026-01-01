@@ -18,6 +18,8 @@ Example:
     ...     print(f"Found {studios.count} studios")
 """
 
+from importlib.metadata import PackageNotFoundError, version
+
 from stash_graphql_client.client import StashClient
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.logging import (
@@ -64,7 +66,12 @@ from stash_graphql_client.types import (
 )
 
 
-__version__ = "0.7.1"
+# Version is automatically synced from pyproject.toml via poetry-dynamic-versioning
+try:
+    __version__ = version("stash-graphql-client")
+except PackageNotFoundError:
+    # Fallback for development installs without package metadata
+    __version__ = "0.0.0.dev0"
 
 __all__ = [
     # Version
