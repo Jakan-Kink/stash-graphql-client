@@ -589,14 +589,31 @@ This project uses **Trusted Publishers (OIDC)** for secure, token-free publishin
 
 #### Release Workflow
 
-1. **Update version** in `pyproject.toml`:
+**IMPORTANT**: This project uses **poetry-dynamic-versioning** for automatic version synchronization. You only need to update the version in ONE place!
+
+1. **Update version using Poetry** (Single Source of Truth):
    ```bash
-   # Edit version in pyproject.toml (e.g., "0.5.0" for stable, "0.5.1b1" for beta)
+   # Bump version - this is the ONLY place you need to edit!
+   poetry version patch    # For bug fixes (0.7.2 → 0.7.3)
+   poetry version minor    # For new features (0.7.2 → 0.8.0)
+   poetry version major    # For breaking changes (0.7.2 → 1.0.0)
+   # Or specify exact version:
+   poetry version 1.0.0    # For specific version
+
+   # Sync the version to package metadata
+   poetry install
    ```
+
+   **✅ What this does:**
+   - Updates `pyproject.toml` version ✅
+   - Automatically syncs `__version__` in `stash_graphql_client/__init__.py` ✅
+   - Updates package metadata ✅
+
+   **❌ DO NOT manually edit `__init__.py`** - poetry-dynamic-versioning manages this!
 
 2. **Update CHANGELOG.md**:
    ```markdown
-   ## [0.5.0] - 2025-01-15
+   ## [0.8.0] - 2025-01-15
 
    ### Added
    - New feature X
@@ -605,21 +622,21 @@ This project uses **Trusted Publishers (OIDC)** for secure, token-free publishin
    - Bug Y
    ```
 
-3. **Commit changes**:
+3. **Commit changes** (only `pyproject.toml` and `CHANGELOG.md`):
    ```bash
    git add pyproject.toml CHANGELOG.md
-   git commit -m "chore: Bump version to 0.5.0"
+   git commit -m "chore: bump version to 0.8.0"
    ```
 
 4. **Create and push tag**:
    ```bash
-   git tag v0.5.0
+   git tag v0.8.0
    git push origin main
-   git push origin v0.5.0  # This triggers PyPI release
+   git push origin v0.8.0  # This triggers PyPI release
    ```
 
 5. **GitHub Actions** automatically:
-   - Builds the package
+   - Builds the package with poetry-dynamic-versioning
    - Authenticates via OIDC (no tokens!)
    - Publishes to PyPI
    - Package becomes available within minutes
