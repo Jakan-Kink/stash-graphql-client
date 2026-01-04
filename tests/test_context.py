@@ -86,6 +86,47 @@ class TestStashContextProperties:
         context = StashContext()
         assert context.ref_count == 0
 
+    @pytest.mark.unit
+    def test_store_raises_when_not_initialized(self) -> None:
+        """Test store property raises RuntimeError when store not initialized."""
+        context = StashContext()
+
+        with pytest.raises(RuntimeError, match="Store not initialized"):
+            _ = context.store
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_store_returns_store_after_initialization(
+        self, respx_mock: respx.MockRouter
+    ) -> None:
+        """Test store property returns StashEntityStore after initialization."""
+        # Mock configuration endpoint
+        respx_mock.get("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "configuration": {
+                            "general": {"stashes": []},
+                            "interface": {"language": "en-US"},
+                        }
+                    }
+                },
+            )
+        )
+
+        context = StashContext(
+            conn={"Scheme": "http", "Host": "localhost", "Port": 9999}
+        )
+
+        # Initialize client (which also initializes store)
+        await context.get_client()
+
+        # Store property should now return the store
+        store = context.store
+        assert store is not None
+        assert store is context._store
+
 
 class TestStashContextGetClient:
     """Tests for StashContext.get_client() method."""

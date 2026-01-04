@@ -37,8 +37,13 @@ class StashContext:
         async with context as client:
             performer = await client.find_performer("123")
 
+            # Access entity store for caching and advanced queries
+            store = context.store
+            scene = await store.get(Scene, "456")
+
         # Or use directly
         client = context.client
+        store = context.store
         performer = await client.find_performer("123")
         await context.close()
 
@@ -137,6 +142,24 @@ class StashContext:
             logger.error("Client not initialized - use get_client() first")
             raise RuntimeError("Client not initialized - use get_client() first")
         return self._client
+
+    @property
+    def store(self) -> StashEntityStore:
+        """Get entity store instance.
+
+        Returns:
+            StashEntityStore instance wired to StashObject identity map
+
+        Raises:
+            RuntimeError: If store is not initialized
+        """
+        logger.debug(
+            f"store property accessed on {id(self)}, current _store: {self._store}"
+        )
+        if self._store is None:
+            logger.error("Store not initialized - use get_client() first")
+            raise RuntimeError("Store not initialized - use get_client() first")
+        return self._store
 
     @property
     def ref_count(self) -> int:

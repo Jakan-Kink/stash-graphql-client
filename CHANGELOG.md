@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-01-04
+
+### Added
+
+- **StashContext API Enhancement**: Added public `.store` property for accessing StashEntityStore
+  - Matches existing `.client` property pattern with initialization checks
+  - Provides clean access to singleton store instance instead of private `._store`
+  - Updated documentation to show correct usage: `store = context.store`
+  - Eliminates need to create separate `StashEntityStore(client)` instances (which breaks identity map)
+  - Location: `stash_graphql_client/context.py:141-157`
+
+### Fixed
+
+- **Testing**: Fixed `mock_entity_store` fixture to properly support async methods
+  - Changed from `MagicMock` to `AsyncMock` for mocking `populate()` method
+  - Resolves `TypeError: object MagicMock can't be used in 'await' expression` in helper method tests
+  - Affects all test files using `@pytest.mark.usefixtures("mock_entity_store")`
+  - Location: `tests/fixtures/client.py:320`
+
+### Testing
+
+- **Coverage**: Achieved 100% coverage on `stash_graphql_client/__init__.py` (previously 81.82%)
+  - Added `test_version_fallback_on_package_not_found()` to test PackageNotFoundError handler
+  - Tests version fallback to "0.0.0.dev0" when package not installed
+  - Added 8 additional tests for public API exports and version validation
+  - New test file: `tests/test_init.py`
+
 ## [0.7.2] - 2026-01-01
 
 ### Fixed

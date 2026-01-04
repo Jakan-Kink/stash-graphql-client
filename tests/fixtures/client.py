@@ -316,8 +316,8 @@ async def mock_entity_store(
 
         return obj
 
-    # Patch the populate method
-    with patch.object(store, "populate", side_effect=mock_populate):
+    # Patch the populate method with AsyncMock (populate is async)
+    with patch.object(store, "populate", new=AsyncMock(side_effect=mock_populate)):
         yield store
 
 

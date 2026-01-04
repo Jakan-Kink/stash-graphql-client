@@ -73,8 +73,9 @@ class StashEntityStore:
 
     Example:
         ```python
-        async with StashContext(conn=...) as client:
-            store = StashEntityStore(client)
+        async with StashContext(conn=...) as context:
+            client = context.client
+            store = context.store  # Use context's singleton store
 
             # Get by ID (cache miss -> fetch, then cached)
             performer = await store.get(Performer, "123")
