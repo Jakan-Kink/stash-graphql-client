@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/guide/overview/">
       
       
-        <link rel="prev" href="./">
+        <link rel="prev" href="../getting-started/">
       
       
         <link rel="next" href="../usage-patterns/">
@@ -272,27 +272,6 @@
     
   
   
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Overview
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-    
-  
-  
     
     
       <li class="md-tabs__item md-tabs__item--active">
@@ -316,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../architecture/identity-map/" class="md-tabs__link">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -477,335 +456,6 @@
   
   
   
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#why-this-library-exists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why This Library Exists
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#core-architectural-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Architectural Patterns
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Core Architectural Patterns">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#identity-map-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Identity Map Pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#unset-sentinel-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        UNSET Sentinel Pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#type-safety-with-pydantic-v2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type Safety with Pydantic v2
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#relationship-metadata" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Relationship Metadata
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#field-aware-population" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Field-Aware Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-layers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture Layers
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Layers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#layer-1-stashclient-graphql-transport" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 1: StashClient (GraphQL Transport)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-2-pydantic-types-schemaorm-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 2: Pydantic Types (Schema/ORM Layer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-3-stashentitystore-identity-map-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 3: StashEntityStore (Identity Map &amp; Caching)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-to-use-each-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use Each Layer
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When to Use Each Layer">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-stashclient-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use StashClient when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-pydantic-types-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Pydantic Types when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-stashentitystore-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use StashEntityStore when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#design-philosophy" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Design Philosophy
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Design Philosophy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#principle-1-explicit-over-implicit" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle 1: Explicit Over Implicit
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#principle-2-type-safety-by-default" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle 2: Type Safety by Default
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#principle-3-progressive-enhancement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle 3: Progressive Enhancement
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#principle-4-match-graphql-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Principle 4: Match GraphQL Semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
     
     
     
@@ -823,10 +473,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -844,8 +494,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -966,6 +616,23 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
   <a href="#type-safety-with-pydantic-v2" class="md-nav__link">
     <span class="md-ellipsis">
@@ -993,56 +660,6 @@
     <span class="md-ellipsis">
       
         Field-Aware Population
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-layers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture Layers
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Layers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#layer-1-stashclient-graphql-transport" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 1: StashClient (GraphQL Transport)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-2-pydantic-types-schemaorm-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 2: Pydantic Types (Schema/ORM Layer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-3-stashentitystore-identity-map-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 3: StashEntityStore (Identity Map &amp; Caching)
       
     </span>
   </a>
@@ -1326,10 +943,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -1347,8 +964,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1357,6 +974,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1442,6 +1087,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagrams
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1471,10 +1144,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1492,8 +1165,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1721,10 +1394,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_6_8" id="__nav_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
             
   
   
@@ -1742,8 +1415,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2322,10 +1995,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -2343,8 +2016,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2478,6 +2151,14 @@
 <li><strong>Sparse field selection</strong> - Match GraphQL's sparse field semantics in Python objects</li>
 </ul>
 <p>See <a href="../unset-pattern/">UNSET Pattern Guide</a> for comprehensive examples.</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<p>This library follows a three-layer architecture. For a detailed technical overview, see the <a href="../../architecture/overview/">Architecture Overview</a>.</p>
+<p><strong>Quick summary</strong>:</p>
+<ul>
+<li><strong>Layer 1: StashClient</strong> - GraphQL transport layer with HTTP/WebSocket support</li>
+<li><strong>Layer 2: Pydantic Types</strong> - Schema/ORM layer with validation and change tracking</li>
+<li><strong>Layer 3: StashEntityStore</strong> - Identity map and caching layer</li>
+</ul>
 <h3 id="type-safety-with-pydantic-v2">Type Safety with Pydantic v2<a class="headerlink" href="#type-safety-with-pydantic-v2" title="Permanent link">&para;</a></h3>
 <p>All GraphQL types are Pydantic <code>BaseModel</code> subclasses with full runtime validation:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span><span class="p">,</span> <span class="n">Performer</span>
@@ -2555,86 +2236,6 @@
 <li>Progressive data loading</li>
 <li>Optimize network usage for large result sets</li>
 </ul>
-<h2 id="architecture-layers">Architecture Layers<a class="headerlink" href="#architecture-layers" title="Permanent link">&para;</a></h2>
-<p>This library follows a three-layer architecture:</p>
-<h3 id="layer-1-stashclient-graphql-transport">Layer 1: StashClient (GraphQL Transport)<a class="headerlink" href="#layer-1-stashclient-graphql-transport" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/client/</code>, the client provides direct access to Stash's GraphQL API through typed mixin methods.</p>
-<p><strong>Responsibilities</strong>:</p>
-<ul>
-<li>Execute GraphQL queries and mutations</li>
-<li>Handle HTTP/WebSocket transports</li>
-<li>Manage retries and connection pooling</li>
-<li>Deserialize responses to Pydantic models</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">StashContext</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">StashContext</span><span class="p">(</span><span class="n">conn</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="c1"># Direct GraphQL operations</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">scenes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scenes</span><span class="p">()</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">performer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">create_performer</span><span class="p">(</span><span class="n">Performer</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">job_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">metadata_scan</span><span class="p">()</span>
-</span></code></pre></div>
-<p><strong>Mixin architecture</strong>: Client composed of 20+ mixins, one per entity type (SceneClientMixin, PerformerClientMixin, etc.). This provides clear separation of concerns and makes the codebase maintainable.</p>
-<h3 id="layer-2-pydantic-types-schemaorm-layer">Layer 2: Pydantic Types (Schema/ORM Layer)<a class="headerlink" href="#layer-2-pydantic-types-schemaorm-layer" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/types/</code>, all Stash entities are Pydantic v2 models with:</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li><strong>UNSET Pattern</strong> - Three-state fields distinguish "set to value", "set to null", and "never touched"</li>
-<li><strong>UUID4 Auto-generation</strong> - New objects get temporary IDs replaced with server IDs on save</li>
-<li><strong>Bidirectional Relationships</strong> - Automatic sync between related entities</li>
-<li><strong>Tracked Fields</strong> - <code>__tracked_fields__</code> and <code>__field_conversions__</code> for change detection</li>
-<li><strong>Relationship Metadata</strong> - <code>__relationships__</code> documents query strategies and inverse fields</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span><span class="p">,</span> <span class="n">UNSET</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Create with partial data - UUID4 auto-generated</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">scene</span> <span class="o">=</span> <span class="n">Scene</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Scene&quot;</span><span class="p">,</span> <span class="n">rating100</span><span class="o">=</span><span class="mi">85</span><span class="p">)</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New object ID: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># UUID4 hex string (32 chars)</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Is new: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">is_new</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># True</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># Save sends only non-UNSET fields</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Server ID: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>      <span class="c1"># Server-assigned ID</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Is new: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">is_new</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># False</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="c1"># Update tracks changes</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">scene</span><span class="o">.</span><span class="n">rating100</span> <span class="o">=</span> <span class="mi">90</span>
-</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">changed</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">get_changed_fields</span><span class="p">()</span>  <span class="c1"># {&quot;rating100&quot;: 90}</span>
-</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>  <span class="c1"># Only sends changed fields</span>
-</span></code></pre></div>
-<h3 id="layer-3-stashentitystore-identity-map-caching">Layer 3: StashEntityStore (Identity Map &amp; Caching)<a class="headerlink" href="#layer-3-stashentitystore-identity-map-caching" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/store.py</code>, provides SQLAlchemy/ActiveRecord-style data access with:</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li><strong>Identity Map</strong> - Same entity ID → same object reference</li>
-<li><strong>Read-Through Caching</strong> - Fetch from cache or query on miss</li>
-<li><strong>TTL Support</strong> - Optional cache expiration</li>
-<li><strong>Field-Aware Population</strong> - Load missing fields on demand</li>
-<li><strong>Django-Style Filtering</strong> - <code>field__modifier</code> kwargs</li>
-<li><strong>Lazy Iteration</strong> - Paginate large result sets efficiently</li>
-<li><strong>Thread-Safe</strong> - Uses <code>RLock</code> for concurrent access</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">StashEntityStore</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span><span class="p">,</span> <span class="n">Performer</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">StashEntityStore</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">ttl_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="c1"># Read-through caching</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">performer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Performer</span><span class="p">,</span> <span class="s2">&quot;123&quot;</span><span class="p">)</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># Django-style filtering</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">top_rated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__gte</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">unrated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="c1"># Field-aware population</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">populate</span><span class="p">(</span><span class="n">performer</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="s2">&quot;images&quot;</span><span class="p">])</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="c1"># Get-or-create pattern</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="n">tag</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">Tag</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Action&quot;</span><span class="p">)</span>
-</span></code></pre></div>
 <h2 id="when-to-use-each-layer">When to Use Each Layer<a class="headerlink" href="#when-to-use-each-layer" title="Permanent link">&para;</a></h2>
 <h3 id="use-stashclient-when">Use StashClient when:<a class="headerlink" href="#use-stashclient-when" title="Permanent link">&para;</a></h3>
 <ul>
@@ -2661,32 +2262,32 @@
 <h2 id="design-philosophy">Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permanent link">&para;</a></h2>
 <h3 id="principle-1-explicit-over-implicit">Principle 1: Explicit Over Implicit<a class="headerlink" href="#principle-1-explicit-over-implicit" title="Permanent link">&para;</a></h3>
 <p>Operations like <code>.save()</code> and <code>.delete()</code> require passing the client explicitly:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>  <span class="c1"># Explicit client reference</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>  <span class="c1"># Explicit client reference</span>
 </span></code></pre></div>
 <p>This makes it clear where network operations occur and avoids hidden global state.</p>
 <h3 id="principle-2-type-safety-by-default">Principle 2: Type Safety by Default<a class="headerlink" href="#principle-2-type-safety-by-default" title="Permanent link">&para;</a></h3>
 <p>All GraphQL types are Pydantic models with runtime validation. Field typos and type mismatches are caught immediately:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">scene</span><span class="o">.</span><span class="n">ratting100</span> <span class="o">=</span> <span class="mi">85</span>  <span class="c1"># ❌ IDE/mypy catches typo</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">scene</span><span class="o">.</span><span class="n">rating100</span> <span class="o">=</span> <span class="s2">&quot;invalid&quot;</span>  <span class="c1"># ❌ Pydantic validation error</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">scene</span><span class="o">.</span><span class="n">ratting100</span> <span class="o">=</span> <span class="mi">85</span>  <span class="c1"># ❌ IDE/mypy catches typo</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">scene</span><span class="o">.</span><span class="n">rating100</span> <span class="o">=</span> <span class="s2">&quot;invalid&quot;</span>  <span class="c1"># ❌ Pydantic validation error</span>
 </span></code></pre></div>
 <h3 id="principle-3-progressive-enhancement">Principle 3: Progressive Enhancement<a class="headerlink" href="#principle-3-progressive-enhancement" title="Permanent link">&para;</a></h3>
 <p>Start with simple client methods, add caching when needed, use advanced features as required:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Simple: Direct client usage</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">scene</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scene</span><span class="p">(</span><span class="s2">&quot;123&quot;</span><span class="p">)</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Enhanced: Add identity map</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">StashEntityStore</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">scene</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="s2">&quot;123&quot;</span><span class="p">)</span>
-</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1"># Advanced: Field-aware population + filtering</span>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">populate</span><span class="p">(</span><span class="n">scene</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;performers&quot;</span><span class="p">])</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">top_rated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__gte</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Simple: Direct client usage</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">scene</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scene</span><span class="p">(</span><span class="s2">&quot;123&quot;</span><span class="p">)</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Enhanced: Add identity map</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">StashEntityStore</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">scene</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="s2">&quot;123&quot;</span><span class="p">)</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="c1"># Advanced: Field-aware population + filtering</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">populate</span><span class="p">(</span><span class="n">scene</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;performers&quot;</span><span class="p">])</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">top_rated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__gte</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="principle-4-match-graphql-semantics">Principle 4: Match GraphQL Semantics<a class="headerlink" href="#principle-4-match-graphql-semantics" title="Permanent link">&para;</a></h3>
 <p>The UNSET pattern matches GraphQL's sparse field selection. Partial updates work exactly like GraphQL input objects:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Only include fields you want to update</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">scene</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;New&quot;</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">scene</span><span class="o">.</span><span class="n">details</span> <span class="o">=</span> <span class="n">UNSET</span>  <span class="c1"># GraphQL mutation won&#39;t include this field</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Only include fields you want to update</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">scene</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;New&quot;</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">scene</span><span class="o">.</span><span class="n">details</span> <span class="o">=</span> <span class="n">UNSET</span>  <span class="c1"># GraphQL mutation won&#39;t include this field</span>
 </span></code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2733,7 +2334,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="./" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview">
+          <a href="../getting-started/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2743,7 +2344,7 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Overview
+                Getting Started
               </div>
             </div>
           </a>

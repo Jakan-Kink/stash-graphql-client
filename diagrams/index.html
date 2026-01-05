@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/guide/usage-examples/">
+        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/diagrams/">
       
       
-        <link rel="prev" href="../fuzzy-dates/">
+        <link rel="prev" href="../architecture/bidirectional-relationships/">
       
       
-        <link rel="next" href="../../architecture/identity-map/">
+        <link rel="next" href="../api/client/">
       
       
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>Usage Examples - Stash GraphQL Client</title>
+        <title>Diagrams - Stash GraphQL Client</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#old-way-lots-of-boilerplate" class="md-skip">
+        <a href="#architecture-diagrams" class="md-skip">
           Skip to content
         </a>
       
@@ -100,7 +100,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Stash GraphQL Client" class="md-header__button md-logo" aria-label="Stash GraphQL Client" data-md-component="logo">
+    <a href=".." title="Stash GraphQL Client" class="md-header__button md-logo" aria-label="Stash GraphQL Client" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Usage Examples
+              Diagrams
             
           </span>
         </div>
@@ -233,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -252,7 +252,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../getting-started/" class="md-tabs__link">
+      <a href="../guide/getting-started/" class="md-tabs__link">
         
   
   
@@ -270,31 +270,10 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../overview/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Overview
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-    
-  
-  
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../overview/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../guide/overview/" class="md-tabs__link">
           
   
   
@@ -310,11 +289,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../architecture/identity-map/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -334,7 +315,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/client/" class="md-tabs__link">
+        <a href="../api/client/" class="md-tabs__link">
           
   
   
@@ -354,7 +335,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/quick-reference/" class="md-tabs__link">
+        <a href="../reference/quick-reference/" class="md-tabs__link">
           
   
   
@@ -390,7 +371,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Stash GraphQL Client" class="md-nav__button md-logo" aria-label="Stash GraphQL Client" data-md-component="logo">
+    <a href=".." title="Stash GraphQL Client" class="md-nav__button md-logo" aria-label="Stash GraphQL Client" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -420,7 +401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -447,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../guide/getting-started/" class="md-nav__link">
         
   
   
@@ -473,8 +454,62 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../guide/overview/" class="md-nav__link">
         
   
   
@@ -490,6 +525,126 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/usage-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/unset-pattern/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UNSET Pattern
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/fuzzy-dates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fuzzy Dates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/usage-examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -529,7 +684,7 @@
   <span class="md-ellipsis">
     
   
-    User Guide
+    Architecture
   
 
     
@@ -545,7 +700,7 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    User Guide
+    Architecture
   
 
           </label>
@@ -558,7 +713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../architecture/overview/" class="md-nav__link">
         
   
   
@@ -586,14 +741,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage-patterns/" class="md-nav__link">
+      <a href="../architecture/identity-map/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Usage Patterns
+    Identity Map
   
 
     
@@ -614,14 +769,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../unset-pattern/" class="md-nav__link">
+      <a href="../architecture/comparison/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    UNSET Pattern
+    Library Comparisons
   
 
     
@@ -642,14 +797,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../fuzzy-dates/" class="md-nav__link">
+      <a href="../architecture/bidirectional-relationships/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Fuzzy Dates
+    Bidirectional Relationships
   
 
     
@@ -679,6 +834,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagrams
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -686,7 +859,7 @@
   <span class="md-ellipsis">
     
   
-    Usage Examples
+    Diagrams
   
 
     
@@ -695,6 +868,102 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#three-layer-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three-Layer Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#identity-map-flow-wrap-validator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Identity Map Flow (Wrap Validator)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unset-pattern-three-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UNSET Pattern - Three States
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nested-cache-lookup-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nested Cache Lookup Process
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#relationship-sync-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship Sync Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-aware-population" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field-Aware Population
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#django-style-filter-translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Django-Style Filter Translation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -740,7 +1009,7 @@
   <span class="md-ellipsis">
     
   
-    Architecture
+    API Reference
   
 
     
@@ -756,151 +1025,6 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Architecture
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../architecture/identity-map/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Identity Map
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../architecture/comparison/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Library Comparisons
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../architecture/bidirectional-relationships/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Bidirectional Relationships
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
-        
-          
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API Reference
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
     API Reference
   
 
@@ -914,7 +1038,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/" class="md-nav__link">
+      <a href="../api/client/" class="md-nav__link">
         
   
   
@@ -942,7 +1066,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/context/" class="md-nav__link">
+      <a href="../api/context/" class="md-nav__link">
         
   
   
@@ -970,7 +1094,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/" class="md-nav__link">
+      <a href="../api/store/" class="md-nav__link">
         
   
   
@@ -998,7 +1122,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/errors/" class="md-nav__link">
+      <a href="../api/errors/" class="md-nav__link">
         
   
   
@@ -1026,7 +1150,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/fragments/" class="md-nav__link">
+      <a href="../api/fragments/" class="md-nav__link">
         
   
   
@@ -1054,7 +1178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/schema/" class="md-nav__link">
+      <a href="../api/schema/" class="md-nav__link">
         
   
   
@@ -1082,7 +1206,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/types/" class="md-nav__link">
+      <a href="../api/types/" class="md-nav__link">
         
   
   
@@ -1125,10 +1249,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_6_8" id="__nav_6_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
             
   
   
@@ -1146,8 +1270,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1164,7 +1288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/scene/" class="md-nav__link">
+      <a href="../api/client/mixins/scene/" class="md-nav__link">
         
   
   
@@ -1192,7 +1316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/gallery/" class="md-nav__link">
+      <a href="../api/client/mixins/gallery/" class="md-nav__link">
         
   
   
@@ -1220,7 +1344,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/image/" class="md-nav__link">
+      <a href="../api/client/mixins/image/" class="md-nav__link">
         
   
   
@@ -1248,7 +1372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/group/" class="md-nav__link">
+      <a href="../api/client/mixins/group/" class="md-nav__link">
         
   
   
@@ -1276,7 +1400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/performer/" class="md-nav__link">
+      <a href="../api/client/mixins/performer/" class="md-nav__link">
         
   
   
@@ -1304,7 +1428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/studio/" class="md-nav__link">
+      <a href="../api/client/mixins/studio/" class="md-nav__link">
         
   
   
@@ -1332,7 +1456,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/tag/" class="md-nav__link">
+      <a href="../api/client/mixins/tag/" class="md-nav__link">
         
   
   
@@ -1360,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/marker/" class="md-nav__link">
+      <a href="../api/client/mixins/marker/" class="md-nav__link">
         
   
   
@@ -1388,7 +1512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/file/" class="md-nav__link">
+      <a href="../api/client/mixins/file/" class="md-nav__link">
         
   
   
@@ -1416,7 +1540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/metadata/" class="md-nav__link">
+      <a href="../api/client/mixins/metadata/" class="md-nav__link">
         
   
   
@@ -1444,7 +1568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/jobs/" class="md-nav__link">
+      <a href="../api/client/mixins/jobs/" class="md-nav__link">
         
   
   
@@ -1472,7 +1596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/config/" class="md-nav__link">
+      <a href="../api/client/mixins/config/" class="md-nav__link">
         
   
   
@@ -1500,7 +1624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/filter/" class="md-nav__link">
+      <a href="../api/client/mixins/filter/" class="md-nav__link">
         
   
   
@@ -1528,7 +1652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/plugin/" class="md-nav__link">
+      <a href="../api/client/mixins/plugin/" class="md-nav__link">
         
   
   
@@ -1556,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/scraper/" class="md-nav__link">
+      <a href="../api/client/mixins/scraper/" class="md-nav__link">
         
   
   
@@ -1584,7 +1708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/package/" class="md-nav__link">
+      <a href="../api/client/mixins/package/" class="md-nav__link">
         
   
   
@@ -1612,7 +1736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/subscription/" class="md-nav__link">
+      <a href="../api/client/mixins/subscription/" class="md-nav__link">
         
   
   
@@ -1640,7 +1764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/system_query/" class="md-nav__link">
+      <a href="../api/client/mixins/system_query/" class="md-nav__link">
         
   
   
@@ -1668,7 +1792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/client/mixins/version/" class="md-nav__link">
+      <a href="../api/client/mixins/version/" class="md-nav__link">
         
   
   
@@ -1726,10 +1850,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1747,8 +1871,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1765,7 +1889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/quick-reference/" class="md-nav__link">
+      <a href="../reference/quick-reference/" class="md-nav__link">
         
   
   
@@ -1813,198 +1937,198 @@
   
 
 
-<p>⏺ Usage Examples for New Convenience Methods</p>
-<ol>
-<li>Entity ID Mapping - Simplified Workflows</li>
-</ol>
-<p>Before (without convenience methods):</p>
-<h1 id="old-way-lots-of-boilerplate">Old way - lots of boilerplate<a class="headerlink" href="#old-way-lots-of-boilerplate" title="Permanent link">&para;</a></h1>
-<p>async def create_scene_with_tags(client, scene_data):
-tag_ids = []
-for tag_name in ["Action", "Drama", "Thriller"]:
-results = await client.find_tags(
-tag_filter={"name": {"value": tag_name, "modifier": "EQUALS"}}
-)
-if results.count &gt; 0:
-tag_ids.append(results.tags[0].id)
-else: # Create missing tag
-new_tag = await client.create_tag(Tag(name=tag_name))
-tag_ids.append(new_tag.id)</p>
-<div class="language-text highlight"><pre><span></span><code>  scene = Scene(title=&quot;My Scene&quot;, tag_ids=tag_ids)
-  return await client.create_scene(scene)
-</code></pre></div>
-<p>After (with map_tag_ids()):</p>
-<h1 id="new-way-clean-and-simple">New way - clean and simple<a class="headerlink" href="#new-way-clean-and-simple" title="Permanent link">&para;</a></h1>
-<p>async def create_scene_with_tags(client, scene_data):
-tag_ids = await client.map_tag_ids(
-["Action", "Drama", "Thriller"],
-create=True # Auto-create missing tags
-)</p>
-<div class="language-text highlight"><pre><span></span><code>  scene = Scene(title=&quot;My Scene&quot;, tag_ids=tag_ids)
-  return await client.create_scene(scene)
-</code></pre></div>
-<hr />
-<ol>
-<li>Studio Hierarchy Navigation</li>
-</ol>
-<p>Finding Root Studios:</p>
-<h1 id="scenario-you-have-a-child-studio-and-want-to-find-the-root-parent">Scenario: You have a child studio and want to find the root parent<a class="headerlink" href="#scenario-you-have-a-child-studio-and-want-to-find-the-root-parent" title="Permanent link">&para;</a></h1>
-<p>studio_id = "child-studio-123"</p>
-<h1 id="get-the-full-hierarchy-root-to-child">Get the full hierarchy (root to child)<a class="headerlink" href="#get-the-full-hierarchy-root-to-child" title="Permanent link">&para;</a></h1>
-<p>hierarchy = await client.find_studio_hierarchy(studio_id)</p>
-<h1 id="returns">Returns: [<Root Studio>, <Parent Studio>, <Child Studio>]<a class="headerlink" href="#returns" title="Permanent link">&para;</a></h1>
-<p>print(f"Root: {hierarchy[0].name}")
-print(f"Direct parent: {hierarchy[-2].name}")
-print(f"Current: {hierarchy[-1].name}")</p>
-<h1 id="or-just-get-the-root-directly">Or just get the root directly<a class="headerlink" href="#or-just-get-the-root-directly" title="Permanent link">&para;</a></h1>
-<p>root = await client.find_studio_root(studio_id)
-print(f"Root studio: {root.name}")</p>
-<p>Practical Use Case - Organizing by Root Studio:</p>
-<h1 id="group-all-scenes-by-their-root-studio">Group all scenes by their root studio<a class="headerlink" href="#group-all-scenes-by-their-root-studio" title="Permanent link">&para;</a></h1>
-<p>async def group_scenes_by_root_studio(client, scene_ids):
-root_groups = {}</p>
-<div class="language-text highlight"><pre><span></span><code>  for scene_id in scene_ids:
-      scene = await client.find_scene(scene_id)
-      if scene.studio:
-          root = await client.find_studio_root(scene.studio.id)
-          root_name = root.name if root else &quot;Unknown&quot;
+<h1 id="architecture-diagrams">Architecture Diagrams<a class="headerlink" href="#architecture-diagrams" title="Permanent link">&para;</a></h1>
+<p>This page contains the architecture diagrams for stash-graphql-client.</p>
+<h2 id="three-layer-architecture">Three-Layer Architecture<a class="headerlink" href="#three-layer-architecture" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>graph TB
+    User[Developer Code] --&gt; Client[Layer 1: StashClient]
+    User --&gt; Types[Layer 2: Pydantic Types]
+    User --&gt; Store[Layer 3: StashEntityStore]
 
-          if root_name not in root_groups:
-              root_groups[root_name] = []
-          root_groups[root_name].append(scene)
+    Client --&gt;|executes| GraphQL[GraphQL API]
+    Client --&gt;|returns| Types
 
-  return root_groups
-</code></pre></div>
-<hr />
-<ol>
-<li>Performer Mapping with Alias Support</li>
-</ol>
-<p>Basic Performer Mapping:</p>
-<h1 id="map-performer-names-to-ids-includes-alias-search">Map performer names to IDs (includes alias search)<a class="headerlink" href="#map-performer-names-to-ids-includes-alias-search" title="Permanent link">&para;</a></h1>
-<p>performer_ids = await client.map_performer_ids(
-["Jane Doe", "John Smith", "AliasName"],
-create=True
-)</p>
-<h1 id="use-in-scene-creation">Use in scene creation<a class="headerlink" href="#use-in-scene-creation" title="Permanent link">&para;</a></h1>
-<p>scene = Scene(
-title="Scene Title",
-performer_ids=performer_ids
-)
-await client.create_scene(scene)</p>
-<p>Handling Multiple Matches:</p>
-<p>from stash_graphql_client.types import OnMultipleMatch</p>
-<h1 id="skip-ambiguous-matches">Skip ambiguous matches<a class="headerlink" href="#skip-ambiguous-matches" title="Permanent link">&para;</a></h1>
-<p>performer_ids = await client.map_performer_ids(
-["Common Name"], # Might match multiple performers
-on_multiple=OnMultipleMatch.RETURN_NONE # Skip if ambiguous
-)</p>
-<h1 id="or-return-first-match-with-warning">Or return first match with warning<a class="headerlink" href="#or-return-first-match-with-warning" title="Permanent link">&para;</a></h1>
-<p>performer_ids = await client.map_performer_ids(
-["Common Name"],
-on_multiple=OnMultipleMatch.RETURN_FIRST # Use first match (default)
-)</p>
-<hr />
-<ol>
-<li>Batch Scene Creation with Mixed Entity Types</li>
-</ol>
-<p>Complex Real-World Example:</p>
-<p>async def create_scene_from_metadata(client, metadata):
-"""Create a scene from scraped metadata with automatic entity resolution."""</p>
-<div class="language-text highlight"><pre><span></span><code>  # Map all entity names to IDs in parallel
-  tag_ids = await client.map_tag_ids(
-      metadata.get(&quot;tags&quot;, []),
-      create=True
-  )
+    Types --&gt;|validates| Pydantic[Pydantic v2]
+    Types --&gt;|wrap validator| IdentityMap[Identity Map]
 
-  performer_ids = await client.map_performer_ids(
-      metadata.get(&quot;performers&quot;, []),
-      create=True,
-      on_multiple=OnMultipleMatch.RETURN_FIRST
-  )
+    Store --&gt;|uses| Client
+    Store --&gt;|manages| IdentityMap
+    Store --&gt;|caches| Types
 
-  studio_ids = await client.map_studio_ids(
-      [metadata.get(&quot;studio&quot;)],
-      create=True
-  )
+    GraphQL --&gt;|responses| Client
 
-  # Create scene with all relationships resolved
-  scene = Scene(
-      title=metadata[&quot;title&quot;],
-      details=metadata.get(&quot;details&quot;),
-      date=metadata.get(&quot;date&quot;),
-      tag_ids=tag_ids,
-      performer_ids=performer_ids,
-      studio_id=studio_ids[0] if studio_ids else None
-  )
+    style Client fill:#2E86AB,color:#fff
+    style Types fill:#F77F00,color:#fff
+    style Store fill:#8338EC,color:#fff
+    style IdentityMap fill:#06A77D,color:#fff</code></pre>
+<h2 id="identity-map-flow-wrap-validator">Identity Map Flow (Wrap Validator)<a class="headerlink" href="#identity-map-flow-wrap-validator" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Code as Developer Code
+    participant Constructor as Scene.from_dict()
+    participant Validator as @model_validator(mode='wrap')
+    participant Cache as Identity Map Cache
+    participant Pydantic as Pydantic Handler
+    participant Object as Scene Instance
 
-  return await client.create_scene(scene)
-</code></pre></div>
-<hr />
-<ol>
-<li>Studio Hierarchy Analysis</li>
-</ol>
-<p>Find All Root Studios:</p>
-<p>async def find_all_root_studios(client):
-"""Find all root studios in the database."""
-all_studios = await client.find_studios()
-root_studios = []</p>
-<div class="language-text highlight"><pre><span></span><code>  for studio in all_studios.studios:
-      hierarchy = await client.find_studio_hierarchy(studio.id)
-      root = hierarchy[0] if hierarchy else None
-      if root and root.id == studio.id:  # This studio is a root
-          root_studios.append(studio)
+    Code-&gt;&gt;Constructor: Scene.from_dict({"id": "123", ...})
+    Constructor-&gt;&gt;Validator: Intercept construction
 
-  return root_studios
-</code></pre></div>
-<p>Build Studio Tree:</p>
-<p>async def get_studio_tree_depth(client, studio_id):
-"""Get the depth of a studio in the hierarchy."""
-hierarchy = await client.find_studio_hierarchy(studio_id)
-return len(hierarchy) - 1 # 0 = root, 1 = child, 2 = grandchild, etc.</p>
-<h1 id="example-usage">Example usage<a class="headerlink" href="#example-usage" title="Permanent link">&para;</a></h1>
-<p>depth = await get_studio_tree_depth(client, "studio-123")
-print(f"Studio is {depth} levels deep in the hierarchy")</p>
-<hr />
-<ol>
-<li>Bulk Operations with Auto-Creation</li>
-</ol>
-<p>Importing from External Source:</p>
-<p>async def import_scenes_from_csv(client, csv_data):
-"""Import scenes from CSV with automatic entity creation."""
-created_scenes = []</p>
-<div class="language-text highlight"><pre><span></span><code>  for row in csv_data:
-      # Parse CSV row
-      tag_names = row[&quot;tags&quot;].split(&quot;,&quot;)
-      performer_names = row[&quot;performers&quot;].split(&quot;,&quot;)
-      studio_name = row[&quot;studio&quot;]
+    alt Cache Hit
+        Validator-&gt;&gt;Cache: Check cache[(type, id)]
+        Cache--&gt;&gt;Validator: Found cached instance
+        Validator-&gt;&gt;Object: Merge new fields
+        Validator--&gt;&gt;Code: Return cached instance
+    else Cache Miss
+        Validator-&gt;&gt;Cache: Not found
+        Validator-&gt;&gt;Validator: Process nested objects
+        Validator-&gt;&gt;Pydantic: handler(processed_data)
+        Pydantic-&gt;&gt;Object: Construct &amp; validate
+        Object--&gt;&gt;Validator: New instance
+        Validator-&gt;&gt;Cache: Store instance
+        Validator--&gt;&gt;Code: Return new instance
+    end
 
-      # Map everything with auto-creation
-      tag_ids = await client.map_tag_ids(tag_names, create=True)
-      performer_ids = await client.map_performer_ids(performer_names, create=True)
-      studio_ids = await client.map_studio_ids([studio_name], create=True)
+    Note over Validator,Cache: Cache check happens&lt;br/&gt;BEFORE Pydantic validation</code></pre>
+<h2 id="unset-pattern-three-states">UNSET Pattern - Three States<a class="headerlink" href="#unset-pattern-three-states" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; UNSET: Default state
+    UNSET --&gt; Value: Assign value
+    UNSET --&gt; Null: Assign None
+    Value --&gt; Value: Update value
+    Value --&gt; Null: Assign None
+    Value --&gt; UNSET: Reset to UNSET
+    Null --&gt; Value: Assign value
+    Null --&gt; UNSET: Reset to UNSET
+    Null --&gt; Null: Stays None
 
-      # Create scene
-      scene = Scene(
-          title=row[&quot;title&quot;],
-          tag_ids=tag_ids,
-          performer_ids=performer_ids,
-          studio_id=studio_ids[0] if studio_ids else None
-      )
+    note right of UNSET
+        Field never queried
+        or never set.
+        Excluded from
+        to_graphql()
+    end note
 
-      created_scene = await client.create_scene(scene)
-      created_scenes.append(created_scene)
+    note right of Null
+        Explicitly set
+        to null.
+        Included in
+        to_graphql()
+    end note
 
-  return created_scenes
-</code></pre></div>
-<hr />
-<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="../unset-pattern/">UNSET &amp; UUID4 Guide</a></strong> - Core patterns for field management and new objects</li>
-<li><strong><a href="../../reference/quick-reference/">Quick Reference</a></strong> - Cheat sheet for common patterns</li>
-<li><strong><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a></strong> - Entity relationship architecture</li>
-<li><strong><a href="../fuzzy-dates/">Fuzzy Dates Guide</a></strong> - Working with partial date formats (v0.30.0+)</li>
-<li><strong><a href="../../api/store/">StashEntityStore API</a></strong> - Identity map documentation</li>
-</ul>
+    note right of Value
+        Has actual value.
+        Included in
+        to_graphql()
+    end note</code></pre>
+<h2 id="nested-cache-lookup-process">Nested Cache Lookup Process<a class="headerlink" href="#nested-cache-lookup-process" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    Start[from_dict called with data] --&gt; HasStore{Has store?}
+    HasStore --&gt;|No| DirectPydantic[Pass to Pydantic]
+    HasStore --&gt;|Yes| CheckID{Has 'id' field?}
+
+    CheckID --&gt;|No| DirectPydantic
+    CheckID --&gt;|Yes| CacheKey[Build cache key: type, id]
+
+    CacheKey --&gt; CacheCheck{In cache?}
+    CacheCheck --&gt;|Yes + Not Expired| ReturnCached[Return cached instance]
+    CacheCheck --&gt;|Yes + Expired| Evict[Evict from cache]
+    CacheCheck --&gt;|No| ProcessNested
+
+    Evict --&gt; ProcessNested[Process nested objects]
+    ProcessNested --&gt; IterateFields[Iterate model fields]
+
+    IterateFields --&gt; CheckField{Field is&lt;br/&gt;nested object?}
+    CheckField --&gt;|No| NextField[Next field]
+    CheckField --&gt;|Yes| NestedCache{Nested obj&lt;br/&gt;in cache?}
+
+    NestedCache --&gt;|Yes| ReplaceWithCached[Replace dict with&lt;br/&gt;cached instance]
+    NestedCache --&gt;|No| KeepDict[Keep as dict]
+
+    ReplaceWithCached --&gt; NextField
+    KeepDict --&gt; NextField
+    NextField --&gt; MoreFields{More fields?}
+
+    MoreFields --&gt;|Yes| CheckField
+    MoreFields --&gt;|No| CallHandler[Call Pydantic handler]
+
+    CallHandler --&gt; Validate[Pydantic validates]
+    Validate --&gt; NewInstance[New instance created]
+    NewInstance --&gt; CacheNew[Cache new instance]
+    CacheNew --&gt; ReturnNew[Return new instance]
+
+    ReturnCached --&gt; End[Instance]
+    ReturnNew --&gt; End
+    DirectPydantic --&gt; End
+
+    style CacheCheck fill:#06A77D,color:#fff
+    style ReturnCached fill:#06A77D,color:#fff
+    style ProcessNested fill:#F77F00,color:#fff
+    style Validate fill:#2E86AB,color:#fff</code></pre>
+<h2 id="relationship-sync-flow">Relationship Sync Flow<a class="headerlink" href="#relationship-sync-flow" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>sequenceDiagram
+    participant Code as Developer Code
+    participant Scene as Scene Instance
+    participant Studio as Studio Instance
+    participant Metadata as RelationshipMetadata
+    participant Sync as _sync_inverse_relationship()
+
+    Code-&gt;&gt;Scene: scene.studio = studio_obj
+    Scene-&gt;&gt;Scene: __setattr__("studio", studio_obj)
+    Scene-&gt;&gt;Metadata: Get relationship metadata
+    Metadata--&gt;&gt;Scene: {inverse_query_field: "scenes", ...}
+
+    Scene-&gt;&gt;Sync: _sync_inverse_relationship("studio", studio_obj)
+
+    alt Inverse field loaded
+        Sync-&gt;&gt;Studio: Check if studio.scenes is loaded
+        Studio--&gt;&gt;Sync: is_set(studio.scenes) = True
+        Sync-&gt;&gt;Studio: studio.scenes.append(scene)
+        Note over Scene,Studio: Bidirectional sync complete
+    else Inverse field not loaded
+        Sync-&gt;&gt;Studio: studio.scenes is UNSET
+        Note over Scene,Studio: Skip sync (would need to query)
+    end
+
+    Sync--&gt;&gt;Code: Relationship set</code></pre>
+<h2 id="field-aware-population">Field-Aware Population<a class="headerlink" href="#field-aware-population" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    Start[store.populate called] --&gt; CheckReceived{Check&lt;br/&gt;_received_fields}
+
+    CheckReceived --&gt; CalcMissing[Calculate missing:&lt;br/&gt;requested - received]
+    CalcMissing --&gt; HasMissing{Has missing&lt;br/&gt;fields?}
+
+    HasMissing --&gt;|No| Return[Return instance]
+    HasMissing --&gt;|Yes| BuildQuery[Build GraphQL query&lt;br/&gt;for missing fields only]
+
+    BuildQuery --&gt; Execute[Execute query]
+    Execute --&gt; Response[GraphQL response]
+
+    Response --&gt; MergeFields[Merge new fields into&lt;br/&gt;cached instance]
+    MergeFields --&gt; UpdateReceived[Update _received_fields]
+    UpdateReceived --&gt; Return
+
+    style CheckReceived fill:#F77F00,color:#fff
+    style MergeFields fill:#06A77D,color:#fff
+    style UpdateReceived fill:#2E86AB,color:#fff</code></pre>
+<h2 id="django-style-filter-translation">Django-Style Filter Translation<a class="headerlink" href="#django-style-filter-translation" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+    Input["rating100__gte=80"] --&gt; Parse[Parse kwargs]
+    Parse --&gt; Split[Split on '__']
+    Split --&gt; Field[Field: 'rating100']
+    Split --&gt; Modifier[Modifier: 'gte']
+
+    Field --&gt; BuildFilter[Build filter object]
+    Modifier --&gt; MapModifier[Map to GraphQL modifier]
+
+    MapModifier --&gt; GraphQLMod["GREATER_THAN"]
+
+    BuildFilter --&gt; Combine[Combine field + modifier]
+    GraphQLMod --&gt; Combine
+
+    Combine --&gt; Output["{\n  rating100: {\n    value: 80,\n    modifier: 'GREATER_THAN'\n  }\n}"]
+
+    style Input fill:#2E86AB,color:#fff
+    style Output fill:#06A77D,color:#fff</code></pre>
 
 
 
@@ -2042,7 +2166,7 @@ created_scenes = []</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../fuzzy-dates/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Fuzzy Dates">
+          <a href="../architecture/bidirectional-relationships/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Bidirectional Relationships">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2052,20 +2176,20 @@ created_scenes = []</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Fuzzy Dates
+                Bidirectional Relationships
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../architecture/identity-map/" class="md-footer__link md-footer__link--next" aria-label="Next: Identity Map">
+          <a href="../api/client/" class="md-footer__link md-footer__link--next" aria-label="Next: Client">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Identity Map
+                Client
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -2129,10 +2253,10 @@ created_scenes = []</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "toc.follow", "toc.integrate", "search.suggest", "search.highlight", "content.tabs.link", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
