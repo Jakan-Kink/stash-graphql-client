@@ -37,6 +37,38 @@ print(scene2.title)  # "Updated" - same object!
 3. **Relationship consistency** - Related entities always point to cached instances
 4. **Reduced network requests** - Cached objects avoid redundant queries
 
+## How It Works: Wrap Validator Flow
+
+```mermaid
+sequenceDiagram
+    participant Code as Developer Code
+    participant Constructor as Scene.from_dict()
+    participant Validator as @model_validator(mode='wrap')
+    participant Cache as Identity Map Cache
+    participant Pydantic as Pydantic Handler
+    participant Object as Scene Instance
+
+    Code->>Constructor: Scene.from_dict({"id": "123", ...})
+    Constructor->>Validator: Intercept construction
+
+    alt Cache Hit
+        Validator->>Cache: Check cache[(type, id)]
+        Cache-->>Validator: Found cached instance
+        Validator->>Object: Merge new fields
+        Validator-->>Code: Return cached instance
+    else Cache Miss
+        Validator->>Cache: Not found
+        Validator->>Validator: Process nested objects
+        Validator->>Pydantic: handler(processed_data)
+        Pydantic->>Object: Construct & validate
+        Object-->>Validator: New instance
+        Validator->>Cache: Store instance
+        Validator-->>Code: Return new instance
+    end
+
+    Note over Validator,Cache: Cache check happens<br/>BEFORE Pydantic validation
+```
+
 ## Implementation: Pydantic Wrap Validators
 
 Most libraries implement identity maps as a separate layer (like SQLAlchemy's `Session.identity_map` or Apollo's `InMemoryCache`). This library integrates caching directly into Pydantic model construction using **wrap validators**.

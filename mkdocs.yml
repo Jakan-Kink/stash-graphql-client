@@ -118,7 +118,11 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.smartsymbols
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist:
@@ -142,7 +146,6 @@ extra_css:
 nav:
   - Home: index.md
   - Getting Started: guide/getting-started.md
-  - Overview: guide/overview.md
   - User Guide:
       - Overview: guide/overview.md
       - Usage Patterns: guide/usage-patterns.md
@@ -150,9 +153,11 @@ nav:
       - Fuzzy Dates: guide/fuzzy-dates.md
       - Usage Examples: guide/usage-examples.md
   - Architecture:
+      - Overview: architecture/overview.md
       - Identity Map: architecture/identity-map.md
       - Library Comparisons: architecture/comparison.md
       - Bidirectional Relationships: architecture/bidirectional-relationships.md
+      - Diagrams: diagrams.md
   - API Reference:
       - Client: api/client.md
       - Context: api/context.md
