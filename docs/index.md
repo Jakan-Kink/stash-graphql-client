@@ -93,27 +93,27 @@ This library is perfect for:
 
 - :material-book-open-variant:{ .lg .middle } **User Guide**
 
-    ---
+  ***
 
-    Learn core concepts and patterns
+  Learn core concepts and patterns
 
-    [:octicons-arrow-right-24: UNSET Pattern](guide/unset-pattern.md)
+  [:octicons-arrow-right-24: UNSET Pattern](guide/unset-pattern.md)
 
 - :material-code-tags:{ .lg .middle } **API Reference**
 
-    ---
+  ***
 
-    Comprehensive API documentation
+  Comprehensive API documentation
 
-    [:octicons-arrow-right-24: API Docs](api/client.md)
+  [:octicons-arrow-right-24: API Docs](api/client.md)
 
 - :material-calendar:{ .lg .middle } **Fuzzy Dates**
 
-    ---
+  ***
 
-    Work with partial dates
+  Work with partial dates
 
-    [:octicons-arrow-right-24: Date Utilities](guide/fuzzy-dates.md)
+  [:octicons-arrow-right-24: Date Utilities](guide/fuzzy-dates.md)
 
 </div>
 

@@ -5,6 +5,10 @@ repo_url: https://github.com/Jakan-Kink/stash-graphql-client
 repo_name: Jakan-Kink/stash-graphql-client
 edit_uri: edit/main/docs/
 
+watch:
+  - docs
+  - mkdocs.yml
+
 theme:
   name: material
   palette:
@@ -137,9 +141,18 @@ extra_css:
 
 nav:
   - Home: index.md
+  - Getting Started: guide/getting-started.md
+  - Overview: guide/overview.md
   - User Guide:
+      - Overview: guide/overview.md
+      - Usage Patterns: guide/usage-patterns.md
       - UNSET Pattern: guide/unset-pattern.md
       - Fuzzy Dates: guide/fuzzy-dates.md
+      - Usage Examples: guide/usage-examples.md
+  - Architecture:
+      - Identity Map: architecture/identity-map.md
+      - Library Comparisons: architecture/comparison.md
+      - Bidirectional Relationships: architecture/bidirectional-relationships.md
   - API Reference:
       - Client: api/client.md
       - Context: api/context.md
