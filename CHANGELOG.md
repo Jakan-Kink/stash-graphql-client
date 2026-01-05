@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- **Comprehensive Documentation Overhaul**: Restructured documentation into three-tier system
+  - **README.md**: Streamlined to concise landing page with quick examples
+  - **User Guides**: New comprehensive guides for developers and LLM agents
+    - Getting Started guide with installation, configuration, and first scripts
+    - Usage Patterns guide with 8 structured patterns and best practices
+    - Overview guide explaining architecture, design philosophy, and core concepts
+  - **Architecture Documentation**: Deep technical documentation
+    - Identity Map implementation deep-dive (Pydantic v2 wrap validators)
+    - Library comparisons (vs raw gql, Apollo Client, SQLAlchemy, Django ORM)
+    - Architecture overview with layer descriptions and usage guidelines
+  - **Visual Diagrams**: Added Mermaid diagrams for architecture visualization
+    - Three-layer architecture diagram
+    - Identity map flow (wrap validator pattern)
+    - UNSET pattern state diagram
+    - Nested cache lookup process
+    - Relationship sync flow
+    - Field-aware population
+    - Django-style filter translation
+  - **MkDocs Configuration**: Fixed Mermaid rendering with custom_fences configuration
+
 ## [0.8.0] - 2026-01-04
 
 ### Added
