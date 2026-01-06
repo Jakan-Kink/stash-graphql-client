@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-01-06
+
+### Fixed
+
+- **GraphQL Filter Translation**: Fixed `'cannot use slice as String'` error when using `path__contains` and other string field filters
+  - INCLUDES modifier now correctly distinguishes between string fields (single value) and multi-value fields (list of IDs)
+  - String fields (`path`, `title`, `details`, etc.) with `__contains` now send single string value instead of wrapping in list
+  - Multi-value fields (`tags`, `performers`, `studios`, etc.) continue to work correctly with list values
+  - Affects all Django-style filter operations: `find()`, `find_iter()`, and filter translation
+  - Location: `stash_graphql_client/store.py:1193-1237`
+
+- **GraphQL Error Handling**: Fixed `KeyError: "'message'"` when GraphQL returns malformed error responses
+  - Added safe error extraction in `_handle_gql_error()` to catch KeyError during error stringification
+  - Now provides informative fallback error message when error structure is unexpected
+  - Added debug logging to capture raw error structure for troubleshooting
+  - Affects all GraphQL query operations via `store.find()`, `store.find_iter()`, and direct client calls
+  - Location: `stash_graphql_client/client/base.py:326-342`
+
 ### Documentation
 
 - **Comprehensive Documentation Overhaul**: Restructured documentation into three-tier system

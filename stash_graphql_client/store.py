@@ -1193,7 +1193,33 @@ class StashEntityStore:
     def _build_criterion(
         self, field: str, modifier: str, value: Any
     ) -> dict[str, Any] | None:
-        """Build a GraphQL criterion input from field, modifier, and value."""
+        """Build a GraphQL criterion input from field, modifier, and value.
+
+        Note: The INCLUDES modifier has different meanings for different field types:
+        - String fields (path, title, etc.): INCLUDES = "contains substring" → single string
+        - Multi-value fields (tags, performers, etc.): INCLUDES = "includes in list" → list of IDs
+        """
+        # Multi-value relationship fields that expect lists of IDs
+        multi_value_fields = {
+            "tags",
+            "performers",
+            "studios",
+            "groups",
+            "galleries",
+            "images",
+            "performer_tags",
+            "parent_tags",
+            "child_tags",
+            "parent_studios",
+            "child_studios",
+            "scenes",
+            "markers",
+            "files",
+            "folders",
+            "stash_ids",
+            "aliases",
+        }
+
         if modifier == "IS_NULL":
             if value:
                 return {"value": "", "modifier": "IS_NULL"}
@@ -1209,10 +1235,15 @@ class StashEntityStore:
             return None
 
         if modifier in ("INCLUDES", "INCLUDES_ALL", "EXCLUDES"):
-            # Multi-value criterion
-            if isinstance(value, (list, tuple)):
-                return {"value": list(value), "modifier": modifier}
-            return {"value": [value], "modifier": modifier}
+            # Check if this is a multi-value field (expects list) or string field (expects single value)
+            if field in multi_value_fields:
+                # Multi-value criterion (tags, performers, etc.) - wrap in list
+                if isinstance(value, (list, tuple)):
+                    return {"value": list(value), "modifier": modifier}
+                return {"value": [value], "modifier": modifier}
+            # String criterion (path, title, etc.) - keep as single value
+            # For StringCriterionInput, INCLUDES means "contains substring"
+            return {"value": value, "modifier": modifier}
 
         # Standard criterion
         return {"value": value, "modifier": modifier}

@@ -325,7 +325,23 @@ class StashClientBase:
         """
         if isinstance(e, TransportQueryError):
             # GraphQL query error (e.g. validation error)
-            raise StashGraphQLError(f"GraphQL query error: {e.errors}")
+            # Safely extract error information to avoid KeyError on malformed responses
+            try:
+                error_details = str(e.errors) if hasattr(e, "errors") else str(e)
+            except (KeyError, AttributeError, Exception) as extract_error:
+                # If error extraction fails, include both the original error and extraction failure
+                error_details = (
+                    f"<error extracting details: {extract_error}>, original: {e}"
+                )
+                # Log the full error structure for debugging
+                self.log.debug(
+                    f"Failed to extract GraphQL error details: {extract_error}",
+                    exc_info=True,
+                )
+                if hasattr(e, "errors"):
+                    self.log.debug(f"Raw error structure: {e.errors!r}")
+
+            raise StashGraphQLError(f"GraphQL query error: {error_details}")
         if isinstance(e, TransportServerError):
             # Server error (e.g. 500)
             raise StashServerError(f"GraphQL server error: {e}")

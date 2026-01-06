@@ -191,6 +191,26 @@ class TestFilterTranslation:
         criterion = store._build_criterion("tags", "INCLUDES", ["1", "2"])
         assert criterion == {"value": ["1", "2"], "modifier": "INCLUDES"}
 
+    @pytest.mark.unit
+    def test_build_criterion_includes_single_value_multi_field(
+        self, respx_entity_store
+    ) -> None:
+        """Test building INCLUDES criterion with single value for multi-value field."""
+        store = respx_entity_store
+
+        # Multi-value fields (tags, performers, etc.) should wrap single value in list
+        criterion = store._build_criterion("tags", "INCLUDES", "tag-123")
+        assert criterion == {"value": ["tag-123"], "modifier": "INCLUDES"}
+
+    @pytest.mark.unit
+    def test_build_criterion_includes_string_field(self, respx_entity_store) -> None:
+        """Test building INCLUDES criterion for string field (substring search)."""
+        store = respx_entity_store
+
+        # String fields (path, title, etc.) should NOT wrap value in list
+        criterion = store._build_criterion("path", "INCLUDES", "/media/videos/")
+        assert criterion == {"value": "/media/videos/", "modifier": "INCLUDES"}
+
 
 # =============================================================================
 # Unit Tests - Cache Operations

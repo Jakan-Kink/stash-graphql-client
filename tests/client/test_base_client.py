@@ -488,6 +488,29 @@ async def test_handle_gql_error_converts_transport_query_error(stash_client) -> 
 
 
 @pytest.mark.asyncio
+async def test_handle_gql_error_with_malformed_error_structure(stash_client) -> None:
+    """Test _handle_gql_error handles malformed error structure gracefully.
+
+    This covers lines 331-342 in client/base.py - the KeyError exception path
+    when error structure is malformed and raises KeyError during stringification.
+    """
+
+    # Create a mock error object that raises KeyError when stringified
+    class MalformedErrorList(list):
+        def __str__(self):
+            raise KeyError("'message'")
+
+    # Create TransportQueryError with malformed errors
+    gql_error = TransportQueryError(
+        "Query validation failed", errors=MalformedErrorList([{"malformed": "data"}])
+    )
+
+    # Should still raise StashGraphQLError with fallback error message
+    with pytest.raises(StashGraphQLError, match=r"error extracting details.*message"):
+        stash_client._handle_gql_error(gql_error)
+
+
+@pytest.mark.asyncio
 async def test_handle_gql_error_converts_transport_server_error(stash_client) -> None:
     """Test _handle_gql_error converts TransportServerError to StashServerError.
 
