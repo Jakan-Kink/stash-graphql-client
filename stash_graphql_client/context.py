@@ -102,10 +102,9 @@ class StashContext:
             f"get_client called on {id(self)}, current _client: {self._client}"
         )
         if self._client is None:
-            # Convert CIMultiDict to regular dict before passing to StashClient
-            conn_dict = dict(self.conn) if self.conn else None
+            # Pass CIMultiDict directly to preserve case-insensitive lookups
             self._client = StashClient(
-                conn=conn_dict,
+                conn=self.conn if self.conn else None,
                 verify_ssl=self.verify_ssl,
             )
             try:

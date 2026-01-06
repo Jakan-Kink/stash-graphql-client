@@ -54,6 +54,43 @@ class TestStashContextInit:
         assert context.conn["scheme"] == "http"
         assert context.conn["SCHEME"] == "http"
 
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_lowercase_keys_work_with_client_initialization(
+        self, mock_ws_transport, mock_gql_ws_connect
+    ) -> None:
+        """Test that lowercase connection keys work correctly during client initialization.
+
+        This is a regression test for a bug where lowercase keys (scheme, host, port, apikey)
+        were not recognized because CIMultiDict was converted to regular dict before being
+        passed to StashClient, losing case-insensitivity.
+
+        The bug caused clients to default to localhost:9999 even when different values were provided.
+        """
+        # Use all lowercase keys (as would come from config file parsing)
+        conn = {
+            "scheme": "https",
+            "host": "stash.example.com",
+            "port": 8443,
+            "apikey": "test-api-key-12345",
+        }
+        context = StashContext(conn=conn, verify_ssl=False)
+
+        with respx.mock:
+            # Mock the HTTPS endpoint (not default http://localhost:9999)
+            respx.post("https://stash.example.com:8443/graphql").mock(
+                side_effect=[httpx.Response(200, json={"data": {}})]
+            )
+
+            client = await context.get_client()
+
+            # Verify client used the lowercase config values (not defaults)
+            assert client.url == "https://stash.example.com:8443/graphql"
+            assert client.ws_url == "wss://stash.example.com:8443/graphql"
+            assert client.scheme == "https"
+
+            await context.close()
+
 
 class TestStashContextProperties:
     """Tests for StashContext properties."""

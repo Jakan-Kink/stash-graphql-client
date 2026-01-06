@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-01-06
+
+### Fixed
+
+- **Connection Configuration**: Fixed case-sensitivity bug in connection configuration handling
+  - Lowercase connection keys (`scheme`, `host`, `port`, `apikey`) now work correctly
+  - Previously, converting `CIMultiDict` to regular `dict` lost case-insensitivity
+  - Bug caused clients with lowercase config keys to fall back to default `localhost:9999`
+  - Users parsing config files with lowercase keys (common pattern) were silently connecting to wrong server
+  - Added regression test `test_lowercase_keys_work_with_client_initialization()`
+  - Location: `stash_graphql_client/context.py:105-108`
+
 ## [0.8.1] - 2026-01-06
 
 ### Fixed
