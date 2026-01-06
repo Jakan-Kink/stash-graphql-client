@@ -216,6 +216,7 @@ from .performer import (
     Performer,
     PerformerCreateInput,
     PerformerDestroyInput,
+    PerformerMergeInput,
     PerformerUpdateInput,
 )
 from .plugin import (
@@ -522,6 +523,7 @@ __all__: list[str] = [
     "PerformerCreateInput",
     "PerformerDestroyInput",
     "PerformerFilterType",
+    "PerformerMergeInput",
     "PerformerUpdateInput",
     "PhashDistanceCriterionInput",
     "Plugin",

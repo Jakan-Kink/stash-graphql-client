@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-01-06
+
+### Added
+
+- **Performer Merge Feature**: Added `performer_merge()` method for merging multiple performers into one
+  - Requires Stash v0.30.2+ (or development builds with commit `65e82a0+`)
+  - Merges source performers into destination performer (source performers are deleted)
+  - Optional `values` parameter to override destination performer fields during merge
+  - Helpful error messages for older Stash versions that don't support the mutation
+  - Added `PerformerMergeInput` type for type-safe merge operations
+  - Added `PERFORMER_MERGE_MUTATION` GraphQL fragment
+  - Comprehensive test coverage with 5 tests (basic merge, dict input, value overrides, error handling, version check)
+  - Location: `stash_graphql_client/client/mixins/performer.py:585-654`
+  - Schema: Updated from upstream Stash commit `65e82a0`
+
 ## [0.8.2] - 2026-01-06
 
 ### Fixed

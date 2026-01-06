@@ -158,6 +158,14 @@ class PerformerDestroyInput(StashInput):
     id: str  # ID!
 
 
+class PerformerMergeInput(StashInput):
+    """Input for merging performers from schema/types/performer.graphql."""
+
+    source: list[str]  # [ID!]!
+    destination: str  # ID!
+    values: PerformerUpdateInput | None | UnsetType = UNSET  # PerformerUpdateInput
+
+
 class Performer(StashObject):
     """Performer type from schema/types/performer.graphql."""
 

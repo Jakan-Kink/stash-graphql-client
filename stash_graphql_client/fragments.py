@@ -1382,6 +1382,14 @@ mutation BulkPerformerUpdate($input: BulkPerformerUpdateInput!) {{
 }}
 """
 
+PERFORMER_MERGE_MUTATION = f"""
+mutation PerformerMerge($input: PerformerMergeInput!) {{
+    performerMerge(input: $input) {{
+        {PERFORMER_FIELDS}
+    }}
+}}
+"""
+
 BULK_STUDIO_UPDATE_MUTATION = f"""
 mutation BulkStudioUpdate($input: BulkStudioUpdateInput!) {{
     bulkStudioUpdate(input: $input) {{

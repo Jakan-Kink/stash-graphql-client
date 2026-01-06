@@ -3,12 +3,14 @@
 from typing import Any
 
 from ... import fragments
+from ...errors import StashGraphQLError
 from ...types import (
     BulkPerformerUpdateInput,
     FindPerformersResultType,
     OnMultipleMatch,
     Performer,
     PerformerDestroyInput,
+    PerformerMergeInput,
 )
 from ...types.unset import UnsetType, is_set
 from ..protocols import StashClientProtocol
@@ -579,6 +581,77 @@ class PerformerClientMixin(StashClientProtocol):
             return [self._decode_result(Performer, p) for p in performers_data]
         except Exception as e:
             self.log.error(f"Failed to bulk update performers: {e}")
+            raise
+
+    async def performer_merge(
+        self,
+        input_data: PerformerMergeInput | dict[str, Any],
+    ) -> Performer:
+        """Merge performers into a single performer.
+
+        **Minimum Stash Version**: v0.30.2+ or commit `65e82a0` or newer
+
+        This feature requires Stash v0.30.2 or later (or development builds with
+        commit 65e82a0+). Older Stash versions will raise a GraphQL error.
+
+        Args:
+            input_data: PerformerMergeInput object or dictionary containing:
+                - source: List of performer IDs to merge (required)
+                - destination: ID of the performer to merge into (required)
+                - values: Optional PerformerUpdateInput to override destination values
+
+        Returns:
+            The merged Performer object
+
+        Raises:
+            StashGraphQLError: If Stash version is too old or merge fails
+
+        Examples:
+            Merge performers:
+            ```python
+            merged = await client.performer_merge({
+                "source": ["performer1-id", "performer2-id"],
+                "destination": "destination-performer-id"
+            })
+            ```
+
+            Merge with overrides:
+            ```python
+            from stash_graphql_client.types import PerformerMergeInput, PerformerUpdateInput
+
+            merged = await client.performer_merge(
+                PerformerMergeInput(
+                    source=["performer1-id", "performer2-id"],
+                    destination="destination-performer-id",
+                    values=PerformerUpdateInput(
+                        id="destination-performer-id",
+                        name="New Name",
+                        gender="FEMALE"
+                    )
+                )
+            )
+            ```
+        """
+        # Convert PerformerMergeInput to dict if needed
+        if isinstance(input_data, PerformerMergeInput):
+            input_dict = input_data.to_graphql()
+        else:
+            input_dict = input_data
+
+        try:
+            return await self.execute(
+                fragments.PERFORMER_MERGE_MUTATION,
+                {"input": input_dict},
+                result_type=Performer,
+            )
+        except Exception as e:
+            # Provide helpful error for older Stash versions
+            error_msg = str(e).lower()
+            if "performermerge" in error_msg or "unknown" in error_msg:
+                raise StashGraphQLError(
+                    "performerMerge requires Stash v0.30.2+ (or commit 65e82a0+). "
+                    f"Your Stash version may be too old. Original error: {e}"
+                ) from e
             raise
 
     async def map_performer_ids(

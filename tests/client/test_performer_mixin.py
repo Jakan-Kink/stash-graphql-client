@@ -21,6 +21,8 @@ from stash_graphql_client.types import (
     OnMultipleMatch,
     Performer,
     PerformerDestroyInput,
+    PerformerMergeInput,
+    PerformerUpdateInput,
 )
 from stash_graphql_client.types.unset import UNSET, is_set
 from tests.fixtures import (
@@ -1951,3 +1953,207 @@ async def test_map_performer_ids_dict_single_match_performers_unset(
     # When performers is UNSET, no ID is added (line 747 condition is False)
     assert result == []
     assert call_count == 1
+
+
+# =============================================================================
+# performer_merge tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_performer_merge_with_input_type(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test merging performers with PerformerMergeInput.
+
+    This covers the successful merge path using PerformerMergeInput object.
+    """
+    merged_performer_data = create_performer_dict(
+        id="destination-123",
+        name="Merged Performer",
+        alias_list=["Source Alias 1", "Source Alias 2"],
+    )
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("performerMerge", merged_performer_data),
+            )
+        ]
+    )
+
+    input_data = PerformerMergeInput(
+        source=["source-1", "source-2"],
+        destination="destination-123",
+    )
+
+    result = await respx_stash_client.performer_merge(input_data)
+
+    assert result is not None
+    assert result.id == "destination-123"
+    assert result.name == "Merged Performer"
+
+    # Verify request
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "performerMerge" in req["query"]
+    assert req["variables"]["input"]["source"] == ["source-1", "source-2"]
+    assert req["variables"]["input"]["destination"] == "destination-123"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_performer_merge_with_dict_input(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test merging performers with dict input.
+
+    This covers the merge path using dict instead of PerformerMergeInput.
+    """
+    merged_performer_data = create_performer_dict(
+        id="dest-456",
+        name="Merged Via Dict",
+    )
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("performerMerge", merged_performer_data),
+            )
+        ]
+    )
+
+    input_dict = {
+        "source": ["src-1", "src-2", "src-3"],
+        "destination": "dest-456",
+    }
+
+    result = await respx_stash_client.performer_merge(input_dict)
+
+    assert result is not None
+    assert result.id == "dest-456"
+    assert result.name == "Merged Via Dict"
+
+    # Verify request
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "performerMerge" in req["query"]
+    assert req["variables"]["input"]["source"] == ["src-1", "src-2", "src-3"]
+    assert req["variables"]["input"]["destination"] == "dest-456"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_performer_merge_with_values_override(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test merging performers with values parameter to override fields.
+
+    This covers the merge path with additional values to apply during merge.
+    """
+    merged_performer_data = create_performer_dict(
+        id="dest-789",
+        name="Override Name",
+        gender="FEMALE",
+        birthdate="1995-05-15",
+    )
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("performerMerge", merged_performer_data),
+            )
+        ]
+    )
+
+    input_data = PerformerMergeInput(
+        source=["src-a", "src-b"],
+        destination="dest-789",
+        values=PerformerUpdateInput(
+            id="dest-789",
+            name="Override Name",
+            gender=GenderEnum.FEMALE,
+            birthdate="1995-05-15",
+        ),
+    )
+
+    result = await respx_stash_client.performer_merge(input_data)
+
+    assert result is not None
+    assert result.id == "dest-789"
+    assert result.name == "Override Name"
+    assert result.gender == "FEMALE"
+    assert result.birthdate == "1995-05-15"
+
+    # Verify request includes values
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "performerMerge" in req["query"]
+    assert req["variables"]["input"]["source"] == ["src-a", "src-b"]
+    assert req["variables"]["input"]["destination"] == "dest-789"
+    assert "values" in req["variables"]["input"]
+    assert req["variables"]["input"]["values"]["name"] == "Override Name"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_performer_merge_error_raises(respx_stash_client: StashClient) -> None:
+    """Test that performer_merge raises on error.
+
+    This covers the error handling path.
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                500,
+                json={"errors": [{"message": "Cannot merge: source not found"}]},
+            )
+        ]
+    )
+
+    input_data = PerformerMergeInput(
+        source=["nonexistent-1"],
+        destination="dest-999",
+    )
+
+    with pytest.raises(StashGraphQLError, match="Cannot merge"):
+        await respx_stash_client.performer_merge(input_data)
+
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_performer_merge_version_check(respx_stash_client: StashClient) -> None:
+    """Test that performer_merge provides helpful error for old Stash versions.
+
+    This covers the version check error path where Stash doesn't support performerMerge.
+    """
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                400,
+                json={
+                    "errors": [
+                        {"message": "Unknown field 'performerMerge' on type 'Mutation'"}
+                    ]
+                },
+            )
+        ]
+    )
+
+    input_data = PerformerMergeInput(
+        source=["src-1"],
+        destination="dest-1",
+    )
+
+    with pytest.raises(
+        StashGraphQLError, match=r"performerMerge requires Stash v0\.30\.2\+"
+    ):
+        await respx_stash_client.performer_merge(input_data)
+
+    assert len(graphql_route.calls) == 1
