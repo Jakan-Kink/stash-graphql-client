@@ -1829,8 +1829,8 @@ class StashEntityStore:
             "scene_markers": "__typename id title",
             "stash_ids": "__typename endpoint stash_id",
             # File relationship fields (ImageFile, VideoFile, etc.)
-            "files": "__typename id path size width height format fingerprints",
-            "visual_files": "__typename id path size width height format fingerprints",
+            "files": "__typename id path size width height format fingerprints { __typename type value }",
+            "visual_files": "__typename id path size width height format fingerprints { __typename type value }",
         }
 
         selections = []
