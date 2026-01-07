@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.2] - 2026-01-07
+
+### Fixed
+
+- **Polymorphic Type Fetching**: ImageFile and VideoFile now correctly fetched via BaseFile's `findFile` query
+  - Added `_get_concrete_type()`: Resolves polymorphic types based on `__typename` field in GraphQL responses
+  - Added `_get_query_name()`: Maps type names to correct GraphQL query names (e.g., BaseFile → findFile)
+  - Enhanced `_get_fetchable_type()`: Improved error handling for edge cases (non-class types, missing attributes)
+  - Fixed issue where `sanitize_model_data()` was removing `__typename` before polymorphic type resolution
+  - Location: `stash_graphql_client/store.py:820-931, 1758-1780`
+
+### Changed
+
+- **Nested Field Filtering**: Enhanced to support polymorphic types in nested relationships
+  - `populate()` now correctly handles ImageFile/VideoFile in Image.files and Image.visual_files
+  - Nested field specs like `'files__path'` and `'visual_files__size'` work correctly with mixed file types
+  - Location: `stash_graphql_client/store.py:1103-1104, 1164-1183`
+
+### Testing
+
+- **Coverage**: Returned project to 100% test pass / 100% code coverage
+
 ## [0.10.1] - 2026-01-07
 
 ### Added

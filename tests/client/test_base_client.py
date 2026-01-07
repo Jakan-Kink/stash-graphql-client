@@ -511,6 +511,45 @@ async def test_handle_gql_error_with_malformed_error_structure(stash_client) -> 
 
 
 @pytest.mark.asyncio
+async def test_handle_gql_error_without_errors_attr_str_raises(stash_client) -> None:
+    """Test _handle_gql_error when exception has no errors attr and str() raises.
+
+    This covers the branch 341->344 in client/base.py:
+    - Line 330: hasattr(e, "errors") is False, so we try str(e)
+    - str(e) raises an exception, entering except block at 331
+    - Line 341: hasattr(e, "errors") is still False, so we skip the debug log
+    - Line 344: raise StashGraphQLError (branch 341->344)
+    """
+
+    # Create a custom TransportQueryError without errors attribute
+    # and __str__ that raises an exception on first call only
+    class BrokenTransportQueryError(TransportQueryError):
+        def __init__(self, message):
+            # Don't call super().__init__() to avoid setting self.errors
+            self.message = message
+            self._str_call_count = 0
+
+        def __str__(self):
+            self._str_call_count += 1
+            if self._str_call_count == 1:
+                # First call raises exception (triggers except block)
+                raise AttributeError("Cannot stringify this error")
+            # Subsequent calls succeed (for fallback error message)
+            return f"BrokenError: {self.message}"
+
+    broken_error = BrokenTransportQueryError("Broken error")
+
+    # Verify it doesn't have errors attribute
+    assert not hasattr(broken_error, "errors")
+
+    # Should raise StashGraphQLError with fallback message
+    # The first str(e) at line 330 fails, entering except block
+    # At line 341, hasattr(e, "errors") is False, so we skip debug log (341->344)
+    with pytest.raises(StashGraphQLError, match=r"error extracting details"):
+        stash_client._handle_gql_error(broken_error)
+
+
+@pytest.mark.asyncio
 async def test_handle_gql_error_converts_transport_server_error(stash_client) -> None:
     """Test _handle_gql_error converts TransportServerError to StashServerError.
 

@@ -817,6 +817,132 @@ class StashEntityStore:
     # ─── Field-aware population ─────────────────────────────────
 
     @staticmethod
+    def _get_fetchable_type(entity_type: type[StashObject]) -> type[StashObject] | None:
+        """Get the type that should be used for fetching this entity.
+
+        Some types are polymorphic - ImageFile and VideoFile are BaseFile subclasses
+        and should be fetched using BaseFile.find_by_id() which uses findFile query.
+
+        Args:
+            entity_type: The entity type to check
+
+        Returns:
+            The type to use for fetching, or None if not independently fetchable
+        """
+        # Handle non-class types gracefully (defensive check)
+        if not isinstance(entity_type, type):
+            return None
+
+        from .types import BaseFile
+
+        # Types with dedicated find queries (from types/base.py query_map)
+        fetchable_type_names = {
+            "Scene",
+            "Performer",
+            "Studio",
+            "Tag",
+            "Gallery",
+            "Image",
+            "SceneMarker",
+            "Group",
+            "BaseFile",
+        }
+
+        # Check if this type has its own find query
+        try:
+            type_name = entity_type.__type_name__
+            if type_name in fetchable_type_names:
+                return entity_type
+        except AttributeError:
+            return None
+
+        # Check if it's a polymorphic BaseFile subclass (ImageFile, VideoFile, etc.)
+        # These should be fetched as BaseFile using findFile query
+        # Note: No try/except needed here since isinstance(entity_type, type) check above
+        # ensures entity_type is a valid type for issubclass()
+        if issubclass(entity_type, BaseFile) and entity_type is not BaseFile:
+            return BaseFile
+
+        return None
+
+    def _get_concrete_type(
+        self, data: dict[str, Any], requested_type: type[T]
+    ) -> type[T]:
+        """Get the concrete type to use for deserialization based on __typename.
+
+        For polymorphic types like BaseFile, the GraphQL response includes __typename
+        to indicate the concrete type (ImageFile, VideoFile, etc.). This method
+        resolves the correct type class to use for construction.
+
+        Args:
+            data: The GraphQL response data (must contain __typename)
+            requested_type: The type used in the query (e.g., BaseFile)
+
+        Returns:
+            The concrete type class to use (e.g., ImageFile if __typename is "ImageFile")
+        """
+        typename = data.get("__typename")
+
+        # If no __typename or it matches requested type, use requested type
+        if not typename or typename == requested_type.__type_name__:
+            return requested_type
+
+        # Polymorphic type mapping for known cases
+        # Import here to avoid circular imports
+        from .types import BaseFile, ImageFile, VideoFile
+
+        type_map: dict[str, type[StashObject]] = {
+            "ImageFile": ImageFile,
+            "VideoFile": VideoFile,
+            "BaseFile": BaseFile,
+        }
+
+        concrete_type = type_map.get(typename)
+        if concrete_type:
+            return concrete_type  # type: ignore[return-value]
+
+        # Fallback to requested type if we don't recognize the typename
+        log.warning(
+            f"Unknown __typename '{typename}' for {requested_type.__type_name__}, "
+            f"using {requested_type.__type_name__}"
+        )
+        return requested_type
+
+    @staticmethod
+    def _get_query_name(entity_type: type[StashObject]) -> str:
+        """Get the GraphQL query name for fetching this entity type.
+
+        For most types, the query name is "find{TypeName}", but some types
+        use different query names (e.g., BaseFile uses "findFile").
+
+        Args:
+            entity_type: The entity type to get query name for
+
+        Returns:
+            The GraphQL query name (e.g., "findFile", "findScene")
+        """
+        type_name = entity_type.__type_name__
+
+        # Special cases where query name differs from type name
+        query_name_map = {
+            "BaseFile": "findFile",
+        }
+
+        return query_name_map.get(type_name, f"find{type_name}")
+
+    @staticmethod
+    def _is_independently_fetchable(entity_type: type[StashObject]) -> bool:
+        """Check if an entity type can be fetched independently via find query.
+
+        Args:
+            entity_type: The entity type to check
+
+        Returns:
+            True if the type can be fetched independently (directly or polymorphically)
+        """
+        return StashEntityStore._get_fetchable_type(entity_type) is not None
+
+    @staticmethod
     def _parse_nested_field(field_spec: str) -> list[str]:
         """Parse nested field specification into path components.
 
@@ -1044,7 +1170,9 @@ class StashEntityStore:
             log.debug(
                 f"Populating {obj.__type_name__} {obj.id} with fields: {fields_to_fetch}"
             )
-            fresh_obj = await self.get(type(obj), obj.id, fields=fields_to_fetch)
+            # For polymorphic types (ImageFile, VideoFile), fetch as base type (BaseFile)
+            fetch_type = self._get_fetchable_type(type(obj)) or type(obj)
+            fresh_obj = await self.get(fetch_type, obj.id, fields=fields_to_fetch)
             if fresh_obj is not None:
                 # Merge received fields: keep old + add new
                 new_received = received | getattr(fresh_obj, "_received_fields", set())
@@ -1108,13 +1236,21 @@ class StashEntityStore:
                         # Populate each item in the list with the remaining path
                         for item in value:
                             if isinstance(item, StashObject):
+                                # Skip types that can only be fetched via their parent
+                                # (e.g., ImageFile, PluginTask, PluginPaths)
+                                # The parent query should have already included these fields
+                                if not self._is_independently_fetchable(type(item)):
+                                    continue
                                 await self.populate(
                                     item,
                                     fields=[nested_field_spec],
                                     force_refetch=force_refetch,
                                 )
-                    elif isinstance(value, StashObject):
+                    elif isinstance(
+                        value, StashObject
+                    ) and self._is_independently_fetchable(type(value)):
                         # Populate single object with the remaining path
+                        # (skips types that can only be fetched via their parent)
                         await self.populate(
                             value,
                             fields=[nested_field_spec],
@@ -1625,13 +1761,16 @@ class StashEntityStore:
         """
         type_name = entity_type.__type_name__
 
+        # Get the query name (may differ from type name for some types)
+        query_name = self._get_query_name(entity_type)
+
         # Build field selection from requested fields
         field_selection = self._build_field_selection(fields)
 
         # Build the query
         query = f"""
             query Find{type_name}($id: ID!) {{
-                find{type_name}(id: $id) {{
+                {query_name}(id: $id) {{
                     {field_selection}
                 }}
             }}
@@ -1639,11 +1778,16 @@ class StashEntityStore:
 
         try:
             result = await self._client.execute(query, {"id": entity_id})
-            data = result.get(f"find{type_name}")
+            data = result.get(query_name)
             if data:
+                # Handle polymorphic types - check __typename BEFORE sanitization
+                # (sanitize_model_data removes fields starting with _)
+                concrete_type = self._get_concrete_type(data, entity_type)
+
                 clean = sanitize_model_data(data)
+
                 # Use Pydantic's from_graphql for deserialization (identity map via validator)
-                entity = entity_type.from_graphql(clean)
+                entity = concrete_type.from_graphql(clean)
                 self._cache_entity(entity)
                 return entity
             return None
@@ -1675,6 +1819,7 @@ class StashEntityStore:
             # Common relationship fields across types
             "studio": "__typename id name",
             "parent_studio": "__typename id name",
+            "parent": "__typename id name",
             "tags": "__typename id name",
             "performers": "__typename id name gender",
             "scenes": "__typename id title",
@@ -1683,6 +1828,9 @@ class StashEntityStore:
             "groups": "__typename id name",
             "scene_markers": "__typename id title",
             "stash_ids": "__typename endpoint stash_id",
+            # File relationship fields (ImageFile, VideoFile, etc.)
+            "files": "__typename id path size width height format fingerprints",
+            "visual_files": "__typename id path size width height format fingerprints",
         }
 
         selections = []

@@ -22,6 +22,7 @@ from stash_graphql_client.types.unset import UNSET
 from tests.fixtures.stash import (
     ImageFactory,
     ImageFileFactory,
+    SceneFactory,
     StudioFactory,
     create_graphql_response,
 )
@@ -413,23 +414,29 @@ class TestFilterAndPopulateWithNestedFields:
         object.__setattr__(image, "_received_fields", {"id", "title", "files"})
         store._cache_entity(image)
 
-        # Mock GraphQL: image fetch (files field) + file fetch (path field)
-        image_response = {
-            "id": "img1",
-            "title": "Test",
-            "files": [{"id": "f1", "path": "/large.jpg"}],
+        # Mock GraphQL: Two file fetches (populate calls each nested field separately)
+        # Each fetch returns the complete file data (GraphQL returns all fields queried)
+        file_response_complete = {
+            "__typename": "ImageFile",
+            "id": "f1",
+            "path": "/large.jpg",
+            "size": 5_000_000,
+            "width": 1920,
+            "height": 1080,
+            "format": "jpg",
         }
-        file_response = {"id": "f1", "path": "/large.jpg", "size": 5_000_000}
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
+                # First populate call for 'path' field
                 httpx.Response(
                     200,
-                    json=create_graphql_response("findImage", image_response),
+                    json=create_graphql_response("findFile", file_response_complete),
                 ),
+                # Second populate call for 'size' field
                 httpx.Response(
                     200,
-                    json=create_graphql_response("findImageFile", file_response),
+                    json=create_graphql_response("findFile", file_response_complete),
                 ),
             ]
         )
@@ -701,3 +708,223 @@ class TestNestedFieldEdgeCases:
 
         # Should not crash, just skip the non-StashObject item
         assert result is not None
+
+    def test_get_fetchable_type_with_non_class(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test _get_fetchable_type handles non-class types gracefully."""
+        store = respx_entity_store
+
+        # Test with non-class types (should return None without crashing)
+        # This covers the isinstance(entity_type, type) check
+        assert store._get_fetchable_type("not a class") is None  # type: ignore[arg-type]
+        assert store._get_fetchable_type(123) is None  # type: ignore[arg-type]
+        assert store._get_fetchable_type(None) is None  # type: ignore[arg-type]
+
+    def test_get_fetchable_type_no_typename_attr(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test _get_fetchable_type with class missing __type_name__."""
+        store = respx_entity_store
+
+        # Create a class without __type_name__ attribute
+        class FakeClass:
+            pass
+
+        # Should handle AttributeError and return None (lines 856-857)
+        assert store._get_fetchable_type(FakeClass) is None  # type: ignore[arg-type]
+
+    def test_get_concrete_type_unknown_typename(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test _get_concrete_type with unrecognized __typename."""
+        from stash_graphql_client.types import Scene
+
+        store = respx_entity_store
+
+        # Data with unknown __typename
+        data = {"__typename": "UnknownType", "id": "123"}
+
+        # Should log warning and fall back to requested type (lines 906-910)
+        result = store._get_concrete_type(data, Scene)
+        assert result is Scene
+
+    async def test_populate_single_nested_object(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test populate with single nested object with multiple nested field specs.
+
+        This test ensures that when we have multiple nested field specs on a single
+        object (not a list), the for loop iterates correctly, triggering the elif
+        branch multiple times (line 1249->1227).
+        """
+
+        store = respx_entity_store
+
+        # Studio with minimal data
+        studio = StudioFactory.build(id="s1", name="Test")
+        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        store._cache_entity(studio)
+
+        # Scene with studio reference
+        scene = SceneFactory.build(id="sc1", title="Test", studio=studio)
+        object.__setattr__(scene, "_received_fields", {"id", "title", "studio"})
+        store._cache_entity(scene)
+
+        # Mock GraphQL responses - ONE fetch that returns both fields
+        # This is realistic - GraphQL returns whatever fields you query for
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_graphql_response(
+                        "findStudio",
+                        {
+                            "id": "s1",
+                            "name": "Test",
+                            "urls": ["http://test.com"],
+                            "details": "Test details",
+                        },
+                    ),
+                )
+            ]
+        )
+
+        # Populate TWO nested field specs - creates nested_specs = {"studio": {("urls",), ("details",)}}
+        # The for loop on line 1227 iterates twice for the two tuples
+        # Each iteration takes the elif on line 1249 for single object
+        # After first iteration, loop branches back to 1227 for second (line 1249->1227)
+        result = await store.populate(scene, fields=["studio__urls", "studio__details"])
+
+        # Should make exactly 1 call (both fields fetched together)
+        assert len(graphql_route.calls) == 1
+        assert result is not None
+        assert result.studio.urls is not UNSET
+        assert result.studio.details is not UNSET
+
+    async def test_populate_list_multiple_nested_specs(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test populate with list and multiple nested field specs (line 1249->1227)."""
+        store = respx_entity_store
+
+        # File with partial fields
+        file1 = ImageFileFactory.build(id="f1", path=UNSET, size=UNSET)
+        object.__setattr__(file1, "_received_fields", {"id"})
+        store._cache_entity(file1)
+
+        # Image with files
+        image = ImageFactory.build(id="img1", title="Test", files=[file1])
+        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        store._cache_entity(image)
+
+        # Mock GraphQL responses - file fetches
+        file_response = {
+            "__typename": "ImageFile",
+            "id": "f1",
+            "path": "/test.jpg",
+            "size": 5_000_000,
+        }
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                # First iteration: fetch file for 'path' field
+                httpx.Response(
+                    200,
+                    json=create_graphql_response("findFile", file_response),
+                ),
+                # Second iteration: fetch file for 'size' field
+                httpx.Response(
+                    200,
+                    json=create_graphql_response("findFile", file_response),
+                ),
+            ]
+        )
+
+        # Populate with TWO nested field specs on a LIST field
+        # This makes the for path_tuple loop iterate twice (line 1249->1227)
+        result = await store.populate(image, fields=["files__path", "files__size"])
+
+        # Verify GraphQL calls were made
+        assert len(graphql_route.calls) == 2
+        assert result is not None
+        assert len(result.files) == 1
+        assert result.files[0].path == "/test.jpg"
+        assert result.files[0].size == 5_000_000
+
+    async def test_populate_non_fetchable_single_object_continues_loop(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test branch 1249->1227: loop continues when elif is False.
+
+        When we have multiple nested field specs on a non-fetchable single
+        StashObject, the for loop at line 1227 iterates, but the elif at
+        line 1249 is False (not independently fetchable), so execution
+        continues to the next iteration (branch 1249->1227).
+        """
+        from stash_graphql_client.types import Gallery, GalleryChapter
+
+        store = respx_entity_store
+
+        # Create a GalleryChapter (not independently fetchable) as a SINGLE object
+        chapter = GalleryChapter.from_dict(
+            {"id": "ch1", "title": "Chapter 1", "image_index": 5}
+        )
+        object.__setattr__(chapter, "_received_fields", {"id"})
+        store._cache_entity(chapter)
+
+        # Create a Gallery with a single chapter field (not a list for this test)
+        # We'll manually set a field to be a single chapter using object.__setattr__
+        # to bypass Pydantic validation
+        gallery = Gallery.from_dict({"id": "gal1", "title": "Test Gallery"})
+        # Use object.__setattr__ to bypass Pydantic validation
+        object.__setattr__(gallery, "test_field", chapter)  # Custom field for testing
+        object.__setattr__(gallery, "_received_fields", {"id", "title", "test_field"})
+        store._cache_entity(gallery)
+
+        # Populate with TWO nested field specs on non-fetchable single object
+        # nested_specs = {"test_field": {("title",), ("image_index",)}}
+        # Iteration 1: value=chapter, not list, not fetchable -> elif False -> continue to 1227
+        # Iteration 2: value=chapter, not list, not fetchable -> elif False -> continue to 1227
+        # The 1249->1227 branch is taken on iteration 1
+        result = await store.populate(
+            gallery, fields=["test_field__title", "test_field__image_index"]
+        )
+
+        # Should complete without errors (GalleryChapter not fetchable, just skipped)
+        assert result is not None
+        assert result.id == "gal1"
+
+    async def test_populate_skips_non_fetchable_nested_items(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test that populate skips non-independently-fetchable items in lists."""
+        from stash_graphql_client.types import Gallery, GalleryChapter
+
+        store = respx_entity_store
+
+        # Create a GalleryChapter with partial fields (not independently fetchable)
+        chapter_data = {"id": "ch1", "title": "Chapter 1", "image_index": 0}
+        chapter = GalleryChapter.from_dict(chapter_data)
+        object.__setattr__(chapter, "_received_fields", {"id"})  # Only id fetched
+        store._cache_entity(chapter)
+
+        # Create a Gallery with chapters
+        gallery = Gallery.from_dict(
+            {"id": "gal1", "title": "Test Gallery", "chapters": [chapter]}
+        )
+        object.__setattr__(gallery, "_received_fields", {"id", "title", "chapters"})
+        store._cache_entity(gallery)
+
+        # No mock needed - populate should skip non-fetchable GalleryChapter
+        # Since Gallery already has 'chapters' in _received_fields,
+        # no re-fetch is triggered
+
+        # Try to populate nested field on non-fetchable type
+        # Should skip GalleryChapter (not independently fetchable) without crashing
+        result = await store.populate(gallery, fields=["chapters__title"])
+
+        # Should complete successfully without GraphQL calls
+        # (Gallery already has chapters, GalleryChapter is not fetchable)
+        assert result is not None
+        assert result.id == "gal1"
