@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.9.0"
+version = "0.10.0"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -204,6 +204,9 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # RUF012: Mutable class attributes (intentional for tracking metadata)
 "stash_graphql_client/types/**/*.py" = ["N815", "A002", "RUF012"]
 "stash_graphql_client/types/*.py" = ["N815", "A002", "RUF012"]
+# Tests intentionally use explicit loops to test async iterators
+# PERF401: Use list comprehension - False positive when testing iterators
+"tests/**/*.py" = ["PERF401"]
 # Client code uses relative imports for internal module organization
 # TID252: relative imports from parent - acceptable for internal package structure
 # N802: function names match GraphQL schema (querySQL, execSQL, etc.)

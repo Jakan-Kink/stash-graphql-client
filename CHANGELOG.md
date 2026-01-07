@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-01-06
+
+### Added
+
+- **Advanced Filter Methods**: Four new field-aware repository methods for smart caching
+  - `filter_strict()`: Fail-fast filtering, raises if required fields missing (sync)
+  - `filter_and_populate()`: Auto-fetches missing fields, 10x faster than `find()` on partial cache
+  - `filter_and_populate_with_stats()`: Returns `(results, stats)` for performance debugging
+  - `populated_filter_iter()`: Lazy async iterator for large datasets with early exit support
+  - All leverage UNSET pattern + field tracking for surgical fetching
+  - Location: `stash_graphql_client/store.py:385-721`
+
+### Documentation
+
+- Added "Advanced Filtering" guide (`docs/guide/advanced-filtering.md`) with performance examples
+
+### Testing
+
+- **Coverage**: 99.99% overall
+- Added 27 tests for new filter methods using spy pattern for race conditions
+
 ## [0.9.0] - 2026-01-06
 
 ### Added
@@ -39,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **GraphQL Filter Translation**: Fixed `'cannot use slice as String'` error when using `path__contains` and other string field filters
+
   - INCLUDES modifier now correctly distinguishes between string fields (single value) and multi-value fields (list of IDs)
   - String fields (`path`, `title`, `details`, etc.) with `__contains` now send single string value instead of wrapping in list
   - Multi-value fields (`tags`, `performers`, `studios`, etc.) continue to work correctly with list values

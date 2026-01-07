@@ -382,6 +382,377 @@ class StashEntityStore:
         """
         return self.filter(entity_type, lambda _: True)
 
+    def filter_strict(
+        self,
+        entity_type: type[T],
+        required_fields: set[str] | list[str],
+        predicate: Callable[[T], bool],
+    ) -> list[T]:
+        """Filter cached objects, raising error if required fields are missing.
+
+        This is a fail-fast version of filter() that ensures all cached objects
+        have the required fields populated before applying the predicate. If any
+        cached object is missing required fields, raises ValueError immediately.
+
+        Args:
+            entity_type: The Stash entity type
+            required_fields: Fields that must be populated on all cached objects
+            predicate: Function that returns True for matching entities
+
+        Returns:
+            List of matching cached entities (all guaranteed to have required fields)
+
+        Raises:
+            ValueError: If any cached object is missing required fields
+
+        Example:
+            # This will raise if any performer has rating100=UNSET
+            high_rated = store.filter_strict(
+                Performer,
+                required_fields=['rating100', 'favorite'],
+                predicate=lambda p: p.rating100 >= 80 and p.favorite
+            )
+        """
+        type_name = entity_type.__type_name__
+        fields_set = (
+            set(required_fields)
+            if isinstance(required_fields, list)
+            else required_fields
+        )
+        results: list[T] = []
+
+        # Snapshot cache entries
+        with self._lock:
+            cache_snapshot = list(self._cache.items())
+
+        for (cached_type, _), entry in cache_snapshot:
+            if cached_type != type_name:
+                continue
+            if entry.is_expired():
+                continue
+
+            entity = entry.entity
+
+            # Check for missing fields - fail fast
+            missing = self.missing_fields(entity, *fields_set)
+            if missing:
+                raise ValueError(
+                    f"{type_name} {entity.id} is missing required fields: {missing}. "
+                    f"Use filter_and_populate() to auto-fetch missing fields, or populate "
+                    f"the cache first with store.find() or store.populate()."
+                )
+
+            if predicate(entity):
+                results.append(entity)
+
+        return results
+
+    async def filter_and_populate(
+        self,
+        entity_type: type[T],
+        required_fields: set[str] | list[str],
+        predicate: Callable[[T], bool],
+        batch_size: int = 50,
+    ) -> list[T]:
+        """Filter cached objects, auto-populating missing fields as needed.
+
+        This is a smart hybrid between find() and filter():
+        - Gets all cached objects of the type
+        - Identifies which ones have UNSET values for required_fields
+        - Fetches only the missing fields for incomplete objects (in batches)
+        - Applies the predicate to all objects (now with complete data)
+
+        This is much faster than find() when most data is already cached, since
+        it only fetches the specific missing fields rather than re-fetching
+        entire entities.
+
+        Args:
+            entity_type: The Stash entity type
+            required_fields: Fields needed by the predicate
+            predicate: Function that returns True for matching entities
+            batch_size: Number of entities to populate concurrently (default: 50)
+
+        Returns:
+            List of matching entities (all with required fields populated)
+
+        Example:
+            # Cache has 1000 performers, but only 500 have rating100 loaded
+            high_rated = await store.filter_and_populate(
+                Performer,
+                required_fields=['rating100', 'favorite'],
+                predicate=lambda p: p.rating100 >= 80 and p.favorite
+            )
+            # ↓ Fetches rating100+favorite for the 500 that don't have it
+            # ↓ Then filters all 1000 with complete data
+            # ↓ Network calls: Only for missing data (much faster than find())
+        """
+        type_name = entity_type.__type_name__
+        fields_set = (
+            set(required_fields)
+            if isinstance(required_fields, list)
+            else required_fields
+        )
+
+        # Get all cached objects
+        all_cached = self.all_cached(entity_type)
+        if not all_cached:
+            return []
+
+        # Identify objects needing population
+        to_populate: list[T] = [
+            entity for entity in all_cached if self.missing_fields(entity, *fields_set)
+        ]
+
+        # Batch populate for performance
+        if to_populate:
+            log.debug(
+                f"filter_and_populate: populating {len(to_populate)}/{len(all_cached)} "
+                f"{type_name} objects with fields {fields_set}"
+            )
+
+            # Populate in batches to avoid overwhelming the server
+            import asyncio
+
+            for i in range(0, len(to_populate), batch_size):
+                batch = to_populate[i : i + batch_size]
+                # Populate concurrently within batch
+                await asyncio.gather(
+                    *[
+                        self.populate(entity, fields=list(fields_set))
+                        for entity in batch
+                    ]
+                )
+
+        # Apply predicate to all objects (now with complete data)
+        # Get fresh snapshot from cache (populate() may have updated instances)
+        with self._lock:
+            cache_snapshot = list(self._cache.items())
+
+        results: list[T] = []
+        for (cached_type, _), entry in cache_snapshot:
+            if cached_type != type_name:
+                continue
+            if entry.is_expired():
+                continue
+
+            entity = entry.entity
+
+            # Verify all required fields are now present (defensive check)
+            missing = self.missing_fields(entity, *fields_set)
+            if missing:
+                log.warning(
+                    f"{type_name} {entity.id} still missing {missing} after populate "
+                    f"(this shouldn't happen)"
+                )
+                continue
+
+            if predicate(entity):
+                results.append(entity)
+
+        return results
+
+    async def filter_and_populate_with_stats(
+        self,
+        entity_type: type[T],
+        required_fields: set[str] | list[str],
+        predicate: Callable[[T], bool],
+        batch_size: int = 50,
+    ) -> tuple[list[T], dict[str, Any]]:
+        """Filter and populate with debug statistics.
+
+        Same as filter_and_populate() but returns detailed statistics about
+        what was fetched and filtered. Useful for debugging and optimization.
+
+        Args:
+            entity_type: The Stash entity type
+            required_fields: Fields needed by the predicate
+            predicate: Function that returns True for matching entities
+            batch_size: Number of entities to populate concurrently
+
+        Returns:
+            Tuple of (matching_entities, stats_dict) where stats contains:
+            - total_cached: Total objects in cache
+            - needed_population: How many needed fields fetched
+            - populated_fields: Which fields were fetched
+            - matches: How many matched the predicate
+            - cache_hit_rate: Percentage with complete data
+
+        Example:
+            results, stats = await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=['rating100'],
+                predicate=lambda p: p.rating100 >= 80
+            )
+            print(f"Populated {stats['needed_population']} of {stats['total_cached']}")
+            print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
+            print(f"Found {stats['matches']} matches")
+        """
+        type_name = entity_type.__type_name__
+        fields_set = (
+            set(required_fields)
+            if isinstance(required_fields, list)
+            else required_fields
+        )
+
+        # Get all cached objects
+        all_cached = self.all_cached(entity_type)
+        total_cached = len(all_cached)
+
+        if not all_cached:
+            return [], {
+                "total_cached": 0,
+                "needed_population": 0,
+                "populated_fields": list(fields_set),
+                "matches": 0,
+                "cache_hit_rate": 0.0,
+            }
+
+        # Identify objects needing population
+        to_populate: list[T] = [
+            entity for entity in all_cached if self.missing_fields(entity, *fields_set)
+        ]
+        needed_population = len(to_populate)
+
+        # Batch populate
+        if to_populate:
+            log.debug(
+                f"filter_and_populate_with_stats: populating {needed_population}/{total_cached} "
+                f"{type_name} objects with fields {fields_set}"
+            )
+
+            import asyncio
+
+            for i in range(0, len(to_populate), batch_size):
+                batch = to_populate[i : i + batch_size]
+                await asyncio.gather(
+                    *[
+                        self.populate(entity, fields=list(fields_set))
+                        for entity in batch
+                    ]
+                )
+
+        # Apply predicate
+        with self._lock:
+            cache_snapshot = list(self._cache.items())
+
+        results: list[T] = []
+        for (cached_type, _), entry in cache_snapshot:
+            if cached_type != type_name:
+                continue
+            if entry.is_expired():
+                continue
+
+            entity = entry.entity
+            missing = self.missing_fields(entity, *fields_set)
+            if missing:
+                log.warning(
+                    f"{type_name} {entity.id} still missing {missing} after populate"
+                )
+                continue
+
+            if predicate(entity):
+                results.append(entity)
+
+        # Build stats
+        cache_hit_rate = (
+            (total_cached - needed_population) / total_cached
+            if total_cached > 0
+            else 0.0
+        )
+        stats = {
+            "total_cached": total_cached,
+            "needed_population": needed_population,
+            "populated_fields": list(fields_set),
+            "matches": len(results),
+            "cache_hit_rate": cache_hit_rate,
+        }
+
+        return results, stats
+
+    async def populated_filter_iter(
+        self,
+        entity_type: type[T],
+        required_fields: set[str] | list[str],
+        predicate: Callable[[T], bool],
+        populate_batch: int = 50,
+        yield_batch: int = 10,
+    ) -> AsyncIterator[T]:
+        """Lazy filter with auto-population, yielding results incrementally.
+
+        Like filter_and_populate() but yields results as they become available
+        instead of waiting for all entities to be processed. Useful for large
+        datasets where you want to start processing matches immediately.
+
+        Args:
+            entity_type: The Stash entity type
+            required_fields: Fields needed by the predicate
+            predicate: Function that returns True for matching entities
+            populate_batch: How many entities to populate concurrently
+            yield_batch: Process this many entities before yielding matches
+
+        Yields:
+            Individual matching entities (with required fields populated)
+
+        Example:
+            # Process large dataset incrementally
+            async for performer in store.populated_filter_iter(
+                Performer,
+                required_fields=['rating100', 'scenes'],
+                predicate=lambda p: p.rating100 >= 90 and len(p.scenes) > 100
+            ):
+                # Start processing immediately as matches are found
+                await expensive_operation(performer)
+                if should_stop:
+                    break  # Can stop early without processing all
+        """
+        type_name = entity_type.__type_name__
+        fields_set = (
+            set(required_fields)
+            if isinstance(required_fields, list)
+            else required_fields
+        )
+
+        # Get all cached objects
+        all_cached = self.all_cached(entity_type)
+        if not all_cached:
+            return
+
+        # Process in batches
+        import asyncio
+
+        for i in range(0, len(all_cached), yield_batch):
+            batch = all_cached[i : i + yield_batch]
+
+            # Identify which need population
+            to_populate = [
+                entity for entity in batch if self.missing_fields(entity, *fields_set)
+            ]
+
+            # Populate if needed (in sub-batches for memory efficiency)
+            if to_populate:
+                for j in range(0, len(to_populate), populate_batch):
+                    sub_batch = to_populate[j : j + populate_batch]
+                    await asyncio.gather(
+                        *[
+                            self.populate(entity, fields=list(fields_set))
+                            for entity in sub_batch
+                        ]
+                    )
+
+            # Yield matches from this batch
+            for entity in batch:
+                # Verify fields are present
+                missing = self.missing_fields(entity, *fields_set)
+                if missing:
+                    log.warning(
+                        f"{type_name} {entity.id} missing {missing} after populate"
+                    )
+                    continue
+
+                # Check predicate
+                if predicate(entity):
+                    yield entity
+
     # ─── Field-aware population ─────────────────────────────────
 
     async def populate(

@@ -149,6 +149,7 @@ nav:
   - User Guide:
       - Overview: guide/overview.md
       - Usage Patterns: guide/usage-patterns.md
+      - Advanced Filtering: guide/advanced-filtering.md
       - UNSET Pattern: guide/unset-pattern.md
       - Fuzzy Dates: guide/fuzzy-dates.md
       - Usage Examples: guide/usage-examples.md
