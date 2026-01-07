@@ -394,9 +394,15 @@ class StashEntityStore:
         have the required fields populated before applying the predicate. If any
         cached object is missing required fields, raises ValueError immediately.
 
+        Supports nested field specifications using Django-style double-underscore syntax:
+        - `'files__path'`: Validates that files relationship exists AND path is populated on each File
+        - `'studio__parent__name'`: Validates full nested path is populated
+
         Args:
             entity_type: The Stash entity type
-            required_fields: Fields that must be populated on all cached objects
+            required_fields: Fields that must be populated on all cached objects.
+                           Supports both regular field names ('rating100') and nested
+                           field specs ('files__path', 'studio__parent__name').
             predicate: Function that returns True for matching entities
 
         Returns:
@@ -405,13 +411,23 @@ class StashEntityStore:
         Raises:
             ValueError: If any cached object is missing required fields
 
-        Example:
+        Examples:
             # This will raise if any performer has rating100=UNSET
             high_rated = store.filter_strict(
                 Performer,
                 required_fields=['rating100', 'favorite'],
                 predicate=lambda p: p.rating100 >= 80 and p.favorite
             )
+
+            # Validate nested fields are populated
+            large_images = store.filter_strict(
+                Image,
+                required_fields=['files__path', 'files__size'],
+                predicate=lambda i: any(
+                    f.size > 10_000_000 for f in i.files if f.size is not None
+                )
+            )
+            # ↑ Raises ValueError if any Image has files=UNSET or any File has path/size=UNSET
         """
         type_name = entity_type.__type_name__
         fields_set = (
@@ -433,8 +449,8 @@ class StashEntityStore:
 
             entity = entry.entity
 
-            # Check for missing fields - fail fast
-            missing = self.missing_fields(entity, *fields_set)
+            # Check for missing fields - fail fast (supports nested field specs)
+            missing = self.missing_fields_nested(entity, *fields_set)
             if missing:
                 raise ValueError(
                     f"{type_name} {entity.id} is missing required fields: {missing}. "
@@ -462,20 +478,26 @@ class StashEntityStore:
         - Fetches only the missing fields for incomplete objects (in batches)
         - Applies the predicate to all objects (now with complete data)
 
+        Supports nested field specifications using Django-style double-underscore syntax:
+        - `'files__path'`: Ensures files relationship is populated, then path on each File
+        - `'studio__parent__name'`: Ensures studio, parent, and name are all populated
+
         This is much faster than find() when most data is already cached, since
         it only fetches the specific missing fields rather than re-fetching
         entire entities.
 
         Args:
             entity_type: The Stash entity type
-            required_fields: Fields needed by the predicate
+            required_fields: Fields needed by the predicate. Supports both regular
+                           field names ('rating100') and nested field specs
+                           ('files__path', 'studio__parent__name').
             predicate: Function that returns True for matching entities
             batch_size: Number of entities to populate concurrently (default: 50)
 
         Returns:
             List of matching entities (all with required fields populated)
 
-        Example:
+        Examples:
             # Cache has 1000 performers, but only 500 have rating100 loaded
             high_rated = await store.filter_and_populate(
                 Performer,
@@ -485,6 +507,16 @@ class StashEntityStore:
             # ↓ Fetches rating100+favorite for the 500 that don't have it
             # ↓ Then filters all 1000 with complete data
             # ↓ Network calls: Only for missing data (much faster than find())
+
+            # Filter images by nested file properties
+            large_images = await store.filter_and_populate(
+                Image,
+                required_fields=['files__path', 'files__size'],
+                predicate=lambda i: any(
+                    f.size > 10_000_000 for f in i.files if f.size is not None
+                )
+            )
+            # ↓ Fetches files relationship + path/size fields on each File object
         """
         type_name = entity_type.__type_name__
         fields_set = (
@@ -498,9 +530,11 @@ class StashEntityStore:
         if not all_cached:
             return []
 
-        # Identify objects needing population
+        # Identify objects needing population (supports nested field specs)
         to_populate: list[T] = [
-            entity for entity in all_cached if self.missing_fields(entity, *fields_set)
+            entity
+            for entity in all_cached
+            if self.missing_fields_nested(entity, *fields_set)
         ]
 
         # Batch populate for performance
@@ -538,7 +572,7 @@ class StashEntityStore:
             entity = entry.entity
 
             # Verify all required fields are now present (defensive check)
-            missing = self.missing_fields(entity, *fields_set)
+            missing = self.missing_fields_nested(entity, *fields_set)
             if missing:
                 log.warning(
                     f"{type_name} {entity.id} still missing {missing} after populate "
@@ -563,9 +597,13 @@ class StashEntityStore:
         Same as filter_and_populate() but returns detailed statistics about
         what was fetched and filtered. Useful for debugging and optimization.
 
+        Supports nested field specifications using Django-style double-underscore syntax.
+
         Args:
             entity_type: The Stash entity type
-            required_fields: Fields needed by the predicate
+            required_fields: Fields needed by the predicate. Supports both regular
+                           field names ('rating100') and nested field specs
+                           ('files__path', 'studio__parent__name').
             predicate: Function that returns True for matching entities
             batch_size: Number of entities to populate concurrently
 
@@ -577,7 +615,7 @@ class StashEntityStore:
             - matches: How many matched the predicate
             - cache_hit_rate: Percentage with complete data
 
-        Example:
+        Examples:
             results, stats = await store.filter_and_populate_with_stats(
                 Performer,
                 required_fields=['rating100'],
@@ -586,6 +624,13 @@ class StashEntityStore:
             print(f"Populated {stats['needed_population']} of {stats['total_cached']}")
             print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
             print(f"Found {stats['matches']} matches")
+
+            # With nested fields
+            results, stats = await store.filter_and_populate_with_stats(
+                Image,
+                required_fields=['files__path', 'files__size'],
+                predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
+            )
         """
         type_name = entity_type.__type_name__
         fields_set = (
@@ -607,9 +652,11 @@ class StashEntityStore:
                 "cache_hit_rate": 0.0,
             }
 
-        # Identify objects needing population
+        # Identify objects needing population (supports nested field specs)
         to_populate: list[T] = [
-            entity for entity in all_cached if self.missing_fields(entity, *fields_set)
+            entity
+            for entity in all_cached
+            if self.missing_fields_nested(entity, *fields_set)
         ]
         needed_population = len(to_populate)
 
@@ -643,7 +690,7 @@ class StashEntityStore:
                 continue
 
             entity = entry.entity
-            missing = self.missing_fields(entity, *fields_set)
+            missing = self.missing_fields_nested(entity, *fields_set)
             if missing:
                 log.warning(
                     f"{type_name} {entity.id} still missing {missing} after populate"
@@ -683,9 +730,13 @@ class StashEntityStore:
         instead of waiting for all entities to be processed. Useful for large
         datasets where you want to start processing matches immediately.
 
+        Supports nested field specifications using Django-style double-underscore syntax.
+
         Args:
             entity_type: The Stash entity type
-            required_fields: Fields needed by the predicate
+            required_fields: Fields needed by the predicate. Supports both regular
+                           field names ('rating100') and nested field specs
+                           ('files__path', 'studio__parent__name').
             predicate: Function that returns True for matching entities
             populate_batch: How many entities to populate concurrently
             yield_batch: Process this many entities before yielding matches
@@ -693,7 +744,7 @@ class StashEntityStore:
         Yields:
             Individual matching entities (with required fields populated)
 
-        Example:
+        Examples:
             # Process large dataset incrementally
             async for performer in store.populated_filter_iter(
                 Performer,
@@ -704,6 +755,14 @@ class StashEntityStore:
                 await expensive_operation(performer)
                 if should_stop:
                     break  # Can stop early without processing all
+
+            # With nested fields
+            async for image in store.populated_filter_iter(
+                Image,
+                required_fields=['files__path', 'files__size'],
+                predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
+            ):
+                await process_large_image(image)
         """
         type_name = entity_type.__type_name__
         fields_set = (
@@ -723,9 +782,11 @@ class StashEntityStore:
         for i in range(0, len(all_cached), yield_batch):
             batch = all_cached[i : i + yield_batch]
 
-            # Identify which need population
+            # Identify which need population (supports nested field specs)
             to_populate = [
-                entity for entity in batch if self.missing_fields(entity, *fields_set)
+                entity
+                for entity in batch
+                if self.missing_fields_nested(entity, *fields_set)
             ]
 
             # Populate if needed (in sub-batches for memory efficiency)
@@ -741,8 +802,8 @@ class StashEntityStore:
 
             # Yield matches from this batch
             for entity in batch:
-                # Verify fields are present
-                missing = self.missing_fields(entity, *fields_set)
+                # Verify fields are present (supports nested field specs)
+                missing = self.missing_fields_nested(entity, *fields_set)
                 if missing:
                     log.warning(
                         f"{type_name} {entity.id} missing {missing} after populate"
@@ -754,6 +815,115 @@ class StashEntityStore:
                     yield entity
 
     # ─── Field-aware population ─────────────────────────────────
+
+    @staticmethod
+    def _parse_nested_field(field_spec: str) -> list[str]:
+        """Parse nested field specification into path components.
+
+        Supports Django-style double-underscore syntax:
+        - 'files__path' → ['files', 'path']
+        - 'studio__parent__name' → ['studio', 'parent', 'name']
+        - 'rating100' → ['rating100'] (single field)
+
+        Args:
+            field_spec: Field specification (e.g., 'files__path')
+
+        Returns:
+            List of field path components
+        """
+        return field_spec.split("__")
+
+    def _check_nested_field_present(
+        self, obj: StashObject, field_path: list[str]
+    ) -> bool:
+        """Check if a nested field path is fully populated (not UNSET).
+
+        Args:
+            obj: Root object to check
+            field_path: List of field names forming the path (e.g., ['files', 'path'])
+
+        Returns:
+            True if the entire path is populated (no UNSET values)
+        """
+        from .types.unset import UnsetType
+
+        if not field_path:
+            return True
+
+        # Check first field in path
+        field_name = field_path[0]
+        received = getattr(obj, "_received_fields", set())
+
+        if field_name not in received:
+            return False  # Field not loaded yet
+
+        # Get the value
+        if not hasattr(obj, field_name):
+            return False
+
+        value = getattr(obj, field_name)
+
+        # If UNSET, not present
+        if isinstance(value, UnsetType):
+            return False
+
+        # If None, consider it present (null is a valid value)
+        if value is None:
+            return True
+
+        # If this is the last field in path, it's present
+        if len(field_path) == 1:
+            return True
+
+        # Need to recurse into nested object(s)
+        remaining_path = field_path[1:]
+
+        if isinstance(value, list):
+            # For lists, ALL items must have the nested field
+            if not value:  # Empty list is considered present
+                return True
+            return all(
+                isinstance(item, StashObject)
+                and self._check_nested_field_present(item, remaining_path)
+                for item in value
+            )
+        if isinstance(value, StashObject):
+            # Single nested object
+            return self._check_nested_field_present(value, remaining_path)
+        # Scalar value - can't recurse further
+        return len(remaining_path) == 0
+
+    def missing_fields_nested(self, obj: StashObject, *field_specs: str) -> set[str]:
+        """Check which nested field specifications are missing.
+
+        Supports both simple and nested (Django-style) field specifications:
+        - Simple: 'rating100', 'favorite'
+        - Nested: 'files__path', 'studio__parent__name'
+
+        Args:
+            obj: Entity to check
+            *field_specs: Field specifications to check
+
+        Returns:
+            Set of field specifications that are NOT fully populated
+
+        Example:
+            # Check if image has files loaded with path field
+            missing = store.missing_fields_nested(
+                image,
+                'title',           # Simple field
+                'files__path'      # Nested field
+            )
+            # Returns {'files__path'} if files.path is not loaded
+        """
+        missing = set()
+
+        for field_spec in field_specs:
+            field_path = self._parse_nested_field(field_spec)
+            if not self._check_nested_field_present(obj, field_path):
+                missing.add(field_spec)
+
+        return missing
 
     async def populate(
         self,
@@ -767,11 +937,18 @@ class StashEntityStore:
         genuinely missing and need to be fetched. All entities are treated as potentially
         incomplete.
 
+        Supports nested field specifications using Django-style double-underscore syntax:
+        - `'files__path'`: Populate files relationship, then path on each File
+        - `'studio__parent__name'`: Populate studio, then parent, then name
+        - Can be mixed with regular fields: `['rating100', 'files__path']`
+
         Args:
             obj: Entity to populate. Can be any StashObject, including nested objects
                  like scene.studio or scene.performers[0].
-            fields: Fields to populate. If None and force_refetch=False, uses heuristics
-                   to determine if object needs more data.
+            fields: Fields to populate. Supports both regular field names ('studio')
+                   and nested field specifications ('studio__parent__name').
+                   If None and force_refetch=False, uses heuristics to determine
+                   if object needs more data.
             force_refetch: If True, invalidates cache and re-fetches the specified fields
                           from the server, regardless of whether they're in _received_fields.
 
@@ -781,6 +958,14 @@ class StashEntityStore:
         Examples:
             # Populate specific fields on a scene
             scene = await store.populate(scene, fields=["studio", "performers"])
+
+            # Populate nested fields using __ syntax
+            image = await store.populate(image, fields=["files__path", "files__size"])
+
+            # Mix regular and nested fields
+            scene = await store.populate(
+                scene, fields=["rating100", "studio__parent__name"]
+            )
 
             # Populate nested object directly (identity map pattern)
             scene.studio = await store.populate(scene.studio, fields=["urls", "details"])
@@ -805,6 +990,35 @@ class StashEntityStore:
             fields_set = set(fields)
         else:
             fields_set = fields
+
+        # Separate regular fields from nested field specifications
+        regular_fields: set[str] = set()
+        nested_specs: dict[
+            str, set[list[str]]
+        ] = {}  # root_field -> set of remaining paths
+
+        for field_spec in fields_set:
+            if "__" in field_spec:
+                # Parse nested field: 'files__path' -> ['files', 'path']
+                path = self._parse_nested_field(field_spec)
+                root = path[0]
+                remaining = path[1:]
+
+                # Track the nested path for later processing
+                if root not in nested_specs:
+                    nested_specs[root] = set()
+                # Store as tuple so it's hashable for set
+                nested_specs[root].add(tuple(remaining))
+
+                # Also need to fetch the root field
+                regular_fields.add(root)
+            else:
+                # Regular field
+                regular_fields.add(field_spec)
+
+        # For the rest of the method, work with regular_fields
+        # (nested specs will be handled after root fields are populated)
+        fields_set = regular_fields
 
         # Get currently received fields
         received: set[str] = getattr(obj, "_received_fields", set())
@@ -864,6 +1078,48 @@ class StashEntityStore:
                     populated_single = await self._populate_single(value, force_refetch)
                     if populated_single is not None:
                         setattr(obj, field_name, populated_single)
+
+        # Handle nested field specifications (e.g., 'files__path')
+        # This runs after root fields are populated, allowing recursive descent
+        if nested_specs:
+            for root_field, path_tuples in nested_specs.items():
+                if not hasattr(obj, root_field):
+                    log.warning(
+                        f"{obj.__type_name__} has no field '{root_field}' "
+                        f"(from nested spec)"
+                    )
+                    continue
+
+                value = getattr(obj, root_field)
+
+                if value is None:
+                    continue
+
+                # For each remaining path (e.g., ['path'], ['size'])
+                for path_tuple in path_tuples:
+                    remaining_path = list(path_tuple)  # Convert back to list
+
+                    # Build the field spec for recursive call
+                    # If remaining_path is ['path'], field_spec is 'path'
+                    # If remaining_path is ['parent', 'name'], field_spec is 'parent__name'
+                    nested_field_spec = "__".join(remaining_path)
+
+                    if isinstance(value, list):
+                        # Populate each item in the list with the remaining path
+                        for item in value:
+                            if isinstance(item, StashObject):
+                                await self.populate(
+                                    item,
+                                    fields=[nested_field_spec],
+                                    force_refetch=force_refetch,
+                                )
+                    elif isinstance(value, StashObject):
+                        # Populate single object with the remaining path
+                        await self.populate(
+                            value,
+                            fields=[nested_field_spec],
+                            force_refetch=force_refetch,
+                        )
 
         # Restore received fields after nested processing (setattr might have changed them)
         object.__setattr__(obj, "_received_fields", final_received)

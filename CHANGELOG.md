@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-01-07
+
+### Added
+
+- **Nested Field Filtering**: Django-style double-underscore syntax for filtering on related object properties
+  - Syntax: `'files__path'`, `'studio__parent__name'`, `'studio__parent__parent__name'` (arbitrary depth)
+  - Supported by all advanced filter methods: `filter_strict()`, `filter_and_populate()`, `filter_and_populate_with_stats()`, `populated_filter_iter()`
+  - New helper methods:
+    - `_parse_nested_field()`: Parses `'files__path'` → `['files', 'path']`
+    - `_check_nested_field_present()`: Recursively checks if nested path is populated
+    - `missing_fields_nested()`: Returns set of missing nested field specifications
+  - Enhanced `populate()` to recursively load nested field paths
+  - Example: `await store.filter_and_populate(Image, required_fields=['files__path', 'files__size'], predicate=lambda i: any(f.size > 10_000_000 for f in i.files))`
+  - Location: `stash_graphql_client/store.py:806-872, 940-1066`
+
+### Documentation
+
+- Added "Nested Field Filtering" section to Advanced Filtering guide
+  - Comprehensive examples with Images, Scenes, Studios, Performers
+  - Explains how nested field resolution works (parse → check root → recurse → auto-populate)
+  - Performance tips for optimal nested field usage
+  - Location: `docs/guide/advanced-filtering.md:428-571`
+
+### Testing
+
+- Added 22 comprehensive tests for nested field functionality
+  - Tests for `_parse_nested_field()`, `_check_nested_field_present()`, `missing_fields_nested()`
+  - Tests for all filter methods with nested field specs
+  - Edge cases: empty lists, three-level nesting, mixed regular/nested specs
+  - Location: `tests/store/test_nested_filters.py`
+
 ## [0.10.0] - 2026-01-06
 
 ### Added

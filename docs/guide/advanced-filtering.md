@@ -425,6 +425,151 @@ results = await store.filter_and_populate(
 )
 ```
 
+## Nested Field Filtering
+
+All advanced filter methods support Django-style nested field specifications using double-underscore (`__`) syntax. This allows you to filter on properties of related objects without manual joins.
+
+### Syntax
+
+- **Simple field**: `'rating100'`, `'favorite'`
+- **Nested field**: `'files__path'`, `'studio__parent__name'`
+- **Deep nesting**: `'studio__parent__parent__name'` (arbitrary depth)
+- **Mixed**: `['rating100', 'files__path', 'studio__name']`
+
+### Example: Filter Images by File Properties
+
+```python
+from stash_graphql_client import StashContext, Image
+
+async with StashContext(conn=conn) as context:
+    store = context.store
+
+    # Filter images by nested file properties
+    large_images = await store.filter_and_populate(
+        Image,
+        required_fields=['files__path', 'files__size'],
+        predicate=lambda img: any(
+            f.size > 10_000_000  # 10MB
+            for f in img.files
+            if f.size is not None
+        )
+    )
+
+    print(f"Found {len(large_images)} images with files > 10MB")
+    for image in large_images:
+        for file in image.files:
+            if file.size > 10_000_000:
+                print(f"  {file.path}: {file.size / 1_000_000:.1f}MB")
+```
+
+### Example: Filter by Studio Hierarchy
+
+```python
+from stash_graphql_client import StashContext, Scene
+
+async with StashContext(conn=conn) as context:
+    store = context.store
+
+    # Filter scenes by studio's parent studio
+    acme_network_scenes = await store.filter_and_populate(
+        Scene,
+        required_fields=['studio__parent__name', 'title'],
+        predicate=lambda s: (
+            s.studio is not None and
+            s.studio.parent is not None and
+            s.studio.parent.name == "Acme Network"
+        )
+    )
+
+    print(f"Found {len(acme_network_scenes)} scenes from Acme Network subsidiaries")
+```
+
+### How It Works
+
+When you specify a nested field like `'files__path'`, the filter method:
+
+1. **Parses the specification**: `'files__path'` → `['files', 'path']`
+2. **Checks root field**: Ensures `files` relationship is populated
+3. **Recursively checks nested fields**: Ensures `path` is populated on each `File` object
+4. **Auto-populates missing data**: Fetches only what's needed from the server
+
+### Benefits
+
+- **No manual joins**: Express complex queries naturally
+- **Selective fetching**: Only fetch fields actually needed
+- **Type-safe**: Compile-time checking with IDE autocomplete
+- **Efficient**: Uses identity map to avoid duplicate fetches
+
+### Nested Field Examples
+
+```python
+# Filter performers by scene count
+high_activity_performers = await store.filter_and_populate(
+    Performer,
+    required_fields=['scenes__title'],  # Ensure scenes relationship loaded
+    predicate=lambda p: len(p.scenes) > 100
+)
+
+# Filter scenes by performer rating
+quality_cast_scenes = await store.filter_and_populate(
+    Scene,
+    required_fields=['performers__rating100'],
+    predicate=lambda s: all(
+        p.rating100 >= 80
+        for p in s.performers
+        if p.rating100 is not None
+    )
+)
+
+# Filter studios by country (via parent)
+us_studios = await store.filter_and_populate(
+    Studio,
+    required_fields=['parent__country'],
+    predicate=lambda s: (
+        s.parent is not None and
+        s.parent.country == "US"
+    )
+)
+```
+
+### With `filter_strict()`
+
+```python
+from stash_graphql_client import StashContext, Image
+
+async with StashContext(conn=conn) as context:
+    store = context.store
+
+    # This raises ValueError if ANY image has incomplete file data
+    try:
+        large_images = store.filter_strict(
+            Image,
+            required_fields=['files__path', 'files__size'],
+            predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
+        )
+    except ValueError as e:
+        print(f"Cache incomplete: {e}")
+        # Use filter_and_populate instead
+```
+
+### Performance Tip
+
+Nested field filtering is most efficient when:
+
+1. Root relationships are already cached
+2. Only leaf fields need population
+3. Batch sizes are tuned for your dataset
+
+```python
+# Good: Most images already have files loaded
+large_images = await store.filter_and_populate(
+    Image,
+    required_fields=['files__size'],  # Only fetch size
+    predicate=lambda i: any(f.size > 10_000_000 for f in i.files),
+    batch_size=100  # Process 100 images concurrently
+)
+```
+
 ## Integration with UNSET Pattern
 
 The advanced filter methods work seamlessly with the [UNSET Pattern](unset-pattern.md):
