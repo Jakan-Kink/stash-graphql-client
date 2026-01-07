@@ -565,6 +565,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/advanced-filtering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Filtering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/unset-pattern/" class="md-nav__link">
         
   
@@ -2906,6 +2934,674 @@ find(Scene, studio__null=True)          # IS_NULL</p>
       </tbody>
     </table>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="stash_graphql_client.store.StashEntityStore.filter_strict" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">filter_strict</span>
+
+
+<a href="#stash_graphql_client.store.StashEntityStore.filter_strict" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">filter_strict</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">required_fields</span><span class="p">:</span> <span class="n"><span title="set">set</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">predicate</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n"><span title="bool">bool</span></span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Filter cached objects, raising error if required fields are missing.</p>
+<p>This is a fail-fast version of filter() that ensures all cached objects
+have the required fields populated before applying the predicate. If any
+cached object is missing required fields, raises ValueError immediately.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>entity_type</code>
+            </td>
+            <td>
+                  <code><span title="type">type</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Stash entity type</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>required_fields</code>
+            </td>
+            <td>
+                  <code><span title="set">set</span>[<span title="str">str</span>] | <span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fields that must be populated on all cached objects</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>predicate</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="stash_graphql_client.store.T">T</span>], <span title="bool">bool</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function that returns True for matching entities</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of matching cached entities (all guaranteed to have required fields)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any cached object is missing required fields</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <h5 id="stash_graphql_client.store.StashEntityStore.filter_strict--this-will-raise-if-any-performer-has-rating100unset">This will raise if any performer has rating100=UNSET<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.filter_strict--this-will-raise-if-any-performer-has-rating100unset" title="Permanent link">&para;</a></h5>
+<p>high_rated = store.filter_strict(
+    Performer,
+    required_fields=['rating100', 'favorite'],
+    predicate=lambda p: p.rating100 &gt;= 80 and p.favorite
+)</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="stash_graphql_client.store.StashEntityStore.filter_and_populate" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">filter_and_populate</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.store.StashEntityStore.filter_and_populate" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">filter_and_populate</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">required_fields</span><span class="p">:</span> <span class="n"><span title="set">set</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">predicate</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n"><span title="bool">bool</span></span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Filter cached objects, auto-populating missing fields as needed.</p>
+<p>This is a smart hybrid between find() and filter():
+- Gets all cached objects of the type
+- Identifies which ones have UNSET values for required_fields
+- Fetches only the missing fields for incomplete objects (in batches)
+- Applies the predicate to all objects (now with complete data)</p>
+<p>This is much faster than find() when most data is already cached, since
+it only fetches the specific missing fields rather than re-fetching
+entire entities.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>entity_type</code>
+            </td>
+            <td>
+                  <code><span title="type">type</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Stash entity type</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>required_fields</code>
+            </td>
+            <td>
+                  <code><span title="set">set</span>[<span title="str">str</span>] | <span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fields needed by the predicate</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>predicate</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="stash_graphql_client.store.T">T</span>], <span title="bool">bool</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function that returns True for matching entities</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of entities to populate concurrently (default: 50)</p>
+              </div>
+            </td>
+            <td>
+                  <code>50</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of matching entities (all with required fields populated)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <h5 id="stash_graphql_client.store.StashEntityStore.filter_and_populate--cache-has-1000-performers-but-only-500-have-rating100-loaded">Cache has 1000 performers, but only 500 have rating100 loaded<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.filter_and_populate--cache-has-1000-performers-but-only-500-have-rating100-loaded" title="Permanent link">&para;</a></h5>
+<p>high_rated = await store.filter_and_populate(
+    Performer,
+    required_fields=['rating100', 'favorite'],
+    predicate=lambda p: p.rating100 &gt;= 80 and p.favorite
+)</p>
+<h5 id="stash_graphql_client.store.StashEntityStore.filter_and_populate--fetches-rating100favorite-for-the-500-that-dont-have-it">↓ Fetches rating100+favorite for the 500 that don't have it<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.filter_and_populate--fetches-rating100favorite-for-the-500-that-dont-have-it" title="Permanent link">&para;</a></h5>
+<h5 id="stash_graphql_client.store.StashEntityStore.filter_and_populate--then-filters-all-1000-with-complete-data">↓ Then filters all 1000 with complete data<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.filter_and_populate--then-filters-all-1000-with-complete-data" title="Permanent link">&para;</a></h5>
+<h5 id="stash_graphql_client.store.StashEntityStore.filter_and_populate--network-calls-only-for-missing-data-much-faster-than-find">↓ Network calls: Only for missing data (much faster than find())<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.filter_and_populate--network-calls-only-for-missing-data-much-faster-than-find" title="Permanent link">&para;</a></h5>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="stash_graphql_client.store.StashEntityStore.filter_and_populate_with_stats" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">filter_and_populate_with_stats</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.store.StashEntityStore.filter_and_populate_with_stats" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">filter_and_populate_with_stats</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">required_fields</span><span class="p">:</span> <span class="n"><span title="set">set</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">predicate</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n"><span title="bool">bool</span></span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Filter and populate with debug statistics.</p>
+<p>Same as filter_and_populate() but returns detailed statistics about
+what was fetched and filtered. Useful for debugging and optimization.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>entity_type</code>
+            </td>
+            <td>
+                  <code><span title="type">type</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Stash entity type</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>required_fields</code>
+            </td>
+            <td>
+                  <code><span title="set">set</span>[<span title="str">str</span>] | <span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fields needed by the predicate</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>predicate</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="stash_graphql_client.store.T">T</span>], <span title="bool">bool</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function that returns True for matching entities</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of entities to populate concurrently</p>
+              </div>
+            </td>
+            <td>
+                  <code>50</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Tuple of (matching_entities, stats_dict) where stats contains:</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>total_cached: Total objects in cache</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>], <span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>needed_population: How many needed fields fetched</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>], <span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>populated_fields: Which fields were fetched</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>], <span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>matches: How many matched the predicate</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="tuple">tuple</span>[<span title="list">list</span>[<span title="stash_graphql_client.store.T">T</span>], <span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <ul>
+<li>cache_hit_rate: Percentage with complete data</li>
+</ul>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>results, stats = await store.filter_and_populate_with_stats(
+    Performer,
+    required_fields=['rating100'],
+    predicate=lambda p: p.rating100 &gt;= 80
+)
+print(f"Populated {stats['needed_population']} of {stats['total_cached']}")
+print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
+print(f"Found {stats['matches']} matches")</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="stash_graphql_client.store.StashEntityStore.populated_filter_iter" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">populated_filter_iter</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.store.StashEntityStore.populated_filter_iter" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">populated_filter_iter</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">required_fields</span><span class="p">:</span> <span class="n"><span title="set">set</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">predicate</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n"><span title="bool">bool</span></span><span class="p">],</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">populate_batch</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">yield_batch</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.AsyncIterator">AsyncIterator</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Lazy filter with auto-population, yielding results incrementally.</p>
+<p>Like filter_and_populate() but yields results as they become available
+instead of waiting for all entities to be processed. Useful for large
+datasets where you want to start processing matches immediately.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>entity_type</code>
+            </td>
+            <td>
+                  <code><span title="type">type</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The Stash entity type</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>required_fields</code>
+            </td>
+            <td>
+                  <code><span title="set">set</span>[<span title="str">str</span>] | <span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Fields needed by the predicate</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>predicate</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Callable">Callable</span>[[<span title="stash_graphql_client.store.T">T</span>], <span title="bool">bool</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function that returns True for matching entities</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>populate_batch</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>How many entities to populate concurrently</p>
+              </div>
+            </td>
+            <td>
+                  <code>50</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>yield_batch</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Process this many entities before yielding matches</p>
+              </div>
+            </td>
+            <td>
+                  <code>10</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Yields:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="collections.abc.AsyncIterator">AsyncIterator</span>[<span title="stash_graphql_client.store.T">T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Individual matching entities (with required fields populated)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <h5 id="stash_graphql_client.store.StashEntityStore.populated_filter_iter--process-large-dataset-incrementally">Process large dataset incrementally<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.populated_filter_iter--process-large-dataset-incrementally" title="Permanent link">&para;</a></h5>
+<p>async for performer in store.populated_filter_iter(
+    Performer,
+    required_fields=['rating100', 'scenes'],
+    predicate=lambda p: p.rating100 &gt;= 90 and len(p.scenes) &gt; 100
+):
+    # Start processing immediately as matches are found
+    await expensive_operation(performer)
+    if should_stop:
+        break  # Can stop early without processing all</p>
+</details>
 
     </div>
 
