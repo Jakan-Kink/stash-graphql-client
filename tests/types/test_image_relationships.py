@@ -69,7 +69,9 @@ class TestImagePerformersRelationship:
         assert rel.is_list is True
         assert rel.query_field == "performers"
         assert rel.inverse_type == "Performer"
-        assert rel.inverse_query_field == "images"
+        assert (
+            rel.inverse_query_field is None
+        )  # Performer has image_count, not images list
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True
@@ -104,7 +106,9 @@ class TestImageGalleriesRelationship:
         assert rel.is_list is True
         assert rel.query_field == "galleries"
         assert rel.inverse_type == "Gallery"
-        assert rel.inverse_query_field == "images"
+        assert (
+            rel.inverse_query_field is None
+        )  # Gallery has image_count and image(index), not images list
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True

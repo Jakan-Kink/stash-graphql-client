@@ -178,9 +178,8 @@ class Group(StashObject):
             is_list=True,
             query_field="tags",
             inverse_type="Tag",
-            inverse_query_field="groups",
             query_strategy="direct_field",
-            notes="Backend auto-syncs group.tags and tag.groups",
+            notes="Tag has group_count resolver, not direct groups list",
         ),
         # Pattern C: Complex objects with metadata
         "containing_groups": RelationshipMetadata(

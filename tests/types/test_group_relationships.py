@@ -74,7 +74,7 @@ class TestGroupTagsRelationship:
         assert rel.is_list is True
         assert rel.query_field == "tags"
         assert rel.inverse_type == "Tag"
-        assert rel.inverse_query_field == "groups"
+        assert rel.inverse_query_field is None  # Tag has group_count, not groups list
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True

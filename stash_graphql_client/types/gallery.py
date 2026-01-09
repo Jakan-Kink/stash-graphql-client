@@ -336,9 +336,8 @@ class Gallery(StashObject):
             is_list=True,
             query_field="performers",
             inverse_type="Performer",
-            inverse_query_field="galleries",
             query_strategy="direct_field",
-            notes="Backend auto-syncs gallery.performers and performer.galleries",
+            notes="Performer has gallery_count resolver, not direct galleries list",
         ),
         "tags": RelationshipMetadata(
             target_field="tag_ids",

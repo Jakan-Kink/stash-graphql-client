@@ -136,9 +136,8 @@ class Image(StashObject):
             is_list=True,
             query_field="performers",
             inverse_type="Performer",
-            inverse_query_field="images",
             query_strategy="direct_field",
-            notes="Backend auto-syncs image.performers and performer.images",
+            notes="Performer has image_count resolver, not direct images list",
         ),
         "tags": RelationshipMetadata(
             target_field="tag_ids",
@@ -153,9 +152,8 @@ class Image(StashObject):
             is_list=True,
             query_field="galleries",
             inverse_type="Gallery",
-            inverse_query_field="images",
             query_strategy="direct_field",
-            notes="Backend auto-syncs image.galleries and gallery.images",
+            notes="Gallery has image_count and image(index) method, not direct images list",
         ),
     }
 

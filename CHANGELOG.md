@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.4] - 2026-01-08
+
+### Fixed
+
+- **Relationship Metadata**: Corrected invalid `inverse_query_field` declarations that caused AttributeError in helper methods
+  - `Image.performers`: Removed `inverse_query_field="images"` (Performer only has `image_count` resolver)
+  - `Image.galleries`: Removed `inverse_query_field="images"` (Gallery has `image_count` and `image(index)` method, not list)
+  - `Gallery.performers`: Removed `inverse_query_field="galleries"` (Performer only has `gallery_count` resolver)
+  - `Group.tags`: Removed `inverse_query_field="groups"` (Tag only has `group_count` resolver)
+  - Helper methods like `add_performer()` and `add_tag()` no longer attempt to sync non-existent inverse fields
+  - Location: `stash_graphql_client/types/image.py:139,156`, `gallery.py:339`, `group.py:181`
+
+### Testing
+
+- Updated relationship metadata tests to expect `None` for invalid inverse fields
+- Removed flawed `test_populate_list_multiple_nested_specs` with incorrect caching expectations
+- Removed forbidden operations from integration tests:
+  - Deleted `test_metadata_identify_*` tests (can trigger external StashDB API calls)
+  - Deleted `test_metadata_export_starts_job` test (writes to metadata directory)
+  - Updated documentation to clarify forbidden vs safe operations
+  - Location: `tests/integration/test_metadata_integration.py`
+
 ## [0.10.3] - 2026-01-07
 
 ### Fixed

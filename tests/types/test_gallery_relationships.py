@@ -104,7 +104,9 @@ class TestGalleryPerformersRelationship:
         """Test performers has inverse relationship metadata."""
         rel = Gallery.__relationships__["performers"]
         assert rel.inverse_type == "Performer"
-        assert rel.inverse_query_field == "galleries"
+        assert (
+            rel.inverse_query_field is None
+        )  # Performer has gallery_count, not galleries list
 
     def test_performers_auto_sync(self):
         """Test performers relationship has auto_sync enabled."""

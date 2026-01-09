@@ -6,13 +6,16 @@ with GraphQL call verification.
 These tests cover SAFE metadata operations NOT already covered by subscription tests:
 - metadata_clean_generated (with dryRun=True)
 - metadata_auto_tag
-- metadata_identify
-- metadata_export (read-only)
 - export_objects (read-only)
 - backup_database (read-only, creates backup)
 - get_configuration_defaults (read-only)
 
-DESTRUCTIVE operations (anonymise, migrate, optimise, setup, import) are tested
+FORBIDDEN operations that must NOT run in integration tests:
+- metadata_identify (can trigger external API calls to StashDB)
+- metadata_export (writes to metadata directory)
+- metadata_import (can overwrite database)
+
+DESTRUCTIVE operations (anonymise, migrate, optimise, setup) are tested
 ONLY via unit tests with mocked responses. They must NEVER run against real instances.
 
 NOTE: metadata_scan, metadata_clean, and metadata_generate are tested via
@@ -177,102 +180,8 @@ async def test_metadata_auto_tag_with_specific_ids(
 
 
 # =============================================================================
-# Identify Metadata Tests
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_metadata_identify_with_stash_box_source(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test metadata identification using stash-box endpoint."""
-    async with (
-        stash_cleanup_tracker(stash_client),
-        capture_graphql_calls(stash_client) as calls,
-    ):
-        job_id = await stash_client.metadata_identify(
-            {
-                "sources": [
-                    {"source": {"stash_box_endpoint": "https://stashdb.org/graphql"}}
-                ]
-            }
-        )
-
-        # Verify GraphQL call
-        assert len(calls) == 1, "Expected 1 GraphQL call for metadata_identify"
-        assert "metadataIdentify" in calls[0]["query"]
-        request_input = calls[0]["variables"]["input"]
-        assert "sources" in request_input
-        assert len(request_input["sources"]) > 0
-        assert calls[0]["result"] is not None
-        assert calls[0]["exception"] is None
-
-        # Verify job ID returned
-        assert job_id is not None
-        assert isinstance(job_id, str)
-        assert len(job_id) > 0
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_metadata_identify_with_scene_ids(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test metadata identification targeting specific scenes."""
-    async with (
-        stash_cleanup_tracker(stash_client),
-        capture_graphql_calls(stash_client) as calls,
-    ):
-        job_id = await stash_client.metadata_identify(
-            {
-                "sources": [
-                    {"source": {"stash_box_endpoint": "https://stashdb.org/graphql"}}
-                ],
-                "sceneIDs": ["1", "2", "3"],
-            }
-        )
-
-        # Verify GraphQL call
-        assert len(calls) == 1, "Expected 1 GraphQL call for metadata_identify"
-        assert "metadataIdentify" in calls[0]["query"]
-        request_input = calls[0]["variables"]["input"]
-        assert request_input["sceneIDs"] == ["1", "2", "3"]
-        assert calls[0]["result"] is not None
-        assert calls[0]["exception"] is None
-
-        # Verify job ID returned
-        assert job_id is not None
-        assert isinstance(job_id, str)
-
-
-# =============================================================================
 # Export Tests (Read-Only Operations)
 # =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_metadata_export_starts_job(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test starting a full metadata export operation."""
-    async with (
-        stash_cleanup_tracker(stash_client),
-        capture_graphql_calls(stash_client) as calls,
-    ):
-        job_id = await stash_client.metadata_export()
-
-        # Verify GraphQL call
-        assert len(calls) == 1, "Expected 1 GraphQL call for metadata_export"
-        assert "metadataExport" in calls[0]["query"]
-        assert calls[0]["result"] is not None
-        assert calls[0]["exception"] is None
-
-        # Verify job ID returned
-        assert job_id is not None
-        assert isinstance(job_id, str)
-        assert len(job_id) > 0
 
 
 @pytest.mark.integration

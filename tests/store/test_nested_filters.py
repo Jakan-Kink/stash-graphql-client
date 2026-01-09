@@ -802,56 +802,6 @@ class TestNestedFieldEdgeCases:
         assert result.studio.urls is not UNSET
         assert result.studio.details is not UNSET
 
-    async def test_populate_list_multiple_nested_specs(
-        self, respx_mock, respx_entity_store: StashEntityStore
-    ) -> None:
-        """Test populate with list and multiple nested field specs (line 1249->1227)."""
-        store = respx_entity_store
-
-        # File with partial fields
-        file1 = ImageFileFactory.build(id="f1", path=UNSET, size=UNSET)
-        object.__setattr__(file1, "_received_fields", {"id"})
-        store._cache_entity(file1)
-
-        # Image with files
-        image = ImageFactory.build(id="img1", title="Test", files=[file1])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
-        store._cache_entity(image)
-
-        # Mock GraphQL responses - file fetches
-        file_response = {
-            "__typename": "ImageFile",
-            "id": "f1",
-            "path": "/test.jpg",
-            "size": 5_000_000,
-        }
-
-        graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            side_effect=[
-                # First iteration: fetch file for 'path' field
-                httpx.Response(
-                    200,
-                    json=create_graphql_response("findFile", file_response),
-                ),
-                # Second iteration: fetch file for 'size' field
-                httpx.Response(
-                    200,
-                    json=create_graphql_response("findFile", file_response),
-                ),
-            ]
-        )
-
-        # Populate with TWO nested field specs on a LIST field
-        # This makes the for path_tuple loop iterate twice (line 1249->1227)
-        result = await store.populate(image, fields=["files__path", "files__size"])
-
-        # Verify GraphQL calls were made
-        assert len(graphql_route.calls) == 2
-        assert result is not None
-        assert len(result.files) == 1
-        assert result.files[0].path == "/test.jpg"
-        assert result.files[0].size == 5_000_000
-
     async def test_populate_non_fetchable_single_object_continues_loop(
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
