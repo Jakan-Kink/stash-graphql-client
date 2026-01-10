@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.6] - 2026-01-10
+
+### Fixed
+
+- **Store Filter Criteria**: Fixed critical bug where string list fields (`aliases`, `urls`, `captions`) were incorrectly wrapped in lists for filtering
+  - These fields use `StringCriterionInput` for substring matching within list items, not `MultiCriterionInput` for ID membership
+  - Removed 6 incorrect fields from `multi_value_fields` set: `aliases`, `child_studios`, `markers`, `files`, `stash_ids`, `folders`
+  - Fixes queries like `store.find_one(Performer, aliases__contains="name")` which were sending `{"value": ["name"]}` instead of `{"value": "name"}`
+  - Location: `stash_graphql_client/store.py:1968-1999`
+
+### Testing
+
+- Added 8 tests verifying string list fields use single-string values while relationship fields still use lists
+  - Location: `tests/store/test_string_list_filters.py`
+
 ## [0.10.5] - 2026-01-09
 
 ### Fixed
@@ -21,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 
 - **Dirty Tracking Tests**: Added comprehensive test suite for dirty tracking functionality
+
   - 28 tests covering list operations, basic dirty tracking, relationship lists, and edge cases
   - Tests verify all list modification methods are detected (append, extend, remove, pop, clear, item assignment)
   - Tests cover multiple entity types (Performer, Studio, Tag, Scene) and relationship lists

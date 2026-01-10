@@ -1971,28 +1971,31 @@ class StashEntityStore:
         """Build a GraphQL criterion input from field, modifier, and value.
 
         Note: The INCLUDES modifier has different meanings for different field types:
-        - String fields (path, title, etc.): INCLUDES = "contains substring" → single string
+        - String fields (path, title, aliases, url): INCLUDES = "contains substring" → single string
         - Multi-value fields (tags, performers, etc.): INCLUDES = "includes in list" → list of IDs
+
+        IMPORTANT: Fields that are lists on entities but use StringCriterionInput for filtering
+        (like aliases, urls, captions) should NOT be in multi_value_fields. They search for
+        substring matches WITHIN the list items, not for ID membership.
         """
         # Multi-value relationship fields that expect lists of IDs
+        # These use MultiCriterionInput or HierarchicalMultiCriterionInput for filtering.
+        # Do NOT include string list fields (aliases, urls, captions) which use StringCriterionInput.
         multi_value_fields = {
-            "tags",
+            # Core entity relationship filters (MultiCriterionInput)
             "performers",
-            "studios",
-            "groups",
             "galleries",
             "images",
+            "scenes",
+            # Hierarchical entity relationship filters (HierarchicalMultiCriterionInput)
+            "tags",
+            "studios",
+            "groups",
             "performer_tags",
+            # Hierarchical parent/child filters (map to 'parents'/'children' in filter types)
             "parent_tags",
             "child_tags",
             "parent_studios",
-            "child_studios",
-            "scenes",
-            "markers",
-            "files",
-            "folders",
-            "stash_ids",
-            "aliases",
         }
 
         if modifier == "IS_NULL":
