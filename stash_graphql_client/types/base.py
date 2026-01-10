@@ -991,6 +991,25 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         return processed
 
+    @staticmethod
+    def _snapshot_value(value: Any) -> Any:
+        """Create a snapshot copy of a field value for dirty tracking.
+
+        Mutable collections (lists) are shallow copied to detect in-place modifications.
+        Immutables, StashObjects, and special values (None, UNSET) are stored by reference.
+
+        Args:
+            value: Field value to snapshot
+
+        Returns:
+            Copy of value if mutable collection, otherwise the value itself
+        """
+        # Lists need shallow copy to detect append/extend/remove operations
+        if isinstance(value, list):
+            return value.copy()
+        # Primitives, StashObjects, None, UNSET can be stored by reference
+        return value
+
     def model_post_init(self, _context: Any) -> None:
         """Initialize object and store snapshot after Pydantic init.
 
@@ -1003,8 +1022,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Store snapshot of initial state by capturing field values directly
         # This avoids circular reference errors when model_dump() would recurse
         # into bidirectional relationships (e.g., Scene.performers ↔ Performer.scenes)
+        # Use _snapshot_value to copy mutable collections (lists)
         self._snapshot = {
-            field: getattr(self, field, UNSET) for field in self.__tracked_fields__
+            field: self._snapshot_value(getattr(self, field, UNSET))
+            for field in self.__tracked_fields__
         }
 
     def is_dirty(self) -> bool:
@@ -1050,8 +1071,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Updates the snapshot to match the current state.
         """
         # Capture current field values directly to avoid circular reference errors
+        # Use _snapshot_value to copy mutable collections (lists)
         self._snapshot = {
-            field: getattr(self, field, UNSET) for field in self.__tracked_fields__
+            field: self._snapshot_value(getattr(self, field, UNSET))
+            for field in self.__tracked_fields__
         }
 
     def mark_dirty(self) -> None:

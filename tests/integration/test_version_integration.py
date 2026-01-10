@@ -1,9 +1,12 @@
 """Integration tests for version mixin functionality.
 
 Tests version queries against a real Stash instance.
+Note: latestversion tests are mocked to avoid external GitHub API calls.
 """
 
+import httpx
 import pytest
+import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import LatestVersion, Version
@@ -50,10 +53,27 @@ async def test_version_returns_current_version(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@respx.mock
 async def test_latestversion_returns_github_version(
-    stash_client: StashClient, stash_cleanup_tracker
+    respx_mock, stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test getting latest available Stash version from GitHub."""
+    """Test getting latest available Stash version from GitHub (mocked)."""
+    # Mock the GraphQL response to avoid external GitHub API calls
+    mock_response = {
+        "data": {
+            "latestversion": {
+                "version": "v0.26.2",
+                "shorthash": "abc123def",
+                "release_date": "2024-01-15",
+                "url": "https://github.com/stashapp/stash/releases/tag/v0.26.2",
+            }
+        }
+    }
+
+    respx.post("http://localhost:9999/graphql").mock(
+        return_value=httpx.Response(200, json=mock_response)
+    )
+
     async with (
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
@@ -72,20 +92,20 @@ async def test_latestversion_returns_github_version(
 
         # Verify required fields are present and non-empty
         assert is_set(latest.version)
-        assert len(latest.version) > 0
+        assert latest.version == "v0.26.2"
         assert is_set(latest.shorthash)
-        assert len(latest.shorthash) > 0
+        assert latest.shorthash == "abc123def"
         assert is_set(latest.release_date)
-        assert len(latest.release_date) > 0
+        assert latest.release_date == "2024-01-15"
         assert is_set(latest.url)
-        assert len(latest.url) > 0
+        assert latest.url == "https://github.com/stashapp/stash/releases/tag/v0.26.2"
 
         # URL should be a valid GitHub release URL
         assert "github.com" in latest.url.lower()
         assert "stashapp/stash" in latest.url.lower()
 
         # Version should follow semantic versioning
-        assert latest.version.startswith("v") or latest.version[0].isdigit()
+        assert latest.version.startswith("v")
 
 
 @pytest.mark.integration
@@ -93,13 +113,32 @@ async def test_latestversion_returns_github_version(
 async def test_version_and_latestversion_compatibility(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test that current and latest version can be compared."""
+    """Test that current and latest version can be compared (latestversion mocked)."""
+    # Get real version first, then mock latestversion to avoid external GitHub API calls
     async with (
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
+        # Get real version from Stash
         current = await stash_client.version()
-        latest = await stash_client.latestversion()
+
+        # Mock the latestversion response to avoid external GitHub API calls
+        mock_latest_response = {
+            "data": {
+                "latestversion": {
+                    "version": "v0.26.2",
+                    "shorthash": "abc123def",
+                    "release_date": "2024-01-15",
+                    "url": "https://github.com/stashapp/stash/releases/tag/v0.26.2",
+                }
+            }
+        }
+
+        with respx.mock:
+            respx.post("http://localhost:9999/graphql").mock(
+                return_value=httpx.Response(200, json=mock_latest_response)
+            )
+            latest = await stash_client.latestversion()
 
         # Verify GraphQL calls (2 calls total)
         assert len(calls) == 2, "Expected 2 GraphQL calls (version + latestversion)"

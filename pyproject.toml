@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.10.4"
+version = "0.10.5"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}

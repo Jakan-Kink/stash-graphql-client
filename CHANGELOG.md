@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.5] - 2026-01-09
+
+### Fixed
+
+- **List Dirty Tracking**: Fixed critical bug where in-place list modifications weren't detected as dirty
+  - Snapshot system now creates shallow copies of lists instead of storing references
+  - In-place operations like `append()`, `remove()`, `extend()`, `pop()`, `clear()`, and item assignment now correctly mark objects as dirty
+  - Affects all tracked list fields: `urls`, `aliases`, `alias_list`, `stash_ids`, and relationship lists
+  - Added `_snapshot_value()` helper method to handle mutable collection copying
+  - Location: `stash_graphql_client/types/base.py:994-1011,1027,1076`
+
+### Testing
+
+- **Dirty Tracking Tests**: Added comprehensive test suite for dirty tracking functionality
+  - 28 tests covering list operations, basic dirty tracking, relationship lists, and edge cases
+  - Tests verify all list modification methods are detected (append, extend, remove, pop, clear, item assignment)
+  - Tests cover multiple entity types (Performer, Studio, Tag, Scene) and relationship lists
+  - Location: `tests/types/test_dirty_tracking.py`
+
+- **Version Integration Tests**: Mocked external GitHub API calls to prevent rate limiting failures
+  - `test_latestversion_returns_github_version` now fully mocked with respx
+  - `test_version_and_latestversion_compatibility` uses hybrid approach (real Stash version, mocked GitHub response)
+  - Tests no longer make external API calls, improving reliability and speed
+  - Location: `tests/integration/test_version_integration.py`
+
 ## [0.10.4] - 2026-01-08
 
 ### Fixed
