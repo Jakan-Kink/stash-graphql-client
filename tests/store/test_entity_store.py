@@ -291,6 +291,112 @@ class TestCacheOperations:
         assert store._type_ttls.get("Scene") == timedelta(hours=1)
 
     @pytest.mark.unit
+    def test_set_ttl_with_int_seconds(self, respx_entity_store) -> None:
+        """Test setting TTL using int (seconds) - auto-converts to timedelta."""
+        store = respx_entity_store
+
+        # Set TTL with int (seconds)
+        store.set_ttl(Performer, 300)  # 5 minutes in seconds
+        store.set_ttl(Scene, 3600)  # 1 hour in seconds
+
+        # Should be converted to timedelta internally
+        assert store._type_ttls.get("Performer") == timedelta(seconds=300)
+        assert store._type_ttls.get("Scene") == timedelta(seconds=3600)
+
+        # Test caching works with int-based TTL
+        performer = PerformerFactory.build(id="1")
+        store._cache_entity(performer)
+
+        cache_key = ("Performer", "1")
+        assert cache_key in store._cache
+        # TTL should be stored as float seconds (300.0)
+        assert store._cache[cache_key].ttl_seconds == 300.0
+
+    @pytest.mark.unit
+    def test_set_ttl_with_none(self, respx_entity_store) -> None:
+        """Test setting TTL to None (no expiration)."""
+        store = respx_entity_store
+
+        store.set_ttl(Performer, None)
+
+        # Should store None
+        assert store._type_ttls.get("Performer") is None
+
+        # Test caching works with None TTL (no expiration)
+        performer = PerformerFactory.build(id="1")
+        store._cache_entity(performer)
+
+        cache_key = ("Performer", "1")
+        assert cache_key in store._cache
+        # TTL should be None (never expires)
+        assert store._cache[cache_key].ttl_seconds is None
+
+    @pytest.mark.unit
+    def test_set_ttl_with_invalid_type(self, respx_entity_store) -> None:
+        """Test setting TTL with invalid type raises TypeError."""
+        store = respx_entity_store
+
+        with pytest.raises(TypeError, match="ttl must be timedelta, int"):
+            store.set_ttl(Performer, "invalid")  # type: ignore[arg-type]
+
+        with pytest.raises(TypeError, match="ttl must be timedelta, int"):
+            store.set_ttl(Performer, 3.14)  # type: ignore[arg-type]
+
+    @pytest.mark.unit
+    def test_init_with_int_default_ttl(self, respx_stash_client) -> None:
+        """Test initializing store with int default_ttl (seconds)."""
+        # Create store with int default_ttl
+        store = StashEntityStore(respx_stash_client, default_ttl=1800)
+
+        # Should be converted to timedelta internally
+        assert store._default_ttl == timedelta(seconds=1800)
+
+        # Test caching works with int-based default TTL
+        performer = PerformerFactory.build(id="1")
+        store._cache_entity(performer)
+
+        cache_key = ("Performer", "1")
+        assert cache_key in store._cache
+        # TTL should be stored as float seconds (1800.0)
+        assert store._cache[cache_key].ttl_seconds == 1800.0
+
+    @pytest.mark.unit
+    def test_cache_entity_defensive_handling_int_ttl(self, respx_entity_store) -> None:
+        """Test _cache_entity handles int TTL from direct assignment (defensive)."""
+        store = respx_entity_store
+
+        # Simulate direct assignment bypassing validation (bad practice, but defensive)
+        store._default_ttl = 3600  # type: ignore[assignment]
+
+        # Caching should still work (defensive handling)
+        performer = PerformerFactory.build(id="1")
+        store._cache_entity(performer)
+
+        cache_key = ("Performer", "1")
+        assert cache_key in store._cache
+        # Should handle int defensively and convert to float
+        assert store._cache[cache_key].ttl_seconds == 3600.0
+
+    @pytest.mark.unit
+    def test_cache_entity_defensive_handling_int_type_ttl(
+        self, respx_entity_store
+    ) -> None:
+        """Test _cache_entity handles int TTL in _type_ttls (defensive)."""
+        store = respx_entity_store
+
+        # Simulate direct assignment to _type_ttls bypassing validation
+        store._type_ttls["Scene"] = 7200  # type: ignore[assignment]
+
+        # Caching should still work (defensive handling)
+        scene = SceneFactory.build(id="1")
+        store._cache_entity(scene)
+
+        cache_key = ("Scene", "1")
+        assert cache_key in store._cache
+        # Should handle int defensively and convert to float
+        assert store._cache[cache_key].ttl_seconds == 7200.0
+
+    @pytest.mark.unit
     def test_cache_stats(self, respx_entity_store) -> None:
         """Test cache statistics."""
         store = respx_entity_store

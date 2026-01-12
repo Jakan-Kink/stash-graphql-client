@@ -120,16 +120,20 @@ class StashEntityStore:
     def __init__(
         self,
         client: StashClient,
-        default_ttl: timedelta | None = DEFAULT_TTL,
+        default_ttl: timedelta | int | None = DEFAULT_TTL,
     ) -> None:
         """Initialize entity store.
 
         Args:
             client: StashClient instance for GraphQL queries
             default_ttl: Default TTL for cached entities. Default is 30 minutes.
+                         Can be a timedelta, or an int (interpreted as seconds).
                          Pass None explicitly to disable expiration.
         """
         self._client = client
+        # Convert int to timedelta if needed
+        if isinstance(default_ttl, int):
+            default_ttl = timedelta(seconds=default_ttl)
         self._default_ttl = default_ttl
         # Cache keyed by (type_name, id)
         self._cache: dict[tuple[str, str], CacheEntry[Any]] = {}
@@ -1405,13 +1409,25 @@ class StashEntityStore:
             self._cache.clear()
         log.debug(f"Invalidated all cache: {count} entries")
 
-    def set_ttl(self, entity_type: type[T], ttl: timedelta | None) -> None:
+    def set_ttl(self, entity_type: type[T], ttl: timedelta | int | None) -> None:
         """Set TTL for a type. None = use default (or never expire if no default).
 
         Args:
             entity_type: The Stash entity type
-            ttl: TTL for this type, or None to use default
+            ttl: TTL for this type, or None to use default.
+                 Can be a timedelta, or an int (interpreted as seconds).
+
+        Raises:
+            TypeError: If ttl is not a timedelta, int, or None
         """
+        # Convert int to timedelta (interpret as seconds)
+        if isinstance(ttl, int):
+            ttl = timedelta(seconds=ttl)
+        elif ttl is not None and not isinstance(ttl, timedelta):
+            raise TypeError(
+                f"ttl must be timedelta, int (seconds), or None; got {type(ttl).__name__}"
+            )
+
         type_name = entity_type.__type_name__
         self._type_ttls[type_name] = ttl
         log.debug(f"Set TTL for {type_name}: {ttl}")
@@ -1733,7 +1749,14 @@ class StashEntityStore:
 
         # Determine TTL
         ttl = self._type_ttls.get(type_name, self._default_ttl)
-        ttl_seconds = ttl.total_seconds() if ttl is not None else None
+
+        # Defensive: Handle int values (from direct assignment bypassing validation)
+        if isinstance(ttl, int):
+            ttl_seconds = float(ttl)
+        elif ttl is not None:
+            ttl_seconds = ttl.total_seconds()
+        else:
+            ttl_seconds = None
 
         with self._lock:
             self._cache[cache_key] = CacheEntry(

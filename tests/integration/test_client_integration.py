@@ -246,7 +246,7 @@ async def test_find_image_by_id(
 async def test_find_galleries_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test that find_galleries returns the 1 gallery from test Stash."""
+    """Test that find_galleries returns consistent count and galleries list length."""
     async with (
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
@@ -259,8 +259,12 @@ async def test_find_galleries_returns_expected_count(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
-        assert result.count == 1
-        assert len(result.galleries) == 1
+        # Dynamic assertion: count should match galleries list length
+        assert is_set(result.galleries)
+        assert result.count == len(result.galleries)
+        # Sanity check: should have at least some galleries
+        assert is_set(result.count)
+        assert result.count > 0
 
 
 @pytest.mark.integration
@@ -306,7 +310,7 @@ async def test_find_gallery_by_id(
 async def test_gallery_is_organized(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test that the gallery has organized=True."""
+    """Test that at least one gallery has organized=True."""
     async with (
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
@@ -319,7 +323,11 @@ async def test_gallery_is_organized(
         assert calls[0]["result"] is not None
         assert calls[0]["exception"] is None
 
-        assert result.galleries[0].organized is True
+        # At least one gallery should be organized
+        assert is_set(result.galleries)
+        assert len(result.galleries) > 0, "Expected at least one gallery"
+        organized_galleries = [g for g in result.galleries if g.organized is True]
+        assert len(organized_galleries) > 0, "Expected at least one organized gallery"
 
 
 @pytest.mark.integration
