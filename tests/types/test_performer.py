@@ -84,7 +84,7 @@ async def test_performer_update_avatar_success(respx_stash_client) -> None:
 async def test_performer_update_avatar_file_not_found(respx_stash_client) -> None:
     """Test Performer.update_avatar() with non-existent file.
 
-    This covers line 250 in performer.py - the FileNotFoundError raise.
+    This covers line 265 in performer.py - the FileNotFoundError raise.
     """
     # Create performer
     performer = Performer(id="123", name="Test Performer")
@@ -131,6 +131,28 @@ async def test_performer_update_avatar_with_png(respx_stash_client) -> None:
 
     finally:
         # Clean up temp file
+        Path(tmp_path).unlink()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_performer_update_avatar_rejects_non_image(
+    respx_stash_client,
+) -> None:
+    """Test Performer.update_avatar() rejects non-image files."""
+    with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp:
+        tmp.write(b"not an image")
+        tmp_path = tmp.name
+
+    try:
+        performer = Performer(id="123", name="Test Performer")
+
+        with pytest.raises(
+            ValueError,
+            match="Failed to update avatar: File does not appear to be an image",
+        ):
+            await performer.update_avatar(respx_stash_client, tmp_path)
+    finally:
         Path(tmp_path).unlink()
 
 

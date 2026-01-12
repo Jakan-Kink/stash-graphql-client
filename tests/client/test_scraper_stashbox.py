@@ -43,10 +43,7 @@ async def test_submit_stashbox_fingerprints_with_dict(
 
     input_dict = {
         "stash_box_endpoint": "https://stashdb.org",
-        "scene_id": "scene123",
-        "fingerprints": [
-            {"hash": "abc123", "algorithm": "MD5"},
-        ],
+        "scene_ids": ["scene123"],
     }
 
     result = await respx_stash_client.submit_stashbox_fingerprints(input_dict)
@@ -107,7 +104,7 @@ async def test_submit_stashbox_fingerprints_error_raises(
 
     input_dict = {
         "stash_box_endpoint": "https://stashdb.org",
-        "scene_id": "scene123",
+        "scene_ids": ["scene123"],
     }
 
     with pytest.raises(StashGraphQLError):
@@ -141,7 +138,7 @@ async def test_submit_stashbox_scene_draft_with_dict(
 
     input_dict = {
         "stash_box_endpoint": "https://stashdb.org",
-        "scene_id": "scene456",
+        "id": "scene456",
     }
 
     result = await respx_stash_client.submit_stashbox_scene_draft(input_dict)
@@ -239,7 +236,7 @@ async def test_submit_stashbox_performer_draft_with_dict(
 
     input_dict = {
         "stash_box_endpoint": "https://stashdb.org",
-        "performer_id": "performer456",
+        "id": "performer456",
     }
 
     result = await respx_stash_client.submit_stashbox_performer_draft(input_dict)

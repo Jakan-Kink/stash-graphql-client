@@ -17,6 +17,7 @@ from stash_graphql_client.types import (
     BulkPerformerUpdateInput,
     BulkUpdateIdMode,
     BulkUpdateIds,
+    FindPerformersResultType,
     GenderEnum,
     OnMultipleMatch,
     Performer,
@@ -1772,8 +1773,6 @@ async def test_map_performer_ids_string_multiple_matches_return_first_performers
     skips appending an ID and continues to the next iteration.
     """
     # Mock find_performers to return count=2 but performers=UNSET
-    from stash_graphql_client.types import FindPerformersResultType
-
     call_count = 0
 
     async def mock_find_performers(*args, **kwargs):
@@ -1805,8 +1804,6 @@ async def test_map_performer_ids_string_multiple_matches_else_branch_performers_
     results.performers is UNSET. When is_set(results.performers) is False, the code
     skips appending an ID and continues to the next iteration.
     """
-    from stash_graphql_client.types import FindPerformersResultType
-
     call_count = 0
 
     async def mock_find_performers(*args, **kwargs):
@@ -1838,8 +1835,6 @@ async def test_map_performer_ids_string_single_match_performers_unset(
     (not queried in GraphQL). When is_set(results.performers) is False, the code skips
     appending an ID and continues to the next iteration.
     """
-    from stash_graphql_client.types import FindPerformersResultType
-
     call_count = 0
 
     async def mock_find_performers(*args, **kwargs):
@@ -1869,8 +1864,6 @@ async def test_map_performer_ids_dict_multiple_matches_return_first_performers_u
     results.performers is UNSET. When is_set(results.performers) is False, the code
     skips appending an ID and continues to the next iteration.
     """
-    from stash_graphql_client.types import FindPerformersResultType
-
     call_count = 0
 
     async def mock_find_performers(*args, **kwargs):
@@ -1902,8 +1895,6 @@ async def test_map_performer_ids_dict_multiple_matches_else_branch_performers_un
     but results.performers is UNSET. When is_set(results.performers) is False, the code
     skips appending an ID and continues to the next iteration.
     """
-    from stash_graphql_client.types import FindPerformersResultType
-
     call_count = 0
 
     async def mock_find_performers(*args, **kwargs):

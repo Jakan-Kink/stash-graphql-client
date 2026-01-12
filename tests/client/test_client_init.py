@@ -81,3 +81,8 @@ class TestStashClientInit:
 
         # Client should not be initialized until initialize() is called
         assert client._initialized is False
+
+    def test_init_with_invalid_port_string_raises_typeerror(self) -> None:
+        """Test initialization rejects non-numeric port strings."""
+        with pytest.raises(TypeError, match="Port must be an int or numeric string"):
+            StashClient(conn={"Host": "localhost", "Port": "not-a-number"})

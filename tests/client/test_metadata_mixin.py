@@ -111,6 +111,30 @@ async def test_metadata_generate_exception(respx_stash_client: StashClient) -> N
         await respx_stash_client.metadata_generate(options={"covers": True})
 
 
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_metadata_generate_options_invalid_type(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test metadata_generate rejects invalid options type."""
+    with pytest.raises(
+        TypeError, match="options must be GenerateMetadataOptions or dict"
+    ):
+        await respx_stash_client.metadata_generate(options=["covers"])  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_metadata_generate_input_data_invalid_type(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test metadata_generate rejects invalid input_data type."""
+    with pytest.raises(
+        TypeError, match="input_data must be GenerateMetadataInput or dict"
+    ):
+        await respx_stash_client.metadata_generate(input_data="scene-1")  # type: ignore[arg-type]
+
+
 # =============================================================================
 # metadata_scan tests
 # =============================================================================

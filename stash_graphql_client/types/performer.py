@@ -262,13 +262,17 @@ class Performer(StashObject):
         path = Path(image_path)
         if not path.exists():
             raise FileNotFoundError(f"Image file not found: {path}")
+        if not path.is_file():
+            raise ValueError(f"Path is not a file: {path}")
 
         try:
             # Read and encode image
             with open(path, "rb") as f:
                 image_data = f.read()
             image_b64 = base64.b64encode(image_data).decode("utf-8")
-            mime = mimetypes.types_map.get(path.suffix, "image/jpeg")
+            mime = mimetypes.types_map.get(path.suffix.lower())
+            if not mime or not mime.startswith("image/"):
+                raise ValueError(f"File does not appear to be an image: {path.suffix}")
             image_url = f"data:{mime};base64,{image_b64}"
 
             # Use client's direct method for updating image

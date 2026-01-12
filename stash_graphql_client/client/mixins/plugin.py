@@ -156,7 +156,7 @@ class PluginClientMixin(StashClientProtocol):
                 """,
                 {"enabledMap": enabled_map},
             )
-            return bool(result.get("setPluginsEnabled", False))
+            return result.get("setPluginsEnabled") is True
         except Exception as e:
             self.log.error(f"Failed to set plugins enabled: {e}")
             return False
@@ -329,7 +329,7 @@ class PluginClientMixin(StashClientProtocol):
                 }
                 """
             )
-            return bool(result.get("reloadPlugins", False))
+            return result.get("reloadPlugins") is True
         except Exception as e:
             self.log.error(f"Failed to reload plugins: {e}")
             return False

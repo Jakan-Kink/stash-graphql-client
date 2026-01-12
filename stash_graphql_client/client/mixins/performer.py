@@ -213,12 +213,13 @@ class PerformerClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_)  # Copy since we have a default
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_)  # Copy since we have a default
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_PERFORMERS_QUERY,
                 {"filter": filter_, "performer_filter": performer_filter},
@@ -473,19 +474,25 @@ class PerformerClientMixin(StashClientProtocol):
             result = await client.performer_destroy(input_data)
             ```
         """
-        try:
-            # Convert PerformerDestroyInput to dict if needed
-            if isinstance(input_data, PerformerDestroyInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, PerformerDestroyInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be PerformerDestroyInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = PerformerDestroyInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.PERFORMER_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("performerDestroy", False))
+            return result.get("performerDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete performer: {e}")
             raise
@@ -516,7 +523,7 @@ class PerformerClientMixin(StashClientProtocol):
                 {"ids": ids},
             )
 
-            return bool(result.get("performersDestroy", False))
+            return result.get("performersDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete performers: {e}")
             raise
@@ -565,13 +572,19 @@ class PerformerClientMixin(StashClientProtocol):
             performers = await client.bulk_performer_update(input_data)
             ```
         """
-        try:
-            # Convert BulkPerformerUpdateInput to dict if needed
-            if isinstance(input_data, BulkPerformerUpdateInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, BulkPerformerUpdateInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be BulkPerformerUpdateInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = BulkPerformerUpdateInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.BULK_PERFORMER_UPDATE_MUTATION,
                 {"input": input_dict},
@@ -636,7 +649,14 @@ class PerformerClientMixin(StashClientProtocol):
         if isinstance(input_data, PerformerMergeInput):
             input_dict = input_data.to_graphql()
         else:
-            input_dict = input_data
+            # Validate dict structure through Pydantic
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be PerformerMergeInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = PerformerMergeInput(**input_data)
+            input_dict = validated.to_graphql()
 
         try:
             return await self.execute(

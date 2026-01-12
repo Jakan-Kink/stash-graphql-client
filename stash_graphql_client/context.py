@@ -63,16 +63,53 @@ class StashContext:
         """Initialize context.
 
         Args:
-            conn: Connection details dictionary
+            conn: Connection details dictionary (case-insensitive keys)
             verify_ssl: Whether to verify SSL certificates
         """
-        # Convert connection dict to case-insensitive
-        self.conn = CIMultiDict(conn or {})
+        # Normalize connection keys to canonical case
+        self.conn = self._normalize_conn_keys(conn or {})
         self.verify_ssl = verify_ssl
         self._client: StashClient | None = None
         self._store: StashEntityStore | None = None
         self._ref_count: int = 0
         self._ref_lock: asyncio.Lock = asyncio.Lock()
+
+    @staticmethod
+    def _normalize_conn_keys(conn: dict[str, Any]) -> dict[str, Any]:
+        """Normalize connection dict keys to canonical case.
+
+        Accepts case-insensitive input keys and returns dict with
+        canonical key names (Logger, Scheme, Host, Port, ApiKey).
+
+        Args:
+            conn: Connection dict with any case keys
+
+        Returns:
+            dict with normalized canonical keys
+        """
+        if not conn:
+            return {}
+
+        # Use CIMultiDict for case-insensitive lookup during normalization
+        ci_conn = CIMultiDict(conn)
+
+        # Canonical key mappings (lowercase -> canonical)
+        canonical_keys = {
+            "logger": "Logger",
+            "scheme": "Scheme",
+            "host": "Host",
+            "port": "Port",
+            "apikey": "ApiKey",
+        }
+
+        normalized = {}
+        for lower_key, canonical_key in canonical_keys.items():
+            # Use case-insensitive lookup, store with canonical key
+            # Check key exists (not value truthiness) to preserve falsy values like port=0
+            if lower_key in ci_conn:
+                normalized[canonical_key] = ci_conn[lower_key]
+
+        return normalized
 
     @property
     def interface(self) -> StashClient:
@@ -102,9 +139,10 @@ class StashContext:
             f"get_client called on {id(self)}, current _client: {self._client}"
         )
         if self._client is None:
-            # Pass CIMultiDict directly to preserve case-insensitive lookups
+            # Normalize conn keys in case someone modified self.conn directly
+            normalized_conn = self._normalize_conn_keys(self.conn)
             self._client = StashClient(
-                conn=self.conn if self.conn else None,
+                conn=normalized_conn if normalized_conn else None,
                 verify_ssl=self.verify_ssl,
             )
             try:

@@ -19,6 +19,7 @@ import respx
 from pydantic import BaseModel
 
 from stash_graphql_client.types.base import StashObject
+from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
@@ -768,9 +769,6 @@ class TestCircularReferenceProtection:
 
     def test_is_dirty_with_circular_reference(self) -> None:
         """Test is_dirty() doesn't fail when bidirectional relationships exist."""
-        from stash_graphql_client.types.performer import Performer
-        from stash_graphql_client.types.scene import Scene
-
         # Create scene and performer with bidirectional relationship
         scene = Scene.model_construct(
             id="scene-1",
@@ -816,9 +814,6 @@ class TestCircularReferenceProtection:
 
     def test_get_changed_fields_with_circular_reference(self) -> None:
         """Test get_changed_fields() works with bidirectional relationships."""
-        from stash_graphql_client.types.performer import Performer
-        from stash_graphql_client.types.scene import Scene
-
         # Create scene with snapshot
         scene = Scene.model_construct(
             id="scene-2",
@@ -857,9 +852,6 @@ class TestCircularReferenceProtection:
 
     def test_mark_clean_with_circular_reference(self) -> None:
         """Test mark_clean() works with bidirectional relationships."""
-        from stash_graphql_client.types.performer import Performer
-        from stash_graphql_client.types.scene import Scene
-
         # Create bidirectional relationship
         scene = Scene.model_construct(
             id="scene-3",

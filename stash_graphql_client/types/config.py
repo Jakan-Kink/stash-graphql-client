@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from stash_graphql_client.errors import StashConfigurationError
 
 from .base import FromGraphQLMixin, StashInput
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -201,6 +203,46 @@ class ConfigGeneralInput(StashInput):
     plugin_package_sources: list[Any] | None | UnsetType = Field(
         default=UNSET, alias="pluginPackageSources"
     )  # [PackageSourceInput!]
+
+    @model_validator(mode="after")
+    def _reject_path_modifications(self):
+        """Reject attempts to modify server filesystem paths.
+
+        These paths are critical server-side configuration that should only be
+        modified through the Stash web interface or config file to prevent
+        accidental corruption during testing or automation.
+        """
+        protected_paths = {
+            "database_path": "database_path",
+            "backup_directory_path": "backup_directory_path",
+            "delete_trash_path": "delete_trash_path",
+            "generated_path": "generated_path",
+            "metadata_path": "metadata_path",
+            "scrapers_path": "scrapers_path",
+            "plugins_path": "plugins_path",
+            "cache_path": "cache_path",
+            "blobs_path": "blobs_path",
+            "ffmpeg_path": "ffmpeg_path",
+            "ffprobe_path": "ffprobe_path",
+            "python_path": "python_path",
+        }
+
+        # Check which path fields are being set
+        set_paths = [
+            field_name
+            for field_name in protected_paths
+            if is_set(getattr(self, field_name))
+        ]
+
+        if set_paths:
+            raise StashConfigurationError(
+                f"Modifying server filesystem paths is not allowed: {', '.join(set_paths)}. "
+                "These critical paths should only be changed through the Stash web interface "
+                "or configuration file to prevent accidental corruption. "
+                "If you need to change these values, please use the Stash web UI at Settings > Configuration."
+            )
+
+        return self
 
 
 class ConfigGeneralResult(FromGraphQLMixin, BaseModel):

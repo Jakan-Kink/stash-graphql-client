@@ -270,8 +270,6 @@ class TestGroupHelperMethods:
     @pytest.mark.asyncio
     async def test_add_sub_group_raises_when_store_is_none(self):
         """Test that add_sub_group raises StashIntegrationError when store is None and field is UNSET."""
-        from stash_graphql_client.errors import StashIntegrationError
-
         # Temporarily set class-level store to None
         with patch.object(Group, "_store", None):
             # Create parent with UNSET sub_groups

@@ -63,12 +63,19 @@ class ConfigClientMixin(StashClientProtocol):
             config = await client.configure_general(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ConfigGeneralInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ConfigGeneralInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ConfigGeneralInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ConfigGeneralInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             return await self.execute(
                 fragments.CONFIGURE_GENERAL_MUTATION,
                 {"input": input_dict},
@@ -111,12 +118,19 @@ class ConfigClientMixin(StashClientProtocol):
             config = await client.configure_interface(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ConfigInterfaceInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ConfigInterfaceInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ConfigInterfaceInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ConfigInterfaceInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             return await self.execute(
                 fragments.CONFIGURE_INTERFACE_MUTATION,
                 {"input": input_dict},
@@ -162,12 +176,19 @@ class ConfigClientMixin(StashClientProtocol):
             config = await client.configure_dlna(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ConfigDLNAInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ConfigDLNAInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ConfigDLNAInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ConfigDLNAInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             return await self.execute(
                 fragments.CONFIGURE_DLNA_MUTATION,
                 {"input": input_dict},
@@ -209,12 +230,19 @@ class ConfigClientMixin(StashClientProtocol):
             config = await client.configure_defaults(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ConfigDefaultSettingsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ConfigDefaultSettingsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ConfigDefaultSettingsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ConfigDefaultSettingsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             return await self.execute(
                 fragments.CONFIGURE_DEFAULTS_MUTATION,
                 {"input": input_dict},
@@ -327,12 +355,19 @@ class ConfigClientMixin(StashClientProtocol):
             api_key = await client.generate_api_key(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, GenerateAPIKeyInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, GenerateAPIKeyInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be GenerateAPIKeyInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = GenerateAPIKeyInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.GENERATE_API_KEY_MUTATION,
                 {"input": input_dict},
@@ -398,12 +433,19 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             ConfigScrapingResult with updated configuration
         """
-        try:
-            if isinstance(input_data, ConfigScrapingInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ConfigScrapingInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ConfigScrapingInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ConfigScrapingInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.CONFIGURE_SCRAPING_MUTATION,
                 {"input": input_dict},
@@ -427,12 +469,19 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             StashBoxValidationResult with validation status
         """
-        try:
-            if isinstance(input_data, StashBoxInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, StashBoxInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be StashBoxInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = StashBoxInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.VALIDATE_STASHBOX_CREDENTIALS_QUERY,
                 {"input": input_dict},
@@ -456,17 +505,24 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, EnableDLNAInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, EnableDLNAInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be EnableDLNAInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = EnableDLNAInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.ENABLE_DLNA_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("enableDLNA", False))
+            return result.get("enableDLNA") is True
         except Exception as e:
             self.log.error(f"Failed to enable DLNA: {e}")
             raise
@@ -483,17 +539,24 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, DisableDLNAInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, DisableDLNAInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be DisableDLNAInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = DisableDLNAInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.DISABLE_DLNA_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("disableDLNA", False))
+            return result.get("disableDLNA") is True
         except Exception as e:
             self.log.error(f"Failed to disable DLNA: {e}")
             raise
@@ -510,17 +573,24 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, AddTempDLNAIPInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, AddTempDLNAIPInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be AddTempDLNAIPInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = AddTempDLNAIPInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.ADD_TEMP_DLNA_IP_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("addTempDLNAIP", False))
+            return result.get("addTempDLNAIP") is True
         except Exception as e:
             self.log.error(f"Failed to add temp DLNA IP: {e}")
             raise
@@ -537,17 +607,24 @@ class ConfigClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, RemoveTempDLNAIPInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, RemoveTempDLNAIPInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be RemoveTempDLNAIPInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = RemoveTempDLNAIPInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.REMOVE_TEMP_DLNA_IP_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("removeTempDLNAIP", False))
+            return result.get("removeTempDLNAIP") is True
         except Exception as e:
             self.log.error(f"Failed to remove temp DLNA IP: {e}")
             raise

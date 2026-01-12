@@ -90,12 +90,29 @@ class StashSystemNotReadyError(StashError):
         super().__init__(*args)
 
 
+class StashConfigurationError(StashError):
+    """Raised when attempting to modify protected Stash configuration values.
+
+    This occurs when trying to modify critical server-side configuration that
+    could corrupt the Stash installation, such as:
+    - File system paths (database_path, backup_directory_path, etc.)
+    - System paths (ffmpeg_path, ffprobe_path, etc.)
+
+    These values should only be modified through the Stash web interface
+    or configuration file to prevent accidental corruption.
+    """
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+
+
 class StashCleanupWarning(UserWarning):
     """Warning emitted when Stash cleanup tracker encounters errors during cleanup."""
 
 
 __all__ = [
     "StashCleanupWarning",
+    "StashConfigurationError",
     "StashConnectionError",
     "StashError",
     "StashGraphQLError",

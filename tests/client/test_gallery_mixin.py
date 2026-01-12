@@ -542,6 +542,18 @@ async def test_gallery_chapter_create(respx_stash_client: StashClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_gallery_chapter_create_negative_index_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test gallery_chapter_create rejects negative image_index."""
+    with pytest.raises(ValueError, match="image_index must be non-negative"):
+        await respx_stash_client.gallery_chapter_create(
+            gallery_id="gallery_123", title="Chapter 1", image_index=-1
+        )
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_gallery_chapter_update(respx_stash_client: StashClient) -> None:
     """Test updating a gallery chapter."""
     chapter_data = {
@@ -574,6 +586,18 @@ async def test_gallery_chapter_update(respx_stash_client: StashClient) -> None:
     assert "galleryChapterUpdate" in req["query"]
     assert req["variables"]["input"]["id"] == "chapter_123"
     assert req["variables"]["input"]["title"] == "Updated Chapter"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_gallery_chapter_update_negative_index_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test gallery_chapter_update rejects negative image_index."""
+    with pytest.raises(ValueError, match="image_index must be non-negative"):
+        await respx_stash_client.gallery_chapter_update(
+            id="chapter_123", image_index=-5
+        )
 
 
 @pytest.mark.asyncio

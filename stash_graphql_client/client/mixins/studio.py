@@ -60,12 +60,13 @@ class StudioClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             return await self.execute(
                 fragments.FIND_STUDIOS_QUERY,
                 {"filter": filter_, "studio_filter": studio_filter},
@@ -148,14 +149,21 @@ class StudioClientMixin(StashClientProtocol):
             if isinstance(input_data, StudioDestroyInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be StudioDestroyInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = StudioDestroyInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.STUDIO_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("studioDestroy", False))
+            return result.get("studioDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete studio: {e}")
             raise
@@ -179,7 +187,7 @@ class StudioClientMixin(StashClientProtocol):
                 {"ids": ids},
             )
 
-            return bool(result.get("studiosDestroy", False))
+            return result.get("studiosDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete studios: {e}")
             raise
@@ -223,7 +231,14 @@ class StudioClientMixin(StashClientProtocol):
             if isinstance(input_data, BulkStudioUpdateInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be BulkStudioUpdateInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = BulkStudioUpdateInput(**input_data)
+                input_dict = validated.to_graphql()
 
             return await self.execute(
                 fragments.BULK_STUDIO_UPDATE_MUTATION,

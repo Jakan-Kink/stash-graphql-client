@@ -169,12 +169,13 @@ class GroupClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_)  # Copy since we have a default
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_)  # Copy since we have a default
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_GROUPS_QUERY,
                 {"filter": filter_, "group_filter": group_filter, "ids": ids},
@@ -324,12 +325,17 @@ class GroupClientMixin(StashClientProtocol):
         """
         if isinstance(input_data, dict):
             input_data = GroupDestroyInput(**input_data)
+        elif not isinstance(input_data, GroupDestroyInput):
+            raise TypeError(
+                f"input_data must be GroupDestroyInput or dict, "
+                f"got {type(input_data).__name__}"
+            )
 
         result = await self.execute(
             fragments.GROUP_DESTROY_MUTATION,
             {"input": input_data.to_graphql()},
         )
-        return result.get("groupDestroy", False)
+        return result.get("groupDestroy") is True
 
     async def groups_destroy(self, ids: list[str]) -> bool:
         """Delete multiple groups from Stash.
@@ -354,7 +360,7 @@ class GroupClientMixin(StashClientProtocol):
             fragments.GROUPS_DESTROY_MUTATION,
             {"ids": ids},
         )
-        return result.get("groupsDestroy", False)
+        return result.get("groupsDestroy") is True
 
     async def bulk_group_update(
         self, input_data: BulkGroupUpdateInput | dict[str, Any]
@@ -409,6 +415,11 @@ class GroupClientMixin(StashClientProtocol):
         """
         if isinstance(input_data, dict):
             input_data = BulkGroupUpdateInput(**input_data)
+        elif not isinstance(input_data, BulkGroupUpdateInput):
+            raise TypeError(
+                f"input_data must be BulkGroupUpdateInput or dict, "
+                f"got {type(input_data).__name__}"
+            )
 
         result = await self.execute(
             fragments.BULK_GROUP_UPDATE_MUTATION,
@@ -466,12 +477,17 @@ class GroupClientMixin(StashClientProtocol):
         """
         if isinstance(input_data, dict):
             input_data = GroupSubGroupAddInput(**input_data)
+        elif not isinstance(input_data, GroupSubGroupAddInput):
+            raise TypeError(
+                f"input_data must be GroupSubGroupAddInput or dict, "
+                f"got {type(input_data).__name__}"
+            )
 
         result = await self.execute(
             fragments.ADD_GROUP_SUB_GROUPS_MUTATION,
             {"input": input_data.to_graphql()},
         )
-        return result.get("addGroupSubGroups", False)
+        return result.get("addGroupSubGroups") is True
 
     async def remove_group_sub_groups(
         self, input_data: GroupSubGroupRemoveInput | dict[str, Any]
@@ -511,12 +527,17 @@ class GroupClientMixin(StashClientProtocol):
         """
         if isinstance(input_data, dict):
             input_data = GroupSubGroupRemoveInput(**input_data)
+        elif not isinstance(input_data, GroupSubGroupRemoveInput):
+            raise TypeError(
+                f"input_data must be GroupSubGroupRemoveInput or dict, "
+                f"got {type(input_data).__name__}"
+            )
 
         result = await self.execute(
             fragments.REMOVE_GROUP_SUB_GROUPS_MUTATION,
             {"input": input_data.to_graphql()},
         )
-        return result.get("removeGroupSubGroups", False)
+        return result.get("removeGroupSubGroups") is True
 
     async def reorder_sub_groups(
         self, input_data: ReorderSubGroupsInput | dict[str, Any]
@@ -562,9 +583,14 @@ class GroupClientMixin(StashClientProtocol):
         """
         if isinstance(input_data, dict):
             input_data = ReorderSubGroupsInput(**input_data)
+        elif not isinstance(input_data, ReorderSubGroupsInput):
+            raise TypeError(
+                f"input_data must be ReorderSubGroupsInput or dict, "
+                f"got {type(input_data).__name__}"
+            )
 
         result = await self.execute(
             fragments.REORDER_SUB_GROUPS_MUTATION,
             {"input": input_data.to_graphql()},
         )
-        return result.get("reorderSubGroups", False)
+        return result.get("reorderSubGroups") is True

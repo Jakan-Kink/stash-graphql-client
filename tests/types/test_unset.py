@@ -2,7 +2,7 @@
 
 import pytest
 
-from stash_graphql_client.types import UNSET, UnsetType, is_set
+from stash_graphql_client.types import UNSET, Scene, UnsetType, is_set
 
 
 class TestUnsetType:
@@ -72,8 +72,6 @@ class TestIsSetTypeGuard:
 
     def test_is_set_with_list_field(self):
         """Test is_set with list fields (common pattern in types)."""
-        from stash_graphql_client.types import Scene
-
         # Scene with empty list (set)
         scene1 = Scene(id="1", title="Test", tags=[], organized=False, urls=[])
         assert is_set(scene1.tags) is True
@@ -88,8 +86,6 @@ class TestIsSetTypeGuard:
         This test verifies the runtime behavior. Type checkers like Pylance
         will use the TypeGuard to narrow types statically.
         """
-        from stash_graphql_client.types import Scene
-
         scene = Scene(id="1", title="Test", tags=[], organized=False, urls=[])
 
         # Using is_set for type narrowing

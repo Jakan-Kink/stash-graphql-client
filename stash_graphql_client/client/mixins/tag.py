@@ -59,12 +59,13 @@ class TagClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_TAGS_QUERY,
                 {"filter": filter_, "tag_filter": tag_filter},
@@ -241,14 +242,21 @@ class TagClientMixin(StashClientProtocol):
             if isinstance(input_data, TagDestroyInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be TagDestroyInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = TagDestroyInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.TAG_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("tagDestroy", False))
+            return result.get("tagDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete tag: {e}")
             raise
@@ -272,7 +280,7 @@ class TagClientMixin(StashClientProtocol):
                 {"ids": ids},
             )
 
-            return bool(result.get("tagsDestroy", False))
+            return result.get("tagsDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete tags: {e}")
             raise

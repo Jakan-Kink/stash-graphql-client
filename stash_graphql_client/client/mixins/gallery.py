@@ -61,12 +61,13 @@ class GalleryClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_GALLERIES_QUERY,
                 {"filter": filter_, "gallery_filter": gallery_filter},
@@ -177,7 +178,7 @@ class GalleryClientMixin(StashClientProtocol):
                     }
                 },
             )
-            return bool(result["galleryDestroy"])
+            return result.get("galleryDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to destroy galleries {ids}: {e}")
             raise
@@ -201,7 +202,7 @@ class GalleryClientMixin(StashClientProtocol):
                 fragments.REMOVE_GALLERY_IMAGES_MUTATION,
                 {"input": {"gallery_id": gallery_id, "image_ids": image_ids}},
             )
-            return bool(result["removeGalleryImages"])
+            return result.get("removeGalleryImages") is True
         except Exception as e:
             self.log.error(f"Failed to remove images from gallery {gallery_id}: {e}")
             raise
@@ -225,7 +226,7 @@ class GalleryClientMixin(StashClientProtocol):
                 fragments.SET_GALLERY_COVER_MUTATION,
                 {"input": {"gallery_id": gallery_id, "cover_image_id": cover_image_id}},
             )
-            return bool(result["setGalleryCover"])
+            return result.get("setGalleryCover") is True
         except Exception as e:
             self.log.error(f"Failed to set cover for gallery {gallery_id}: {e}")
             raise
@@ -244,7 +245,7 @@ class GalleryClientMixin(StashClientProtocol):
                 fragments.RESET_GALLERY_COVER_MUTATION,
                 {"input": {"gallery_id": gallery_id}},
             )
-            return bool(result["resetGalleryCover"])
+            return result.get("resetGalleryCover") is True
         except Exception as e:
             self.log.error(f"Failed to reset cover for gallery {gallery_id}: {e}")
             raise
@@ -265,6 +266,8 @@ class GalleryClientMixin(StashClientProtocol):
         Returns:
             Created GalleryChapter object
         """
+        if image_index < 0:
+            raise ValueError(f"image_index must be non-negative, got {image_index}")
         try:
             result = await self.execute(
                 fragments.GALLERY_CHAPTER_CREATE_MUTATION,
@@ -306,6 +309,10 @@ class GalleryClientMixin(StashClientProtocol):
             if title is not None:
                 input_data["title"] = title
             if image_index is not None:
+                if image_index < 0:
+                    raise ValueError(
+                        f"image_index must be non-negative, got {image_index}"
+                    )
                 input_data["image_index"] = str(image_index)
 
             result = await self.execute(
@@ -345,7 +352,7 @@ class GalleryClientMixin(StashClientProtocol):
                 fragments.GALLERY_ADD_IMAGES_MUTATION,
                 {"input": {"gallery_id": gallery_id, "image_ids": image_ids}},
             )
-            return bool(result["addGalleryImages"])
+            return result.get("addGalleryImages") is True
         except Exception as e:
             self.log.error(f"Failed to add images to gallery {gallery_id}: {e}")
             raise
@@ -428,7 +435,7 @@ class GalleryClientMixin(StashClientProtocol):
                 fragments.GALLERY_CHAPTER_DESTROY_MUTATION,
                 {"id": id},
             )
-            return bool(result["galleryChapterDestroy"])
+            return result.get("galleryChapterDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to destroy chapter {id}: {e}")
             raise
@@ -451,7 +458,14 @@ class GalleryClientMixin(StashClientProtocol):
             if isinstance(input_data, BulkGalleryUpdateInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be BulkGalleryUpdateInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = BulkGalleryUpdateInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.BULK_GALLERY_UPDATE_MUTATION,

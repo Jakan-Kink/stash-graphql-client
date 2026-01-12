@@ -1,5 +1,6 @@
 """System query client functionality."""
 
+from pathlib import Path
 from typing import Any
 
 from ... import fragments
@@ -157,11 +158,14 @@ class SystemQueryClientMixin(StashClientProtocol):
             self.log.error(f"Failed to get DLNA status: {e}")
             return DLNAStatus()
 
-    async def directory(self, path: str | None = None, locale: str = "en") -> Directory:
+    async def directory(
+        self, path: str | Path | None = None, locale: str = "en"
+    ) -> Directory:
         """Browse filesystem directory.
 
         Args:
-            path: The directory path to list. If None, returns root directories
+            path: The directory path to list (string or Path object). If None, returns root directories.
+                  Note: Path is converted to string and sent to Stash server.
             locale: Desired collation locale (e.g., 'en-US', 'pt-BR'). Default is 'en'
 
         Returns:
@@ -189,7 +193,9 @@ class SystemQueryClientMixin(StashClientProtocol):
                 print(subdir)
             ```
         """
-        variables = {"path": path, "locale": locale}
+        # Convert Path to string if provided
+        path_str = str(path) if path is not None else None
+        variables = {"path": path_str, "locale": locale}
         result = await self.execute(fragments.DIRECTORY_QUERY, variables)
         return self._decode_result(Directory, result["directory"])
 

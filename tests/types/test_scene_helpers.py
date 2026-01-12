@@ -9,7 +9,7 @@ import inspect
 
 import pytest
 
-from stash_graphql_client.types import Scene, UnsetType, is_set
+from stash_graphql_client.types import UNSET, Scene, UnsetType, is_set
 from stash_graphql_client.types.gallery import Gallery
 from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.studio import Studio
@@ -224,8 +224,6 @@ class TestSceneHelperMethods:
 
         This covers line 351: if self.performers is UNSET
         """
-        from stash_graphql_client.types import UNSET
-
         # Create scene with UNSET performers using model_construct
         scene = Scene.model_construct(
             id="1", title="Scene 1", performers=UNSET, organized=False, urls=[]
@@ -249,8 +247,6 @@ class TestSceneHelperMethods:
 
         This covers line 386: if tag not in self.tags (after initializing from UNSET)
         """
-        from stash_graphql_client.types import UNSET
-
         # Create scene with UNSET tags using model_construct
         scene = Scene.model_construct(
             id="1", title="Scene 1", tags=UNSET, organized=False, urls=[]

@@ -161,6 +161,16 @@ async def test_find_images_empty(respx_stash_client: StashClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_find_images_invalid_direction_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test find_images rejects invalid direction values."""
+    with pytest.raises(ValueError, match="direction must be 'ASC' or 'DESC'"):
+        await respx_stash_client.find_images(filter_={"direction": "UP"})
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_find_images_with_filter(respx_stash_client: StashClient) -> None:
     """Test finding images with custom filter parameters."""
     image_data = create_image_dict(id="123", title="Filtered Image")

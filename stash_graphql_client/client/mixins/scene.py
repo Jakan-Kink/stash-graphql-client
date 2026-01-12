@@ -1,6 +1,9 @@
 """Scene-related client functionality."""
 
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
+
+from pydantic import TypeAdapter
 
 from ... import fragments
 from ...types import (
@@ -13,12 +16,15 @@ from ...types import (
     SceneMergeInput,
     ScenesDestroyInput,
 )
+from ...types.scalars import Timestamp
 from ...types.scene import SceneStreamEndpoint
 from ..protocols import StashClientProtocol
 
 
 if TYPE_CHECKING:
     pass
+
+_TIMESTAMP_ADAPTER = TypeAdapter(Timestamp)
 
 
 class SceneClientMixin(StashClientProtocol):
@@ -175,12 +181,13 @@ class SceneClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             # execute() with result_type returns the typed object directly
             return await self.execute(
                 fragments.FIND_SCENES_QUERY,
@@ -550,13 +557,19 @@ class SceneClientMixin(StashClientProtocol):
             scene = await client.find_scene_by_hash(input_data)
             ```
         """
-        try:
-            # Convert SceneHashInput to dict if needed
-            if isinstance(input_data, SceneHashInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, SceneHashInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be SceneHashInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = SceneHashInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.FIND_SCENE_BY_HASH_QUERY,
                 {"input": input_dict},
@@ -620,19 +633,25 @@ class SceneClientMixin(StashClientProtocol):
             result = await client.scene_destroy(input_data)
             ```
         """
-        try:
-            # Convert SceneDestroyInput to dict if needed
-            if isinstance(input_data, SceneDestroyInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, SceneDestroyInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be SceneDestroyInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = SceneDestroyInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SCENE_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("sceneDestroy", False))
+            return result.get("sceneDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete scene: {e}")
             raise
@@ -688,19 +707,25 @@ class SceneClientMixin(StashClientProtocol):
             result = await client.scenes_destroy(input_data)
             ```
         """
-        try:
-            # Convert ScenesDestroyInput to dict if needed
-            if isinstance(input_data, ScenesDestroyInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ScenesDestroyInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ScenesDestroyInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ScenesDestroyInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SCENES_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("scenesDestroy", False))
+            return result.get("scenesDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete scenes: {e}")
             raise
@@ -750,13 +775,19 @@ class SceneClientMixin(StashClientProtocol):
             merged = await client.scene_merge(input_data)
             ```
         """
-        try:
-            # Convert SceneMergeInput to dict if needed
-            if isinstance(input_data, SceneMergeInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, SceneMergeInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be SceneMergeInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = SceneMergeInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             return await self.execute(
                 fragments.SCENE_MERGE_MUTATION,
                 {"input": input_dict},
@@ -771,7 +802,7 @@ class SceneClientMixin(StashClientProtocol):
     async def scene_add_o(
         self,
         id: str,
-        times: list[str] | None = None,
+        times: list[Timestamp] | None = None,
     ) -> HistoryMutationResult:
         """Add O-count entry for a scene.
 
@@ -799,6 +830,15 @@ class SceneClientMixin(StashClientProtocol):
             )
             ```
         """
+        if times is not None:
+            if not isinstance(times, list):
+                raise TypeError(
+                    f"times must be list[Timestamp] or None, got {type(times).__name__}"
+                )
+            for value in times:
+                if isinstance(value, datetime):
+                    continue
+                _TIMESTAMP_ADAPTER.validate_python(value)
         try:
             result = await self.execute(
                 fragments.SCENE_ADD_O_MUTATION,
@@ -812,7 +852,7 @@ class SceneClientMixin(StashClientProtocol):
     async def scene_delete_o(
         self,
         id: str,
-        times: list[str] | None = None,
+        times: list[Timestamp] | None = None,
     ) -> HistoryMutationResult:
         """Delete O-count entry from a scene.
 
@@ -840,6 +880,15 @@ class SceneClientMixin(StashClientProtocol):
             )
             ```
         """
+        if times is not None:
+            if not isinstance(times, list):
+                raise TypeError(
+                    f"times must be list[Timestamp] or None, got {type(times).__name__}"
+                )
+            for value in times:
+                if isinstance(value, datetime):
+                    continue
+                _TIMESTAMP_ADAPTER.validate_python(value)
         try:
             result = await self.execute(
                 fragments.SCENE_DELETE_O_MUTATION,
@@ -920,7 +969,7 @@ class SceneClientMixin(StashClientProtocol):
                     "playDuration": play_duration,
                 },
             )
-            return bool(result.get("sceneSaveActivity", False))
+            return result.get("sceneSaveActivity") is True
         except Exception as e:
             self.log.error(f"Failed to save activity for scene {id}: {e}")
             raise
@@ -970,7 +1019,7 @@ class SceneClientMixin(StashClientProtocol):
                     "reset_duration": reset_duration,
                 },
             )
-            return bool(result.get("sceneResetActivity", False))
+            return result.get("sceneResetActivity") is True
         except Exception as e:
             self.log.error(f"Failed to reset activity for scene {id}: {e}")
             raise
@@ -978,7 +1027,7 @@ class SceneClientMixin(StashClientProtocol):
     async def scene_add_play(
         self,
         id: str,
-        times: list[str] | None = None,
+        times: list[Timestamp] | None = None,
     ) -> HistoryMutationResult:
         """Add play count entry for a scene.
 
@@ -1019,7 +1068,7 @@ class SceneClientMixin(StashClientProtocol):
     async def scene_delete_play(
         self,
         id: str,
-        times: list[str] | None = None,
+        times: list[Timestamp] | None = None,
     ) -> HistoryMutationResult:
         """Delete play count entry from a scene.
 

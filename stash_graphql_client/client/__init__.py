@@ -89,6 +89,18 @@ class StashClient(
         if host == "0.0.0.0":  # nosec B104  # noqa: S104  # Converting all-interfaces to localhost
             host = "127.0.0.1"
         port = conn.get("Port", 9999)
+
+        # Validate and convert port to int
+        if isinstance(port, str):
+            try:
+                port = int(port)
+            except ValueError as e:
+                raise TypeError(
+                    f"Port must be an int or numeric string, got {port!r}"
+                ) from e
+        if not isinstance(port, int) or not 0 <= port <= 65535:
+            raise ValueError(f"Port must be 0-65535, got {port}")
+
         self.url = f"{scheme}://{host}:{port}/graphql"
 
         # Set up HTTP client

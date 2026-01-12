@@ -24,12 +24,22 @@ from ...types import (
     ScanMetadataOptions,
     SetupInput,
 )
-from ...types.unset import is_set
+from ...types.unset import UnsetType, is_set
 from ..protocols import StashClientProtocol
 
 
 class MetadataClientMixin(StashClientProtocol):
     """Mixin for metadata and database operation methods."""
+
+    def _dump_metadata_options(
+        self, options: GenerateMetadataOptions
+    ) -> dict[str, Any]:
+        exclude_fields = {
+            field_name
+            for field_name in options.__class__.model_fields
+            if isinstance(getattr(options, field_name, None), UnsetType)
+        }
+        return options.model_dump(mode="json", exclude=exclude_fields)
 
     async def metadata_generate(
         self,
@@ -71,27 +81,35 @@ class MetadataClientMixin(StashClientProtocol):
             ValueError: If the input data is invalid
             gql.TransportError: If the request fails
         """
+        # Convert GenerateMetadataOptions to dict if needed
+        options_dict = {}
+        if options is not None:
+            if isinstance(options, GenerateMetadataOptions):
+                options_dict = self._dump_metadata_options(options)
+            else:
+                if not isinstance(options, dict):
+                    raise TypeError(
+                        "options must be GenerateMetadataOptions or dict, "
+                        f"got {type(options).__name__}"
+                    )
+                validated_options = GenerateMetadataOptions(**options)
+                options_dict = self._dump_metadata_options(validated_options)
+
+        # Convert GenerateMetadataInput to dict if needed
+        input_dict = {}
+        if input_data is not None:
+            if isinstance(input_data, GenerateMetadataInput):
+                input_dict = input_data.to_graphql()
+            else:
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        "input_data must be GenerateMetadataInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated_input = GenerateMetadataInput(**input_data)
+                input_dict = validated_input.to_graphql()
+
         try:
-            # Convert GenerateMetadataOptions to dict if needed
-            options_dict = {}
-            if options is not None:
-                if isinstance(options, GenerateMetadataOptions):
-                    options_dict = {
-                        k: v for k, v in vars(options).items() if v is not None
-                    }
-                else:
-                    options_dict = options
-
-            # Convert GenerateMetadataInput to dict if needed
-            input_dict = {}
-            if input_data is not None:
-                if isinstance(input_data, GenerateMetadataInput):
-                    input_dict = {
-                        k: v for k, v in vars(input_data).items() if v is not None
-                    }
-                else:
-                    input_dict = input_data
-
             # Combine options and input data
             variables = {"input": {**options_dict, **input_dict}}
 
@@ -250,12 +268,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.metadata_clean(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, CleanMetadataInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, CleanMetadataInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be CleanMetadataInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = CleanMetadataInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.METADATA_CLEAN_MUTATION,
                 {"input": input_dict},
@@ -315,12 +340,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.metadata_clean_generated(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, CleanGeneratedInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, CleanGeneratedInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be CleanGeneratedInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = CleanGeneratedInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.METADATA_CLEAN_GENERATED_MUTATION,
                 {"input": input_dict},
@@ -368,12 +400,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.metadata_auto_tag(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, AutoTagMetadataInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, AutoTagMetadataInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be AutoTagMetadataInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = AutoTagMetadataInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.METADATA_AUTO_TAG_MUTATION,
                 {"input": input_dict},
@@ -441,12 +480,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.metadata_identify(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, IdentifyMetadataInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, IdentifyMetadataInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be IdentifyMetadataInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = IdentifyMetadataInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.METADATA_IDENTIFY_MUTATION,
                 {"input": input_dict},
@@ -538,12 +584,19 @@ class MetadataClientMixin(StashClientProtocol):
             token = await client.export_objects(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ExportObjectsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ExportObjectsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ExportObjectsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ExportObjectsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.EXPORT_OBJECTS_MUTATION,
                 {"input": input_dict},
@@ -588,12 +641,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.import_objects(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, ImportObjectsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, ImportObjectsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be ImportObjectsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = ImportObjectsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.IMPORT_OBJECTS_MUTATION,
                 {"input": input_dict},
@@ -632,12 +692,19 @@ class MetadataClientMixin(StashClientProtocol):
             print(f"Backup created at: {path}")
             ```
         """
-        try:
-            if isinstance(input_data, BackupDatabaseInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, BackupDatabaseInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be BackupDatabaseInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = BackupDatabaseInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.BACKUP_DATABASE_MUTATION,
                 {"input": input_dict},
@@ -676,12 +743,19 @@ class MetadataClientMixin(StashClientProtocol):
             print(f"Anonymised backup created at: {path}")
             ```
         """
-        try:
-            if isinstance(input_data, AnonymiseDatabaseInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, AnonymiseDatabaseInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be AnonymiseDatabaseInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = AnonymiseDatabaseInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.ANONYMISE_DATABASE_MUTATION,
                 {"input": input_dict},
@@ -719,12 +793,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.migrate(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, MigrateInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, MigrateInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be MigrateInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = MigrateInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.MIGRATE_MUTATION,
                 {"input": input_dict},
@@ -792,12 +873,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.migrate_scene_screenshots(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, MigrateSceneScreenshotsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, MigrateSceneScreenshotsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be MigrateSceneScreenshotsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = MigrateSceneScreenshotsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.MIGRATE_SCENE_SCREENSHOTS_MUTATION,
                 {"input": input_dict},
@@ -835,12 +923,19 @@ class MetadataClientMixin(StashClientProtocol):
             job_id = await client.migrate_blobs(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, MigrateBlobsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, MigrateBlobsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be MigrateBlobsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = MigrateBlobsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.MIGRATE_BLOBS_MUTATION,
                 {"input": input_dict},
@@ -875,17 +970,24 @@ class MetadataClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, SetupInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, SetupInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be SetupInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = SetupInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SETUP_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("setup", False))
+            return result.get("setup") is True
         except Exception as e:
             self.log.error(f"Failed to run setup: {e}")
             raise

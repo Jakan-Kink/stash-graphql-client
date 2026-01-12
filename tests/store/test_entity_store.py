@@ -6,6 +6,7 @@ Tests the StashEntityStore following TESTING_REQUIREMENTS.md:
 - Verify caching, TTL, and query behavior
 """
 
+import concurrent.futures
 import time
 import uuid
 from datetime import timedelta
@@ -395,6 +396,125 @@ class TestCacheOperations:
         assert cache_key in store._cache
         # Should handle int defensively and convert to float
         assert store._cache[cache_key].ttl_seconds == 7200.0
+
+    @pytest.mark.unit
+    async def test_filter_and_populate_batch_size_zero_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test filter_and_populate rejects batch_size=0."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                batch_size=0,
+            )
+
+    @pytest.mark.unit
+    async def test_filter_and_populate_batch_size_negative_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test filter_and_populate rejects negative batch_size."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                batch_size=-1,
+            )
+
+    @pytest.mark.unit
+    async def test_filter_and_populate_with_stats_batch_size_zero_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test filter_and_populate_with_stats rejects batch_size=0."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                batch_size=0,
+            )
+
+    @pytest.mark.unit
+    async def test_filter_and_populate_with_stats_batch_size_negative_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test filter_and_populate_with_stats rejects negative batch_size."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="batch_size must be positive"):
+            await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                batch_size=-1,
+            )
+
+    @pytest.mark.unit
+    async def test_populated_filter_iter_populate_batch_zero_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test populated_filter_iter rejects populate_batch=0."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="populate_batch must be positive"):
+            # Must consume the iterator to trigger validation
+            async for _ in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                populate_batch=0,
+            ):
+                pass
+
+    @pytest.mark.unit
+    async def test_populated_filter_iter_yield_batch_zero_raises_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test populated_filter_iter rejects yield_batch=0."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="yield_batch must be positive"):
+            # Must consume the iterator to trigger validation
+            async for _ in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                yield_batch=0,
+            ):
+                pass
+
+    @pytest.mark.unit
+    async def test_populated_filter_iter_negative_batches_raise_valueerror(
+        self, respx_entity_store
+    ) -> None:
+        """Test populated_filter_iter rejects negative batch sizes."""
+        store = respx_entity_store
+
+        with pytest.raises(ValueError, match="populate_batch must be positive"):
+            async for _ in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                populate_batch=-1,
+            ):
+                pass
+
+        with pytest.raises(ValueError, match="yield_batch must be positive"):
+            async for _ in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+                yield_batch=-1,
+            ):
+                pass
 
     @pytest.mark.unit
     def test_cache_stats(self, respx_entity_store) -> None:
@@ -2094,8 +2214,6 @@ class TestStoreThreadSafety:
         self, respx_entity_store: StashEntityStore
     ) -> None:
         """Test that concurrent cache operations don't cause race conditions."""
-        import concurrent.futures
-
         store = respx_entity_store
         errors = []
         results = []
@@ -2145,8 +2263,6 @@ class TestStoreThreadSafety:
         self, respx_entity_store: StashEntityStore
     ) -> None:
         """Test that concurrent invalidation doesn't cause issues."""
-        import concurrent.futures
-
         store = respx_entity_store
 
         # Pre-populate cache with 100 entities
@@ -2177,8 +2293,6 @@ class TestStoreThreadSafety:
         self, respx_entity_store: StashEntityStore
     ) -> None:
         """Test that concurrent stats collection is consistent."""
-        import concurrent.futures
-
         store = respx_entity_store
 
         # Pre-populate cache

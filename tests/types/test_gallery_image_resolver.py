@@ -6,6 +6,8 @@ Following TESTING_REQUIREMENTS.md:
 - Test actual code paths, not mocks
 """
 
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
@@ -83,8 +85,6 @@ class TestGalleryImageResolver:
     @pytest.mark.asyncio
     async def test_image_no_store_raises_error(self):
         """Test that image() raises RuntimeError when no store is configured."""
-        from unittest.mock import patch
-
         gallery = Gallery(id="gallery-123", title="Test", urls=[])
 
         # Use patch.object for thread-safe test isolation in parallel execution

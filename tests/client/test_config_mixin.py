@@ -72,9 +72,9 @@ async def test_configure_general_with_dict(respx_stash_client: StashClient) -> N
 async def test_configure_general_with_model(respx_stash_client: StashClient) -> None:
     """Test configuring general settings with ConfigGeneralInput model."""
     config_data = create_config_general_result()
-    # Add camelCase keys for fields beyond required minimum
-    config_data["ffmpegPath"] = "/custom/ffmpeg"
-    config_data["ffprobePath"] = "/custom/ffprobe"
+    # Add camelCase keys for non-protected fields
+    config_data["parallelTasks"] = 8
+    config_data["previewSegmentDuration"] = 5
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
@@ -83,14 +83,12 @@ async def test_configure_general_with_model(respx_stash_client: StashClient) -> 
         ]
     )
 
-    input_data = ConfigGeneralInput(
-        ffmpegPath="/custom/ffmpeg", ffprobePath="/custom/ffprobe"
-    )
+    input_data = ConfigGeneralInput(parallel_tasks=8, preview_segment_duration=5)
     result = await respx_stash_client.configure_general(input_data)
 
     assert result is not None
-    assert result.ffmpeg_path == "/custom/ffmpeg"
-    assert result.ffprobe_path == "/custom/ffprobe"
+    assert result.parallel_tasks == 8
+    assert result.preview_segment_duration == 5
     assert len(graphql_route.calls) == 1
 
 

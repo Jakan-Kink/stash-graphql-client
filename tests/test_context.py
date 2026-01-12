@@ -46,13 +46,18 @@ class TestStashContextInit:
 
     @pytest.mark.unit
     def test_case_insensitive_conn_dict(self) -> None:
-        """Test that connection dict is case-insensitive."""
-        conn = {"scheme": "http", "HOST": "localhost", "Port": 9999}
+        """Test that connection dict accepts case-insensitive input.
+
+        Input keys with any case (scheme, SCHEME, Scheme) are normalized to
+        canonical case (Scheme) and stored in a regular dict.
+        """
+        conn = {"scheme": "http", "HOST": "localhost", "pOrt": 9999}
         context = StashContext(conn=conn)
 
-        # CIMultiDict allows case-insensitive access
-        assert context.conn["scheme"] == "http"
-        assert context.conn["SCHEME"] == "http"
+        # Keys are normalized to canonical case
+        assert context.conn["Scheme"] == "http"
+        assert context.conn["Host"] == "localhost"
+        assert context.conn["Port"] == 9999
 
     @pytest.mark.asyncio
     @pytest.mark.unit

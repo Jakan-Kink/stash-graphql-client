@@ -20,8 +20,10 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 import respx
+from pydantic import ValidationError
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashIntegrationError
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response
 
@@ -101,6 +103,29 @@ async def test_scene_add_o_with_specific_times(respx_stash_client: StashClient) 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_scene_add_o_with_datetime_times(respx_stash_client: StashClient) -> None:
+    """Test adding O-count entry with datetime timestamps."""
+    result_data = {
+        "count": 1,
+        "history": ["2024-01-15T10:30:00Z"],
+    }
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("sceneAddO", result_data))
+        ]
+    )
+
+    times = [datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)]
+    await respx_stash_client.scene_add_o("123", times=times)
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert req["variables"]["times"] == ["2024-01-15T10:30:00+00:00"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_scene_add_o_error(respx_stash_client: StashClient) -> None:
     """Test scene_add_o error handling."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -113,6 +138,26 @@ async def test_scene_add_o_error(respx_stash_client: StashClient) -> None:
         await respx_stash_client.scene_add_o("123")
 
     assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scene_add_o_invalid_timestamp_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test scene_add_o rejects invalid timestamp strings."""
+    with pytest.raises(ValidationError, match="Invalid time unit"):
+        await respx_stash_client.scene_add_o("123", times=["<10s"])
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scene_add_o_invalid_times_type_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test scene_add_o rejects non-list times values."""
+    with pytest.raises(TypeError, match="times must be list\\[Timestamp\\] or None"):
+        await respx_stash_client.scene_add_o("123", times="not-a-list")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -186,6 +231,33 @@ async def test_scene_delete_o_with_specific_timestamp(
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_scene_delete_o_with_datetime_times(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test removing O-count entries with datetime timestamps."""
+    result_data = {
+        "count": 1,
+        "history": ["2024-01-15T10:30:00Z"],
+    }
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("sceneDeleteO", result_data)
+            )
+        ]
+    )
+
+    times = [datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)]
+    await respx_stash_client.scene_delete_o("123", times=times)
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert req["variables"]["times"] == ["2024-01-15T10:30:00+00:00"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_scene_delete_o_error(respx_stash_client: StashClient) -> None:
     """Test scene_delete_o error handling."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -200,6 +272,26 @@ async def test_scene_delete_o_error(respx_stash_client: StashClient) -> None:
         await respx_stash_client.scene_delete_o("123")
 
     assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scene_delete_o_invalid_times_type_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test scene_delete_o rejects non-list times values."""
+    with pytest.raises(TypeError, match="times must be list\\[Timestamp\\] or None"):
+        await respx_stash_client.scene_delete_o("123", times="not-a-list")  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_scene_delete_o_invalid_timestamp_type_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test scene_delete_o rejects non-str/datetime timestamp values."""
+    with pytest.raises(StashIntegrationError, match="Timestamp scalar"):
+        await respx_stash_client.scene_delete_o("123", times=[123])  # type: ignore[list-item]
 
 
 @pytest.mark.asyncio

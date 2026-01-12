@@ -12,6 +12,7 @@ import pytest
 from stash_graphql_client.types import UNSET, Scene, UnsetType, is_set
 from stash_graphql_client.types.gallery import Gallery
 from stash_graphql_client.types.performer import Performer
+from stash_graphql_client.types.tag import Tag
 
 
 @pytest.mark.usefixtures("mock_entity_store")
@@ -183,8 +184,6 @@ class TestGalleryHelperMethods:
     @pytest.mark.asyncio
     async def test_add_tag(self):
         """Test that add_tag adds tag to tags list."""
-        from stash_graphql_client.types import Tag
-
         gallery = Gallery(id="1", title="Gallery 1", tags=[], urls=[])
         tag = Tag(id="2", name="Tag 1", parents=[], children=[])
 
@@ -198,8 +197,6 @@ class TestGalleryHelperMethods:
     @pytest.mark.asyncio
     async def test_remove_tag(self):
         """Test that remove_tag removes tag from tags list."""
-        from stash_graphql_client.types import Tag
-
         tag = Tag(id="2", name="Tag 1", parents=[], children=[])
         gallery = Gallery(id="1", title="Gallery 1", tags=[tag], urls=[])
 

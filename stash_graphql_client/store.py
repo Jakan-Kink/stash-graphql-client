@@ -522,6 +522,9 @@ class StashEntityStore:
             )
             # ↓ Fetches files relationship + path/size fields on each File object
         """
+        if batch_size < 1:
+            raise ValueError("batch_size must be positive")
+
         type_name = entity_type.__type_name__
         fields_set = (
             set(required_fields)
@@ -636,6 +639,9 @@ class StashEntityStore:
                 predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
             )
         """
+        if batch_size < 1:
+            raise ValueError("batch_size must be positive")
+
         type_name = entity_type.__type_name__
         fields_set = (
             set(required_fields)
@@ -768,6 +774,11 @@ class StashEntityStore:
             ):
                 await process_large_image(image)
         """
+        if populate_batch < 1:
+            raise ValueError("populate_batch must be positive")
+        if yield_batch < 1:
+            raise ValueError("yield_batch must be positive")
+
         type_name = entity_type.__type_name__
         fields_set = (
             set(required_fields)

@@ -109,6 +109,17 @@ class StashClientProtocol(Protocol):
         """
         ...
 
+    def _normalize_sort_direction(self, filter_: dict[str, Any]) -> dict[str, Any]:
+        """Validate and normalize sort direction in filter dict.
+
+        Args:
+            filter_: Filter dictionary that may include "direction"
+
+        Returns:
+            Updated filter dictionary with normalized direction
+        """
+        ...
+
     @overload
     def _decode_result(self, type_: type[T], data: dict[str, Any]) -> T:
         """Decode GraphQL result dict to typed object (non-None data)."""

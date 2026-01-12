@@ -63,12 +63,13 @@ class MarkerClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_MARKERS_QUERY,
                 {"filter": filter_, "marker_filter": marker_filter},
@@ -177,7 +178,7 @@ class MarkerClientMixin(StashClientProtocol):
                 {"id": id},
             )
 
-            return bool(result.get("sceneMarkerDestroy", False))
+            return result.get("sceneMarkerDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete scene marker: {e}")
             raise
@@ -201,7 +202,7 @@ class MarkerClientMixin(StashClientProtocol):
                 {"ids": ids},
             )
 
-            return bool(result.get("sceneMarkersDestroy", False))
+            return result.get("sceneMarkersDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete scene markers: {e}")
             raise
@@ -245,7 +246,14 @@ class MarkerClientMixin(StashClientProtocol):
             if isinstance(input_data, BulkSceneMarkerUpdateInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be BulkSceneMarkerUpdateInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = BulkSceneMarkerUpdateInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.BULK_SCENE_MARKER_UPDATE_MUTATION,

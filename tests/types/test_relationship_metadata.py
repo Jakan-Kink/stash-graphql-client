@@ -13,6 +13,7 @@ from stash_graphql_client.errors import StashIntegrationError
 from stash_graphql_client.types import UNSET, RelationshipMetadata
 from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.files import StashIDInput
+from stash_graphql_client.types.studio import Studio
 
 
 class TestRelationshipMetadataBasics:
@@ -380,8 +381,6 @@ class TestRelationshipMetadataValidation:
         )
 
         # Type object (when import is available)
-        from stash_graphql_client.types.studio import Studio
-
         rel2 = RelationshipMetadata(
             target_field="studio_id",
             is_list=False,

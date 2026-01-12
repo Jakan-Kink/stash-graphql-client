@@ -1387,7 +1387,7 @@ class ScraperClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(query, {})
-            return result.get("reloadScrapers", False) if result else False
+            return result.get("reloadScrapers") is True
         except Exception as e:
             self.log.error(f"Failed to reload scrapers: {e}")
             return False
@@ -1404,17 +1404,24 @@ class ScraperClientMixin(StashClientProtocol):
         Returns:
             True if successful
         """
-        try:
-            if isinstance(input_data, StashBoxFingerprintSubmissionInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, StashBoxFingerprintSubmissionInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be StashBoxFingerprintSubmissionInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = StashBoxFingerprintSubmissionInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SUBMIT_STASHBOX_FINGERPRINTS_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("submitStashBoxFingerprints", False))
+            return result.get("submitStashBoxFingerprints") is True
         except Exception as e:
             self.log.error(f"Failed to submit StashBox fingerprints: {e}")
             raise
@@ -1431,12 +1438,19 @@ class ScraperClientMixin(StashClientProtocol):
         Returns:
             Draft ID
         """
-        try:
-            if isinstance(input_data, StashBoxDraftSubmissionInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, StashBoxDraftSubmissionInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be StashBoxDraftSubmissionInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = StashBoxDraftSubmissionInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SUBMIT_STASHBOX_SCENE_DRAFT_MUTATION,
                 {"input": input_dict},
@@ -1458,12 +1472,19 @@ class ScraperClientMixin(StashClientProtocol):
         Returns:
             Draft ID
         """
-        try:
-            if isinstance(input_data, StashBoxDraftSubmissionInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, StashBoxDraftSubmissionInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be StashBoxDraftSubmissionInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = StashBoxDraftSubmissionInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SUBMIT_STASHBOX_PERFORMER_DRAFT_MUTATION,
                 {"input": input_dict},

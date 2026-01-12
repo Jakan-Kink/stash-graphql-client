@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Dict Input Validation**: Methods accepting `SomeInput | dict[str, Any]` now validate dicts through Pydantic before sending to GraphQL
+  - Type checking ensures `input_data` is actually a dict (not other types)
+  - Pydantic validation catches field type errors, required field issues, and invalid values
+  - Provides clear error messages instead of silent GraphQL failures
+  - Affects 50+ methods across all client mixins (scene, image, gallery, tag, studio, performer, group, etc.)
+  - Examples: `bulk_image_update()`, `scene_destroy()`, `tag_destroy()`, etc.
+  - Location: All files in `stash_graphql_client/client/mixins/*.py`
+
+### Deprecated
+
+- **Extra Fields Behavior**: Currently, extra/unknown fields in dict inputs are silently ignored (Pydantic default)
+  - **Future Change**: In a future release, passing unknown fields will raise a validation error (`extra="forbid"`)
+  - **Action Required**: Review your code for typos or outdated field names in dict inputs
+  - **Example**: `{"ids": [...], "tag_id": "x"}` instead of `"tag_ids"` will be rejected
+  - **Timeline**: This will be implemented in v0.11.0 or later with proper deprecation warnings
+
 ## [0.10.7] - 2026-01-11
 
 ### Fixed

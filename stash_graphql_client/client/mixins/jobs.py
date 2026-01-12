@@ -122,7 +122,7 @@ class JobsClientMixin(StashClientProtocol):
                 """,
                 {"job_id": job_id},
             )
-            return bool(result.get("stopJob", False))
+            return result.get("stopJob") is True
         except Exception as e:
             self.log.error(f"Failed to stop job {job_id}: {e}")
             return False
@@ -149,7 +149,7 @@ class JobsClientMixin(StashClientProtocol):
                 }
                 """
             )
-            return bool(result.get("stopAllJobs", False))
+            return result.get("stopAllJobs") is True
         except Exception as e:
             self.log.error(f"Failed to stop all jobs: {e}")
             return False

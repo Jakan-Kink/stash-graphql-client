@@ -143,6 +143,8 @@ class FileClientMixin(StashClientProtocol):
             result = await client.find_files(ids=["1", "2", "3"])
             ```
         """
+        if filter_ is not None:
+            filter_ = self._normalize_sort_direction(filter_)
         try:
             return await self.execute(
                 fragments.FIND_FILES_QUERY,
@@ -204,18 +206,24 @@ class FileClientMixin(StashClientProtocol):
             })
             ```
         """
-        try:
-            # Convert MoveFilesInput to dict if needed
-            if isinstance(input_data, MoveFilesInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, MoveFilesInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be MoveFilesInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = MoveFilesInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.MOVE_FILES_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("moveFiles", False))
+            return result.get("moveFiles") is True
         except Exception as e:
             self.log.error(f"Failed to move files: {e}")
             return False
@@ -258,18 +266,24 @@ class FileClientMixin(StashClientProtocol):
             })
             ```
         """
-        try:
-            # Convert FileSetFingerprintsInput to dict if needed
-            if isinstance(input_data, FileSetFingerprintsInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, FileSetFingerprintsInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be FileSetFingerprintsInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = FileSetFingerprintsInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.FILE_SET_FINGERPRINTS_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("fileSetFingerprints", False))
+            return result.get("fileSetFingerprints") is True
         except Exception as e:
             self.log.error(f"Failed to set file fingerprints: {e}")
             return False
@@ -308,18 +322,24 @@ class FileClientMixin(StashClientProtocol):
             success = await client.scene_assign_file(input_data)
             ```
         """
-        try:
-            # Convert AssignSceneFileInput to dict if needed
-            if isinstance(input_data, AssignSceneFileInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, AssignSceneFileInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be AssignSceneFileInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = AssignSceneFileInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SCENE_ASSIGN_FILE_MUTATION,
                 {"input": input_dict},
             )
-            return bool(result.get("sceneAssignFile", False))
+            return result.get("sceneAssignFile") is True
         except Exception as e:
             self.log.error(f"Failed to assign file to scene: {e}")
             return False
@@ -343,7 +363,7 @@ class FileClientMixin(StashClientProtocol):
                 {"ids": ids},
             )
 
-            return bool(result.get("deleteFiles", False))
+            return result.get("deleteFiles") is True
         except Exception as e:
             self.log.error(f"Failed to delete files: {e}")
             raise

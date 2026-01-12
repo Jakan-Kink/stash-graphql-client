@@ -12,14 +12,22 @@ Following TESTING_REQUIREMENTS.md:
 - Verify both request and response in GraphQL mocks
 """
 
+import io
+import logging
+import re
+import time
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
 
 from stash_graphql_client import Performer, StashEntityStore
+from stash_graphql_client.logging import client_logger
 from stash_graphql_client.types.unset import UNSET
 from tests.fixtures.stash import (
     PerformerFactory,
+    SceneFactory,
     create_graphql_response,
     create_performer_dict,
 )
@@ -124,7 +132,6 @@ class TestFilterStrict:
         cache_key = ("Performer", "1")
         entry = store._cache[cache_key]
         entry.ttl_seconds = 0.001  # 1ms TTL
-        import time
 
         time.sleep(0.002)  # Wait for expiration
 
@@ -140,8 +147,6 @@ class TestFilterStrict:
         self, respx_entity_store: StashEntityStore
     ) -> None:
         """Test filter_strict skips entities of different types in cache."""
-        from tests.fixtures.stash import SceneFactory
-
         store = respx_entity_store
 
         # Cache a performer AND a scene
@@ -340,8 +345,6 @@ class TestFilterAndPopulate:
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
         """Test filter_and_populate skips entities of different types."""
-        from tests.fixtures.stash import SceneFactory
-
         store = respx_entity_store
 
         # Cache performer and scene (mixed types)
@@ -379,7 +382,6 @@ class TestFilterAndPopulate:
         # Expire it
         cache_key = ("Performer", "1")
         store._cache[cache_key].ttl_seconds = 0.001
-        import time
 
         time.sleep(0.002)
 
@@ -417,11 +419,6 @@ class TestFilterAndPopulate:
         )
 
         # Filter should warn and skip this performer
-        import io
-        import logging
-
-        from stash_graphql_client.logging import client_logger
-
         log_capture = io.StringIO()
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.WARNING)
@@ -446,8 +443,6 @@ class TestFilterAndPopulate:
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
         """Test filter_and_populate skips entries that expire during populate phase."""
-        from unittest.mock import patch
-
         store = respx_entity_store
 
         # Cache two performers with complete data (no population needed)
@@ -467,7 +462,6 @@ class TestFilterAndPopulate:
             cache_key = ("Performer", "2")
             if cache_key in store._cache:
                 store._cache[cache_key].ttl_seconds = 0.001
-                import time
 
                 time.sleep(0.002)
             return result
@@ -640,8 +634,6 @@ class TestFilterAndPopulateWithStats:
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
         """Test filter_and_populate_with_stats skips entities of different types."""
-        from tests.fixtures.stash import SceneFactory
-
         store = respx_entity_store
 
         # Cache mixed types
@@ -679,7 +671,6 @@ class TestFilterAndPopulateWithStats:
         # Expire it
         cache_key = ("Performer", "1")
         store._cache[cache_key].ttl_seconds = 0.001
-        import time
 
         time.sleep(0.002)
 
@@ -715,11 +706,6 @@ class TestFilterAndPopulateWithStats:
         )
 
         # Should warn and skip
-        import io
-        import logging
-
-        from stash_graphql_client.logging import client_logger
-
         log_capture = io.StringIO()
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.WARNING)
@@ -741,8 +727,6 @@ class TestFilterAndPopulateWithStats:
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
         """Test filter_and_populate_with_stats skips entries expired during processing."""
-        from unittest.mock import patch
-
         store = respx_entity_store
 
         # Cache two performers with complete data
@@ -762,7 +746,6 @@ class TestFilterAndPopulateWithStats:
             cache_key = ("Performer", "2")
             if cache_key in store._cache:
                 store._cache[cache_key].ttl_seconds = 0.001
-                import time
 
                 time.sleep(0.002)
             return result
@@ -872,8 +855,6 @@ class TestPopulatedFilterIter:
             call_count += 1
             content = request.content.decode()
             # Extract any ID
-            import re
-
             match = re.search(r'"id"\s*:\s*"(\d+)"', content)
             if match:
                 pid = match.group(1)
@@ -937,8 +918,6 @@ class TestPopulatedFilterIter:
         # Mock responses
         def mock_response(request):
             content = request.content.decode()
-            import re
-
             match = re.search(r'"id"\s*:\s*"(\d+)"', content)
             if match:
                 pid = match.group(1)
@@ -993,11 +972,6 @@ class TestPopulatedFilterIter:
         )
 
         # Should warn and skip
-        import io
-        import logging
-
-        from stash_graphql_client.logging import client_logger
-
         log_capture = io.StringIO()
         handler = logging.StreamHandler(log_capture)
         handler.setLevel(logging.WARNING)

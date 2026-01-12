@@ -35,6 +35,7 @@ from stash_graphql_client.types import (
     GenerateMetadataOptions,
     Studio,
 )
+from stash_graphql_client.types.enums import SortDirectionEnum
 from stash_graphql_client.types.scene import Scene, SceneHashInput
 from stash_graphql_client.types.unset import UNSET
 
@@ -927,6 +928,78 @@ async def test_parse_obj_for_id_with_dict_having_id(respx_stash_client) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_parse_obj_for_id_with_negative_string_raises(
+    respx_stash_client,
+) -> None:
+    """Test _parse_obj_for_ID raises on non-positive string IDs."""
+    with pytest.raises(ValueError, match="ID must be positive"):
+        respx_stash_client._parse_obj_for_ID("-1")
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_parse_obj_for_id_with_invalid_dict_value_raises(
+    respx_stash_client,
+) -> None:
+    """Test _parse_obj_for_ID raises on non-numeric dict values."""
+    with pytest.raises(ValueError, match="Invalid id"):
+        respx_stash_client._parse_obj_for_ID({"id": "not-a-number"})
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_parse_obj_for_id_with_non_positive_dict_value_raises(
+    respx_stash_client,
+) -> None:
+    """Test _parse_obj_for_ID raises on non-positive dict IDs."""
+    with pytest.raises(ValueError, match="id must be positive"):
+        respx_stash_client._parse_obj_for_ID({"id": 0})
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_normalize_sort_direction_with_enum(respx_stash_client) -> None:
+    """Test _normalize_sort_direction converts enum to string."""
+    result = respx_stash_client._normalize_sort_direction(
+        {"direction": SortDirectionEnum.ASC, "page": 1}
+    )
+    assert result["direction"] == "ASC"
+    assert result["page"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_normalize_sort_direction_none_returns_filter(
+    respx_stash_client,
+) -> None:
+    """Test _normalize_sort_direction returns filter when direction is None."""
+    filter_ = {"direction": None, "page": 1}
+    result = respx_stash_client._normalize_sort_direction(filter_)
+    assert result is filter_
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_normalize_sort_direction_invalid_type_raises(
+    respx_stash_client,
+) -> None:
+    """Test _normalize_sort_direction rejects non-str/non-enum values."""
+    with pytest.raises(TypeError, match="direction must be SortDirectionEnum or str"):
+        respx_stash_client._normalize_sort_direction({"direction": 123})
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_normalize_sort_direction_invalid_string_raises(
+    respx_stash_client,
+) -> None:
+    """Test _normalize_sort_direction rejects invalid string values."""
+    with pytest.raises(ValueError, match="direction must be 'ASC' or 'DESC'"):
+        respx_stash_client._normalize_sort_direction({"direction": "DOWN"})
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_context_manager_exit_calls_close(respx_stash_client) -> None:
     """Test __aexit__ calls close() method."""
     # Patch close to verify it's called
@@ -1333,3 +1406,187 @@ async def test_scheme_attribute_stored_during_init(
         client_https = await context_https.get_client()
         assert client_https.scheme == "https"
         await context_https.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_string_converted_to_int(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that port parameter as string is converted to int."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": "9999"},  # Port as string
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client = await context.get_client()
+        # URL should have int port
+        assert client.url == "http://localhost:9999/graphql"
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_int_works_normally(mock_ws_transport, mock_gql_ws_connect) -> None:
+    """Test that port parameter as int works normally."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 8080},  # Port as int
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client = await context.get_client()
+        assert client.url == "http://localhost:8080/graphql"
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_invalid_string_raises_typeerror() -> None:
+    """Test that invalid port string raises TypeError."""
+
+    client = StashClientBase(
+        conn={"Host": "localhost", "Port": "invalid"},
+        verify_ssl=False,
+    )
+
+    with pytest.raises(TypeError, match="Port must be an int or numeric string"):
+        await client.initialize()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_out_of_range_raises_valueerror() -> None:
+    """Test that port out of valid range raises ValueError."""
+
+    client_negative = StashClientBase(
+        conn={"Host": "localhost", "Port": -1},
+        verify_ssl=False,
+    )
+
+    with pytest.raises(ValueError, match="Port must be 0-65535"):
+        await client_negative.initialize()
+
+    # Test port > 65535
+    client_large = StashClientBase(
+        conn={"Host": "localhost", "Port": 99999},
+        verify_ssl=False,
+    )
+
+    with pytest.raises(ValueError, match="Port must be 0-65535"):
+        await client_large.initialize()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_edge_cases_valid(mock_ws_transport, mock_gql_ws_connect) -> None:
+    """Test that port edge cases (0, 65535) are valid."""
+    # Port 0 (let OS assign)
+    context_zero = StashContext(
+        conn={"Host": "localhost", "Port": 0},
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client_zero = await context_zero.get_client()
+        assert client_zero.url == "http://localhost:0/graphql"
+        await context_zero.close()
+
+    # Port 65535 (max valid)
+    context_max = StashContext(
+        conn={"Host": "localhost", "Port": 65535},
+        verify_ssl=False,
+    )
+
+    with respx.mock:
+        client_max = await context_max.get_client()
+        assert client_max.url == "http://localhost:65535/graphql"
+        await context_max.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_verify_ssl_string_variants(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Test that verify_ssl accepts various string representations of true/false."""
+    # Test "true" string
+    context_true = StashContext(
+        conn={"Host": "localhost", "Port": 9999, "Scheme": "https"},
+        verify_ssl="true",
+    )
+    with respx.mock:
+        client = await context_true.get_client()
+        # Should be converted to True
+        assert client.transport_config["ssl"] is True
+        await context_true.close()
+
+    # Test "1" string
+    context_one = StashContext(
+        conn={"Host": "localhost", "Port": 9999, "Scheme": "https"},
+        verify_ssl="1",
+    )
+    with respx.mock:
+        client = await context_one.get_client()
+        assert client.transport_config["ssl"] is True
+        await context_one.close()
+
+    # Test "yes" string
+    context_yes = StashContext(
+        conn={"Host": "localhost", "Port": 9999, "Scheme": "https"},
+        verify_ssl="yes",
+    )
+    with respx.mock:
+        client = await context_yes.get_client()
+        assert client.transport_config["ssl"] is True
+        await context_yes.close()
+
+    # Test "false" string (should be False)
+    context_false = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl="false",
+    )
+    with respx.mock:
+        client = await context_false.get_client()
+        assert client.transport_config["ssl"] is False
+        await context_false.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_verify_ssl_invalid_type_raises_typeerror() -> None:
+    """Test that verify_ssl rejects non-bool, non-string types."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl=123,  # type: ignore[arg-type]
+    )
+
+    with pytest.raises(RuntimeError, match="verify_ssl must be bool or string"):
+        await context.get_client()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_invalid_scheme_raises_valueerror() -> None:
+    """Test that invalid scheme raises ValueError."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999, "Scheme": "ftp"},
+        verify_ssl=False,
+    )
+
+    with pytest.raises(RuntimeError, match="Scheme must be 'http' or 'https'"):
+        await context.get_client()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_port_negative_raises_valueerror() -> None:
+    """Test that negative port raises ValueError."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": -1},
+        verify_ssl=False,
+    )
+
+    with pytest.raises(ValueError, match="Port must be 0-65535"):
+        await context.get_client()

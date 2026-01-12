@@ -52,12 +52,19 @@ class FilterClientMixin(StashClientProtocol):
             saved_filter = await client.save_filter(input_data)
             ```
         """
-        try:
-            if isinstance(input_data, SaveFilterInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, SaveFilterInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be SaveFilterInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = SaveFilterInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.SAVE_FILTER_MUTATION,
                 {"input": input_dict},
@@ -94,18 +101,25 @@ class FilterClientMixin(StashClientProtocol):
             success = await client.destroy_saved_filter({"id": "123"})
             ```
         """
-        try:
-            if isinstance(input_data, DestroyFilterInput):
-                input_dict = input_data.to_graphql()
-            else:
-                input_dict = input_data
+        # Validate input type before try block so TypeError propagates
+        if isinstance(input_data, DestroyFilterInput):
+            input_dict = input_data.to_graphql()
+        else:
+            if not isinstance(input_data, dict):
+                raise TypeError(
+                    f"input_data must be DestroyFilterInput or dict, "
+                    f"got {type(input_data).__name__}"
+                )
+            validated = DestroyFilterInput(**input_data)
+            input_dict = validated.to_graphql()
 
+        try:
             result = await self.execute(
                 fragments.DESTROY_SAVED_FILTER_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("destroySavedFilter", False))
+            return result.get("destroySavedFilter") is True
         except Exception as e:
             self.log.error(f"Failed to delete saved filter: {e}")
             raise

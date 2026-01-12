@@ -23,6 +23,7 @@ from ..errors import (
     StashServerError,
 )
 from ..logging import client_logger
+from ..types.enums import SortDirectionEnum
 from ..types.unset import UnsetType
 from .utils import sanitize_model_data
 
@@ -56,12 +57,12 @@ class StashClientBase:
 
         Args:
             conn: Connection details dictionary with:
-                - Scheme: Protocol (default: "http")
-                - Host: Hostname (default: "localhost")
-                - Port: Port number (default: 9999)
-                - ApiKey: Optional API key
-                - Logger: Optional logger instance
-            verify_ssl: Whether to verify SSL certificates
+                - Scheme: Protocol - "http" or "https" (default: "http")
+                - Host: Hostname - IPv4, IPv6, shortname, or FQDN (default: "localhost")
+                - Port: Port number - int or numeric string, 0-65535 (default: 9999)
+                - ApiKey: Optional API key string
+                - Logger: Optional logger instance (duck-typed: must have .debug(), .info(), .warning(), .error() methods)
+            verify_ssl: Whether to verify SSL certificates (bool or string "true"/"false")
         """
         if not hasattr(self, "_initialized"):
             self._initialized = False
@@ -125,16 +126,40 @@ class StashClientBase:
         conn, verify_ssl = self._init_args
         conn = conn or {}
 
-        # Set up logging - use fansly.stash.client hierarchy
+        # Validate and convert verify_ssl to bool
+        if isinstance(verify_ssl, str):
+            verify_ssl = verify_ssl.lower() in ("true", "1", "yes")
+        elif not isinstance(verify_ssl, bool):
+            raise TypeError(
+                f"verify_ssl must be bool or string ('true'/'false'), got {type(verify_ssl).__name__}"
+            )
+
+        # Set up logging (duck-typed: must have .debug(), .info(), .warning(), .error())
         self.log = conn.get("Logger", client_logger)
 
-        # Build URLs
-        self.scheme = conn.get("Scheme", "http")
+        # Validate Scheme
+        scheme = conn.get("Scheme", "http")
+        if scheme not in ("http", "https"):
+            raise ValueError(f"Scheme must be 'http' or 'https', got {scheme!r}")
+        self.scheme = scheme
         ws_scheme = "ws" if self.scheme == "http" else "wss"
+
+        # Host can be IPv4, IPv6, shortname, or FQDN - no validation needed
         host = conn.get("Host", "localhost")
         if host == "0.0.0.0":  # nosec B104  # noqa: S104  # Converting all-interfaces to localhost
             host = "127.0.0.1"
         port = conn.get("Port", 9999)
+
+        # Validate and convert port to int
+        if isinstance(port, str):
+            try:
+                port = int(port)
+            except ValueError as e:
+                raise TypeError(
+                    f"Port must be an int or numeric string, got {port!r}"
+                ) from e
+        if not isinstance(port, int) or not 0 <= port <= 65535:
+            raise ValueError(f"Port must be 0-65535, got {port}")
 
         self.url = f"{self.scheme}://{host}:{port}/graphql"
         self.ws_url = f"{ws_scheme}://{host}:{port}/graphql"
@@ -196,7 +221,7 @@ class StashClientBase:
         self.transport_config: TransportConfig = {
             "url": str(self.url),
             "headers": headers,
-            "ssl": bool(verify_ssl),
+            "ssl": verify_ssl,
             "timeout": 30,
         }
 
@@ -504,16 +529,48 @@ class StashClientBase:
 
     def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
         if isinstance(param, str):
+            stripped = param.strip()
             try:
-                return int(param)
+                id_val = int(stripped)
             except ValueError:
-                return {str_key: param.strip()}
-        elif isinstance(param, dict):
-            if param.get("stored_id"):
-                return int(param["stored_id"])
-            if param.get("id"):
-                return int(param["id"])
+                return {str_key: stripped}
+            if id_val <= 0:
+                raise ValueError("ID must be positive")
+            return id_val
+        if isinstance(param, dict):
+            for key in ("stored_id", "id"):
+                if key in param:
+                    try:
+                        id_val = int(param[key])
+                    except (TypeError, ValueError) as e:
+                        raise ValueError(f"Invalid {key}: {param[key]!r}") from e
+                    if id_val <= 0:
+                        raise ValueError(f"{key} must be positive")
+                    return id_val
         return param
+
+    def _normalize_sort_direction(self, filter_: dict[str, Any]) -> dict[str, Any]:
+        if "direction" not in filter_:
+            return filter_
+
+        direction = filter_.get("direction")
+        if direction is None:
+            return filter_
+
+        if isinstance(direction, SortDirectionEnum):
+            updated = dict(filter_)
+            updated["direction"] = direction.value
+            return updated
+
+        if isinstance(direction, str):
+            if direction in ("ASC", "DESC"):
+                return filter_
+            raise ValueError(f"direction must be 'ASC' or 'DESC', got {direction!r}")
+
+        raise TypeError(
+            "direction must be SortDirectionEnum or str, "
+            f"got {type(direction).__name__}"
+        )
 
     async def close(self) -> None:
         """Close the HTTP client and clean up resources.

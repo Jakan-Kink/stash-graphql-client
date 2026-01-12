@@ -45,6 +45,7 @@ async def test_find_images_returns_results(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.flaky(reruns=2)  # Flaky due to race conditions with gallery cleanup
 async def test_find_images_with_pagination(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:

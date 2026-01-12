@@ -13,11 +13,14 @@ Following TESTING_REQUIREMENTS.md:
 - Verify both request and response in GraphQL mocks
 """
 
+import logging
+
 import httpx
 import pytest
 import respx
 
 from stash_graphql_client import Image, StashEntityStore
+from stash_graphql_client.types import Gallery, GalleryChapter, Scene
 from stash_graphql_client.types.unset import UNSET
 from tests.fixtures.stash import (
     ImageFactory,
@@ -585,8 +588,6 @@ class TestNestedFieldEdgeCases:
         self, respx_mock, respx_entity_store: StashEntityStore, caplog
     ) -> None:
         """Test populate() with nested field spec for non-existent field."""
-        import logging
-
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Test")
@@ -738,8 +739,6 @@ class TestNestedFieldEdgeCases:
         self, respx_entity_store: StashEntityStore
     ) -> None:
         """Test _get_concrete_type with unrecognized __typename."""
-        from stash_graphql_client.types import Scene
-
         store = respx_entity_store
 
         # Data with unknown __typename
@@ -812,8 +811,6 @@ class TestNestedFieldEdgeCases:
         line 1249 is False (not independently fetchable), so execution
         continues to the next iteration (branch 1249->1227).
         """
-        from stash_graphql_client.types import Gallery, GalleryChapter
-
         store = respx_entity_store
 
         # Create a GalleryChapter (not independently fetchable) as a SINGLE object
@@ -849,8 +846,6 @@ class TestNestedFieldEdgeCases:
         self, respx_mock, respx_entity_store: StashEntityStore
     ) -> None:
         """Test that populate skips non-independently-fetchable items in lists."""
-        from stash_graphql_client.types import Gallery, GalleryChapter
-
         store = respx_entity_store
 
         # Create a GalleryChapter with partial fields (not independently fetchable)

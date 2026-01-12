@@ -63,12 +63,13 @@ class ImageClientMixin(StashClientProtocol):
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
-        try:
-            # Add q to filter if provided
-            if q is not None:
-                filter_ = dict(filter_ or {})
-                filter_["q"] = q
+        # Add q to filter if provided
+        if q is not None:
+            filter_ = dict(filter_ or {})
+            filter_["q"] = q
+        filter_ = self._normalize_sort_direction(filter_)
 
+        try:
             result = await self.execute(
                 fragments.FIND_IMAGES_QUERY,
                 {"filter": filter_, "image_filter": image_filter},
@@ -155,14 +156,21 @@ class ImageClientMixin(StashClientProtocol):
             if isinstance(input_data, ImageDestroyInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be ImageDestroyInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = ImageDestroyInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.IMAGE_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("imageDestroy", False))
+            return result.get("imageDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete image: {e}")
             raise
@@ -190,14 +198,21 @@ class ImageClientMixin(StashClientProtocol):
             if isinstance(input_data, ImagesDestroyInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be ImagesDestroyInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = ImagesDestroyInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.IMAGES_DESTROY_MUTATION,
                 {"input": input_dict},
             )
 
-            return bool(result.get("imagesDestroy", False))
+            return result.get("imagesDestroy") is True
         except Exception as e:
             self.log.error(f"Failed to delete images: {e}")
             raise
@@ -241,7 +256,14 @@ class ImageClientMixin(StashClientProtocol):
             if isinstance(input_data, BulkImageUpdateInput):
                 input_dict = input_data.to_graphql()
             else:
-                input_dict = input_data
+                # Validate dict structure through Pydantic
+                if not isinstance(input_data, dict):
+                    raise TypeError(
+                        f"input_data must be BulkImageUpdateInput or dict, "
+                        f"got {type(input_data).__name__}"
+                    )
+                validated = BulkImageUpdateInput(**input_data)
+                input_dict = validated.to_graphql()
 
             result = await self.execute(
                 fragments.BULK_IMAGE_UPDATE_MUTATION,
