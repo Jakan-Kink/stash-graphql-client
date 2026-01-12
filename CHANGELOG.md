@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.9] - 2026-01-12
+
+### Fixed
+
+- **Documentation**: Updated CHANGELOG.md to include release notes for v0.10.8.
+
+## [0.10.8] - 2026-01-12
+
 ### Changed
 
 - **Dict Input Validation**: Methods accepting `SomeInput | dict[str, Any]` now validate dicts through Pydantic before sending to GraphQL
@@ -16,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Affects 50+ methods across all client mixins (scene, image, gallery, tag, studio, performer, group, etc.)
   - Examples: `bulk_image_update()`, `scene_destroy()`, `tag_destroy()`, etc.
   - Location: All files in `stash_graphql_client/client/mixins/*.py`
+- **Config Hardening**: Tightened connection parsing (scheme, port, verify_ssl) and context key normalization
+- **Security**: Blocked protected config path edits with `StashConfigurationError`
+- **Store**: Added batch-size guards and performer avatar file checks
 
 ### Deprecated
 
@@ -613,7 +624,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.7...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.9...HEAD
+[0.10.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.8...v0.10.9
+[0.10.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.7...v0.10.8
 [0.10.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.6...v0.10.7
 [0.10.6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.5...v0.10.6
 [0.10.5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.4...v0.10.5
