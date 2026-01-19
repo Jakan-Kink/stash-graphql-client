@@ -254,7 +254,7 @@ class Tag(StashObject):
                     "tag_filter": {"name": {"value": name, "modifier": "EQUALS"}},
                 },
             )
-            tags_data = result.get("findTags", {}).get("tags", [])
+            tags_data = (result.get("findTags") or {}).get("tags") or []
             if tags_data:
                 logger.debug(f"Found tag by exact match: {name}")
                 return cls(**tags_data[0])
@@ -268,7 +268,7 @@ class Tag(StashObject):
                     "tag_filter": {"name": {"value": name, "modifier": "INCLUDES"}},
                 },
             )
-            tags_data = result.get("findTags", {}).get("tags", [])
+            tags_data = (result.get("findTags") or {}).get("tags") or []
 
             # Filter results to find case-insensitive exact match
             name_lower = name.lower()

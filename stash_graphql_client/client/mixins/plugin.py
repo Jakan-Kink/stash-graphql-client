@@ -65,7 +65,7 @@ class PluginClientMixin(StashClientProtocol):
                 }
                 """
             )
-            plugin_data_list = result.get("plugins", [])
+            plugin_data_list = result.get("plugins") or []
             return [
                 self._decode_result(Plugin, plugin_data)
                 for plugin_data in plugin_data_list
@@ -111,7 +111,7 @@ class PluginClientMixin(StashClientProtocol):
                 }
                 """
             )
-            task_data_list = result.get("pluginTasks", [])
+            task_data_list = result.get("pluginTasks") or []
             return [
                 self._decode_result(PluginTask, task_data)
                 for task_data in task_data_list
@@ -387,7 +387,7 @@ class PluginClientMixin(StashClientProtocol):
                 {"plugin_id": plugin_id, "input": config},
             )
 
-            return result.get("configurePlugin", {})
+            return result.get("configurePlugin") or {}
         except Exception as e:
             self.log.error(f"Failed to configure plugin: {e}")
             raise

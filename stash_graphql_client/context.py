@@ -58,17 +58,21 @@ class StashContext:
     def __init__(
         self,
         conn: dict[str, Any] | None = None,
-        verify_ssl: bool = True,
+        verify_ssl: bool | str = True,
     ) -> None:
         """Initialize context.
 
         Args:
             conn: Connection details dictionary (case-insensitive keys)
-            verify_ssl: Whether to verify SSL certificates
+            verify_ssl: Whether to verify SSL certificates (accepts bool or string like "true"/"false")
         """
         # Normalize connection keys to canonical case
         self.conn = self._normalize_conn_keys(conn or {})
-        self.verify_ssl = verify_ssl
+        # Convert string to bool if needed
+        if isinstance(verify_ssl, str):
+            self.verify_ssl = verify_ssl.lower() in ("true", "1", "yes")
+        else:
+            self.verify_ssl = verify_ssl
         self._client: StashClient | None = None
         self._store: StashEntityStore | None = None
         self._ref_count: int = 0

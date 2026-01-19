@@ -315,7 +315,7 @@ class PackageClientMixin(StashClientProtocol):
                 {"type": type_str},
             )
 
-            package_data_list = result.get("installedPackages", [])
+            package_data_list = result.get("installedPackages") or []
             return [
                 self._decode_result(Package, pkg_data) for pkg_data in package_data_list
             ]
@@ -401,7 +401,7 @@ class PackageClientMixin(StashClientProtocol):
                 {"type": type_str, "source": source},
             )
 
-            package_data_list = result.get("availablePackages", [])
+            package_data_list = result.get("availablePackages") or []
             return [
                 self._decode_result(Package, pkg_data) for pkg_data in package_data_list
             ]

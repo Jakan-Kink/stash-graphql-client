@@ -993,7 +993,7 @@ class StashEntityStore:
 
         # Check first field in path
         field_name = field_path[0]
-        received = getattr(obj, "_received_fields", set())
+        received: set[str] = getattr(obj, "_received_fields", set())
 
         if field_name not in received:
             return False  # Field not loaded yet
@@ -1135,7 +1135,7 @@ class StashEntityStore:
         # Separate regular fields from nested field specifications
         regular_fields: set[str] = set()
         nested_specs: dict[
-            str, set[list[str]]
+            str, set[tuple[str, ...]]
         ] = {}  # root_field -> set of remaining paths
 
         for field_spec in fields_set:
@@ -2117,7 +2117,7 @@ class StashEntityStore:
         result = await self._client.execute(query, variables)
 
         # Parse result
-        data = result.get(result_key, {})
+        data = result.get(result_key) or {}
         count = data.get("count", 0)
 
         # Get items key (pluralized type name, lowercase)
@@ -2127,7 +2127,7 @@ class StashEntityStore:
         elif type_name == "Image":
             items_key = "images"
 
-        raw_items = data.get(items_key, [])
+        raw_items = data.get(items_key) or []
 
         # Convert to entity objects using Pydantic's from_graphql (identity map via validator)
         items: list[T] = []

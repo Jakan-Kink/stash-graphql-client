@@ -356,7 +356,9 @@ class Performer(StashObject):
                     "performer_filter": {"name": {"value": name, "modifier": "EQUALS"}},
                 },
             )
-            performers_data = result.get("findPerformers", {}).get("performers", [])
+            performers_data = (result.get("findPerformers") or {}).get(
+                "performers"
+            ) or []
             if performers_data:
                 return cls(**performers_data[0])
             return None

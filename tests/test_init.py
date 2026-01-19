@@ -37,6 +37,11 @@ class TestVersionHandling:
         import sys
         from importlib.metadata import PackageNotFoundError
 
+        # Check if we're in a --no-root environment (package not installed)
+        import stash_graphql_client
+
+        is_no_root_env = stash_graphql_client.__version__ == "0.0.0.dev0"
+
         # Remove the module from cache to force fresh import
         if "stash_graphql_client" in sys.modules:
             del sys.modules["stash_graphql_client"]
@@ -59,7 +64,11 @@ class TestVersionHandling:
         import stash_graphql_client
 
         # Verify module is back in normal state
-        assert stash_graphql_client.__version__ != "0.0.0.dev0"
+        # In --no-root environments, version is always fallback; otherwise it should be real
+        if is_no_root_env:
+            assert stash_graphql_client.__version__ == "0.0.0.dev0"
+        else:
+            assert stash_graphql_client.__version__ != "0.0.0.dev0"
 
 
 class TestPublicAPI:

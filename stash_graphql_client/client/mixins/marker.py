@@ -260,7 +260,7 @@ class MarkerClientMixin(StashClientProtocol):
                 {"input": input_dict},
             )
 
-            markers_data = result.get("bulkSceneMarkerUpdate", [])
+            markers_data = result.get("bulkSceneMarkerUpdate") or []
             return [self._decode_result(SceneMarker, m) for m in markers_data]
         except Exception as e:
             self.log.error(f"Failed to bulk update scene markers: {e}")
@@ -292,7 +292,7 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.MARKER_WALL_QUERY,
                 {"q": q} if q else {},
             )
-            markers_data = result.get("markerWall", [])
+            markers_data = result.get("markerWall") or []
             return [self._decode_result(SceneMarker, m) for m in markers_data]
         except Exception as e:
             self.log.error(f"Failed to get marker wall: {e}")
@@ -331,7 +331,7 @@ class MarkerClientMixin(StashClientProtocol):
                 fragments.MARKER_STRINGS_QUERY,
                 {"q": q, "sort": sort},
             )
-            strings_data = result.get("markerStrings", [])
+            strings_data = result.get("markerStrings") or []
             return [
                 self._decode_result(MarkerStringsResultType, s) for s in strings_data
             ]

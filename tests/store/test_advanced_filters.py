@@ -64,11 +64,11 @@ class TestFilterStrict:
         results = store.filter_strict(
             Performer,
             required_fields=["rating100", "favorite"],
-            predicate=lambda p: p.rating100 >= 90 and p.favorite,
+            predicate=lambda p: p.rating100 >= 90 and p.favorite,  # type: ignore[operator, arg-type, return-value]
         )
 
         assert len(results) == 2
-        assert all(r.rating100 >= 90 for r in results)
+        assert all(r.rating100 >= 90 for r in results)  # type: ignore[operator]
         assert all(r.favorite for r in results)
         assert {r.id for r in results} == {"1", "3"}
 
@@ -98,7 +98,7 @@ class TestFilterStrict:
             store.filter_strict(
                 Performer,
                 required_fields=["rating100"],
-                predicate=lambda p: p.rating100 >= 80,
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
             )
 
     @pytest.mark.asyncio
@@ -111,7 +111,7 @@ class TestFilterStrict:
         results = store.filter_strict(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert results == []
@@ -163,7 +163,7 @@ class TestFilterStrict:
         results = store.filter_strict(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert len(results) == 1
@@ -205,7 +205,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100", "favorite"],
-            predicate=lambda p: p.rating100 >= 90,
+            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
         )
 
         # Verify NO GraphQL calls were made
@@ -260,7 +260,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100", "favorite"],
-            predicate=lambda p: p.rating100 >= 90,
+            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
         )
 
         # Verify only 1 GraphQL call (for p2)
@@ -314,7 +314,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         # Verify both were fetched
@@ -335,7 +335,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert results == []
@@ -361,7 +361,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert len(results) == 1
@@ -389,7 +389,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert results == []
@@ -427,7 +427,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         client_logger.removeHandler(handler)
@@ -470,7 +470,7 @@ class TestFilterAndPopulate:
             results = await store.filter_and_populate(
                 Performer,
                 required_fields=["rating100"],
-                predicate=lambda p: p.rating100 >= 80,
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
             )
 
         # Should only get p1 (p2 expired during processing)
@@ -518,7 +518,7 @@ class TestFilterAndPopulate:
         results = await store.filter_and_populate(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 83,
+            predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
             batch_size=2,  # Process 2 at a time
         )
 
@@ -571,7 +571,7 @@ class TestFilterAndPopulateWithStats:
         results, stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,
+            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
         )
 
         # Verify results
@@ -594,7 +594,7 @@ class TestFilterAndPopulateWithStats:
         results, stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert results == []
@@ -621,7 +621,7 @@ class TestFilterAndPopulateWithStats:
         results, stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert len(results) == 2
@@ -650,7 +650,7 @@ class TestFilterAndPopulateWithStats:
         results, stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert len(results) == 1
@@ -678,7 +678,7 @@ class TestFilterAndPopulateWithStats:
         results, _stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         assert len(results) == 0
@@ -714,7 +714,7 @@ class TestFilterAndPopulateWithStats:
         _results, stats = await store.filter_and_populate_with_stats(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         )
 
         client_logger.removeHandler(handler)
@@ -754,7 +754,7 @@ class TestFilterAndPopulateWithStats:
             results, stats = await store.filter_and_populate_with_stats(
                 Performer,
                 required_fields=["rating100"],
-                predicate=lambda p: p.rating100 >= 80,
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
             )
 
         # Should only get p1
@@ -824,7 +824,7 @@ class TestPopulatedFilterIter:
         async for performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
             yield_batch=1,  # Process one at a time
         ):
             results.append(performer)
@@ -874,7 +874,7 @@ class TestPopulatedFilterIter:
         async for _performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,
+            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
             yield_batch=10,  # Process 10 at a time
         ):
             count += 1
@@ -895,7 +895,7 @@ class TestPopulatedFilterIter:
         async for performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         ):
             results.append(performer)
 
@@ -939,7 +939,7 @@ class TestPopulatedFilterIter:
         async for performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 83,
+            predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
             populate_batch=2,  # Populate 2 at a time
             yield_batch=3,  # Yield after processing 3
         ):
@@ -947,7 +947,7 @@ class TestPopulatedFilterIter:
 
         # P3, P4, P5, P6 match (rating 83, 84, 85, 86)
         assert len(results) == 4
-        assert all(r.rating100 >= 83 for r in results)
+        assert all(r.rating100 >= 83 for r in results)  # type: ignore[operator]
 
     @pytest.mark.asyncio
     async def test_populated_filter_iter_warns_on_populate_failure(
@@ -981,7 +981,7 @@ class TestPopulatedFilterIter:
         async for performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,
+            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
         ):
             results.append(performer)
 
@@ -1016,7 +1016,7 @@ class TestPopulatedFilterIter:
         async for performer in store.populated_filter_iter(
             Performer,
             required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,
+            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
         ):
             results.append(performer)
 

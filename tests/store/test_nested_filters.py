@@ -1,7 +1,7 @@
 """Tests for nested field filtering in StashEntityStore.
 
 Tests the Django-style double-underscore syntax for nested field specifications:
-- _parse_nested_field(): Parse 'files__path' → ['files', 'path']
+- _parse_nested_field(): Parse 'visual_files__path' → ['visual_files', 'path']
 - _check_nested_field_present(): Recursively check if nested path is populated
 - missing_fields_nested(): Check which nested field specs are missing
 - populate(): Recursively populate nested fields
@@ -50,8 +50,8 @@ class TestNestedFieldParsing:
     ) -> None:
         """Test parsing two-level nested field."""
         store = respx_entity_store
-        result = store._parse_nested_field("files__path")
-        assert result == ["files", "path"]
+        result = store._parse_nested_field("visual_files__path")
+        assert result == ["visual_files", "path"]
 
     def test_parse_three_level_nesting(
         self, respx_entity_store: StashEntityStore
@@ -357,16 +357,16 @@ class TestFilterStrictWithNestedFields:
             object.__setattr__(f, "_received_fields", {"id", "path", "size"})
             store._cache_entity(f)
 
-        # Image with files populated
-        image = ImageFactory.build(id="img1", title="Test", files=[file1, file2])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        # Image with visual_files populated
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
         store._cache_entity(image)
 
-        # Should succeed because files__path is fully populated
+        # Should succeed because visual_files__path is fully populated
         results = store.filter_strict(
             Image,
-            required_fields=["files__path", "files__size"],
-            predicate=lambda i: any(f.size > 1500 for f in i.files),
+            required_fields=["visual_files__path", "visual_files__size"],
+            predicate=lambda i: any(f.size > 1500 for f in i.visual_files),  # type: ignore[operator, union-attr]
         )
 
         assert len(results) == 1
@@ -383,16 +383,16 @@ class TestFilterStrictWithNestedFields:
         object.__setattr__(file1, "_received_fields", {"id", "size"})
         store._cache_entity(file1)
 
-        # Image with files populated
-        image = ImageFactory.build(id="img1", title="Test", files=[file1])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        # Image with visual_files populated
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
         store._cache_entity(image)
 
         # Should raise because file1.path is UNSET
         with pytest.raises(ValueError, match="missing required fields"):
             store.filter_strict(
                 Image,
-                required_fields=["files__path"],
+                required_fields=["visual_files__path"],
                 predicate=lambda i: True,
             )
 
@@ -412,9 +412,9 @@ class TestFilterAndPopulateWithNestedFields:
         object.__setattr__(file1, "_received_fields", {"id"})
         store._cache_entity(file1)
 
-        # Image with files populated
-        image = ImageFactory.build(id="img1", title="Test", files=[file1])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        # Image with visual_files populated
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
         store._cache_entity(image)
 
         # Mock GraphQL: Two file fetches (populate calls each nested field separately)
@@ -447,9 +447,11 @@ class TestFilterAndPopulateWithNestedFields:
         # Filter with nested field - should auto-populate
         results = await store.filter_and_populate(
             Image,
-            required_fields=["files__path", "files__size"],
+            required_fields=["visual_files__path", "visual_files__size"],
             predicate=lambda i: any(
-                f.size > 1_000_000 for f in i.files if f.size is not UNSET
+                f.size > 1_000_000  # type: ignore[operator]
+                for f in i.visual_files  # type: ignore[union-attr]
+                if f.size is not UNSET
             ),
         )
 
@@ -458,7 +460,7 @@ class TestFilterAndPopulateWithNestedFields:
 
         # Should find the match
         assert len(results) == 1
-        assert results[0].files[0].size == 5_000_000
+        assert results[0].visual_files[0].size == 5_000_000  # type: ignore[union-attr, index]
 
 
 # =============================================================================
@@ -705,9 +707,47 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate - should skip non-StashObject items gracefully
-        result = await store.populate(image, fields=["files__path"])
+        result = await store.populate(image, fields=["visual_files__path"])
 
         # Should not crash, just skip the non-StashObject item
+        assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_populate_nested_field_with_mixed_list_items(
+        self, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test populate handles lists with mixed types when using nested field specs (line 1253->1252 branch)."""
+        store = respx_entity_store
+
+        # Create an image with visual_files that has a non-StashObject item mixed in
+        # This is an edge case that shouldn't normally happen but code should handle it
+        file1 = ImageFileFactory.build(id="f1", path="/test.jpg")
+        object.__setattr__(file1, "_received_fields", {"id"})  # path is UNSET
+
+        # Create image normally first, then directly modify visual_files to add a non-StashObject
+        # (Can't use Factory.build() with mixed types as Pydantic validation rejects it)
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        # Directly set visual_files to include a string (bypassing Pydantic validation)
+        object.__setattr__(image, "visual_files", [file1, "not-a-stash-object"])
+        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
+        store._cache_entity(image)
+        store._cache_entity(file1)
+
+        # Mock response for populating the ImageFile
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "findFile",
+                    {"__typename": "ImageFile", "id": "f1", "path": "/test.jpg"},
+                ),
+            )
+        )
+
+        # Populate nested field - should skip the string item, populate the StashObject
+        result = await store.populate(image, fields=["visual_files__path"])
+
+        # Should not crash - string item is skipped in the loop (line 1253->1252 branch)
         assert result is not None
 
     def test_get_fetchable_type_with_non_class(

@@ -397,6 +397,19 @@ async def test_job_queue_empty(respx_stash_client: StashClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_job_queue_none(respx_stash_client: StashClient) -> None:
+    """Test getting job queue when response is None (GraphQL null)."""
+    respx.post("http://localhost:9999/graphql").mock(
+        return_value=httpx.Response(200, json=create_graphql_response("jobQueue", None))
+    )
+
+    jobs = await respx_stash_client.job_queue()
+
+    assert len(jobs) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_job_queue_exception(respx_stash_client: StashClient) -> None:
     """Test job_queue handles exceptions gracefully."""
     respx.post("http://localhost:9999/graphql").mock(

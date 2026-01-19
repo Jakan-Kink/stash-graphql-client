@@ -1190,7 +1190,7 @@ class SceneClientMixin(StashClientProtocol):
                 fragments.SCENE_STREAMS_QUERY,
                 {"id": scene_id},
             )
-            streams_data = result.get("sceneStreams", [])
+            streams_data = result.get("sceneStreams") or []
             return [self._decode_result(SceneStreamEndpoint, s) for s in streams_data]
         except Exception as e:
             self.log.error(f"Failed to get scene streams for scene {scene_id}: {e}")

@@ -83,7 +83,7 @@ async def test_configure_general_with_model(respx_stash_client: StashClient) -> 
         ]
     )
 
-    input_data = ConfigGeneralInput(parallel_tasks=8, preview_segment_duration=5)
+    input_data = ConfigGeneralInput(parallelTasks=8, previewSegmentDuration=5)
     result = await respx_stash_client.configure_general(input_data)
 
     assert result is not None

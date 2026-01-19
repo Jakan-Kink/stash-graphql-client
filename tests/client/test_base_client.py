@@ -1568,6 +1568,31 @@ async def test_verify_ssl_invalid_type_raises_typeerror() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_stash_client_verify_ssl_string_conversion(respx_mock) -> None:
+    """Test StashClient directly handles string verify_ssl values.
+
+    This test covers the string-to-bool conversion in StashClient.initialize() (base.py:130-131).
+    The conversion happens during initialize(), not __init__.
+    """
+    # Test "false" string - ensures the False branch of line 131 is covered
+    client_false = StashClient(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl="false",  # type: ignore[arg-type]
+    )
+    await client_false.initialize()  # This is where the conversion happens
+    assert client_false._initialized  # Verify initialization completed
+
+    # Test "true" string - ensures the True branch is also covered
+    client_true = StashClient(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl="true",  # type: ignore[arg-type]
+    )
+    await client_true.initialize()  # This is where the conversion happens
+    assert client_true._initialized  # Verify initialization completed
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_invalid_scheme_raises_valueerror() -> None:
     """Test that invalid scheme raises ValueError."""
     context = StashContext(

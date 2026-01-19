@@ -286,7 +286,7 @@ class ConfigClientMixin(StashClientProtocol):
                 fragments.CONFIGURE_UI_MUTATION,
                 {"input": input_data, "partial": partial},
             )
-            return dict(result.get("configureUI", {}))
+            return dict(result.get("configureUI") or {})
         except Exception as e:
             self.log.error(f"Failed to configure UI: {e}")
             raise
@@ -322,7 +322,7 @@ class ConfigClientMixin(StashClientProtocol):
                 fragments.CONFIGURE_UI_SETTING_MUTATION,
                 {"key": key, "value": value},
             )
-            return dict(result.get("configureUISetting", {}))
+            return dict(result.get("configureUISetting") or {})
         except Exception as e:
             self.log.error(f"Failed to configure UI setting {key}: {e}")
             raise
@@ -415,7 +415,7 @@ class ConfigClientMixin(StashClientProtocol):
                 fragments.FIND_SAVED_FILTERS_QUERY,
                 {"mode": mode.value if mode else None},
             )
-            filters_data = result.get("findSavedFilters", [])
+            filters_data = result.get("findSavedFilters") or []
             return [self._decode_result(SavedFilter, f) for f in filters_data]
         except Exception as e:
             self.log.error(f"Failed to find saved filters: {e}")

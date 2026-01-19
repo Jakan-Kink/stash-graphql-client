@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.10] - 2026-01-19
+
+### Fixed
+
+- **GraphQL None Handling**: Fixed 25 instances across client mixins where `dict.get()` incorrectly used `None` as default value
+  - GraphQL distinguishes between explicit null values and missing fields
+  - Changed pattern from `data.get("field", None)` to `data.get("field")` (returns `None` if missing)
+  - Affected methods: job queue operations, config mutations, scene/image/gallery/performer operations, tag updates, and more
+  - Prevents sending unintended null values to GraphQL mutations
+  - Locations: `client/mixins/*.py`, `context.py`, `store.py`, `types/performer.py`, `types/tag.py`
+- **Test Coverage**: Added tests to achieve 100% branch coverage
+  - Added test for `verify_ssl` string-to-bool conversion in `StashClient.initialize()`
+  - Added test for mixed-type list handling in store's nested field population
+  - Fixed datetime serialization in scene activity mutation tests
+  - Fixed field name references in nested filter tests (files → visual_files)
+
 ## [0.10.9] - 2026-01-12
 
 ### Fixed

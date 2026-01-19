@@ -85,7 +85,10 @@ async def test_scene_add_o_with_specific_times(respx_stash_client: StashClient) 
         ]
     )
 
-    times = ["2024-01-15T10:30:00Z", "2024-01-16T14:20:00Z"]
+    times = [
+        datetime.fromisoformat("2024-01-15T10:30:00+00:00"),
+        datetime.fromisoformat("2024-01-16T14:20:00+00:00"),
+    ]
     result = await respx_stash_client.scene_add_o("123", times=times)
 
     # Verify result
@@ -98,7 +101,8 @@ async def test_scene_add_o_with_specific_times(respx_stash_client: StashClient) 
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneAddO" in req["query"]
     assert req["variables"]["id"] == "123"
-    assert req["variables"]["times"] == times
+    # Times are serialized to ISO format strings
+    assert req["variables"]["times"] == [t.isoformat() for t in times]
 
 
 @pytest.mark.asyncio
@@ -147,7 +151,7 @@ async def test_scene_add_o_invalid_timestamp_raises(
 ) -> None:
     """Test scene_add_o rejects invalid timestamp strings."""
     with pytest.raises(ValidationError, match="Invalid time unit"):
-        await respx_stash_client.scene_add_o("123", times=["<10s"])
+        await respx_stash_client.scene_add_o("123", times=["<10s"])  # type: ignore[list-item]
 
 
 @pytest.mark.asyncio
@@ -213,7 +217,7 @@ async def test_scene_delete_o_with_specific_timestamp(
         ]
     )
 
-    times = ["2024-01-15T10:30:00Z"]
+    times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
     result = await respx_stash_client.scene_delete_o("123", times=times)
 
     # Verify result
@@ -226,7 +230,8 @@ async def test_scene_delete_o_with_specific_timestamp(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneDeleteO" in req["query"]
     assert req["variables"]["id"] == "123"
-    assert req["variables"]["times"] == times
+    # Times are serialized to ISO format strings
+    assert req["variables"]["times"] == [t.isoformat() for t in times]
 
 
 @pytest.mark.asyncio
@@ -600,7 +605,7 @@ async def test_scene_add_play_with_specific_times(
         ]
     )
 
-    times = ["2024-01-15T10:30:00Z"]
+    times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
     result = await respx_stash_client.scene_add_play("123", times=times)
 
     # Verify result
@@ -613,7 +618,8 @@ async def test_scene_add_play_with_specific_times(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneAddPlay" in req["query"]
     assert req["variables"]["id"] == "123"
-    assert req["variables"]["times"] == times
+    # Times are serialized to ISO format strings
+    assert req["variables"]["times"] == [t.isoformat() for t in times]
 
 
 @pytest.mark.asyncio
@@ -687,7 +693,7 @@ async def test_scene_delete_play_with_specific_timestamp(
         ]
     )
 
-    times = ["2024-01-15T10:30:00Z"]
+    times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
     result = await respx_stash_client.scene_delete_play("123", times=times)
 
     # Verify result
@@ -700,7 +706,8 @@ async def test_scene_delete_play_with_specific_timestamp(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneDeletePlay" in req["query"]
     assert req["variables"]["id"] == "123"
-    assert req["variables"]["times"] == times
+    # Times are serialized to ISO format strings
+    assert req["variables"]["times"] == [t.isoformat() for t in times]
 
 
 @pytest.mark.asyncio

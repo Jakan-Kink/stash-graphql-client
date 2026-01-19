@@ -472,7 +472,7 @@ class GalleryClientMixin(StashClientProtocol):
                 {"input": input_dict},
             )
 
-            galleries_data = result.get("bulkGalleryUpdate", [])
+            galleries_data = result.get("bulkGalleryUpdate") or []
             return [self._decode_result(Gallery, g) for g in galleries_data]
         except Exception as e:
             self.log.error(f"Failed to bulk update galleries: {e}")

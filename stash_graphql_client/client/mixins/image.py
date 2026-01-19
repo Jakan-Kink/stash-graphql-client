@@ -270,7 +270,7 @@ class ImageClientMixin(StashClientProtocol):
                 {"input": input_dict},
             )
 
-            images_data = result.get("bulkImageUpdate", [])
+            images_data = result.get("bulkImageUpdate") or []
             return [self._decode_result(Image, img) for img in images_data]
         except Exception as e:
             self.log.error(f"Failed to bulk update images: {e}")
@@ -328,7 +328,7 @@ class ImageClientMixin(StashClientProtocol):
                 {"input": input_list},
             )
 
-            images_data = result.get("imagesUpdate", [])
+            images_data = result.get("imagesUpdate") or []
             return [
                 img_obj
                 for img in images_data

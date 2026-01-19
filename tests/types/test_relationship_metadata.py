@@ -441,14 +441,14 @@ class TestRelationshipMetadataDocumentation:
 
 
 # Test fixture entities for generic machinery tests
-class TestEntityMissingField(StashObject):
+class _EntityMissingField(StashObject):
     """Test entity with field missing from __relationships__."""
 
     __type_name__ = "TestMissing"
     __relationships__: ClassVar[dict] = {}  # Empty
 
 
-class TestEntityOldTupleSyntax(StashObject):
+class _EntityOldTupleSyntax(StashObject):
     """Test entity with old tuple syntax."""
 
     __type_name__ = "TestOldSyntax"
@@ -457,7 +457,7 @@ class TestEntityOldTupleSyntax(StashObject):
     }
 
 
-class TestEntityProper(StashObject):
+class _EntityProper(StashObject):
     """Test entity with proper RelationshipMetadata."""
 
     __type_name__ = "TestEntity"
@@ -509,11 +509,11 @@ class TestEntityProper(StashObject):
     }
 
     list_rel: list | None = None
-    single_rel: "TestEntityProper | None" = None
+    single_rel: "_EntityProper | None" = None
     inverse_list: list | None = None
-    inverse_single: "TestEntityProper | None" = None
+    inverse_single: "_EntityProper | None" = None
     many_to_one: list | None = None
-    one_to_many: "TestEntityProper | None" = None
+    one_to_many: "_EntityProper | None" = None
 
 
 class TestGenericRelationshipMachinery:
@@ -522,8 +522,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_add_missing_field_raises_value_error(self):
         """Test _add_to_relationship raises ValueError when field not in __relationships__ (line 584)."""
-        entity = TestEntityMissingField.model_construct(id="1")
-        related = TestEntityMissingField.model_construct(id="2")
+        entity = _EntityMissingField.model_construct(id="1")
+        related = _EntityMissingField.model_construct(id="2")
 
         with pytest.raises(
             ValueError,
@@ -534,8 +534,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_add_old_tuple_syntax_raises_value_error(self):
         """Test _add_to_relationship raises ValueError for old tuple syntax (line 590)."""
-        entity = TestEntityOldTupleSyntax.model_construct(id="1")
-        related = TestEntityOldTupleSyntax.model_construct(id="2")
+        entity = _EntityOldTupleSyntax.model_construct(id="1")
+        related = _EntityOldTupleSyntax.model_construct(id="2")
 
         with pytest.raises(
             ValueError,
@@ -546,9 +546,9 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_add_store_none_raises_integration_error(self):
         """Test _add_to_relationship raises StashIntegrationError when store is None (line 600)."""
-        with patch.object(TestEntityProper, "_store", None):
-            entity = TestEntityProper.model_construct(id="1", list_rel=UNSET)
-            related = TestEntityProper.model_construct(id="2")
+        with patch.object(_EntityProper, "_store", None):
+            entity = _EntityProper.model_construct(id="1", list_rel=UNSET)
+            related = _EntityProper.model_construct(id="2")
 
             with pytest.raises(
                 StashIntegrationError,
@@ -559,10 +559,10 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_add_inverse_store_none_raises_integration_error(self):
         """Test _add_to_relationship raises StashIntegrationError when inverse store is None (line 619)."""
-        entity = TestEntityProper.model_construct(id="1", list_rel=[])
+        entity = _EntityProper.model_construct(id="1", list_rel=[])
 
-        with patch.object(TestEntityProper, "_store", None):
-            related = TestEntityProper.model_construct(id="2", inverse_list=UNSET)
+        with patch.object(_EntityProper, "_store", None):
+            related = _EntityProper.model_construct(id="2", inverse_list=UNSET)
 
             with pytest.raises(
                 StashIntegrationError,
@@ -573,8 +573,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_add_initializes_inverse_to_empty_list(self):
         """Test _add_to_relationship initializes inverse field to [] when None (line 634)."""
-        entity = TestEntityProper.model_construct(id="1", list_rel=[])
-        related = TestEntityProper.model_construct(id="2", inverse_list=None)
+        entity = _EntityProper.model_construct(id="1", list_rel=[])
+        related = _EntityProper.model_construct(id="2", inverse_list=None)
 
         # Verify inverse_list starts as None
         assert related.inverse_list is None
@@ -588,8 +588,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_remove_missing_field_raises_value_error(self):
         """Test _remove_from_relationship raises ValueError when field not in __relationships__ (line 673)."""
-        entity = TestEntityMissingField.model_construct(id="1")
-        related = TestEntityMissingField.model_construct(id="2")
+        entity = _EntityMissingField.model_construct(id="1")
+        related = _EntityMissingField.model_construct(id="2")
 
         with pytest.raises(
             ValueError,
@@ -600,8 +600,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_remove_old_tuple_syntax_raises_value_error(self):
         """Test _remove_from_relationship raises ValueError for old tuple syntax (line 679)."""
-        entity = TestEntityOldTupleSyntax.model_construct(id="1")
-        related = TestEntityOldTupleSyntax.model_construct(id="2")
+        entity = _EntityOldTupleSyntax.model_construct(id="1")
+        related = _EntityOldTupleSyntax.model_construct(id="2")
 
         with pytest.raises(
             ValueError,
@@ -616,9 +616,9 @@ class TestGenericRelationshipMachinery:
         Scenario: Remove from LIST field where inverse is SINGLE object (many-to-one).
         """
         # One entity (parent)
-        one = TestEntityProper.model_construct(id="1")
+        one = _EntityProper.model_construct(id="1")
         # Many entity (child) - uses object.__setattr__ to bypass sync
-        many = TestEntityProper.model_construct(id="2", many_to_one=[one])
+        many = _EntityProper.model_construct(id="2", many_to_one=[one])
 
         # Set up single object inverse manually
         object.__setattr__(one, "one_to_many", many)
@@ -634,8 +634,8 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_remove_single_object_sets_field_to_none(self):
         """Test _remove_from_relationship sets single object field to None (lines 708-709)."""
-        entity = TestEntityProper.model_construct(id="1")
-        related = TestEntityProper.model_construct(id="2")
+        entity = _EntityProper.model_construct(id="1")
+        related = _EntityProper.model_construct(id="2")
 
         # Set up single object relationship bypassing auto-sync
         object.__setattr__(entity, "single_rel", related)
@@ -650,9 +650,9 @@ class TestGenericRelationshipMachinery:
     @pytest.mark.asyncio
     async def test_remove_single_object_no_match_early_exit(self):
         """Test _remove_from_relationship early exit when single object doesn't match (708->exit)."""
-        entity = TestEntityProper.model_construct(id="1")
-        related = TestEntityProper.model_construct(id="2")
-        other = TestEntityProper.model_construct(id="3")
+        entity = _EntityProper.model_construct(id="1")
+        related = _EntityProper.model_construct(id="2")
+        other = _EntityProper.model_construct(id="3")
 
         # Set up relationship with different object
         object.__setattr__(entity, "single_rel", other)

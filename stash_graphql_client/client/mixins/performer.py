@@ -532,7 +532,7 @@ class PerformerClientMixin(StashClientProtocol):
         """Get all performers."""
         try:
             result = await self.execute(fragments.ALL_PERFORMERS_QUERY, {})
-            performers_data = result.get("allPerformers", [])
+            performers_data = result.get("allPerformers") or []
             return [self._decode_result(Performer, p) for p in performers_data]
         except Exception as e:
             self.log.error(f"Failed to get all performers: {e}")
@@ -590,7 +590,7 @@ class PerformerClientMixin(StashClientProtocol):
                 {"input": input_dict},
             )
 
-            performers_data = result.get("bulkPerformerUpdate", [])
+            performers_data = result.get("bulkPerformerUpdate") or []
             return [self._decode_result(Performer, p) for p in performers_data]
         except Exception as e:
             self.log.error(f"Failed to bulk update performers: {e}")

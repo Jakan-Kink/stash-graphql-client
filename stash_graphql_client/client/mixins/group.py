@@ -426,7 +426,7 @@ class GroupClientMixin(StashClientProtocol):
             {"input": input_data.to_graphql()},
         )
         return [
-            self._decode_result(Group, g) for g in result.get("bulkGroupUpdate", [])
+            self._decode_result(Group, g) for g in result.get("bulkGroupUpdate") or []
         ]
 
     async def add_group_sub_groups(
