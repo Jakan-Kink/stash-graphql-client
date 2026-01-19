@@ -1175,6 +1175,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#stash_graphql_client.errors.StashConfigurationError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;StashConfigurationError
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stash_graphql_client.errors.StashCleanupWarning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2323,6 +2334,61 @@ or when Stash API operations encounter errors.</p>
 <p>This occurs when the system status is:
 - SETUP: Initial setup required
 - NEEDS_MIGRATION: Database migration required</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="stash_graphql_client.errors.StashConfigurationError" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">StashConfigurationError</span>
+
+
+<a href="#stash_graphql_client.errors.StashConfigurationError" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StashConfigurationError</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            StashError (stash_graphql_client.errors.StashError)" href="#stash_graphql_client.errors.StashError">StashError</a></code></p>
+
+
+
+        <p>Raised when attempting to modify protected Stash configuration values.</p>
+<p>This occurs when trying to modify critical server-side configuration that
+could corrupt the Stash installation, such as:
+- File system paths (database_path, backup_directory_path, etc.)
+- System paths (ffmpeg_path, ffprobe_path, etc.)</p>
+<p>These values should only be modified through the Stash web interface
+or configuration file to prevent accidental corruption.</p>
 
 
 

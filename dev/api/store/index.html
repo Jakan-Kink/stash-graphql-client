@@ -1945,7 +1945,7 @@
 <a href="#stash_graphql_client.store.StashEntityStore" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StashEntityStore</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">client</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            StashClient (stash_graphql_client.client.StashClient)" href="../client/#stash_graphql_client.client.StashClient">StashClient</a></span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">default_ttl</span><span class="p">:</span> <span class="n"><span title="datetime.timedelta">timedelta</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            DEFAULT_TTL
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">default_ttl</span><span class="p">:</span> <span class="n"><span title="datetime.timedelta">timedelta</span></span> <span class="o">|</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            DEFAULT_TTL
 
 
   
@@ -2044,11 +2044,12 @@ queries for data you don't need.</p>
                 <code>default_ttl</code>
             </td>
             <td>
-                  <code><span title="datetime.timedelta">timedelta</span> | None</code>
+                  <code><span title="datetime.timedelta">timedelta</span> | <span title="int">int</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
                 <p>Default TTL for cached entities. Default is 30 minutes.
+         Can be a timedelta, or an int (interpreted as seconds).
          Pass None explicitly to disable expiration.</p>
               </div>
             </td>
@@ -4233,7 +4234,7 @@ if missing:
 
 <a href="#stash_graphql_client.store.StashEntityStore.set_ttl" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_ttl</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="datetime.timedelta">timedelta</span></span> <span class="o">|</span> <span class="kc">None</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">entity_type</span><span class="p">:</span> <span class="n"><span title="type">type</span></span><span class="p">[</span><span class="n"><span title="stash_graphql_client.store.T">T</span></span><span class="p">],</span> <span class="n">ttl</span><span class="p">:</span> <span class="n"><span title="datetime.timedelta">timedelta</span></span> <span class="o">|</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -4274,15 +4275,39 @@ if missing:
                 <code>ttl</code>
             </td>
             <td>
-                  <code><span title="datetime.timedelta">timedelta</span> | None</code>
+                  <code><span title="datetime.timedelta">timedelta</span> | <span title="int">int</span> | None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>TTL for this type, or None to use default</p>
+                <p>TTL for this type, or None to use default.
+ Can be a timedelta, or an int (interpreted as seconds).</p>
               </div>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="TypeError">TypeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If ttl is not a timedelta, int, or None</p>
+              </div>
             </td>
           </tr>
       </tbody>
