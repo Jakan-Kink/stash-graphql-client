@@ -39,6 +39,7 @@ from __future__ import annotations
 import inspect
 import types
 import uuid
+import warnings
 from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeVar, get_args, get_origin
 
 from pydantic import (
@@ -344,7 +345,45 @@ class StashInput(BaseModel):
         populate_by_name=True,
         # Custom serializer to skip UNSET values during JSON serialization
         ser_json_inf_nan="constants",  # Not related, but good practice
+        extra="allow",  # Allow extra fields but warn about them (see validator below)
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_extra_fields(cls, data: Any) -> Any:
+        """Emit deprecation warning for unknown fields.
+
+        In v0.11.0, we emit warnings for unknown fields to help users identify typos.
+        In v0.12.0+, unknown fields will be rejected with ValidationError (extra="forbid").
+
+        This gives users at least one full release cycle to fix field name typos
+        before they become hard errors.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Get known field names (both Python snake_case and GraphQL camelCase aliases)
+        known_fields = set()
+        for field_name, field_info in cls.model_fields.items():
+            known_fields.add(field_name)  # Python name (e.g., "tag_ids")
+            if field_info.alias:
+                known_fields.add(field_info.alias)  # GraphQL alias (e.g., "tagIds")
+
+        # Find extra fields that aren't recognized
+        extra_fields = set(data.keys()) - known_fields
+
+        if extra_fields:
+            warnings.warn(
+                f"{cls.__name__}: Unknown fields will be rejected in v0.12.0: "
+                f"{', '.join(sorted(extra_fields))}. "
+                f"Please check for typos or outdated field names. "
+                f"Common mistakes: 'tag_id' should be 'tag_ids' (plural), "
+                f"'performer_id' should be 'performer_ids' (plural).",
+                DeprecationWarning,
+                stacklevel=4,  # Points to user's code, not this validator
+            )
+
+        return data
 
     def to_graphql(self) -> dict[str, Any]:
         """Convert to GraphQL-compatible dictionary.

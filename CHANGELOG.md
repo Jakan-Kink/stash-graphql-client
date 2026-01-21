@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- **Extra Fields Behavior**: Currently, extra/unknown fields in dict inputs are silently ignored (Pydantic default)
+  - **Future Change**: Passing unknown fields will eventually raise a validation error (`extra="forbid"`)
+  - **Action Required**: Review your code for typos or outdated field names in dict inputs
+  - **Example**: `{"ids": [...], "tag_id": "x"}` instead of `"tag_ids"` will be rejected
+  - **Timeline**:
+    - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
+    - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
+
 ## [0.10.10] - 2026-01-19
 
 ### Fixed
@@ -50,7 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Future Change**: In a future release, passing unknown fields will raise a validation error (`extra="forbid"`)
   - **Action Required**: Review your code for typos or outdated field names in dict inputs
   - **Example**: `{"ids": [...], "tag_id": "x"}` instead of `"tag_ids"` will be rejected
-  - **Timeline**: This will be implemented in v0.11.0 or later with proper deprecation warnings
 
 ## [0.10.7] - 2026-01-11
 
