@@ -189,3 +189,6 @@ nav:
           - Version: api/client/mixins/version.md
   - Reference:
       - Quick Reference: reference/quick-reference.md
+  - Archive:
+      - Overview: archive/README.md
+      - Type Validation Issues: archive/TYPE_VALIDATION_ISSUES.md
