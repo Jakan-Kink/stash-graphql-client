@@ -158,7 +158,12 @@ class JobsClientMixin(StashClientProtocol):
         """Get all jobs in the queue.
 
         Returns:
-            List of Job objects representing all jobs (running, pending, finished)
+            List of Job objects representing all jobs (running, pending, finished).
+            Returns empty list if no jobs are running (jobQueue is null in GraphQL response).
+
+        Note:
+            When no jobs are running, Stash returns `jobQueue: null` in the GraphQL
+            response. This method handles that case and returns an empty list.
 
         Examples:
             Get all jobs:
@@ -193,7 +198,19 @@ class JobsClientMixin(StashClientProtocol):
                 }
                 """
             )
-            job_data_list = result.get("jobQueue") or []
+            job_data_list = result.get("jobQueue")
+
+            # Handle null jobQueue (no jobs running)
+            if job_data_list is None:
+                return []
+
+            # Defensive check - ensure it's a list
+            if not isinstance(job_data_list, list):
+                self.log.warning(
+                    f"jobQueue returned unexpected type: {type(job_data_list).__name__}"
+                )
+                return []
+
             return [Job(**job_data) for job_data in job_data_list]
         except Exception as e:
             self.log.error(f"Failed to get job queue: {e}")

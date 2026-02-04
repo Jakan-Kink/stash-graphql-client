@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.12] - 2026-02-04
+
+### Fixed
+
+- **Job Queue Null Handling**: Fixed `job_queue()` method crashing with "'NoneType' object is not iterable" when no jobs are running
+  - Stash returns `jobQueue: null` in GraphQL response when no jobs are active
+  - Replaced implicit truthiness check (`or []`) with explicit None checking
+  - Added defensive type validation to handle malformed responses gracefully
+  - Location: `stash_graphql_client/client/mixins/jobs.py`
+
 ## [0.10.10] - 2026-01-19
 
 ### Fixed
