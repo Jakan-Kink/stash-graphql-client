@@ -660,9 +660,7 @@ class TestProcessFields:
         tag = Tag.new(name="Test")
 
         # Add a converter for a field that doesn't exist on the object
-        with patch.dict(
-            Tag.__field_conversions__, {"nonexistent_field": lambda x: str(x)}
-        ):
+        with patch.dict(Tag.__field_conversions__, {"nonexistent_field": str}):
             # Process fields including the nonexistent one
             result = await tag._process_fields({"nonexistent_field", "name"})
 

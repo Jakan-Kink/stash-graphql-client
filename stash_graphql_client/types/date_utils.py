@@ -151,7 +151,9 @@ def parse_date_precision(date_str: str) -> DatePrecision:
             if precision in (DatePrecision.DAY, DatePrecision.OTHER):
                 try:
                     # Strip time component if present for validation
-                    date_part = date_str.split()[0] if " " in date_str else date_str
+                    date_part = (
+                        date_str.split(maxsplit=1)[0] if " " in date_str else date_str
+                    )
                     datetime.fromisoformat(date_part)
                 except ValueError as e:
                     raise StashIntegrationError(f"Invalid date: {date_str}. {e}") from e

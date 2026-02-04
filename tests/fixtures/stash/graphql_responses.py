@@ -684,7 +684,7 @@ def create_file_dict(
         )
     """
     if basename is None:
-        basename = path.split("/")[-1] if "/" in path else path
+        basename = path.rsplit("/", maxsplit=1)[-1] if "/" in path else path
 
     if parent_folder is None:
         parent_path = "/".join(path.split("/")[:-1]) or "/"
