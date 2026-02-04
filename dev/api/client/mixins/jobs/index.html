@@ -2459,13 +2459,29 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of Job objects representing all jobs (running, pending, finished)</p>
+                <p>List of Job objects representing all jobs (running, pending, finished).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="            Job (stash_graphql_client.types.Job)" href="../../../types/#stash_graphql_client.types.job.Job">Job</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Returns empty list if no jobs are running (jobQueue is null in GraphQL response).</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>When no jobs are running, Stash returns <code>jobQueue: null</code> in the GraphQL
+response. This method handles that case and returns an empty list.</p>
+</details>
 
 <p><span class="doc-section-title">Examples:</span></p>
     <p>Get all jobs:
