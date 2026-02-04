@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
     - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
 
+## [0.10.12] - 2026-02-04
+
+### Fixed
+
+- **Job Queue Null Handling**: Fixed `job_queue()` method crashing with "'NoneType' object is not iterable" when no jobs are running
+  - Stash returns `jobQueue: null` in GraphQL response when no jobs are active
+  - Replaced implicit truthiness check (`or []`) with explicit None checking
+  - Added defensive type validation to handle malformed responses gracefully
+  - Location: `stash_graphql_client/client/mixins/jobs.py`
+
 ## [0.10.10] - 2026-01-19
 
 ### Fixed
@@ -97,7 +107,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 
 - **Dirty Tracking Tests**: Added comprehensive test suite for dirty tracking functionality
-
   - 28 tests covering list operations, basic dirty tracking, relationship lists, and edge cases
   - Tests verify all list modification methods are detected (append, extend, remove, pop, clear, item assignment)
   - Tests cover multiple entity types (Performer, Studio, Tag, Scene) and relationship lists
@@ -243,7 +252,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **GraphQL Filter Translation**: Fixed `'cannot use slice as String'` error when using `path__contains` and other string field filters
-
   - INCLUDES modifier now correctly distinguishes between string fields (single value) and multi-value fields (list of IDs)
   - String fields (`path`, `title`, `details`, etc.) with `__contains` now send single string value instead of wrapping in list
   - Multi-value fields (`tags`, `performers`, `studios`, etc.) continue to work correctly with list values
@@ -328,7 +336,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Thread-Safety**: StashEntityStore now supports concurrent access from multi-threaded applications
-
   - Uses reentrant lock (RLock) for all cache operations
   - Lock-free async patterns prevent event loop blocking
   - Snapshot-based predicate evaluation for safe concurrent access
@@ -343,14 +350,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 
 - **WebSocket SSL Tests**: Added 4 comprehensive test cases for WebSocket connection handling
-
   - HTTP (`ws://`) connections without SSL parameter
   - HTTPS (`wss://`) connections with SSL parameter
   - HTTPS with `verify_ssl=False` (self-signed certificates)
   - Scheme attribute storage during initialization
 
 - **Coverage Gaps**: Added 8 targeted tests for previously uncovered code paths
-
   - scraper.py: `scrape_single_tag()` error handling (empty results, exceptions)
   - scalars.py: `_serialize_time()` success and error paths
   - base.py: `save()` create vs update branches, `_process_fields()` skip logic
@@ -397,14 +402,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **UNSET Type Narrowing**: Comprehensive use of `is_set()` guards in helper methods
-
   - All `map_*_ids()` helper methods now properly narrow UNSET types before operations
   - Studio, Tag, Performer, Gallery, Image, and Group mixins updated with type guards
   - Prevents runtime errors when accessing potentially UNSET fields
   - Improved type inference for IDEs (Pylance, mypy)
 
 - **GraphQL Input Type Naming**: Fixed parameter naming consistency
-
   - INPUT types now consistently use camelCase (matching GraphQL schema)
   - OUTPUT types continue using snake_case with Pydantic aliases
   - Examples: `backupPath`, `deleteFiles`, `deleteOld` instead of snake_case variants
@@ -416,14 +419,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Type Annotation Errors**: Resolved 700+ mypy errors across codebase
-
   - Fixed UnsetType narrowing in 78+ integration tests
   - Corrected None checks in client mixins
   - Added proper type annotations for test variables
   - Fixed lambda return types in entity store filters
 
 - **Test Type Safety**: Enhanced test suite with proper type handling
-
   - Added `type: ignore[arg-type]` for intentional ValidationError tests
   - Fixed argument order in method calls (client-first pattern)
   - Resolved @classmethod + TypeVar mypy limitations with explanatory comments
@@ -437,7 +438,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Testing
 
 - **Improved Test Coverage**: Achieved 100% branch coverage on critical mixins
-
   - Studio mixin: 100.00% coverage (118 statements, 38 branches)
   - Tag mixin: 100.00% coverage (129 statements, 46 branches)
   - Performer mixin: 100.00% coverage (174 statements, 72 branches)
@@ -475,7 +475,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Convenience Helper Methods**: 15 synchronous relationship helper methods across 5 entity types
-
   - **Performer** (2 methods): `add_tag()`, `remove_tag()`
   - **Gallery** (4 methods): `add_performer()`, `remove_performer()`, `add_scene()`, `remove_scene()`
   - **Image** (4 methods): `add_performer()`, `remove_performer()`, `add_gallery()`, `remove_gallery()`
