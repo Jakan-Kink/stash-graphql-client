@@ -1161,6 +1161,37 @@ class TestFilterWithExpiredEntries:
             assert len(favorites) == 0
 
 
+class TestFilterTypeIndexCleanup:
+    """Tests for filter() type index edge cases."""
+
+    @pytest.mark.unit
+    def test_filter_cleans_orphaned_type_index_entries(
+        self, respx_stash_client
+    ) -> None:
+        """Test filter() handles orphaned type index entries (ID in index but not in cache)."""
+        store = StashEntityStore(respx_stash_client, default_ttl=timedelta(minutes=30))
+
+        with patch.object(StashObject, "_store", store):
+            # Cache a performer normally
+            p1 = PerformerFactory.build(id="1", name="Alice", favorite=True)
+            store._cache_entity(p1)
+
+            # Manually create an orphaned index entry:
+            # ID "orphan" is in _type_index but has no corresponding _cache entry
+            store._type_index["Performer"].add("orphan")
+
+            # filter() should handle the orphan gracefully and still return valid results
+            favorites = store.filter(Performer, lambda p: p.favorite)
+
+            assert len(favorites) == 1
+            assert favorites[0].name == "Alice"
+
+            # Orphaned entry should have been cleaned up from the index
+            assert "orphan" not in store._type_index["Performer"]
+            # Valid entry should remain
+            assert "1" in store._type_index["Performer"]
+
+
 class TestPopulateFunction:
     """Tests for populate() function and helpers."""
 
@@ -1518,6 +1549,27 @@ class TestInvalidateNotCached:
         # Cache should still be empty
         stats = store.cache_stats()
         assert stats.total_entries == 0
+
+
+class TestInvalidateTypeIndexEdgeCases:
+    """Test invalidate() when type index is missing (defensive guard)."""
+
+    @pytest.mark.unit
+    def test_invalidate_without_type_index_entry(self, respx_entity_store) -> None:
+        """Test invalidate() handles missing type index entry gracefully."""
+        store = respx_entity_store
+
+        # Cache a performer (creates both _cache and _type_index entries)
+        p1 = PerformerFactory.build(id="1", name="Alice")
+        store._cache_entity(p1)
+
+        # Manually remove the type index entry to simulate inconsistent state
+        del store._type_index["Performer"]
+
+        # invalidate() should still work (removes from cache, skips type index)
+        store.invalidate(Performer, "1")
+
+        assert ("Performer", "1") not in store._cache
 
 
 class TestCacheStatsWithExpired:
@@ -2100,6 +2152,41 @@ class TestSaveMethod:
             StashIntegrationError, match="related objects still have UUIDs"
         ):
             await store.save(studio)
+
+
+class TestSaveTypeIndexEdgeCases:
+    """Test save() UUID→ID swap when type index is missing (defensive guard)."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_save_uuid_swap_without_type_index_entry(
+        self, respx_stash_client
+    ) -> None:
+        """Test save() handles missing type index during UUID→ID swap."""
+        store = StashEntityStore(respx_stash_client)
+
+        # Create new performer with UUID and cache it
+        old_uuid = uuid.uuid4().hex
+        performer = Performer(id=old_uuid, name="New Performer")
+        performer._is_new = True
+        store.add(performer)
+
+        # Manually remove the type index to simulate inconsistent state
+        store._type_index.pop("Performer", None)
+
+        # Mock GraphQL response for save
+        performer_response = create_graphql_response(
+            "performerCreate", create_performer_dict(id="456", name="New Performer")
+        )
+        respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json=performer_response)]
+        )
+
+        await store.save(performer)
+
+        # Old UUID key removed, new ID key added
+        assert ("Performer", old_uuid) not in store._cache
+        assert ("Performer", "456") in store._cache
 
 
 class TestGetOrCreateMethod:

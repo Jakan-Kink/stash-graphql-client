@@ -137,6 +137,8 @@ class StashEntityStore:
         self._default_ttl = default_ttl
         # Cache keyed by (type_name, id)
         self._cache: dict[tuple[str, str], CacheEntry[Any]] = {}
+        # Secondary index: type_name → set of entity IDs (for O(k) type iteration)
+        self._type_index: dict[str, set[str]] = {}
         # Per-type TTL overrides
         self._type_ttls: dict[str, timedelta | None] = {}
         # Thread-safety lock (reentrant to allow nested calls)
@@ -350,6 +352,9 @@ class StashEntityStore:
     def filter(self, entity_type: type[T], predicate: Callable[[T], bool]) -> list[T]:
         """Filter cached objects with Python lambda. No network call (thread-safe).
 
+        Uses the type index for O(k) iteration over only the requested type,
+        instead of snapshotting the entire cache.
+
         Args:
             entity_type: The Stash entity type
             predicate: Function that returns True for matching entities
@@ -360,18 +365,27 @@ class StashEntityStore:
         type_name = entity_type.__type_name__
         results: list[T] = []
 
-        # Snapshot cache entries while holding lock
         with self._lock:
-            cache_snapshot = list(self._cache.items())
+            entity_ids = self._type_index.get(type_name)
+            if not entity_ids:
+                return []
 
-        # Process snapshot without holding lock (predicate may be slow)
-        for (cached_type, _), entry in cache_snapshot:
-            if cached_type != type_name:
-                continue
-            if entry.is_expired():
-                continue
-            if predicate(entry.entity):
-                results.append(entry.entity)
+            expired: list[str] = []
+            for eid in entity_ids:
+                entry = self._cache.get((type_name, eid))
+                if entry is None:
+                    expired.append(eid)
+                    continue
+                if entry.is_expired():
+                    expired.append(eid)
+                    del self._cache[(type_name, eid)]
+                    continue
+                if predicate(entry.entity):
+                    results.append(entry.entity)
+
+            # Clean up stale index entries
+            for eid in expired:
+                entity_ids.discard(eid)
 
         return results
 
@@ -441,29 +455,39 @@ class StashEntityStore:
         )
         results: list[T] = []
 
-        # Snapshot cache entries
         with self._lock:
-            cache_snapshot = list(self._cache.items())
+            entity_ids = self._type_index.get(type_name)
+            if not entity_ids:
+                return []
 
-        for (cached_type, _), entry in cache_snapshot:
-            if cached_type != type_name:
-                continue
-            if entry.is_expired():
-                continue
+            expired: list[str] = []
+            for eid in entity_ids:
+                entry = self._cache.get((type_name, eid))
+                if entry is None:
+                    expired.append(eid)
+                    continue
+                if entry.is_expired():
+                    expired.append(eid)
+                    del self._cache[(type_name, eid)]
+                    continue
 
-            entity = entry.entity
+                entity = entry.entity
 
-            # Check for missing fields - fail fast (supports nested field specs)
-            missing = self.missing_fields_nested(entity, *fields_set)
-            if missing:
-                raise ValueError(
-                    f"{type_name} {entity.id} is missing required fields: {missing}. "
-                    f"Use filter_and_populate() to auto-fetch missing fields, or populate "
-                    f"the cache first with store.find() or store.populate()."
-                )
+                # Check for missing fields - fail fast (supports nested field specs)
+                missing = self.missing_fields_nested(entity, *fields_set)
+                if missing:
+                    raise ValueError(
+                        f"{type_name} {entity.id} is missing required fields: {missing}. "
+                        f"Use filter_and_populate() to auto-fetch missing fields, or populate "
+                        f"the cache first with store.find() or store.populate()."
+                    )
 
-            if predicate(entity):
-                results.append(entity)
+                if predicate(entity):
+                    results.append(entity)
+
+            # Clean up stale index entries
+            for eid in expired:
+                entity_ids.discard(eid)
 
         return results
 
@@ -565,30 +589,29 @@ class StashEntityStore:
                 )
 
         # Apply predicate to all objects (now with complete data)
-        # Get fresh snapshot from cache (populate() may have updated instances)
-        with self._lock:
-            cache_snapshot = list(self._cache.items())
-
+        # Re-read from cache via type index (populate() may have updated instances)
         results: list[T] = []
-        for (cached_type, _), entry in cache_snapshot:
-            if cached_type != type_name:
-                continue
-            if entry.is_expired():
-                continue
+        with self._lock:
+            entity_ids = self._type_index.get(type_name)
+            if entity_ids:
+                for eid in entity_ids:
+                    entry = self._cache.get((type_name, eid))
+                    if entry is None or entry.is_expired():
+                        continue
 
-            entity = entry.entity
+                    entity = entry.entity
 
-            # Verify all required fields are now present (defensive check)
-            missing = self.missing_fields_nested(entity, *fields_set)
-            if missing:
-                log.warning(
-                    f"{type_name} {entity.id} still missing {missing} after populate "
-                    f"(this shouldn't happen)"
-                )
-                continue
+                    # Verify all required fields are now present (defensive check)
+                    missing = self.missing_fields_nested(entity, *fields_set)
+                    if missing:
+                        log.warning(
+                            f"{type_name} {entity.id} still missing {missing} after populate "
+                            f"(this shouldn't happen)"
+                        )
+                        continue
 
-            if predicate(entity):
-                results.append(entity)
+                    if predicate(entity):
+                        results.append(entity)
 
         return results
 
@@ -688,27 +711,26 @@ class StashEntityStore:
                     ]
                 )
 
-        # Apply predicate
-        with self._lock:
-            cache_snapshot = list(self._cache.items())
-
+        # Apply predicate via type index (zero-copy)
         results: list[T] = []
-        for (cached_type, _), entry in cache_snapshot:
-            if cached_type != type_name:
-                continue
-            if entry.is_expired():
-                continue
+        with self._lock:
+            entity_ids = self._type_index.get(type_name)
+            if entity_ids:
+                for eid in entity_ids:
+                    entry = self._cache.get((type_name, eid))
+                    if entry is None or entry.is_expired():
+                        continue
 
-            entity = entry.entity
-            missing = self.missing_fields_nested(entity, *fields_set)
-            if missing:
-                log.warning(
-                    f"{type_name} {entity.id} still missing {missing} after populate"
-                )
-                continue
+                    entity = entry.entity
+                    missing = self.missing_fields_nested(entity, *fields_set)
+                    if missing:
+                        log.warning(
+                            f"{type_name} {entity.id} still missing {missing} after populate"
+                        )
+                        continue
 
-            if predicate(entity):
-                results.append(entity)
+                    if predicate(entity):
+                        results.append(entity)
 
         # Build stats
         cache_hit_rate = (
@@ -1398,6 +1420,9 @@ class StashEntityStore:
         with self._lock:
             if cache_key in self._cache:
                 del self._cache[cache_key]
+                type_ids = self._type_index.get(type_name)
+                if type_ids is not None:
+                    type_ids.discard(entity_id)
                 log.debug(f"Invalidated: {type_name} {entity_id}")
 
     def invalidate_type(self, entity_type: type[T]) -> None:
@@ -1408,16 +1433,17 @@ class StashEntityStore:
         """
         type_name = entity_type.__type_name__
         with self._lock:
-            keys_to_delete = [key for key in self._cache if key[0] == type_name]
-            for key in keys_to_delete:
-                del self._cache[key]
-        log.debug(f"Invalidated all {type_name}: {len(keys_to_delete)} entries")
+            entity_ids = self._type_index.pop(type_name, set())
+            for eid in entity_ids:
+                self._cache.pop((type_name, eid), None)
+        log.debug(f"Invalidated all {type_name}: {len(entity_ids)} entries")
 
     def invalidate_all(self) -> None:
         """Clear entire cache (thread-safe)."""
         with self._lock:
             count = len(self._cache)
             self._cache.clear()
+            self._type_index.clear()
         log.debug(f"Invalidated all cache: {count} entries")
 
     def set_ttl(self, entity_type: type[T], ttl: timedelta | int | None) -> None:
@@ -1570,6 +1596,12 @@ class StashEntityStore:
                     log.debug(
                         f"Removed old cache key: {obj.__type_name__} {old_id[:8]}..."
                     )
+
+                    # Update type index: swap old UUID for real ID
+                    type_ids = self._type_index.get(obj.__type_name__)
+                    if type_ids is not None:
+                        type_ids.discard(old_id)
+                        type_ids.add(obj.id)
                 else:
                     # Not in cache - add it now with real ID
                     self._cache_entity(obj)
@@ -1775,6 +1807,7 @@ class StashEntityStore:
                 cached_at=time.monotonic(),
                 ttl_seconds=ttl_seconds,
             )
+            self._type_index.setdefault(type_name, set()).add(entity.id)
 
     def _get_ttl_for_type(self, type_name: str) -> timedelta | None:
         """Get TTL for a type, falling back to default."""

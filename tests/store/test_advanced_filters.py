@@ -16,6 +16,7 @@ import io
 import logging
 import re
 import time
+from datetime import timedelta
 from unittest.mock import patch
 
 import httpx
@@ -24,6 +25,7 @@ import respx
 
 from stash_graphql_client import Performer, StashEntityStore
 from stash_graphql_client.logging import client_logger
+from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.unset import UNSET
 from tests.fixtures.stash import (
     PerformerFactory,
@@ -169,6 +171,118 @@ class TestFilterStrict:
         assert len(results) == 1
         assert results[0].id == "1"
         assert results[0].name == "Alice"
+
+
+class TestFilterStrictTypeIndexCleanup:
+    """Tests for filter_strict() type index edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_filter_strict_cleans_orphaned_type_index_entries(
+        self, respx_stash_client
+    ) -> None:
+        """Test filter_strict() handles orphaned type index entries."""
+        store = StashEntityStore(respx_stash_client, default_ttl=timedelta(minutes=30))
+
+        with patch.object(StashObject, "_store", store):
+            # Cache a performer normally
+            p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
+            object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
+            store._cache_entity(p1)
+
+            # Create orphaned index entry (ID in index but not in cache)
+            store._type_index["Performer"].add("orphan")
+
+            results = store.filter_strict(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+            )
+
+            assert len(results) == 1
+            assert results[0].id == "1"
+
+            # Orphaned entry should have been cleaned up
+            assert "orphan" not in store._type_index["Performer"]
+
+
+class TestFilterAndPopulateSecondPassEdgeCases:
+    """Tests for filter_and_populate/with_stats second pass edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_filter_and_populate_empty_type_index_second_pass(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test filter_and_populate when type index is empty during second pass."""
+        store = respx_entity_store
+
+        # Cache a performer with missing field so populate() will be called
+        p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
+        object.__setattr__(p1, "rating100", UNSET)
+        object.__setattr__(p1, "_received_fields", {"id", "name"})  # missing rating100
+        store._cache_entity(p1)
+
+        # Mock GraphQL response for the populate call
+        p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200, json=create_graphql_response("findPerformer", p1_complete)
+            )
+        )
+
+        # Patch populate to also invalidate the type after populating
+        original_populate = store.populate
+
+        async def populate_and_invalidate(entity, **kwargs):
+            result = await original_populate(entity, **kwargs)
+            store.invalidate_type(Performer)
+            return result
+
+        with patch.object(store, "populate", side_effect=populate_and_invalidate):
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+            )
+
+        # Second pass finds empty type index, returns empty
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_filter_and_populate_with_stats_empty_type_index_second_pass(
+        self, respx_mock, respx_entity_store: StashEntityStore
+    ) -> None:
+        """Test filter_and_populate_with_stats when type index is empty during second pass."""
+        store = respx_entity_store
+
+        p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
+        object.__setattr__(p1, "rating100", UNSET)
+        object.__setattr__(p1, "_received_fields", {"id", "name"})  # missing rating100
+        store._cache_entity(p1)
+
+        # Mock GraphQL response for the populate call
+        p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(
+                200, json=create_graphql_response("findPerformer", p1_complete)
+            )
+        )
+
+        original_populate = store.populate
+
+        async def populate_and_invalidate(entity, **kwargs):
+            result = await original_populate(entity, **kwargs)
+            store.invalidate_type(Performer)
+            return result
+
+        with patch.object(store, "populate", side_effect=populate_and_invalidate):
+            results, stats = await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: True,
+            )
+
+        assert results == []
+        assert stats["matches"] == 0
 
 
 # =============================================================================
