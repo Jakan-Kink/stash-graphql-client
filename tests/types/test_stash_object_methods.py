@@ -208,6 +208,9 @@ class TestFindById:
         assert result is None
 
     @pytest.mark.asyncio
+    @pytest.mark.filterwarnings(
+        "ignore:CustomType.*Unmapped fields:stash_graphql_client.errors.StashUnmappedFieldWarning"
+    )
     async def test_find_by_id_uses_fallback_query_for_unknown_type(
         self, respx_stash_client, respx_entity_store
     ) -> None:
@@ -637,20 +640,20 @@ class TestProcessFields:
         # Create a tag with a field converter that raises
         tag = Tag.new(name="Test")
 
-        # Add a field that will be converted
-        tag.rating100 = 50
+        # Add a field that will be converted (scene_count is a real Tag field)
+        tag.scene_count = 50
 
         # Create a converter that raises ValueError
         def bad_converter(value):
             raise ValueError("Test error")
 
         # Patch the field conversions dict to add our bad converter
-        with patch.dict(Tag.__field_conversions__, {"rating100": bad_converter}):
+        with patch.dict(Tag.__field_conversions__, {"scene_count": bad_converter}):
             # Call _process_fields - should catch the exception
-            result = await tag._process_fields({"rating100"})
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result due to exception
-            assert "rating100" not in result
+            # scene_count should not be in result due to exception
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_field_missing_on_object(
@@ -673,14 +676,14 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter is None - covers line 967->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Set converter to None
-        with patch.dict(Tag.__field_conversions__, {"rating100": None}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": None}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter is None)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter is None)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_converter_not_callable(
@@ -688,14 +691,14 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter is not callable - covers line 967->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Set converter to a non-callable value
-        with patch.dict(Tag.__field_conversions__, {"rating100": "not callable"}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": "not callable"}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter is not callable)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter is not callable)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_converter_returns_none(
@@ -703,17 +706,17 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter returns None - covers line 969->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Converter that returns None
         def none_converter(value):
             return None
 
-        with patch.dict(Tag.__field_conversions__, {"rating100": none_converter}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": none_converter}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter returned None)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter returned None)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_skips_field_without_conversion(
@@ -778,8 +781,6 @@ class TestCircularReferenceProtection:
             id="perf-1",
             name="Test Performer",
             tags=[],
-            parents=[],
-            children=[],
             scenes=[],
         )
 

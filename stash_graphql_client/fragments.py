@@ -1419,8 +1419,16 @@ FOLDER_FIELDS = """fragment FolderFields on Folder {
     __typename
     id
     path
-    parent_folder_id
-    zip_file_id
+    parent_folder {
+        __typename
+        id
+        path
+    }
+    zip_file {
+        __typename
+        id
+        path
+    }
     mod_time
     created_at
     updated_at

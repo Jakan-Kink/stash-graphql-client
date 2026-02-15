@@ -75,6 +75,7 @@ class Image(StashObject):
     """Image type from schema."""
 
     __type_name__ = "Image"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = ImageUpdateInput
     # No __create_input_type__ - images can only be updated
 

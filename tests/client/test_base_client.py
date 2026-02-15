@@ -647,7 +647,6 @@ async def test_parse_result_to_type_handles_unexpected_response_structure(
         "files": [],
         "tags": [],
         "performers": [],
-        "studios": [],
         "galleries": [],
         "groups": [],
         "created_at": "2024-01-01T00:00:00Z",

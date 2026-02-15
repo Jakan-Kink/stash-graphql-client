@@ -52,10 +52,10 @@ from pydantic import (
 )
 
 from stash_graphql_client import fragments
-from stash_graphql_client.errors import StashIntegrationError
+from stash_graphql_client.errors import StashIntegrationError, StashUnmappedFieldWarning
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
-from stash_graphql_client.types.unset import UNSET, UnsetType
+from stash_graphql_client.types.unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -370,8 +370,11 @@ class StashInput(BaseModel):
             if field_info.alias:
                 known_fields.add(field_info.alias)  # GraphQL alias (e.g., "tagIds")
 
-        # Find extra fields that aren't recognized
-        extra_fields = set(data.keys()) - known_fields
+        # Find extra fields that aren't recognized, excluding internal fields
+        # (e.g., __typename from GraphQL introspection) — mirrors sanitize_model_data()
+        extra_fields = {
+            k for k in set(data.keys()) - known_fields if not k.startswith("_")
+        }
 
         if extra_fields:
             warnings.warn(
@@ -508,6 +511,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
     # Field conversion functions
     __field_conversions__: ClassVar[dict[str, Callable[[Any], Any]]] = {}
+
+    # Fields to try for compact repr (first set+non-None field wins)
+    __short_repr_fields__: ClassVar[tuple[str, ...]] = ()
+
+    # Max items to show in list-of-StashObject repr before truncating
+    _SHORT_REPR_LIST_LIMIT: ClassVar[int] = 2
 
     # Pydantic configuration
     model_config = ConfigDict(
@@ -846,6 +855,46 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Mark as no longer new
         self._is_new = False
         log.debug(f"Updated {self.__class__.__name__} ID: {old_id} -> {server_id}")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_extra_fields(cls, data: Any) -> Any:
+        """Emit warning for unmapped fields in GraphQL response data.
+
+        Unlike StashInput._warn_extra_fields (which uses DeprecationWarning for
+        user typos heading toward extra="forbid"), this uses StashUnmappedFieldWarning
+        because the extra fields come from the Stash server — not user error.
+        The server may be newer (fields not yet mapped), older (deprecated fields
+        no longer declared), or a schema rename occurred between versions.
+
+        Internal fields (_-prefixed like __typename) are silently ignored.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Get known field names (both Python snake_case and GraphQL camelCase aliases)
+        known_fields = set()
+        for field_name, field_info in cls.model_fields.items():
+            known_fields.add(field_name)  # Python name
+            if field_info.alias:
+                known_fields.add(field_info.alias)  # GraphQL alias
+
+        # Find extra fields, excluding _-prefixed internal fields
+        extra_fields = {
+            k for k in set(data.keys()) - known_fields if not k.startswith("_")
+        }
+
+        if extra_fields:
+            warnings.warn(
+                f"{cls.__name__}: Unmapped fields from server: "
+                f"{', '.join(sorted(extra_fields))}. "
+                f"The Stash server may be newer (fields not yet mapped) "
+                f"or older (deprecated fields no longer supported).",
+                StashUnmappedFieldWarning,
+                stacklevel=4,
+            )
+
+        return data
 
     @model_validator(mode="wrap")
     @classmethod
@@ -1552,3 +1601,40 @@ class StashObject(FromGraphQLMixin, BaseModel):
         if not isinstance(other, StashObject):
             return NotImplemented
         return (self.__type_name__, self.id) == (other.__type_name__, other.id)
+
+    def _short_repr(self) -> str:
+        """Compact repr for nested display inside another object's repr."""
+        parts: list[str] = []
+        for field in self.__short_repr_fields__:
+            val = getattr(self, field, UNSET)
+            if is_set(val) and val is not None:
+                parts.append(f"{field}={val!r}")
+        if not parts:
+            return f"{self.__type_name__}(id={self.id!r})"
+        return f"{self.__type_name__}({', '.join(parts)})"
+
+    def __repr__(self) -> str:
+        """Shallow repr that avoids recursive expansion of relationship fields."""
+        parts: list[str] = [f"id={self.id!r}"]
+
+        for field_name in sorted(self.__class__.model_fields):
+            if field_name == "id":
+                continue
+            val = getattr(self, field_name, UNSET)
+            if not is_set(val):
+                continue
+
+            if isinstance(val, StashObject):
+                parts.append(f"{field_name}={val._short_repr()}")
+            elif isinstance(val, list) and val and isinstance(val[0], StashObject):
+                limit = self._SHORT_REPR_LIST_LIMIT
+                items = [item._short_repr() for item in val[:limit]]
+                suffix = f", ..{len(val) - limit} more" if len(val) > limit else ""
+                parts.append(f"{field_name}=[{', '.join(items)}{suffix}]")
+            else:
+                r = repr(val)
+                if len(r) > 200:
+                    r = r[:197] + "..."
+                parts.append(f"{field_name}={r}")
+
+        return f"{self.__type_name__}({', '.join(parts)})"

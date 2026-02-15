@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .scene import SceneFileType
 
 
-class ScrapeType(str, Enum):
+class ScrapeType(StrEnum):
     """Type of scraping operation from schema/types/scraper.graphql."""
 
     NAME = "NAME"  # From text query
@@ -23,7 +23,7 @@ class ScrapeType(str, Enum):
     URL = "URL"  # From URL
 
 
-class ScrapeContentType(str, Enum):
+class ScrapeContentType(StrEnum):
     """Type of the content a scraper generates from schema/types/scraper.graphql."""
 
     GALLERY = "GALLERY"

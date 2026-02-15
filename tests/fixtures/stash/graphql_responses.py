@@ -420,7 +420,6 @@ def create_gallery_dict(
     performers: list[dict] | None = None,
     tags: list[dict] | None = None,
     scenes: list[dict] | None = None,
-    images: list[dict] | None = None,
     **kwargs,
 ) -> dict[str, Any]:
     """Create a Gallery dict matching the Gallery type schema.
@@ -434,7 +433,6 @@ def create_gallery_dict(
         performers: List of performer dicts
         tags: List of tag dicts
         scenes: List of scene dicts
-        images: List of image dicts
         **kwargs: Additional gallery fields
 
     Returns:
@@ -450,7 +448,6 @@ def create_gallery_dict(
         "performers": performers or [],
         "tags": tags or [],
         "scenes": scenes or [],
-        "images": images or [],
         "files": [],
         "organized": False,
     }

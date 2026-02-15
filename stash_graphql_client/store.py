@@ -11,6 +11,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
+from itertools import batched
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from . import fragments
@@ -578,8 +579,7 @@ class StashEntityStore:
             # Populate in batches to avoid overwhelming the server
             import asyncio
 
-            for i in range(0, len(to_populate), batch_size):
-                batch = to_populate[i : i + batch_size]
+            for batch in batched(to_populate, batch_size):
                 # Populate concurrently within batch
                 await asyncio.gather(
                     *[
@@ -702,8 +702,7 @@ class StashEntityStore:
 
             import asyncio
 
-            for i in range(0, len(to_populate), batch_size):
-                batch = to_populate[i : i + batch_size]
+            for batch in batched(to_populate, batch_size):
                 await asyncio.gather(
                     *[
                         self.populate(entity, fields=list(fields_set))
@@ -828,8 +827,7 @@ class StashEntityStore:
 
             # Populate if needed (in sub-batches for memory efficiency)
             if to_populate:
-                for j in range(0, len(to_populate), populate_batch):
-                    sub_batch = to_populate[j : j + populate_batch]
+                for sub_batch in batched(to_populate, populate_batch):
                     await asyncio.gather(
                         *[
                             self.populate(entity, fields=list(fields_set))

@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.10.14"
+version = "0.11.0b1"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -171,7 +171,6 @@ ignore = [
     "ARG001", # unused function argument (common in callbacks)
     "ARG002", # unused method argument (common in abstract methods)
     "ARG003", # unused class method argument (common in abstract methods)
-    "UP042",  # str + Enum → StrEnum (scheduled for v0.11.0 refactoring)
     "ARG004", # unused static method argument (common in abstract methods)
     "ARG005", # unused lambda argument (common pattern)
     "PTH123", # pathlib open() (not always better) - TODO: convert incrementally

@@ -4,6 +4,7 @@ These tests verify that v0.11.0 emits DeprecationWarning for unknown fields
 to help users identify typos before v0.12.0 enforcement (extra="forbid").
 """
 
+import contextlib
 import warnings
 
 import pytest
@@ -66,7 +67,7 @@ class TestStashInputDeprecationWarnings:
 
     def test_warning_suggests_common_fixes(self):
         """Warning message should include helpful suggestions for common typos."""
-        with pytest.warns(DeprecationWarning) as warning_list:
+        with pytest.warns(DeprecationWarning, match="tag_id") as warning_list:
             BulkSceneMarkerUpdateInput(
                 ids=["1"],
                 tag_id="typo",  # Common mistake: singular instead of plural
@@ -88,7 +89,7 @@ class TestStashInputDeprecationWarnings:
 
     def test_dict_input_still_works_with_warning(self):
         """Extra fields should still be accepted (just warned), not rejected."""
-        with pytest.warns(DeprecationWarning):
+        with pytest.warns(DeprecationWarning, match="typo_field"):
             obj = BulkSceneMarkerUpdateInput(
                 ids=["1", "2"],
                 primary_tag_id="123",
@@ -107,17 +108,13 @@ class TestStashInputDeprecationWarnings:
 
             # Should not raise (non-dict inputs skip the validator)
             # This is a theoretical edge case - normal usage always passes dicts
-            try:
+            with contextlib.suppress(Exception):
                 # Pydantic will handle validation of non-dict inputs
                 SceneUpdateInput.model_validate("not a dict")  # type: ignore
-            except Exception:
-                # Expected to fail validation, but should not emit DeprecationWarning
-                pass
 
     def test_warning_stacklevel_points_to_user_code(self):
         """Warning should have correct stacklevel to point to user's code, not validator."""
-        with pytest.warns(DeprecationWarning) as warning_list:
-            # This line should be identified as the source
+        with pytest.warns(DeprecationWarning, match="bad_field") as warning_list:
             BulkSceneMarkerUpdateInput(ids=["1"], bad_field="typo")
 
         # Check that stacklevel is set
@@ -138,7 +135,7 @@ class TestDeprecationWarningIntegration:
                 ids=["1"],
                 tag_id="typo",  # ❌ Wrong
             )
-            assert wrong_input.ids == ["1"]
+        assert wrong_input.ids == ["1"]
 
         # Step 2: User fixes typo, no warning
         with warnings.catch_warnings():
@@ -153,13 +150,17 @@ class TestDeprecationWarningIntegration:
 
     def test_multiple_inputs_each_warn_separately(self):
         """Each Input class with typos should emit its own warning."""
-        with pytest.warns(DeprecationWarning) as warning_list:
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter("always")
             BulkSceneMarkerUpdateInput(ids=["1"], typo1="bad")
             SceneUpdateInput(id="2", typo2="bad")
             TagDestroyInput(id="3", typo3="bad")
 
-        # Should have 3 separate warnings
-        assert len(warning_list) == 3
-        assert "BulkSceneMarkerUpdateInput" in str(warning_list[0].message)
-        assert "SceneUpdateInput" in str(warning_list[1].message)
-        assert "TagDestroyInput" in str(warning_list[2].message)
+        # Filter to just DeprecationWarnings
+        dep_warnings = [
+            w for w in warning_list if issubclass(w.category, DeprecationWarning)
+        ]
+        assert len(dep_warnings) == 3
+        assert "BulkSceneMarkerUpdateInput" in str(dep_warnings[0].message)
+        assert "SceneUpdateInput" in str(dep_warnings[1].message)
+        assert "TagDestroyInput" in str(dep_warnings[2].message)

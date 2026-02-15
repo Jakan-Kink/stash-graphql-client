@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b1] - 2026-02-15
+
+### Added
+
+- **Shallow `__repr__`**: Custom repr system that prevents exponential recursive expansion with bidirectional relationships (e.g., Performer→Scene→Performer)
+  - Two-tier system: `__repr__()` for full display with shallow relationships, `_short_repr()` for compact nested representation
+  - `__short_repr_fields__` ClassVar on each entity type controls the compact label field (e.g., `name` for Performer, `title` for Scene)
+  - Single relationship fields rendered via `_short_repr()` → `studio=Studio(name='Acme')`
+  - List relationships show first 2 items then `..N more` → `tags=[Tag(name='a'), Tag(name='b'), ..3 more]`
+  - Long scalar values truncated at 200 characters
+  - UNSET fields omitted from repr output
+  - Fields sorted alphabetically for deterministic output (id always first)
+  - Configured on all 11 entity subclasses: Scene, Performer, Tag, Studio, Gallery, GalleryChapter, Group, Image, SceneMarker, BaseFile (inherited by VideoFile/ImageFile/GalleryFile/BasicFile), and Folder
+  - Location: `stash_graphql_client/types/base.py`, all entity type files
+
+- **`StashUnmappedFieldWarning`**: New warning class for unmapped fields in GraphQL responses
+  - Emitted when StashObject receives fields not declared in the model (server newer or older than client)
+  - Distinct from StashInput's `DeprecationWarning` (which signals user typos heading toward `extra="forbid"`)
+  - Purely informational — extra data preserved in `__pydantic_extra__`, safe to ignore
+  - Location: `stash_graphql_client/errors.py`, `stash_graphql_client/types/base.py`
+
+- **BaseFile `__typename` discrimination**: Added `model_validator(mode="wrap")` on `BaseFile` that dispatches to the correct subclass (`VideoFile`, `ImageFile`, `GalleryFile`, `BasicFile`) based on `__typename`
+  - Previously, `find_file()` returned a `BaseFile` even when the response was a `VideoFile`, causing unmapped field warnings for subclass-specific fields like `format`, `width`, `height`
+  - Discrimination now works at the model level — both `find_file()` (single) and `FindFilesResultType` (list) correctly produce typed instances
+  - Location: `stash_graphql_client/types/files.py`
+
+- **Architecture documentation**: New `docs/architecture/pydantic-internals.md` documenting Pydantic v2 internal storage model, the PrivateAttr fix, and the recursive repr fix
+
+### Changed
+
+- **StrEnum Migration**: Migrated 33 string enum classes from `(str, Enum)` to `StrEnum`
+  - Modern Python 3.11+ `StrEnum` syntax provides cleaner enum definitions
+  - No functional changes - `StrEnum` is functionally identical to `(str, Enum)`
+  - Updated imports across 7 files: `date_utils`, `enums`, `job`, `logging`, `plugin`, `scene`, `scraped_types`
+  - Enables ruff UP042 check for future enum definitions
+  - Locations:
+    - `stash_graphql_client/types/date_utils.py`: `DatePrecision`
+    - `stash_graphql_client/types/enums.py`: 18 enum classes
+    - `stash_graphql_client/types/job.py`: `JobStatus`, `JobStatusUpdateType`
+    - `stash_graphql_client/types/logging.py`: `LogLevel`
+    - `stash_graphql_client/types/plugin.py`: `PluginSettingTypeEnum`
+    - `stash_graphql_client/types/scene.py`: `BulkUpdateIdMode`
+    - `stash_graphql_client/types/scraped_types.py`: `ScrapeType`, `ScrapeContentType`
+
+- **itertools.batched() Migration**: Replaced manual batching with `itertools.batched()` (Python 3.12+)
+  - Cleaner and more Pythonic batching in entity store operations
+  - Replaced 3 instances of `for i in range(0, len(items), batch_size)` pattern
+  - More efficient (no list slicing overhead) and works with any iterable
+  - Location: `stash_graphql_client/store.py`
+
+### Fixed
+
+- **Folder fragment**: Replaced deprecated `parent_folder_id`/`zip_file_id` scalar fields with `parent_folder { ... }`/`zip_file { ... }` object references in `FOLDER_FIELDS` fragment, matching `FILE_FIELDS` pattern
+  - Location: `stash_graphql_client/fragments.py`
+
+- **StashInput `_warn_extra_fields`**: Now excludes `_`-prefixed internal fields (e.g., `__typename`) from unknown-field detection, matching `sanitize_model_data()` behavior
+  - Location: `stash_graphql_client/types/base.py`
+
+- **Studio `handle_deprecated_url`**: Added guard for non-dict data in before validator to prevent `AttributeError` when receiving pre-constructed objects
+  - Location: `stash_graphql_client/types/studio.py`
+
+- **Performer relationship metadata**: Corrected Tag `inverse_query_field` from `"performers"` to `None` — Tag has no `performers` field, only a `performer_count` resolver
+  - Location: `stash_graphql_client/types/performer.py`
+
 ### Deprecated
 
 - **Extra Fields Behavior**: Currently, extra/unknown fields in dict inputs are silently ignored (Pydantic default)
@@ -16,6 +80,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Timeline**:
     - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
     - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
+
+### Testing
+
+- Added 26 tests for shallow repr system covering short repr (single and multi-field), full repr, file types, bidirectional non-recursion, list truncation, and field sorting
+  - Location: `tests/types/test_repr.py`
+- Added 11 tests for StashInput deprecation warnings covering unknown fields, typo suggestions, and extra field detection
+  - Location: `tests/types/test_input_deprecation_warnings.py`
 
 ## [0.10.14] - 2026-02-15
 
@@ -681,7 +752,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...HEAD
+[0.11.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0b1
+[0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14
 [0.10.13]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.12...v0.10.13
 [0.10.12]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.10...v0.10.12
 [0.10.10]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.9...v0.10.10

@@ -1226,7 +1226,7 @@ async def test_metadata_identify_with_dict(respx_stash_client: StashClient) -> N
 
     job_id = await respx_stash_client.metadata_identify(
         {
-            "sources": [{"source": {"scraperId": "scraper-2"}}],
+            "sources": [{"source": {"scraper_id": "scraper-2"}}],
             "paths": ["/path/to/scene.mp4"],
         }
     )
@@ -1252,7 +1252,7 @@ async def test_metadata_identify_error(respx_stash_client: StashClient) -> None:
     with pytest.raises(StashGraphQLError, match="Server error"):
         await respx_stash_client.metadata_identify(
             {
-                "sources": [{"source": {"scraperId": "scraper-1"}}],
+                "sources": [{"source": {"scraper_id": "scraper-1"}}],
                 "sceneIDs": ["scene-1"],
             }
         )

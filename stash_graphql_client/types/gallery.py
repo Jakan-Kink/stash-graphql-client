@@ -63,6 +63,7 @@ class GalleryChapter(StashObject):
     fields in the schema, matching the common pattern."""
 
     __type_name__ = "GalleryChapter"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = GalleryChapterUpdateInput
     __create_input_type__ = GalleryChapterCreateInput
 
@@ -153,6 +154,7 @@ class Gallery(StashObject):
     """Gallery type from schema/types/gallery.graphql."""
 
     __type_name__ = "Gallery"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = GalleryUpdateInput
     __create_input_type__ = GalleryCreateInput
 

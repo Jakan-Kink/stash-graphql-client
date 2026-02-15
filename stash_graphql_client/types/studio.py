@@ -65,6 +65,7 @@ class Studio(StashObject):
     """Studio type from schema/types/studio.graphql."""
 
     __type_name__ = "Studio"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = StudioUpdateInput
     __create_input_type__ = StudioCreateInput
 
@@ -121,7 +122,8 @@ class Studio(StashObject):
     @classmethod
     def handle_deprecated_url(cls, data: Any) -> Any:
         """Convert deprecated 'url' field to 'urls' list for backward compatibility."""
-        # Pydantic always passes dict to before validators
+        if not isinstance(data, dict):
+            return data
         # Handle deprecated single url field
         if data.get("url"):
             if "urls" not in data or not data["urls"]:

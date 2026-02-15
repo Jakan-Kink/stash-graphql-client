@@ -58,7 +58,9 @@ class TestPerformerTagsRelationship:
         assert rel.is_list is True
         assert rel.query_field == "tags"
         assert rel.inverse_type == "Tag"
-        assert rel.inverse_query_field == "performers"
+        assert (
+            rel.inverse_query_field is None
+        )  # Tag has no performers field, only performer_count
         assert rel.query_strategy == "direct_field"
         assert rel.auto_sync is True
         assert rel.transform is None

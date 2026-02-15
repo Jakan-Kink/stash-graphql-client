@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class BulkUpdateIdMode(str, Enum):
+class BulkUpdateIdMode(StrEnum):
     """Bulk update ID mode from schema/types/scene.graphql."""
 
     SET = "SET"
@@ -143,6 +143,7 @@ class Scene(StashObject):
     functionality like find_by_id, save, and to_input methods."""
 
     __type_name__ = "Scene"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = SceneUpdateInput
     # No __create_input_type__ - scenes can only be updated, they are created by the server during scanning
 

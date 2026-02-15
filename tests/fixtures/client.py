@@ -302,8 +302,8 @@ async def mock_entity_store(
                         setattr(obj, field_name, [])
                 # No metadata - check field annotation to determine type
                 # Get field info from model fields
-                elif hasattr(obj, "model_fields") and field_name in obj.model_fields:
-                    field_info = obj.model_fields[field_name]
+                elif field_name in type(obj).model_fields:
+                    field_info = type(obj).model_fields[field_name]
                     # Check if annotation contains list
                     annotation_str = str(field_info.annotation)
                     if "list[" in annotation_str.lower():

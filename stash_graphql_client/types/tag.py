@@ -71,6 +71,7 @@ class Tag(StashObject):
     """Tag type from schema/types/tag.graphql."""
 
     __type_name__ = "Tag"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = TagUpdateInput
     __create_input_type__ = TagCreateInput
 

@@ -170,6 +170,7 @@ class Performer(StashObject):
     """Performer type from schema/types/performer.graphql."""
 
     __type_name__ = "Performer"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = PerformerUpdateInput
     __create_input_type__ = PerformerCreateInput
 
@@ -320,9 +321,9 @@ class Performer(StashObject):
             is_list=True,
             query_field="tags",
             inverse_type="Tag",
-            inverse_query_field="performers",
+            inverse_query_field=None,  # Tag has no performers field, only performer_count resolver
             query_strategy="direct_field",
-            notes="Backend auto-syncs performer.tags and tag.performers",
+            notes="One-directional: performer.tags queryable, tag→performer only via performer_count or filter query",
         ),
         "stash_ids": RelationshipMetadata(
             target_field="stash_ids",

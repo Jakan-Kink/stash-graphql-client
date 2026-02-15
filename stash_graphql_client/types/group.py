@@ -98,6 +98,7 @@ class Group(StashObject):
     """Group type from schema."""
 
     __type_name__ = "Group"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = GroupUpdateInput
     __create_input_type__ = GroupCreateInput
 

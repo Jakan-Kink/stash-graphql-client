@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .base import StashInput, StashObject, StashResult
 from .scalars import Time
@@ -70,6 +70,7 @@ class BaseFile(StashObject):
     fields in the schema, matching the common pattern."""
 
     __type_name__ = "BaseFile"
+    __short_repr_fields__ = ("basename",)
 
     # Required fields
     path: str | UnsetType = UNSET  # String!
@@ -84,6 +85,30 @@ class BaseFile(StashObject):
 
     # Note: fingerprint field with resolver is not directly supported in Pydantic
     # Users should call fingerprint_resolver(instance, type) directly
+
+    # Subclass map populated after subclass definitions (see bottom of class hierarchy)
+    _FILE_TYPE_MAP: ClassVar[dict[str, type[BaseFile]]] = {}
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def _discriminate_by_typename(cls, data: Any, handler: Any) -> Any:
+        """Dispatch to correct subclass based on __typename when constructed as BaseFile.
+
+        When BaseFile is used directly as result_type (e.g. find_file()), the response
+        dict contains __typename but Pydantic doesn't know to dispatch to the subclass.
+        This validator intercepts construction and delegates to the correct type.
+
+        Only activates when cls is exactly BaseFile — subclasses skip this to avoid
+        infinite recursion.
+        """
+        if cls is not BaseFile or not isinstance(data, dict):
+            return handler(data)
+
+        typename = data.get("__typename")
+        if typename and typename in cls._FILE_TYPE_MAP:
+            return cls._FILE_TYPE_MAP[typename].model_validate(data)
+
+        return handler(data)
 
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input.
@@ -153,6 +178,15 @@ class GalleryFile(BaseFile):
     __type_name__ = "GalleryFile"
 
 
+# Populate BaseFile's subclass map now that all subtypes are defined
+BaseFile._FILE_TYPE_MAP = {
+    "VideoFile": VideoFile,
+    "ImageFile": ImageFile,
+    "GalleryFile": GalleryFile,
+    "BasicFile": BasicFile,
+}
+
+
 class ScenePathsType(BaseModel):
     """Scene paths type from schema/types/scene.graphql."""
 
@@ -197,6 +231,7 @@ class Folder(StashObject):
     fields in the schema, matching the common pattern."""
 
     __type_name__ = "Folder"
+    __short_repr_fields__ = ("path",)
 
     # Required fields
     path: str | UnsetType = UNSET  # String!

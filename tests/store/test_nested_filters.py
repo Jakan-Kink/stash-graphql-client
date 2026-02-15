@@ -58,8 +58,8 @@ class TestNestedFieldParsing:
     ) -> None:
         """Test parsing three-level nested field."""
         store = respx_entity_store
-        result = store._parse_nested_field("studio__parent__name")
-        assert result == ["studio", "parent", "name"]
+        result = store._parse_nested_field("studio__parent_studio__name")
+        assert result == ["studio", "parent_studio", "name"]
 
 
 # =============================================================================
@@ -109,12 +109,16 @@ class TestNestedFieldPresenceChecking:
         store._cache_entity(parent)
 
         # Create child studio with parent populated
-        child = StudioFactory.build(id="child-1", name="Child Studio", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(
+            id="child-1", name="Child Studio", parent_studio=parent
+        )
+        child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Check nested path: studio -> parent -> name
-        assert store._check_nested_field_present(child, ["parent", "name"]) is True
+        assert (
+            store._check_nested_field_present(child, ["parent_studio", "name"]) is True
+        )
 
     def test_check_nested_field_root_unset(
         self, respx_entity_store: StashEntityStore
@@ -123,11 +127,14 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # Studio with parent=UNSET
-        studio = StudioFactory.build(id="1", name="Acme", parent=UNSET)
+        studio = StudioFactory.build(id="1", name="Acme", parent_studio=UNSET)
         studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
-        assert store._check_nested_field_present(studio, ["parent", "name"]) is False
+        assert (
+            store._check_nested_field_present(studio, ["parent_studio", "name"])
+            is False
+        )
 
     def test_check_nested_field_root_none(
         self, respx_entity_store: StashEntityStore
@@ -136,12 +143,14 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # Studio with parent=None (actually has no parent)
-        studio = StudioFactory.build(id="1", name="Acme", parent=None)
-        studio._received_fields = {"id", "name", "parent"}
+        studio = StudioFactory.build(id="1", name="Acme", parent_studio=None)
+        studio._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(studio)
 
         # Should return True because parent is populated (it's just null)
-        assert store._check_nested_field_present(studio, ["parent", "name"]) is True
+        assert (
+            store._check_nested_field_present(studio, ["parent_studio", "name"]) is True
+        )
 
     def test_check_nested_field_leaf_unset(
         self, respx_entity_store: StashEntityStore
@@ -155,12 +164,14 @@ class TestNestedFieldPresenceChecking:
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Nested path should fail because parent.name is UNSET
-        assert store._check_nested_field_present(child, ["parent", "name"]) is False
+        assert (
+            store._check_nested_field_present(child, ["parent_studio", "name"]) is False
+        )
 
     def test_check_nested_field_list_all_present(
         self, respx_entity_store: StashEntityStore
@@ -176,13 +187,15 @@ class TestNestedFieldPresenceChecking:
             f._received_fields = {"id", "path"}
             store._cache_entity(f)
 
-        # Create image with files populated
-        image = ImageFactory.build(id="img1", title="Test", files=[file1, file2])
-        image._received_fields = {"id", "title", "files"}
+        # Create image with visual_files populated
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
-        # Check nested path: image -> files -> path
-        assert store._check_nested_field_present(image, ["files", "path"]) is True
+        # Check nested path: image -> visual_files -> path
+        assert (
+            store._check_nested_field_present(image, ["visual_files", "path"]) is True
+        )
 
     def test_check_nested_field_list_one_missing(
         self, respx_entity_store: StashEntityStore
@@ -199,13 +212,15 @@ class TestNestedFieldPresenceChecking:
         file2._received_fields = {"id"}
         store._cache_entity(file2)
 
-        # Image with both files
-        image = ImageFactory.build(id="img1", title="Test", files=[file1, file2])
-        image._received_fields = {"id", "title", "files"}
+        # Image with both visual_files
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Should fail because file2.path is UNSET
-        assert store._check_nested_field_present(image, ["files", "path"]) is False
+        assert (
+            store._check_nested_field_present(image, ["visual_files", "path"]) is False
+        )
 
 
 class TestMissingFieldsNested:
@@ -251,13 +266,13 @@ class TestMissingFieldsNested:
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Check for 'parent__name' - should be missing
-        missing = store.missing_fields_nested(child, "parent__name")
-        assert missing == {"parent__name"}
+        missing = store.missing_fields_nested(child, "parent_studio__name")
+        assert missing == {"parent_studio__name"}
 
     def test_missing_fields_nested_mixed_regular_and_nested(
         self, respx_entity_store: StashEntityStore
@@ -270,13 +285,13 @@ class TestMissingFieldsNested:
         store._cache_entity(parent)
 
         # Build without rating100, then explicitly set to UNSET
-        child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child._received_fields = {"id", "name", "parent_studio"}
         object.__setattr__(child, "rating100", UNSET)
         store._cache_entity(child)
 
         # Check mix: 'rating100' (regular), 'parent__name' (nested)
-        missing = store.missing_fields_nested(child, "rating100", "parent__name")
+        missing = store.missing_fields_nested(child, "rating100", "parent_studio__name")
 
         # Only rating100 should be missing, parent__name is present
         assert missing == {"rating100"}
@@ -309,10 +324,13 @@ class TestPopulateWithNestedFields:
         store._cache_entity(studio)
 
         # Verify the nested field parsing works
-        assert store._parse_nested_field("parent__name") == ["parent", "name"]
-        assert store._parse_nested_field("parent__parent__name") == [
-            "parent",
-            "parent",
+        assert store._parse_nested_field("parent_studio__name") == [
+            "parent_studio",
+            "name",
+        ]
+        assert store._parse_nested_field("parent_studio__parent_studio__name") == [
+            "parent_studio",
+            "parent_studio",
             "name",
         ]
 
@@ -326,14 +344,16 @@ class TestPopulateWithNestedFields:
         studio = StudioFactory.build(id="1", name="Test")
         studio._received_fields = {"id", "name"}
         object.__setattr__(studio, "rating100", UNSET)
-        object.__setattr__(studio, "parent", UNSET)
+        object.__setattr__(studio, "parent_studio", UNSET)
         store._cache_entity(studio)
 
         # Check that both regular and nested missing fields are detected
-        missing = store.missing_fields_nested(studio, "rating100", "parent__name")
+        missing = store.missing_fields_nested(
+            studio, "rating100", "parent_studio__name"
+        )
         # Both should be missing (rating100 is UNSET, parent is UNSET)
         assert "rating100" in missing
-        assert "parent__name" in missing
+        assert "parent_studio__name" in missing
 
 
 # =============================================================================
@@ -477,13 +497,15 @@ class TestNestedFieldEdgeCases:
         """Test nested field check on empty list."""
         store = respx_entity_store
 
-        # Image with empty files list
-        image = ImageFactory.build(id="img1", title="Test", files=[])
-        image._received_fields = {"id", "title", "files"}
+        # Image with empty visual_files list
+        image = ImageFactory.build(id="img1", title="Test", visual_files=[])
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Should return True (list is populated, just empty)
-        assert store._check_nested_field_present(image, ["files", "path"]) is True
+        assert (
+            store._check_nested_field_present(image, ["visual_files", "path"]) is True
+        )
 
     def test_nested_field_three_levels(
         self, respx_entity_store: StashEntityStore
@@ -492,24 +514,28 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Grandparent
-        grandparent = StudioFactory.build(id="gp", name="Grandparent", parent=None)
-        grandparent._received_fields = {"id", "name", "parent"}
+        grandparent = StudioFactory.build(
+            id="gp", name="Grandparent", parent_studio=None
+        )
+        grandparent._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(grandparent)
 
         # Parent
-        parent = StudioFactory.build(id="p", name="Parent", parent=grandparent)
-        parent._received_fields = {"id", "name", "parent"}
+        parent = StudioFactory.build(id="p", name="Parent", parent_studio=grandparent)
+        parent._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(parent)
 
         # Child
-        child = StudioFactory.build(id="c", name="Child", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(id="c", name="Child", parent_studio=parent)
+        child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Check three-level path: child -> parent -> parent -> name
         # This checks: child.parent.parent.name
         assert (
-            store._check_nested_field_present(child, ["parent", "parent", "name"])
+            store._check_nested_field_present(
+                child, ["parent_studio", "parent_studio", "name"]
+            )
             is True
         )
 
@@ -611,8 +637,8 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Studio with parent=None (actually has no parent)
-        studio = StudioFactory.build(id="1", name="Test", parent=None)
-        studio._received_fields = {"id", "name", "parent"}
+        studio = StudioFactory.build(id="1", name="Test", parent_studio=None)
+        studio._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(studio)
 
         # No GraphQL call should be made since parent is None
@@ -621,7 +647,7 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate with nested spec - should skip because parent is None
-        await store.populate(studio, fields=["parent__name"])
+        await store.populate(studio, fields=["parent_studio__name"])
 
         # Verify no GraphQL calls
         assert len(graphql_route.calls) == 0
@@ -640,8 +666,8 @@ class TestNestedFieldEdgeCases:
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="c1", name="Child", parent=parent)
-        child._received_fields = {"id", "name", "parent"}
+        child = StudioFactory.build(id="c1", name="Child", parent_studio=parent)
+        child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Mock GraphQL response for fetching parent.name
@@ -654,7 +680,7 @@ class TestNestedFieldEdgeCases:
                     200,
                     json=create_graphql_response(
                         "findStudio",
-                        {"id": "c1", "name": "Child", "parent": parent_response},
+                        {"id": "c1", "name": "Child", "parent_studio": parent_response},
                     ),
                 ),
                 # Second call: populate parent with 'name'
@@ -666,7 +692,7 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate with nested field on single object
-        await store.populate(child, fields=["parent__name"])
+        await store.populate(child, fields=["parent_studio__name"])
 
         # Should make at least 1 GraphQL call
         assert len(graphql_route.calls) >= 1
@@ -678,15 +704,15 @@ class TestNestedFieldEdgeCases:
         """Test populate() where list contains non-StashObject items (edge case)."""
         store = respx_entity_store
 
-        # Create an image with a files list that contains a mix (shouldn't happen in practice)
+        # Create an image with a visual_files list that contains a mix (shouldn't happen in practice)
         image = ImageFactory.build(id="img1", title="Test")
-        # Manually set files to include a non-StashObject (simulates data corruption)
+        # Manually set visual_files to include a non-StashObject (simulates data corruption)
         files_list = [
             ImageFileFactory.build(id="f1"),
             {"id": "f2", "not_a_stashobject": True},  # This shouldn't happen normally
         ]
-        object.__setattr__(image, "files", files_list)
-        image._received_fields = {"id", "title", "files"}
+        object.__setattr__(image, "visual_files", files_list)
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Mock GraphQL response (may or may not be called)

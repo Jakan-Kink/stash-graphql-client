@@ -249,7 +249,7 @@ async def test_create_scene_with_studio(
         # Create scene with the test studio
         new_scene = Scene.new(
             title=f"Scene with Studio {test_uid}",
-            studio_id=created_studio.id,
+            studio=created_studio,
         )
 
         created_scene = await stash_client.create_scene(new_scene)
