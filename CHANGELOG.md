@@ -17,6 +17,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
     - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
 
+## [0.10.14] - 2026-02-15
+
+### Fixed
+
+- **Private Attribute Survival**: Fixed Pydantic v2 `validate_assignment=True` silently destroying internal state (`_snapshot`, `_is_new`, `_received_fields`) on every field assignment
+  - Root cause: `object.__setattr__()` stores values in `__dict__`, which Pydantic rebuilds on each validated assignment — combined with `extra="allow"`, stale fallback values from `__pydantic_extra__` would be returned instead
+  - Converted all three private attributes to Pydantic `PrivateAttr` declarations (stored in `__pydantic_private__`, which is never rebuilt)
+  - Replaced all `object.__setattr__` calls for `_received_fields` across production and test code with direct assignment
+  - Symptoms: phantom dirty fields after identity map cache-hit merges, `_is_new` flag lost after field assignment, `_received_fields` tracking lost after field assignment
+  - Location: `stash_graphql_client/types/base.py`, `stash_graphql_client/store.py`
+
+### Added
+
+- **Regression Tests**: Added `TestPrivateAttrSurvival` class with 5 tests verifying private attributes survive `validate_assignment` `__dict__` rebuilds
+  - Tests snapshot survival through identity map merge + assignment, `_is_new` survival (both True and False), `_received_fields` survival, and snapshot survival across multiple consecutive assignments
+
 ## [0.10.13] - 2026-02-11
 
 ### Fixed

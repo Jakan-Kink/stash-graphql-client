@@ -77,7 +77,7 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Acme", rating100=90)
-        object.__setattr__(studio, "_received_fields", {"id", "name", "rating100"})
+        studio._received_fields = {"id", "name", "rating100"}
         store._cache_entity(studio)
 
         assert store._check_nested_field_present(studio, ["rating100"]) is True
@@ -90,7 +90,7 @@ class TestNestedFieldPresenceChecking:
 
         # Build without rating100, then it will be UNSET by default
         studio = StudioFactory.build(id="1", name="Acme")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         # Explicitly set rating100 to UNSET after construction
         object.__setattr__(studio, "rating100", UNSET)
         store._cache_entity(studio)
@@ -105,12 +105,12 @@ class TestNestedFieldPresenceChecking:
 
         # Create parent studio with name populated
         parent = StudioFactory.build(id="parent-1", name="Parent Studio")
-        object.__setattr__(parent, "_received_fields", {"id", "name"})
+        parent._received_fields = {"id", "name"}
         store._cache_entity(parent)
 
         # Create child studio with parent populated
         child = StudioFactory.build(id="child-1", name="Child Studio", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         store._cache_entity(child)
 
         # Check nested path: studio -> parent -> name
@@ -124,7 +124,7 @@ class TestNestedFieldPresenceChecking:
 
         # Studio with parent=UNSET
         studio = StudioFactory.build(id="1", name="Acme", parent=UNSET)
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         assert store._check_nested_field_present(studio, ["parent", "name"]) is False
@@ -137,7 +137,7 @@ class TestNestedFieldPresenceChecking:
 
         # Studio with parent=None (actually has no parent)
         studio = StudioFactory.build(id="1", name="Acme", parent=None)
-        object.__setattr__(studio, "_received_fields", {"id", "name", "parent"})
+        studio._received_fields = {"id", "name", "parent"}
         store._cache_entity(studio)
 
         # Should return True because parent is populated (it's just null)
@@ -151,12 +151,12 @@ class TestNestedFieldPresenceChecking:
 
         # Parent with name=UNSET
         parent = StudioFactory.build(id="parent-1", name=UNSET)
-        object.__setattr__(parent, "_received_fields", {"id"})
+        parent._received_fields = {"id"}
         store._cache_entity(parent)
 
         # Child with parent populated
         child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         store._cache_entity(child)
 
         # Nested path should fail because parent.name is UNSET
@@ -173,12 +173,12 @@ class TestNestedFieldPresenceChecking:
         file2 = ImageFileFactory.build(id="f2", path="/path/to/image2.jpg")
 
         for f in [file1, file2]:
-            object.__setattr__(f, "_received_fields", {"id", "path"})
+            f._received_fields = {"id", "path"}
             store._cache_entity(f)
 
         # Create image with files populated
         image = ImageFactory.build(id="img1", title="Test", files=[file1, file2])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        image._received_fields = {"id", "title", "files"}
         store._cache_entity(image)
 
         # Check nested path: image -> files -> path
@@ -192,16 +192,16 @@ class TestNestedFieldPresenceChecking:
 
         # file1 has path, file2 has path=UNSET
         file1 = ImageFileFactory.build(id="f1", path="/path/to/image1.jpg")
-        object.__setattr__(file1, "_received_fields", {"id", "path"})
+        file1._received_fields = {"id", "path"}
         store._cache_entity(file1)
 
         file2 = ImageFileFactory.build(id="f2", path=UNSET)
-        object.__setattr__(file2, "_received_fields", {"id"})
+        file2._received_fields = {"id"}
         store._cache_entity(file2)
 
         # Image with both files
         image = ImageFactory.build(id="img1", title="Test", files=[file1, file2])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        image._received_fields = {"id", "title", "files"}
         store._cache_entity(image)
 
         # Should fail because file2.path is UNSET
@@ -218,7 +218,7 @@ class TestMissingFieldsNested:
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Acme", rating100=90)
-        object.__setattr__(studio, "_received_fields", {"id", "name", "rating100"})
+        studio._received_fields = {"id", "name", "rating100"}
         store._cache_entity(studio)
 
         missing = store.missing_fields_nested(studio, "name", "rating100")
@@ -232,7 +232,7 @@ class TestMissingFieldsNested:
 
         # Build without rating100, then explicitly set to UNSET
         studio = StudioFactory.build(id="1", name="Acme")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         object.__setattr__(studio, "rating100", UNSET)
         store._cache_entity(studio)
 
@@ -247,12 +247,12 @@ class TestMissingFieldsNested:
 
         # Parent with name=UNSET
         parent = StudioFactory.build(id="parent-1", name=UNSET)
-        object.__setattr__(parent, "_received_fields", {"id"})
+        parent._received_fields = {"id"}
         store._cache_entity(parent)
 
         # Child with parent populated
         child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         store._cache_entity(child)
 
         # Check for 'parent__name' - should be missing
@@ -266,12 +266,12 @@ class TestMissingFieldsNested:
         store = respx_entity_store
 
         parent = StudioFactory.build(id="parent-1", name="Parent")
-        object.__setattr__(parent, "_received_fields", {"id", "name"})
+        parent._received_fields = {"id", "name"}
         store._cache_entity(parent)
 
         # Build without rating100, then explicitly set to UNSET
         child = StudioFactory.build(id="child-1", name="Child", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         object.__setattr__(child, "rating100", UNSET)
         store._cache_entity(child)
 
@@ -305,7 +305,7 @@ class TestPopulateWithNestedFields:
 
         # Create a simple studio for testing
         studio = StudioFactory.build(id="1", name="Test")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # Verify the nested field parsing works
@@ -324,7 +324,7 @@ class TestPopulateWithNestedFields:
 
         # Verify missing_fields_nested works with mixed specs
         studio = StudioFactory.build(id="1", name="Test")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         object.__setattr__(studio, "rating100", UNSET)
         object.__setattr__(studio, "parent", UNSET)
         store._cache_entity(studio)
@@ -354,12 +354,12 @@ class TestFilterStrictWithNestedFields:
         file1 = ImageFileFactory.build(id="f1", path="/path1.jpg", size=1024)
         file2 = ImageFileFactory.build(id="f2", path="/path2.jpg", size=2048)
         for f in [file1, file2]:
-            object.__setattr__(f, "_received_fields", {"id", "path", "size"})
+            f._received_fields = {"id", "path", "size"}
             store._cache_entity(f)
 
         # Image with visual_files populated
         image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
-        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Should succeed because visual_files__path is fully populated
@@ -380,12 +380,12 @@ class TestFilterStrictWithNestedFields:
 
         # File with path=UNSET
         file1 = ImageFileFactory.build(id="f1", path=UNSET, size=1024)
-        object.__setattr__(file1, "_received_fields", {"id", "size"})
+        file1._received_fields = {"id", "size"}
         store._cache_entity(file1)
 
         # Image with visual_files populated
         image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
-        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Should raise because file1.path is UNSET
@@ -409,12 +409,12 @@ class TestFilterAndPopulateWithNestedFields:
 
         # File with path=UNSET
         file1 = ImageFileFactory.build(id="f1", path=UNSET, size=UNSET)
-        object.__setattr__(file1, "_received_fields", {"id"})
+        file1._received_fields = {"id"}
         store._cache_entity(file1)
 
         # Image with visual_files populated
         image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
-        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
         # Mock GraphQL: Two file fetches (populate calls each nested field separately)
@@ -479,7 +479,7 @@ class TestNestedFieldEdgeCases:
 
         # Image with empty files list
         image = ImageFactory.build(id="img1", title="Test", files=[])
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        image._received_fields = {"id", "title", "files"}
         store._cache_entity(image)
 
         # Should return True (list is populated, just empty)
@@ -493,17 +493,17 @@ class TestNestedFieldEdgeCases:
 
         # Grandparent
         grandparent = StudioFactory.build(id="gp", name="Grandparent", parent=None)
-        object.__setattr__(grandparent, "_received_fields", {"id", "name", "parent"})
+        grandparent._received_fields = {"id", "name", "parent"}
         store._cache_entity(grandparent)
 
         # Parent
         parent = StudioFactory.build(id="p", name="Parent", parent=grandparent)
-        object.__setattr__(parent, "_received_fields", {"id", "name", "parent"})
+        parent._received_fields = {"id", "name", "parent"}
         store._cache_entity(parent)
 
         # Child
         child = StudioFactory.build(id="c", name="Child", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         store._cache_entity(child)
 
         # Check three-level path: child -> parent -> parent -> name
@@ -532,7 +532,7 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Test")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # Try to check a field that doesn't exist on Studio type
@@ -547,7 +547,7 @@ class TestNestedFieldEdgeCases:
 
         studio = StudioFactory.build(id="1", name="Test")
         # Corrupt state: claim we have rating100 in received_fields but don't
-        object.__setattr__(studio, "_received_fields", {"id", "name", "rating100"})
+        studio._received_fields = {"id", "name", "rating100"}
         # Delete the attribute to simulate corruption
         if hasattr(studio, "rating100"):
             delattr(studio, "rating100")
@@ -564,7 +564,7 @@ class TestNestedFieldEdgeCases:
 
         studio = StudioFactory.build(id="1", name="Test")
         # Corrupt state: claim we have rating100 in received_fields but it's UNSET
-        object.__setattr__(studio, "_received_fields", {"id", "name", "rating100"})
+        studio._received_fields = {"id", "name", "rating100"}
         object.__setattr__(studio, "rating100", UNSET)
         store._cache_entity(studio)
 
@@ -578,7 +578,7 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Test Studio")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # name is a string, can't traverse further
@@ -593,7 +593,7 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         studio = StudioFactory.build(id="1", name="Test")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # Try to populate a field that doesn't exist
@@ -612,7 +612,7 @@ class TestNestedFieldEdgeCases:
 
         # Studio with parent=None (actually has no parent)
         studio = StudioFactory.build(id="1", name="Test", parent=None)
-        object.__setattr__(studio, "_received_fields", {"id", "name", "parent"})
+        studio._received_fields = {"id", "name", "parent"}
         store._cache_entity(studio)
 
         # No GraphQL call should be made since parent is None
@@ -635,13 +635,13 @@ class TestNestedFieldEdgeCases:
 
         # Parent with name=UNSET
         parent = StudioFactory.build(id="p1")
-        object.__setattr__(parent, "_received_fields", {"id"})
+        parent._received_fields = {"id"}
         object.__setattr__(parent, "name", UNSET)
         store._cache_entity(parent)
 
         # Child with parent populated
         child = StudioFactory.build(id="c1", name="Child", parent=parent)
-        object.__setattr__(child, "_received_fields", {"id", "name", "parent"})
+        child._received_fields = {"id", "name", "parent"}
         store._cache_entity(child)
 
         # Mock GraphQL response for fetching parent.name
@@ -686,7 +686,7 @@ class TestNestedFieldEdgeCases:
             {"id": "f2", "not_a_stashobject": True},  # This shouldn't happen normally
         ]
         object.__setattr__(image, "files", files_list)
-        object.__setattr__(image, "_received_fields", {"id", "title", "files"})
+        image._received_fields = {"id", "title", "files"}
         store._cache_entity(image)
 
         # Mock GraphQL response (may or may not be called)
@@ -722,14 +722,14 @@ class TestNestedFieldEdgeCases:
         # Create an image with visual_files that has a non-StashObject item mixed in
         # This is an edge case that shouldn't normally happen but code should handle it
         file1 = ImageFileFactory.build(id="f1", path="/test.jpg")
-        object.__setattr__(file1, "_received_fields", {"id"})  # path is UNSET
+        file1._received_fields = {"id"}  # path is UNSET
 
         # Create image normally first, then directly modify visual_files to add a non-StashObject
         # (Can't use Factory.build() with mixed types as Pydantic validation rejects it)
         image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
         # Directly set visual_files to include a string (bypassing Pydantic validation)
         object.__setattr__(image, "visual_files", [file1, "not-a-stash-object"])
-        object.__setattr__(image, "_received_fields", {"id", "title", "visual_files"})
+        image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
         store._cache_entity(file1)
 
@@ -802,12 +802,12 @@ class TestNestedFieldEdgeCases:
 
         # Studio with minimal data
         studio = StudioFactory.build(id="s1", name="Test")
-        object.__setattr__(studio, "_received_fields", {"id", "name"})
+        studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # Scene with studio reference
         scene = SceneFactory.build(id="sc1", title="Test", studio=studio)
-        object.__setattr__(scene, "_received_fields", {"id", "title", "studio"})
+        scene._received_fields = {"id", "title", "studio"}
         store._cache_entity(scene)
 
         # Mock GraphQL responses - ONE fetch that returns both fields
@@ -857,7 +857,7 @@ class TestNestedFieldEdgeCases:
         chapter = GalleryChapter.from_dict(
             {"id": "ch1", "title": "Chapter 1", "image_index": 5}
         )
-        object.__setattr__(chapter, "_received_fields", {"id"})
+        chapter._received_fields = {"id"}
         store._cache_entity(chapter)
 
         # Create a Gallery with a single chapter field (not a list for this test)
@@ -866,7 +866,7 @@ class TestNestedFieldEdgeCases:
         gallery = Gallery.from_dict({"id": "gal1", "title": "Test Gallery"})
         # Use object.__setattr__ to bypass Pydantic validation
         object.__setattr__(gallery, "test_field", chapter)  # Custom field for testing
-        object.__setattr__(gallery, "_received_fields", {"id", "title", "test_field"})
+        gallery._received_fields = {"id", "title", "test_field"}
         store._cache_entity(gallery)
 
         # Populate with TWO nested field specs on non-fetchable single object
@@ -891,14 +891,14 @@ class TestNestedFieldEdgeCases:
         # Create a GalleryChapter with partial fields (not independently fetchable)
         chapter_data = {"id": "ch1", "title": "Chapter 1", "image_index": 0}
         chapter = GalleryChapter.from_dict(chapter_data)
-        object.__setattr__(chapter, "_received_fields", {"id"})  # Only id fetched
+        chapter._received_fields = {"id"}  # Only id fetched
         store._cache_entity(chapter)
 
         # Create a Gallery with chapters
         gallery = Gallery.from_dict(
             {"id": "gal1", "title": "Test Gallery", "chapters": [chapter]}
         )
-        object.__setattr__(gallery, "_received_fields", {"id", "title", "chapters"})
+        gallery._received_fields = {"id", "title", "chapters"}
         store._cache_entity(gallery)
 
         # No mock needed - populate should skip non-fetchable GalleryChapter

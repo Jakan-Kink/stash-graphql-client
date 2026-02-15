@@ -4,7 +4,7 @@ Tests the snapshot system that detects changes to tracked fields,
 including proper handling of mutable list fields.
 """
 
-from stash_graphql_client.types import Performer, Scene, Studio, Tag
+from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag
 from stash_graphql_client.types.unset import UNSET
 
 
@@ -267,3 +267,84 @@ class TestEdgeCases:
         performer.mark_clean()
         assert not performer.is_dirty()
         assert performer.get_changed_fields() == {}
+
+
+class TestPrivateAttrSurvival:
+    """Regression tests: private attrs must survive validate_assignment __dict__ rebuilds.
+
+    Pydantic v2's validate_assignment=True replaces __dict__ on every field assignment.
+    Private attributes stored via object.__setattr__() (in __dict__) are silently lost.
+    Using PrivateAttr (stored in __pydantic_private__) prevents this.
+    """
+
+    def test_snapshot_survives_identity_map_merge_then_assignment(self):
+        """Regression: _snapshot must survive validate_assignment __dict__ rebuild.
+
+        When a Gallery goes through the identity map cache-hit path (fields set
+        via setattr), then mark_clean(), then field assignment — the snapshot
+        must retain the mark_clean values, not revert to model_post_init defaults.
+        """
+        gallery = Gallery(id="123")
+        gallery.title = "Real Title"
+        gallery.organized = False
+        gallery.photographer = ""
+        gallery.urls = ["https://example.com"]
+        gallery.performers = []
+        gallery.tags = []
+        gallery.files = []
+        gallery.scenes = []
+
+        # mark_clean should capture real values
+        gallery.mark_clean()
+        assert not gallery.is_dirty(), "Gallery should be clean after mark_clean"
+
+        # Assign one field — triggers validate_assignment __dict__ rebuild
+        gallery.title = "Updated Title"
+
+        # Only title should be dirty — NOT organized, files, scenes, etc.
+        changed = gallery.get_changed_fields()
+        assert set(changed.keys()) == {"title"}, (
+            f"Only 'title' should be dirty, but got: {set(changed.keys())}"
+        )
+        assert changed["title"] == "Updated Title"
+
+    def test_is_new_survives_field_assignment(self):
+        """Regression: _is_new must survive validate_assignment __dict__ rebuild."""
+        gallery = Gallery()  # No id → auto UUID → _is_new=True
+        assert gallery.is_new()
+
+        gallery.title = "Something"  # Triggers validate_assignment
+        assert gallery.is_new(), "_is_new was lost after field assignment"
+
+    def test_received_fields_survives_field_assignment(self):
+        """Regression: _received_fields must survive validate_assignment __dict__ rebuild."""
+        gallery = Gallery(id="123")
+        gallery._received_fields = {"id", "title", "organized"}
+
+        gallery.title = "New"  # Triggers validate_assignment
+        assert gallery._received_fields == {"id", "title", "organized"}, (
+            "_received_fields was lost after field assignment"
+        )
+
+    def test_snapshot_survives_multiple_assignments(self):
+        """_snapshot must survive across multiple consecutive field assignments."""
+        performer = Performer(id="1", name="Original", disambiguation="Test")
+        performer.mark_clean()
+
+        performer.name = "Changed"
+        performer.disambiguation = "Also Changed"
+
+        changed = performer.get_changed_fields()
+        assert set(changed.keys()) == {"name", "disambiguation"}
+        assert changed["name"] == "Changed"
+        assert changed["disambiguation"] == "Also Changed"
+
+    def test_is_new_false_survives_field_assignment(self):
+        """_is_new=False must also survive (not just True)."""
+        performer = Performer(id="1", name="Test")
+        assert not performer.is_new()
+
+        performer.name = "Changed"  # Triggers validate_assignment
+        assert not performer.is_new(), (
+            "_is_new changed from False after field assignment"
+        )

@@ -57,9 +57,7 @@ class TestFilterStrict:
 
         # Mark fields as received (simulate they came from GraphQL)
         for p in [p1, p2, p3]:
-            object.__setattr__(
-                p, "_received_fields", {"id", "name", "rating100", "favorite"}
-            )
+            p._received_fields = {"id", "name", "rating100", "favorite"}
             store._cache_entity(p)
 
         # Filter with required fields - should succeed
@@ -89,8 +87,8 @@ class TestFilterStrict:
         object.__setattr__(p2, "rating100", UNSET)
 
         # Mark different received fields
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
-        object.__setattr__(p2, "_received_fields", {"id", "name"})  # No rating100!
+        p1._received_fields = {"id", "name", "rating100"}
+        p2._received_fields = {"id", "name"}  # No rating100!
 
         store._cache_entity(p1)
         store._cache_entity(p2)
@@ -127,7 +125,7 @@ class TestFilterStrict:
 
         # Create performer and cache it
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
+        p1._received_fields = {"id", "name", "rating100"}
         store._cache_entity(p1)
 
         # Manually expire the entry
@@ -155,8 +153,8 @@ class TestFilterStrict:
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
         s1 = SceneFactory.build(id="1", title="Scene 1")
 
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
-        object.__setattr__(s1, "_received_fields", {"id", "title"})
+        p1._received_fields = {"id", "name", "rating100"}
+        s1._received_fields = {"id", "title"}
 
         store._cache_entity(p1)
         store._cache_entity(s1)  # Different type in cache
@@ -186,7 +184,7 @@ class TestFilterStrictTypeIndexCleanup:
         with patch.object(StashObject, "_store", store):
             # Cache a performer normally
             p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
-            object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
+            p1._received_fields = {"id", "name", "rating100"}
             store._cache_entity(p1)
 
             # Create orphaned index entry (ID in index but not in cache)
@@ -218,7 +216,7 @@ class TestFilterAndPopulateSecondPassEdgeCases:
         # Cache a performer with missing field so populate() will be called
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
         object.__setattr__(p1, "rating100", UNSET)
-        object.__setattr__(p1, "_received_fields", {"id", "name"})  # missing rating100
+        p1._received_fields = {"id", "name"}  # missing rating100
         store._cache_entity(p1)
 
         # Mock GraphQL response for the populate call
@@ -256,7 +254,7 @@ class TestFilterAndPopulateSecondPassEdgeCases:
 
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
         object.__setattr__(p1, "rating100", UNSET)
-        object.__setattr__(p1, "_received_fields", {"id", "name"})  # missing rating100
+        p1._received_fields = {"id", "name"}  # missing rating100
         store._cache_entity(p1)
 
         # Mock GraphQL response for the populate call
@@ -305,9 +303,7 @@ class TestFilterAndPopulate:
         p2 = PerformerFactory.build(id="2", name="Bob", rating100=85, favorite=False)
 
         for p in [p1, p2]:
-            object.__setattr__(
-                p, "_received_fields", {"id", "name", "rating100", "favorite"}
-            )
+            p._received_fields = {"id", "name", "rating100", "favorite"}
             store._cache_entity(p)
 
         # Should NOT make any GraphQL calls
@@ -400,7 +396,7 @@ class TestFilterAndPopulate:
         object.__setattr__(p2, "rating100", UNSET)
 
         for p in [p1, p2]:
-            object.__setattr__(p, "_received_fields", {"id", "name"})
+            p._received_fields = {"id", "name"}
             store._cache_entity(p)
 
         # Mock GraphQL responses for both
@@ -465,8 +461,8 @@ class TestFilterAndPopulate:
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
         s1 = SceneFactory.build(id="1", title="Scene 1")
 
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
-        object.__setattr__(s1, "_received_fields", {"id", "title"})
+        p1._received_fields = {"id", "name", "rating100"}
+        s1._received_fields = {"id", "title"}
 
         store._cache_entity(p1)
         store._cache_entity(s1)
@@ -490,7 +486,7 @@ class TestFilterAndPopulate:
 
         # Cache performer
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
+        p1._received_fields = {"id", "name", "rating100"}
         store._cache_entity(p1)
 
         # Expire it
@@ -518,7 +514,7 @@ class TestFilterAndPopulate:
         # Cache performer with missing field
         p1 = PerformerFactory.build(id="1", name="Alice")
         object.__setattr__(p1, "rating100", UNSET)
-        object.__setattr__(p1, "_received_fields", {"id", "name"})
+        p1._received_fields = {"id", "name"}
         store._cache_entity(p1)
 
         # Mock populate to return object WITHOUT the field (simulate failure)
@@ -564,7 +560,7 @@ class TestFilterAndPopulate:
         p2 = PerformerFactory.build(id="2", name="Bob", rating100=85)
 
         for p in [p1, p2]:
-            object.__setattr__(p, "_received_fields", {"id", "name", "rating100"})
+            p._received_fields = {"id", "name", "rating100"}
             store._cache_entity(p)
 
         # Spy on all_cached to expire p2 after it's called but before final filtering
@@ -603,7 +599,7 @@ class TestFilterAndPopulate:
         for i in range(1, 6):
             p = PerformerFactory.build(id=str(i), name=f"P{i}")
             object.__setattr__(p, "rating100", UNSET)
-            object.__setattr__(p, "_received_fields", {"id", "name"})
+            p._received_fields = {"id", "name"}
             store._cache_entity(p)
             performers.append(p)
 
@@ -666,9 +662,9 @@ class TestFilterAndPopulateWithStats:
         # Set p2 rating100 to UNSET
         object.__setattr__(p2, "rating100", UNSET)
 
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
-        object.__setattr__(p2, "_received_fields", {"id", "name"})
-        object.__setattr__(p3, "_received_fields", {"id", "name", "rating100"})
+        p1._received_fields = {"id", "name", "rating100"}
+        p2._received_fields = {"id", "name"}
+        p3._received_fields = {"id", "name", "rating100"}
 
         for p in [p1, p2, p3]:
             store._cache_entity(p)
@@ -729,7 +725,7 @@ class TestFilterAndPopulateWithStats:
         p2 = PerformerFactory.build(id="2", name="Bob", rating100=85)
 
         for p in [p1, p2]:
-            object.__setattr__(p, "_received_fields", {"id", "name", "rating100"})
+            p._received_fields = {"id", "name", "rating100"}
             store._cache_entity(p)
 
         results, stats = await store.filter_and_populate_with_stats(
@@ -754,8 +750,8 @@ class TestFilterAndPopulateWithStats:
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
         s1 = SceneFactory.build(id="1", title="Scene 1")
 
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
-        object.__setattr__(s1, "_received_fields", {"id", "title"})
+        p1._received_fields = {"id", "name", "rating100"}
+        s1._received_fields = {"id", "title"}
 
         store._cache_entity(p1)
         store._cache_entity(s1)
@@ -779,7 +775,7 @@ class TestFilterAndPopulateWithStats:
 
         # Cache performer
         p1 = PerformerFactory.build(id="1", name="Alice", rating100=90)
-        object.__setattr__(p1, "_received_fields", {"id", "name", "rating100"})
+        p1._received_fields = {"id", "name", "rating100"}
         store._cache_entity(p1)
 
         # Expire it
@@ -807,7 +803,7 @@ class TestFilterAndPopulateWithStats:
         # Cache performer with missing field
         p1 = PerformerFactory.build(id="1", name="Alice")
         object.__setattr__(p1, "rating100", UNSET)
-        object.__setattr__(p1, "_received_fields", {"id", "name"})
+        p1._received_fields = {"id", "name"}
         store._cache_entity(p1)
 
         # Mock incomplete response
@@ -848,7 +844,7 @@ class TestFilterAndPopulateWithStats:
         p2 = PerformerFactory.build(id="2", name="Bob", rating100=85)
 
         for p in [p1, p2]:
-            object.__setattr__(p, "_received_fields", {"id", "name", "rating100"})
+            p._received_fields = {"id", "name", "rating100"}
             store._cache_entity(p)
 
         # Spy on all_cached to expire p2 during processing
@@ -901,7 +897,7 @@ class TestPopulatedFilterIter:
         # Set rating100 to UNSET
         for p in [p1, p2, p3]:
             object.__setattr__(p, "rating100", UNSET)
-            object.__setattr__(p, "_received_fields", {"id", "name"})
+            p._received_fields = {"id", "name"}
             store._cache_entity(p)
 
         # Mock responses
@@ -958,7 +954,7 @@ class TestPopulatedFilterIter:
         for i in range(1, 101):
             p = PerformerFactory.build(id=str(i), name=f"P{i}")
             object.__setattr__(p, "rating100", UNSET)
-            object.__setattr__(p, "_received_fields", {"id", "name"})
+            p._received_fields = {"id", "name"}
             store._cache_entity(p)
 
         # Mock - all return high rating
@@ -1026,7 +1022,7 @@ class TestPopulatedFilterIter:
         for i in range(1, 7):
             p = PerformerFactory.build(id=str(i), name=f"P{i}")
             object.__setattr__(p, "rating100", UNSET)
-            object.__setattr__(p, "_received_fields", {"id", "name"})
+            p._received_fields = {"id", "name"}
             store._cache_entity(p)
 
         # Mock responses
@@ -1073,7 +1069,7 @@ class TestPopulatedFilterIter:
         # Cache performer with missing field
         p1 = PerformerFactory.build(id="1", name="Alice")
         object.__setattr__(p1, "rating100", UNSET)
-        object.__setattr__(p1, "_received_fields", {"id", "name"})
+        p1._received_fields = {"id", "name"}
         store._cache_entity(p1)
 
         # Mock incomplete response (no rating100)
@@ -1117,7 +1113,7 @@ class TestPopulatedFilterIter:
         p2 = PerformerFactory.build(id="2", name="Bob", rating100=85)
 
         for p in [p1, p2]:
-            object.__setattr__(p, "_received_fields", {"id", "name", "rating100"})
+            p._received_fields = {"id", "name", "rating100"}
             store._cache_entity(p)
 
         # Mock should NOT be called (no population needed)

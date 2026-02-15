@@ -1213,7 +1213,7 @@ class StashEntityStore:
             if fresh_obj is not None:
                 # Merge received fields: keep old + add new
                 new_received = received | getattr(fresh_obj, "_received_fields", set())
-                object.__setattr__(fresh_obj, "_received_fields", new_received)
+                fresh_obj._received_fields = new_received
                 obj = fresh_obj  # type: ignore[assignment]
 
         # Save merged received fields before processing nested objects
@@ -1295,7 +1295,7 @@ class StashEntityStore:
                         )
 
         # Restore received fields after nested processing (setattr might have changed them)
-        object.__setattr__(obj, "_received_fields", final_received)
+        obj._received_fields = final_received
 
         return obj
 
