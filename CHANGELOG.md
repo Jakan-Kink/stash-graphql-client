@@ -17,6 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
     - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
 
+## [0.10.13] - 2026-02-11
+
+### Fixed
+
+- **Store Memory Leak**: Fixed `store.filter()` creating full-cache snapshots on every call, causing memory exhaustion during batch processing
+  - Added `_type_index: dict[str, set[str]]` secondary index mapping type names to entity IDs
+  - `filter()`, `filter_strict()`, `filter_and_populate()`, and `filter_and_populate_with_stats()` now iterate only the relevant type's entries directly under the lock — zero intermediate copies
+  - `invalidate_type()` improved from O(n) full-cache scan to O(k) type-only lookup
+  - Expired entries are proactively cleaned during `filter()` iteration
+  - All cache mutation paths (`_cache_entity`, `invalidate`, `invalidate_type`, `invalidate_all`, `save`) maintain the type index
+  - Location: `stash_graphql_client/store.py`
+
+### Added
+
+- **Test Coverage**: Added tests for type index edge cases, orphaned index cleanup, and `job_queue()` unexpected type handling
+  - Restored 100% line and branch coverage
+
 ## [0.10.12] - 2026-02-04
 
 ### Fixed
@@ -648,7 +665,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.9...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...HEAD
+[0.10.13]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.12...v0.10.13
+[0.10.12]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.10...v0.10.12
+[0.10.10]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.9...v0.10.10
 [0.10.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.8...v0.10.9
 [0.10.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.7...v0.10.8
 [0.10.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.6...v0.10.7
