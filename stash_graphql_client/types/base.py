@@ -45,6 +45,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     ModelWrapValidatorHandler,
+    PrivateAttr,
     ValidationInfo,
     model_validator,
 )
@@ -477,6 +478,11 @@ class StashObject(FromGraphQLMixin, BaseModel):
         populate_by_name=True,  # Accept both snake_case and camelCase
     )
 
+    # Private attributes (stored in __pydantic_private__, survives validate_assignment)
+    _snapshot: dict = PrivateAttr(default_factory=dict)
+    _is_new: bool = PrivateAttr(default=False)
+    _received_fields: set = PrivateAttr(default_factory=set)
+
     id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
     updated_at: Time | UnsetType = UNSET  # Time! - Stash internal
@@ -732,20 +738,16 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         super().__init__(**data)
 
-        # Initialize _received_fields as empty set (will be populated by validator for GraphQL responses)
-        object.__setattr__(self, "_received_fields", set())
+        # _received_fields is auto-initialized to set() by PrivateAttr default_factory
+        # _is_new is auto-initialized to False by PrivateAttr default
 
-        # Set _is_new flag for new objects (use object.__setattr__ to bypass validation)
-        # This flag is stored in __pydantic_private__ and not serialized
+        # Set _is_new flag based on ID logic
         if is_new_object:
-            object.__setattr__(self, "_is_new", True)
+            self._is_new = True
         else:
-            # Type narrowing: id is always str (and non-empty) here after UUID generation
-            object.__setattr__(
-                self,
-                "_is_new",
-                (len(self.id) == 32 and not self.id.isdigit()) or self.id == "new",
-            )
+            self._is_new = (
+                len(self.id) == 32 and not self.id.isdigit()
+            ) or self.id == "new"
 
     @classmethod
     def new(cls: type[T], **data: Any) -> T:
@@ -780,7 +782,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Returns:
             True if this object has not been saved to the server
         """
-        return getattr(self, "_is_new", False)
+        return self._is_new
 
     def update_id(self, server_id: str) -> None:
         """Update the temporary UUID with the server-assigned ID.
@@ -803,7 +805,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         old_id = self.id
         self.id = server_id
         # Mark as no longer new
-        object.__setattr__(self, "_is_new", False)
+        self._is_new = False
         log.debug(f"Updated {self.__class__.__name__} ID: {old_id} -> {server_id}")
 
     @model_validator(mode="wrap")
@@ -852,9 +854,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     )
                     # Merge new fields from data into cached instance
                     # Track old and new received fields
-                    old_received: set[str] = getattr(
-                        cached_obj, "_received_fields", set()
-                    )
+                    old_received: set[str] = cached_obj._received_fields
                     new_fields = set(data.keys())
 
                     # Process nested lookups for new data
@@ -867,7 +867,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
                     # Merge received fields
                     merged_received = old_received | new_fields
-                    object.__setattr__(cached_obj, "_received_fields", merged_received)
+                    cached_obj._received_fields = merged_received
                     log.debug(
                         f"Identity map: merged {len(new_fields)} new fields into cached "
                         f"{cls.__type_name__} {data['id']}"
@@ -892,7 +892,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Factory-built and directly constructed objects keep empty _received_fields
         if isinstance(data, dict) and info.context and info.context.get("from_graphql"):
             received_fields = set(data.keys())
-            object.__setattr__(instance, "_received_fields", received_fields)
+            instance._received_fields = received_fields
             log.debug(
                 f"Identity map: tracked {len(received_fields)} received fields for {cls.__type_name__}"
             )
