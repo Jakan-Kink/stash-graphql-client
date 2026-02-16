@@ -269,6 +269,116 @@ class TestEdgeCases:
         assert performer.get_changed_fields() == {}
 
 
+class TestSelectiveSnapshotUpdate:
+    """Test _update_snapshot_for_fields() for identity map merge and populate().
+
+    When a StashObject stub is later populated with server data (via identity map
+    merge or store.populate()), the snapshot should be updated for the merged fields
+    so they don't appear dirty. User modifications to fields NOT in the merge
+    should be preserved as dirty.
+    """
+
+    def test_stub_then_full_merge_is_clean(self):
+        """After merging full data into a stub, object should not be dirty."""
+        # Simulate a stub with only id + title (like from a nested Performer response)
+        scene = Scene(id="1", title="Original")
+        assert not scene.is_dirty()
+
+        # Simulate identity map merge: set fields as the validator would
+        scene.organized = False
+        scene.rating100 = 85
+        scene.details = "Some details"
+
+        # Before selective snapshot update — these fields are dirty
+        assert scene.is_dirty()
+
+        # Simulate what _identity_map_validator now does after merge
+        merged_fields = {"organized", "rating100", "details"}
+        scene._update_snapshot_for_fields(merged_fields)
+
+        # Merged fields should now be clean
+        assert not scene.is_dirty()
+        assert scene.get_changed_fields() == {}
+
+    def test_user_modification_survives_partial_merge(self):
+        """User modifications to fields NOT in the merge should stay dirty."""
+        performer = Performer(id="1", name="Original", disambiguation="Original D")
+
+        # User modifies title
+        performer.name = "User Modified"
+        assert performer.is_dirty()
+        assert "name" in performer.get_changed_fields()
+
+        # Simulate a partial merge that includes disambiguation but NOT name
+        performer.disambiguation = "Server Value"
+        merged_fields = {"disambiguation"}
+        performer._update_snapshot_for_fields(merged_fields)
+
+        # name should STILL be dirty (user's change preserved)
+        assert performer.is_dirty()
+        changed = performer.get_changed_fields()
+        assert "name" in changed
+        assert changed["name"] == "User Modified"
+        # disambiguation should be clean (snapshotted by selective update)
+        assert "disambiguation" not in changed
+
+    def test_selective_update_only_touches_tracked_fields(self):
+        """_update_snapshot_for_fields should only update tracked fields."""
+        performer = Performer(id="1", name="Test")
+
+        # created_at is NOT in __tracked_fields__
+        assert "created_at" not in performer.__tracked_fields__
+        # name IS in __tracked_fields__
+        assert "name" in performer.__tracked_fields__
+
+        performer.name = "Changed"
+        performer._update_snapshot_for_fields({"name", "created_at"})
+
+        # name should be clean now
+        assert not performer.is_dirty()
+
+    def test_user_modification_then_same_field_merge(self):
+        """If user modifies a field and merge overwrites it, it should be clean."""
+        performer = Performer(id="1", name="Original")
+
+        # User modifies
+        performer.name = "User Value"
+        assert performer.is_dirty()
+
+        # Server merge overwrites the same field
+        performer.name = "Server Value"
+        performer._update_snapshot_for_fields({"name"})
+
+        # Should be clean — server value is now the baseline
+        assert not performer.is_dirty()
+        assert performer.name == "Server Value"
+
+    def test_empty_field_set_is_noop(self):
+        """Calling with empty set shouldn't change anything."""
+        performer = Performer(id="1", name="Original")
+        performer.name = "Changed"
+        assert performer.is_dirty()
+
+        performer._update_snapshot_for_fields(set())
+        assert performer.is_dirty()
+
+    def test_unset_to_value_merge_is_clean(self):
+        """Merging from UNSET to a real value should be clean after snapshot update."""
+        # Start with a stub where most fields are UNSET
+        scene = Scene(id="1")
+        assert scene.title is UNSET
+        assert not scene.is_dirty()
+
+        # Simulate merge: set title from UNSET to actual value
+        scene.title = "From Server"
+        # This would normally be dirty (UNSET → "From Server")
+        assert scene.is_dirty()
+
+        # Selective snapshot update
+        scene._update_snapshot_for_fields({"title"})
+        assert not scene.is_dirty()
+
+
 class TestPrivateAttrSurvival:
     """Regression tests: private attrs must survive validate_assignment __dict__ rebuilds.
 

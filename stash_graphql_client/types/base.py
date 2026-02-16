@@ -956,6 +956,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     # Merge received fields
                     merged_received = old_received | new_fields
                     cached_obj._received_fields = merged_received
+
+                    # Selectively update snapshot for merged fields only.
+                    # Fields the user modified locally that weren't in this merge
+                    # remain dirty and will still be saved.
+                    cached_obj._update_snapshot_for_fields(set(processed_data.keys()))
+
                     log.debug(
                         f"Identity map: merged {len(new_fields)} new fields into cached "
                         f"{cls.__type_name__} {data['id']}"
@@ -1164,6 +1170,21 @@ class StashObject(FromGraphQLMixin, BaseModel):
             field: self._snapshot_value(getattr(self, field, UNSET))
             for field in self.__tracked_fields__
         }
+
+    def _update_snapshot_for_fields(
+        self, field_names: set[str] | frozenset[str]
+    ) -> None:
+        """Update snapshot for specific fields only.
+
+        Used after identity map merge or populate() to mark server-provided
+        fields as clean without disturbing dirty state on locally-modified fields.
+
+        Args:
+            field_names: Field names to update in the snapshot. Only fields
+                         that are in __tracked_fields__ will be updated.
+        """
+        for field in field_names & self.__tracked_fields__:
+            self._snapshot[field] = self._snapshot_value(getattr(self, field, UNSET))
 
     def mark_dirty(self) -> None:
         """Mark object as having unsaved changes.

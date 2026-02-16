@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b2] - 2026-02-15
+
+### Added
+
+- **Selective snapshot update after identity map merge**: New `_update_snapshot_for_fields()` method on `StashObject` updates the dirty tracking snapshot only for fields provided by the server, preventing phantom dirty state after identity map merge or `store.populate()` while preserving user modifications to unrelated fields
+  - Called in `_identity_map_validator` after merging server data into a cached instance
+  - Called at end of `populate()` after fetching requested fields
+  - Eliminates need for manual `mark_clean()` workarounds in downstream consumers
+  - Location: `stash_graphql_client/types/base.py`, `stash_graphql_client/store.py`
+
+- **Architecture documentation**: New `docs/architecture/dirty-tracking.md` documenting the phantom dirty state problem, why blanket `mark_clean()` fails, the selective snapshot fix, behavior matrix, and downstream impact
+
+### Changed
+
+- **mkdocs nav**: Added Dirty Tracking and Pydantic Internals architecture docs to navigation
+
+### Testing
+
+- Added 6 tests for selective snapshot update covering stub-to-full merge, partial merge preserving user modifications, tracked-field-only updates, server overwrite of user modifications, empty field set no-op, and UNSET-to-value transitions
+  - Location: `tests/types/test_dirty_tracking.py`
+
 ## [0.11.0b1] - 2026-02-15
 
 ### Added
@@ -752,7 +773,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b2...HEAD
+[0.11.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...v0.11.0b2
 [0.11.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0b1
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14
 [0.10.13]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.12...v0.10.13

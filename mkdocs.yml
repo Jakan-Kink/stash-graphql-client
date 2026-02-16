@@ -156,6 +156,8 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Identity Map: architecture/identity-map.md
+      - Dirty Tracking: architecture/dirty-tracking.md
+      - Pydantic Internals: architecture/pydantic-internals.md
       - Library Comparisons: architecture/comparison.md
       - Bidirectional Relationships: architecture/bidirectional-relationships.md
       - Diagrams: diagrams.md

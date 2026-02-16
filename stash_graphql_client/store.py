@@ -1295,6 +1295,12 @@ class StashEntityStore:
         # Restore received fields after nested processing (setattr might have changed them)
         obj._received_fields = final_received
 
+        # Selectively update snapshot for fields that were fetched from the server.
+        # This prevents phantom dirty state from populate() while preserving
+        # dirty state on fields the user modified independently.
+        if fields_to_fetch:
+            obj._update_snapshot_for_fields(set(fields_to_fetch))
+
         return obj
 
     async def _populate_single(
