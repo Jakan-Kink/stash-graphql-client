@@ -71,12 +71,30 @@ class ImageUpdateInput(StashInput):
     primary_file_id: str | None | UnsetType = UNSET  # ID
 
 
+class ImageDestroyInput(StashInput):
+    """Input for destroying images from schema/types/image.graphql."""
+
+    id: str  # ID!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+
+
+class ImagesDestroyInput(StashInput):
+    """Input for destroying multiple images from schema/types/image.graphql."""
+
+    ids: list[str] | UnsetType = UNSET  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+
+
 class Image(StashObject):
     """Image type from schema."""
 
     __type_name__ = "Image"
     __short_repr_fields__ = ("title",)
     __update_input_type__ = ImageUpdateInput
+    __destroy_input_type__ = ImageDestroyInput
+    __bulk_destroy_input_type__ = ImagesDestroyInput
     # No __create_input_type__ - images can only be updated
 
     # Fields to track for changes - only fields that can be written via input types
@@ -238,22 +256,6 @@ class Image(StashObject):
                 result.append(item)
 
         return result
-
-
-class ImageDestroyInput(StashInput):
-    """Input for destroying images from schema/types/image.graphql."""
-
-    id: str  # ID!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
-
-
-class ImagesDestroyInput(StashInput):
-    """Input for destroying multiple images from schema/types/image.graphql."""
-
-    ids: list[str] | UnsetType = UNSET  # [ID!]!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
 
 
 class BulkImageUpdateInput(StashInput):

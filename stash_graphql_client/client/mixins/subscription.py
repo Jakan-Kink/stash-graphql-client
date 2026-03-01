@@ -2,7 +2,7 @@
 
 import asyncio
 from collections.abc import AsyncIterator, Callable
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Any, TypeVar
 
 from gql import gql
@@ -94,15 +94,23 @@ class SubscriptionClientMixin(StashClientProtocol):
         )
         async with self._subscription_client() as session:
             subscription_gen = session.subscribe(subscription)
-            yield AsyncIteratorWrapper(
-                subscription_gen,
-                lambda x: JobStatusUpdate.model_validate(
-                    {
-                        "type": x["jobsSubscribe"]["type"],
-                        "job": x["jobsSubscribe"]["job"],
-                    }
-                ),
-            )
+            try:
+                yield AsyncIteratorWrapper(
+                    subscription_gen,
+                    lambda x: JobStatusUpdate.model_validate(
+                        {
+                            "type": x["jobsSubscribe"]["type"],
+                            "job": x["jobsSubscribe"]["job"],
+                        }
+                    ),
+                )
+            finally:
+                # Explicitly close the subscription generator before the WebSocket
+                # session exits. Yield to the event loop first so any buffered frames
+                # are processed, then send GQL_STOP. This reduces C-level crashes in
+                # the websockets transport during teardown on Python 3.14+.
+                with suppress(Exception):
+                    await subscription_gen.aclose()
 
     @asynccontextmanager
     async def subscribe_to_logs(self) -> AsyncIterator[AsyncIterator[list[LogEntry]]]:
@@ -132,12 +140,17 @@ class SubscriptionClientMixin(StashClientProtocol):
         )
         async with self._subscription_client() as session:
             subscription_gen = session.subscribe(subscription)
-            yield AsyncIteratorWrapper(
-                subscription_gen,
-                lambda x: [
-                    LogEntry.model_validate(entry) for entry in x["loggingSubscribe"]
-                ],
-            )
+            try:
+                yield AsyncIteratorWrapper(
+                    subscription_gen,
+                    lambda x: [
+                        LogEntry.model_validate(entry)
+                        for entry in x["loggingSubscribe"]
+                    ],
+                )
+            finally:
+                with suppress(Exception):
+                    await subscription_gen.aclose()
 
     @asynccontextmanager
     async def subscribe_to_scan_complete(self) -> AsyncIterator[AsyncIterator[bool]]:
@@ -163,9 +176,13 @@ class SubscriptionClientMixin(StashClientProtocol):
         )
         async with self._subscription_client() as session:
             subscription_gen = session.subscribe(subscription)
-            yield AsyncIteratorWrapper(
-                subscription_gen, lambda x: x["scanCompleteSubscribe"]
-            )
+            try:
+                yield AsyncIteratorWrapper(
+                    subscription_gen, lambda x: x["scanCompleteSubscribe"]
+                )
+            finally:
+                with suppress(Exception):
+                    await subscription_gen.aclose()
 
     async def _check_job_status(
         self, job_id: str

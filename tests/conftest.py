@@ -31,6 +31,11 @@ from tests.fixtures import *
 
 # Set testing environment variable
 os.environ["TESTING"] = "1"
+# Prevent proxy_bypass_macosx_sysconf (not thread-safe) from being called when
+# multiple xdist workers open websocket connections concurrently. Setting NO_PROXY
+# makes urllib route through proxy_bypass_environment (pure Python) instead.
+os.environ.setdefault("NO_PROXY", "*")
+os.environ.setdefault("no_proxy", "*")
 
 
 # =============================================================================

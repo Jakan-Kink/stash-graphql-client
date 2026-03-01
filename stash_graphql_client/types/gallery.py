@@ -150,6 +150,18 @@ class GalleryUpdateInput(StashInput):
     primary_file_id: str | None | UnsetType = UNSET  # ID
 
 
+class GalleryDestroyInput(StashInput):
+    """Input for destroying galleries.
+
+    If delete_file is true, then the zip file will be deleted if the gallery is zip-file-based.
+    If gallery is folder-based, then any files not associated with other galleries will be
+    deleted, along with the folder, if it is not empty."""
+
+    ids: list[str]  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+
+
 class Gallery(StashObject):
     """Gallery type from schema/types/gallery.graphql."""
 
@@ -157,6 +169,7 @@ class Gallery(StashObject):
     __short_repr_fields__ = ("title",)
     __update_input_type__ = GalleryUpdateInput
     __create_input_type__ = GalleryCreateInput
+    __destroy_input_type__ = GalleryDestroyInput
 
     # Fields to track for changes
     __tracked_fields__: ClassVar[set[str]] = {
@@ -393,18 +406,6 @@ class GalleryResetCoverInput(StashInput):
     """Input for resetting gallery cover."""
 
     gallery_id: str  # ID!
-
-
-class GalleryDestroyInput(StashInput):
-    """Input for destroying galleries.
-
-    If delete_file is true, then the zip file will be deleted if the gallery is zip-file-based.
-    If gallery is folder-based, then any files not associated with other galleries will be
-    deleted, along with the folder, if it is not empty."""
-
-    ids: list[str]  # [ID!]!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
 
 
 class BulkGalleryUpdateInput(StashInput):

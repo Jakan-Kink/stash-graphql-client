@@ -74,7 +74,7 @@ class FileClientMixin(StashClientProtocol):
                 result_type=BaseFile,
             )
         except Exception as e:
-            self.log.error(f"Failed to find file (id={id}, path={path}): {e}")
+            self.log.exception(f"Failed to find file (id={id}, path={path}): {e}")
             return None
 
     async def find_files(
@@ -156,7 +156,7 @@ class FileClientMixin(StashClientProtocol):
                 result_type=FindFilesResultType,
             )
         except Exception as e:
-            self.log.error(f"Failed to find files: {e}")
+            self.log.exception(f"Failed to find files: {e}")
             return FindFilesResultType(
                 count=0,
                 megapixels=0.0,
@@ -395,7 +395,7 @@ class FileClientMixin(StashClientProtocol):
                 result_type=Folder,
             )
         except Exception as e:
-            self.log.error(f"Failed to find folder (id={id}, path={path}): {e}")
+            self.log.exception(f"Failed to find folder (id={id}, path={path}): {e}")
             return None
 
     async def find_folders(
@@ -432,5 +432,5 @@ class FileClientMixin(StashClientProtocol):
                 result_type=FindFoldersResultType,
             )
         except Exception as e:
-            self.log.error(f"Failed to find folders: {e}")
+            self.log.exception(f"Failed to find folders: {e}")
             return FindFoldersResultType(count=0, folders=[])

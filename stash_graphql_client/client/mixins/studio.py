@@ -32,7 +32,7 @@ class StudioClientMixin(StashClientProtocol):
                 result_type=Studio,
             )
         except Exception as e:
-            self.log.error(f"Failed to find studio {id}: {e}")
+            self.log.exception(f"Failed to find studio {id}: {e}")
             return None
 
     async def find_studios(
@@ -73,7 +73,7 @@ class StudioClientMixin(StashClientProtocol):
                 result_type=FindStudiosResultType,
             )
         except Exception as e:
-            self.log.error(f"Failed to find studios: {e}")
+            self.log.exception(f"Failed to find studios: {e}")
             return FindStudiosResultType(count=0, studios=[])
 
     async def create_studio(self, studio: Studio) -> Studio:

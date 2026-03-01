@@ -173,6 +173,8 @@ class Performer(StashObject):
     __short_repr_fields__ = ("name",)
     __update_input_type__ = PerformerUpdateInput
     __create_input_type__ = PerformerCreateInput
+    __destroy_input_type__ = PerformerDestroyInput
+    __merge_input_type__ = PerformerMergeInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {

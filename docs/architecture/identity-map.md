@@ -276,11 +276,12 @@ assert scene.studio is studio  # ✅ Same cached instance!
 
 ### Field Merging on Cache Hits
 
-When returning a cached instance, the validator merges new fields from the GraphQL response:
+When returning a cached instance, the validator merges new fields from the GraphQL response.
+This logic is inlined in `_identity_map_validator` (no separate method):
 
 ```python
-@classmethod
-def _merge_fields(cls, instance: Self, new_data: dict) -> None:
+# Conceptual pseudocode (actual logic is inline in the validator)
+def _merge_fields(instance: Self, new_data: dict) -> None:
     """
     Merge fields from new_data into existing cached instance.
 
@@ -353,9 +354,9 @@ class StashEntityStore:
     Identity map and caching layer for Stash entities.
     """
 
-    def __init__(self, client: StashClient, ttl_seconds: float | None = None):
+    def __init__(self, client: StashClient, default_ttl: timedelta | int | None = None):
         self._client = client
-        self._ttl_seconds = ttl_seconds
+        self._default_ttl = default_ttl
 
         # Cache: (type_name, entity_id) -> CacheEntry
         self._cache: dict[tuple[str, str], CacheEntry] = {}
@@ -448,7 +449,7 @@ def invalidate(self, entity: StashObject) -> None:
             del self._cache[cache_key]
 
 
-def clear_type(self, entity_type: type[StashObject]) -> None:
+def invalidate_type(self, entity_type: type[StashObject]) -> None:
     """Clear all cached entities of a specific type."""
     type_name = entity_type.__type_name__
 
@@ -567,13 +568,13 @@ Example: 1000 cached scenes with 20 fields each ≈ 1-2 MB
 
 ```python
 # No TTL - cache forever (use for reference data)
-store = StashEntityStore(client, ttl_seconds=None)
+store = StashEntityStore(client, default_ttl=None)
 
 # Short TTL - frequently changing data
-store = StashEntityStore(client, ttl_seconds=60)  # 1 minute
+store = StashEntityStore(client, default_ttl=60)  # 1 minute
 
 # Long TTL - mostly static data
-store = StashEntityStore(client, ttl_seconds=3600)  # 1 hour
+store = StashEntityStore(client, default_ttl=3600)  # 1 hour
 ```
 
 ### Manual Cache Management
@@ -585,7 +586,7 @@ store.invalidate(scene)  # Force reload next time
 
 # Clear all scenes after bulk update
 await bulk_update_scenes()
-store.clear_type(Scene)
+store.invalidate_type(Scene)
 
 # Force refetch with populate
 await store.populate(scene, fields=["title"], force_refetch=True)
@@ -593,8 +594,8 @@ await store.populate(scene, fields=["title"], force_refetch=True)
 
 ## Implementation Files
 
-- **`stash_graphql_client/types/base.py`** - StashObject with wrap validator (lines 809-904)
-- **`stash_graphql_client/store.py`** - StashEntityStore implementation (lines 58-142)
+- **`stash_graphql_client/types/base.py`** - StashObject with `_identity_map_validator` wrap validator
+- **`stash_graphql_client/store.py`** - StashEntityStore implementation
 - **`stash_graphql_client/types/unset.py`** - UnsetType for three-state fields
 
 ## Next Steps

@@ -67,6 +67,19 @@ class TagUpdateInput(StashInput):
     child_ids: list[str] | None | UnsetType = UNSET  # [ID!]
 
 
+class TagDestroyInput(StashInput):
+    """Input for destroying a tag from schema/types/tag.graphql."""
+
+    id: str  # ID!
+
+
+class TagsMergeInput(StashInput):
+    """Input for merging tags from schema/types/tag.graphql."""
+
+    source: list[str]  # [ID!]!
+    destination: str  # ID!
+
+
 class Tag(StashObject):
     """Tag type from schema/types/tag.graphql."""
 
@@ -74,6 +87,8 @@ class Tag(StashObject):
     __short_repr_fields__ = ("name",)
     __update_input_type__ = TagUpdateInput
     __create_input_type__ = TagCreateInput
+    __destroy_input_type__ = TagDestroyInput
+    __merge_input_type__ = TagsMergeInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -285,19 +300,6 @@ class Tag(StashObject):
         except Exception as e:
             logger.error(f"Error searching for tag '{name}': {e}")
             return None
-
-
-class TagDestroyInput(StashInput):
-    """Input for destroying a tag from schema/types/tag.graphql."""
-
-    id: str  # ID!
-
-
-class TagsMergeInput(StashInput):
-    """Input for merging tags from schema/types/tag.graphql."""
-
-    source: list[str]  # [ID!]!
-    destination: str  # ID!
 
 
 class BulkTagUpdateInput(StashInput):

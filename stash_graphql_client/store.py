@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
 from itertools import batched
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from . import fragments
 from .client.utils import sanitize_model_data
@@ -145,6 +145,36 @@ class StashEntityStore:
         # Thread-safety lock (reentrant to allow nested calls)
         self._lock = threading.RLock()
 
+    # ─── Cache-only lookup (sync) ─────────────────────────────
+
+    def get_cached(self, entity_type: type[T], entity_id: str) -> T | None:
+        """Get entity from cache only. No network call (thread-safe).
+
+        Returns the cached entity if present and not expired, None otherwise.
+        This is the sync counterpart to :meth:`get`, following the Django
+        dual sync/async pattern.
+
+        Args:
+            entity_type: The Stash entity type (e.g., Performer, Scene)
+            entity_id: Entity ID
+
+        Returns:
+            Cached entity if found and not expired, None otherwise
+        """
+        type_name = entity_type.__type_name__
+        cache_key = (type_name, entity_id)
+
+        with self._lock:
+            if cache_key in self._cache:
+                entry = self._cache[cache_key]
+                if not entry.is_expired():
+                    log.debug(f"Cache hit: {type_name} {entity_id}")
+                    return entry.entity  # type: ignore[return-value]
+                log.debug(f"Cache expired: {type_name} {entity_id}")
+                del self._cache[cache_key]
+
+        return None
+
     # ─── Read-through by ID ───────────────────────────────────
 
     async def get(
@@ -162,7 +192,6 @@ class StashEntityStore:
             Entity if found, None otherwise
         """
         type_name = entity_type.__type_name__
-        cache_key = (type_name, entity_id)
 
         # If specific fields requested, bypass cache and fetch directly
         if fields is not None:
@@ -172,21 +201,10 @@ class StashEntityStore:
                 self._cache_entity(entity)  # _cache_entity is thread-safe
             return entity
 
-        # Check cache (lock → check → unlock)
-        cache_hit = False
-        with self._lock:
-            if cache_key in self._cache:
-                entry = self._cache[cache_key]
-                if not entry.is_expired():
-                    log.debug(f"Cache hit: {type_name} {entity_id}")
-                    cached_entity = entry.entity
-                    cache_hit = True
-                else:
-                    log.debug(f"Cache expired: {type_name} {entity_id}")
-                    del self._cache[cache_key]
-
-        if cache_hit:
-            return cached_entity  # type: ignore[return-value]
+        # Check cache first (sync, no network)
+        cached = self.get_cached(entity_type, entity_id)
+        if cached is not None:
+            return cached
 
         # Cache miss - fetch from GraphQL (no lock during await!)
         log.debug(f"Cache miss: {type_name} {entity_id}")
@@ -1412,22 +1430,45 @@ class StashEntityStore:
 
     # ─── Cache control ────────────────────────────────────────
 
-    def invalidate(self, entity_type: type[T], entity_id: str) -> None:
+    @overload
+    def invalidate(self, entity_type: type[T], entity_id: str) -> None: ...
+
+    @overload
+    def invalidate(self, entity: StashObject) -> None: ...
+
+    def invalidate(
+        self,
+        entity_type_or_obj: type[T] | StashObject,
+        entity_id: str | None = None,
+    ) -> None:
         """Remove specific object from cache (thread-safe).
 
+        Can be called with either a type + ID pair, or a StashObject instance directly.
+
         Args:
-            entity_type: The Stash entity type
-            entity_id: Entity ID to invalidate
+            entity_type_or_obj: The Stash entity type, or a StashObject instance
+            entity_id: Entity ID to invalidate (required when passing a type)
+
+        Examples:
+            >>> store.invalidate(Scene, "123")
+            >>> store.invalidate(scene)  # extracts type and id from instance
         """
-        type_name = entity_type.__type_name__
-        cache_key = (type_name, entity_id)
+        if isinstance(entity_type_or_obj, StashObject):
+            entity = entity_type_or_obj
+            type_name = entity.__type_name__
+            eid = entity.id
+        else:
+            type_name = entity_type_or_obj.__type_name__
+            eid = entity_id  # type: ignore[assignment]
+
+        cache_key = (type_name, eid)
         with self._lock:
             if cache_key in self._cache:
                 del self._cache[cache_key]
                 type_ids = self._type_index.get(type_name)
                 if type_ids is not None:
-                    type_ids.discard(entity_id)
-                log.debug(f"Invalidated: {type_name} {entity_id}")
+                    type_ids.discard(eid)
+                log.debug(f"Invalidated: {type_name} {eid}")
 
     def invalidate_type(self, entity_type: type[T]) -> None:
         """Remove all objects of a type from cache (thread-safe).
@@ -1667,6 +1708,34 @@ class StashEntityStore:
             return True
         except ValueError:
             return False
+
+    # ─── Delete ────────────────────────────────────────────────
+
+    async def delete(self, obj: StashObject, **kwargs: Any) -> bool:
+        """Delete object from Stash and remove from cache.
+
+        Delegates to ``obj.delete(client)`` then invalidates the cache entry.
+
+        Args:
+            obj: Entity to delete
+            **kwargs: Additional destroy input fields (e.g., delete_file=True)
+
+        Returns:
+            True if successfully deleted
+
+        Raises:
+            NotImplementedError: If the entity type doesn't support delete
+            ValueError: If the entity has no server ID or delete fails
+
+        Examples:
+            >>> await store.delete(scene)
+            >>> await store.delete(scene, delete_file=True)
+        """
+        result = await obj.delete(self._client, **kwargs)
+        # obj.delete() already calls self.invalidate(obj) if _store is set,
+        # but invalidate is idempotent so this is safe as a belt-and-suspenders
+        self.invalidate(obj)
+        return result
 
     # ─── Get-or-Create ────────────────────────────────────────
 

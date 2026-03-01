@@ -4,6 +4,10 @@ Tests image operations against a real Stash instance with GraphQL call verificat
 
 These tests cover the core image CRUD operations, relationships, and
 image-specific features like O-counter tracking and bulk operations.
+
+NOTE: Image and gallery tests share xdist_group("gallery_image") because deleting
+galleries breaks image queries that reference them (Stash doesn't cascade-clean
+image→gallery back-references).
 """
 
 import pytest
@@ -11,6 +15,10 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
+
+
+# Serialize with gallery tests — gallery deletion breaks image queries
+pytestmark = pytest.mark.xdist_group(name="gallery_image")
 
 
 # =============================================================================

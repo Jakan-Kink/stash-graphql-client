@@ -134,6 +134,7 @@ async def test_find_scene_by_id(
 @pytest.mark.integration
 @pytest.mark.requires_images
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_images_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
@@ -160,6 +161,7 @@ async def test_find_images_returns_expected_count(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_images_with_pagination(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
@@ -205,6 +207,7 @@ async def test_find_images_with_pagination(
 @pytest.mark.integration
 @pytest.mark.requires_images
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_image_by_id(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:

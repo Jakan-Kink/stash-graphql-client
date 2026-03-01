@@ -118,7 +118,7 @@ class PerformerClientMixin(StashClientProtocol):
                 return None
             return None
         except Exception as e:
-            self.log.error(f"Failed to find performer {performer}: {e}")
+            self.log.exception(f"Failed to find performer {performer}: {e}")
             return None
 
     async def find_performers(
@@ -226,7 +226,7 @@ class PerformerClientMixin(StashClientProtocol):
             )
             return FindPerformersResultType(**result["findPerformers"])
         except Exception as e:
-            self.log.error(f"Failed to find performers: {e}")
+            self.log.exception(f"Failed to find performers: {e}")
             return FindPerformersResultType(count=0, performers=[])
 
     async def create_performer(self, performer: Performer) -> Performer:

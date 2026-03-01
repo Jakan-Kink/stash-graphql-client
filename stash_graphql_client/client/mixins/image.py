@@ -35,7 +35,7 @@ class ImageClientMixin(StashClientProtocol):
                 return self._decode_result(Image, result["findImage"])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find image {id}: {e}")
+            self.log.exception(f"Failed to find image {id}: {e}")
             return None
 
     async def find_images(
@@ -76,7 +76,7 @@ class ImageClientMixin(StashClientProtocol):
             )
             return self._decode_result(FindImagesResultType, result["findImages"])
         except Exception as e:
-            self.log.error(f"Failed to find images: {e}")
+            self.log.exception(f"Failed to find images: {e}")
             return FindImagesResultType(
                 count=0, images=[], megapixels=0.0, filesize=0.0
             )

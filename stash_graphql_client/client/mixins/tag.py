@@ -29,7 +29,7 @@ class TagClientMixin(StashClientProtocol):
                 return self._decode_result(Tag, result["findTag"])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find tag {id}: {e}")
+            self.log.exception(f"Failed to find tag {id}: {e}")
             return None
 
     async def find_tags(
@@ -72,7 +72,7 @@ class TagClientMixin(StashClientProtocol):
             )
             return FindTagsResultType(**result["findTags"])
         except Exception as e:
-            self.log.error(f"Failed to find tags: {e}")
+            self.log.exception(f"Failed to find tags: {e}")
             return FindTagsResultType(count=0, tags=[])
 
     async def create_tag(self, tag: Tag) -> Tag:

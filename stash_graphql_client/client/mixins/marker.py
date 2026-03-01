@@ -35,7 +35,7 @@ class MarkerClientMixin(StashClientProtocol):
                     return self._decode_result(SceneMarker, markers[0])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find marker {id}: {e}")
+            self.log.exception(f"Failed to find marker {id}: {e}")
             return None
 
     async def find_markers(
@@ -80,7 +80,7 @@ class MarkerClientMixin(StashClientProtocol):
                 )
             return FindSceneMarkersResultType(count=0, scene_markers=[])
         except Exception as e:
-            self.log.error(f"Failed to find markers: {e}")
+            self.log.exception(f"Failed to find markers: {e}")
             return FindSceneMarkersResultType(count=0, scene_markers=[])
 
     async def create_marker(self, marker: SceneMarker) -> SceneMarker:

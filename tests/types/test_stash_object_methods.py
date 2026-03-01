@@ -10,8 +10,9 @@ This test suite covers:
 
 from __future__ import annotations
 
+import contextlib
 from typing import ClassVar
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -124,8 +125,9 @@ class TestFieldNames:
             __type_name__ = "TestModel"
             __update_input_type__ = BaseModel
 
-        # Patch model_fields to return empty dict
-        with patch.object(TestModel, "model_fields", {}):
+        # Use patch.dict to clear model_fields in-place — avoids triggering
+        # Pydantic's ModelMetaclass.__setattr__ which calls model_rebuild().
+        with patch.dict(TestModel.model_fields, {}, clear=True):
             # Delete __field_names__ if it exists to force computation
             if hasattr(TestModel, "__field_names__"):
                 delattr(TestModel, "__field_names__")
@@ -164,30 +166,28 @@ class TestFieldNames:
     def test_get_field_names_fallback_exception(self, respx_entity_store) -> None:
         """Test _get_field_names() fallback on exception - covers lines 714-716."""
 
-        class TestModel(StashObject):
-            __type_name__ = "TestModel"
-            __update_input_type__ = BaseModel
+        # Use a non-Pydantic class whose metaclass makes model_fields raise
+        # AttributeError.  Calling _get_field_names.__func__ with this class
+        # exercises the except-branch without touching Pydantic's
+        # ModelMetaclass.__setattr__ (which would trigger model_rebuild and
+        # corrupt global class state for Tag/Scene in the entire worker).
+        class _FailingMeta(type):
+            @property
+            def model_fields(cls) -> dict:  # type: ignore[override]
+                raise AttributeError("Test error")
 
-        # Patch model_fields on the instance's class to raise AttributeError
-        with patch.object(
-            TestModel,
-            "model_fields",
-            new_callable=PropertyMock,
-            side_effect=AttributeError("Test error"),
-        ):
-            # Delete __field_names__ if it exists to force computation
-            if hasattr(TestModel, "__field_names__"):
-                delattr(TestModel, "__field_names__")
+        class _FailingModel(metaclass=_FailingMeta):
+            pass
 
-            # Call _get_field_names()
-            field_names = TestModel._get_field_names()
+        # Ensure no cached __field_names__ from a previous test run
+        with contextlib.suppress(AttributeError):
+            del _FailingModel.__field_names__  # type: ignore[attr-defined]
 
-            # Should fallback to {"id"}
-            assert field_names == {"id"}
+        # Call _get_field_names() with our fake class instead of a real model
+        field_names = StashObject._get_field_names.__func__(_FailingModel)  # type: ignore[attr-defined]
 
-            # Clean up __field_names__ created during the test
-            if hasattr(TestModel, "__field_names__"):
-                delattr(TestModel, "__field_names__")
+        # Should fallback to {"id"}
+        assert field_names == {"id"}
 
 
 class TestFindById:

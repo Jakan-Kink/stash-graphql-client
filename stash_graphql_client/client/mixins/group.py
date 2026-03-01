@@ -59,7 +59,7 @@ class GroupClientMixin(StashClientProtocol):
             )
             return result if result else None
         except Exception as e:
-            self.log.error(f"Failed to find group {group_id}: {e}")
+            self.log.exception(f"Failed to find group {group_id}: {e}")
             return None
 
     async def find_groups(
@@ -182,7 +182,7 @@ class GroupClientMixin(StashClientProtocol):
             )
             return self._decode_result(FindGroupsResultType, result["findGroups"])
         except Exception as e:
-            self.log.error(f"Failed to find groups: {e}")
+            self.log.exception(f"Failed to find groups: {e}")
             return FindGroupsResultType(count=0, groups=[])
 
     async def create_group(self, group: Group) -> Group:

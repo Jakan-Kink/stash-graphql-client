@@ -88,7 +88,7 @@ class SceneClientMixin(StashClientProtocol):
 
             return result if result else None
         except Exception as e:
-            self.log.error(f"Failed to find scene {id}: {e}")
+            self.log.exception(f"Failed to find scene {id}: {e}")
 
             return None
 
@@ -195,7 +195,7 @@ class SceneClientMixin(StashClientProtocol):
                 result_type=FindScenesResultType,
             )
         except Exception as e:
-            self.log.error(f"Failed to find scenes: {e}")
+            self.log.exception(f"Failed to find scenes: {e}")
 
             return FindScenesResultType(count=0, duration=0, filesize=0, scenes=[])
 
@@ -382,7 +382,7 @@ class SceneClientMixin(StashClientProtocol):
                 for group in result["findDuplicateScenes"]
             ]
         except Exception as e:
-            self.log.error(f"Failed to find duplicate scenes: {e}")
+            self.log.exception(f"Failed to find duplicate scenes: {e}")
 
             return []
 
@@ -578,7 +578,7 @@ class SceneClientMixin(StashClientProtocol):
 
             return result if result else None
         except Exception as e:
-            self.log.error(f"Failed to find scene by hash: {e}")
+            self.log.exception(f"Failed to find scene by hash: {e}")
 
             return None
 
@@ -1154,7 +1154,7 @@ class SceneClientMixin(StashClientProtocol):
                 result_type=FindScenesResultType,
             )
         except Exception as e:
-            self.log.error(f"Failed to find scenes by path regex: {e}")
+            self.log.exception(f"Failed to find scenes by path regex: {e}")
             return FindScenesResultType(count=0, duration=0, filesize=0, scenes=[])
 
     async def scene_streams(self, scene_id: str) -> list["SceneStreamEndpoint"]:

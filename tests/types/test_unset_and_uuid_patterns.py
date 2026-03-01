@@ -153,12 +153,6 @@ class TestUUID4Generation:
 
         assert tag.is_new() is False
 
-    def test_is_new_with_legacy_marker(self):
-        """is_new() should return True for legacy 'new' marker."""
-        tag = Tag(id="new", name="Test Tag")
-
-        assert tag.is_new() is True
-
     def test_update_id(self):
         """update_id() should replace UUID with server ID."""
         tag = Tag(name="Test Tag")

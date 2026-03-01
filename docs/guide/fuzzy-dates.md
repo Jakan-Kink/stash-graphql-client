@@ -49,6 +49,9 @@ print(month_date.value)      # "2024-03"
 day_date = FuzzyDate("2024-03-15")
 print(day_date.precision)  # DatePrecision.DAY
 print(day_date.value)      # "2024-03-15"
+
+# Invalid date strings raise StashIntegrationError
+FuzzyDate("not-a-date")  # raises StashIntegrationError
 ```
 
 ### Validating Date Strings

@@ -205,10 +205,8 @@ await group.save(client)
 ### RelationshipMetadata Class
 
 ```python
-from dataclasses import dataclass
 from typing import Callable, Literal
 
-@dataclass(frozen=True)
 class RelationshipMetadata:
     """Metadata describing a bidirectional relationship.
 
@@ -501,14 +499,9 @@ __relationships__ = {
 }
 ```
 
-### Backward Compatibility
+### Migration Complete
 
-The new `RelationshipMetadata` class is designed to be backward compatible with the existing tuple pattern during migration:
-
-1. Both patterns will coexist during transition
-2. Helper methods will check metadata type and handle both
-3. Gradual migration: update one entity type at a time
-4. Full backward compatibility maintained until all types migrated
+All entity types have been migrated to `RelationshipMetadata`. The old tuple pattern `(target_field, is_list)` is no longer supported and will raise `ValueError`.
 
 ## Key Takeaways
 

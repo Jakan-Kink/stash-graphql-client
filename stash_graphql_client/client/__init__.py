@@ -130,7 +130,9 @@ class StashClient(
         ScraperClientMixin.__init__(self)
         StudioClientMixin.__init__(self)
         SubscriptionClientMixin.__init__(self)
+        SystemQueryClientMixin.__init__(self)
         TagClientMixin.__init__(self)
+        VersionClientMixin.__init__(self)
 
 
 __all__ = ["StashClient", "sanitize_model_data"]

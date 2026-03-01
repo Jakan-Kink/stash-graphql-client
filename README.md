@@ -20,9 +20,12 @@ Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 
 - **ORM-like interface for GraphQL**: Use `.save()`, `.delete()`, and relationship helpers instead of writing mutations manually.
 - **Identity map with Pydantic v2 wrap validators**: Same entity ID = same Python object reference. Nested objects with IDs are automatically separated into the identity map. Caching integrated at model construction—no separate cache layer needed.
-- **Smart partial updates**: UNSET pattern sends only changed fields in mutations. Update one field without affecting others.
+- **Smart partial updates**: UNSET sentinel marks fields have not been requested or received data from the server. Fields you change get sent in mutations. UNSET is also part of the three-state logic for knowing the difference between unknown and intentionally NULL.
 - **Type-safe with Pydantic v2**: Full runtime validation, IDE autocomplete, and error detection at development time.
 - **Django-style filtering**: Familiar `rating100__gte=80` syntax instead of building complex GraphQL filter objects.
+- **Lazy field population**: `populate()` fetches only missing fields with nested `__` syntax (`files__path`, `studio__parent__name`). `filter_and_populate()` and `populated_filter_iter()` combine filtering with auto-population.
+- **Streaming iteration**: `find_iter()` provides async generator pagination for large result sets without loading everything into memory.
+- **Get-or-create**: `store.get_or_create()` upsert pattern for entities.
 - **Async-first architecture**: Built for `async`/`await` throughout with native support for concurrent operations.
 - **Full Stash API coverage**: Complete CRUD operations for all entity types, job management, metadata operations, and real-time subscriptions.
 
@@ -34,16 +37,16 @@ Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 from stash_graphql_client import StashContext
 from stash_graphql_client.types import Scene, UNSET
 
-async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    client = context.client
     # Find and update a scene
     scene = await client.find_scene("scene-id")
     scene.rating100 = 95
-    scene.details = UNSET  # Don't touch this field
+    # scene.details stays UNSET (no data loaded for it, won't be sent)
     await scene.save(client)  # Only sends rating100
 
-    # Django-style filtering
-    from stash_graphql_client import StashEntityStore
-    store = StashEntityStore(client)
+    # Django-style filtering via the context's store
+    store = context.store
     top_rated = await store.find(Scene, rating100__gte=90)
 ```
 

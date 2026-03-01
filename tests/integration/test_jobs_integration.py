@@ -102,6 +102,7 @@ async def test_find_job_validates_response_structure(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
+        await stash_client.metadata_clean({"dryRun": True})
         # First, get the current job queue to find a real job ID if available
         queue = await stash_client.job_queue()
 

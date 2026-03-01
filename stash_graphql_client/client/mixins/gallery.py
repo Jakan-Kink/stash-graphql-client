@@ -33,7 +33,7 @@ class GalleryClientMixin(StashClientProtocol):
                 return self._decode_result(Gallery, result["findGallery"])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find gallery {id}: {e}")
+            self.log.exception(f"Failed to find gallery {id}: {e}")
             return None
 
     async def find_galleries(
@@ -74,7 +74,7 @@ class GalleryClientMixin(StashClientProtocol):
             )
             return self._decode_result(FindGalleriesResultType, result["findGalleries"])
         except Exception as e:
-            self.log.error(f"Failed to find galleries: {e}")
+            self.log.exception(f"Failed to find galleries: {e}")
             return FindGalleriesResultType(count=0, galleries=[])
 
     async def create_gallery(self, gallery: Gallery) -> Gallery:

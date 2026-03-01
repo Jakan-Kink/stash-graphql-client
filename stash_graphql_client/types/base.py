@@ -495,6 +495,18 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Optional - if not set, the type doesn't support creation
     __create_input_type__: ClassVar[type[BaseModel] | None] = None
 
+    # Input type for deletion (e.g., SceneDestroyInput, TagDestroyInput)
+    # Optional - if not set, delete() is not supported for this type
+    __destroy_input_type__: ClassVar[type[BaseModel] | None] = None
+
+    # Input type for bulk deletion (e.g., ScenesDestroyInput, ImagesDestroyInput)
+    # Optional - if not set, bulk_destroy() falls back to bare ids mutation
+    __bulk_destroy_input_type__: ClassVar[type[BaseModel] | None] = None
+
+    # Input type for merging (e.g., SceneMergeInput, PerformerMergeInput)
+    # Optional - if not set, merge() is not supported for this type
+    __merge_input_type__: ClassVar[type[BaseModel] | None] = None
+
     # Fields to include in queries
     __field_names__: ClassVar[set[str]]
 
@@ -790,12 +802,14 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # _is_new is auto-initialized to False by PrivateAttr default
 
         # Set _is_new flag based on ID logic
+        # Use data["id"] directly (already computed above) rather than self.id to
+        # avoid Pydantic's attribute lookup, which can fail intermittently on
+        # Python 3.14 when model state is in flux across xdist workers.
+        obj_id: str = data["id"]
         if is_new_object:
             self._is_new = True
         else:
-            self._is_new = (
-                len(self.id) == 32 and not self.id.isdigit()
-            ) or self.id == "new"
+            self._is_new = len(obj_id) == 32 and not obj_id.isdigit()
 
     @classmethod
     def new(cls: type[T], **data: Any) -> T:
@@ -1329,6 +1343,201 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         except Exception as e:
             raise ValueError(f"Failed to save {self.__type_name__}: {e}") from e
+
+    async def delete(self, client: StashClient, **kwargs: Any) -> bool:
+        """Delete this object from Stash and invalidate from cache.
+
+        Builds a destroy input from ``__destroy_input_type__`` and executes
+        the corresponding GraphQL destroy mutation. Extra keyword arguments
+        are merged into the destroy input (e.g., ``delete_file=True``).
+
+        Args:
+            client: StashClient instance
+            **kwargs: Additional destroy input fields (e.g., delete_file, delete_generated)
+
+        Returns:
+            True if the object was successfully deleted
+
+        Raises:
+            NotImplementedError: If the type has no __destroy_input_type__
+            ValueError: If the object has no server ID or delete fails
+
+        Examples:
+            >>> await scene.delete(client)
+            >>> await scene.delete(client, delete_file=True)
+        """
+        if not self.__destroy_input_type__:
+            raise NotImplementedError(
+                f"{self.__type_name__} does not support delete "
+                f"(no __destroy_input_type__ defined)"
+            )
+
+        if self.is_new():
+            raise ValueError(
+                f"Cannot delete unsaved {self.__type_name__} (no server ID)"
+            )
+
+        type_name = self.__type_name__
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}Destroy"
+
+        # Build the destroy input using the declared type.
+        # Most types use `id`, but some (Gallery) use `ids` (list).
+        destroy_fields = self.__destroy_input_type__.model_fields
+        if "ids" in destroy_fields:
+            destroy_input = self.__destroy_input_type__(ids=[self.id], **kwargs)
+        else:
+            destroy_input = self.__destroy_input_type__(id=self.id, **kwargs)
+        input_data = destroy_input.to_graphql()
+
+        mutation = f"""
+            mutation Destroy{type_name}($input: {type_name}DestroyInput!) {{
+                {operation_key}(input: $input)
+            }}
+        """
+
+        result = await client.execute(mutation, {"input": input_data})
+
+        success = result.get(operation_key, False)
+        if not success:
+            raise ValueError(f"Failed to delete {type_name} {self.id}: {result}")
+
+        # Invalidate from cache
+        if self._store is not None:
+            self._store.invalidate(self)
+
+        return True
+
+    @classmethod
+    async def bulk_destroy(
+        cls, client: StashClient, ids: list[str], **kwargs: Any
+    ) -> bool:
+        """Delete multiple objects of this type from Stash.
+
+        Uses the bulk destroy mutation (e.g., ``scenesDestroy``, ``tagsDestroy``).
+        Types with ``__bulk_destroy_input_type__`` use an input object; others
+        use the bare ``ids`` parameter pattern.
+
+        Args:
+            client: StashClient instance
+            ids: List of entity IDs to delete
+            **kwargs: Additional destroy input fields (e.g., delete_file)
+
+        Returns:
+            True if successfully deleted
+
+        Raises:
+            ValueError: If delete fails
+
+        Examples:
+            >>> await Scene.bulk_destroy(client, ["1", "2", "3"])
+            >>> await Scene.bulk_destroy(client, ["1", "2"], delete_file=True)
+        """
+        type_name = cls.__type_name__
+        # Plural operation key: scenesDestroy, tagsDestroy, etc.
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}sDestroy"
+
+        if cls.__bulk_destroy_input_type__ is not None:
+            # Types with a dedicated input type (Scene, Image)
+            destroy_input = cls.__bulk_destroy_input_type__(ids=ids, **kwargs)
+            input_data = destroy_input.to_graphql()
+            input_type_name = cls.__bulk_destroy_input_type__.__name__
+
+            mutation = f"""
+                mutation Destroy{type_name}s($input: {input_type_name}!) {{
+                    {operation_key}(input: $input)
+                }}
+            """
+            result = await client.execute(mutation, {"input": input_data})
+        else:
+            # Types with bare ids param (Tag, Performer, Studio, Group)
+            mutation = f"""
+                mutation Destroy{type_name}s($ids: [ID!]!) {{
+                    {operation_key}(ids: $ids)
+                }}
+            """
+            result = await client.execute(mutation, {"ids": ids})
+
+        success = result.get(operation_key, False)
+        if not success:
+            raise ValueError(f"Failed to bulk delete {type_name}s {ids}: {result}")
+
+        # Invalidate all from cache
+        if cls._store is not None:
+            for eid in ids:
+                cls._store.invalidate(cls, eid)
+
+        return True
+
+    @classmethod
+    async def merge(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        **kwargs: Any,
+    ) -> Self | None:
+        """Merge source entities into a destination entity.
+
+        Combines multiple entities of this type into one, transferring
+        relationships and optionally overriding field values.
+
+        Args:
+            client: StashClient instance
+            source_ids: IDs of entities to merge from (these will be deleted)
+            destination_id: ID of the entity to merge into (this will be kept)
+            **kwargs: Additional merge input fields (e.g., values, play_history)
+
+        Returns:
+            The merged destination entity, or None
+
+        Raises:
+            NotImplementedError: If the type doesn't support merge
+            ValueError: If merge fails
+
+        Examples:
+            >>> merged = await Tag.merge(client, ["1", "2"], "3")
+            >>> merged = await Scene.merge(client, ["1"], "2", play_history=True)
+        """
+        if not cls.__merge_input_type__:
+            raise NotImplementedError(
+                f"{cls.__type_name__} does not support merge "
+                f"(no __merge_input_type__ defined)"
+            )
+
+        type_name = cls.__type_name__
+        merge_input = cls.__merge_input_type__(
+            source=source_ids, destination=destination_id, **kwargs
+        )
+        input_data = merge_input.to_graphql()
+        input_type_name = cls.__merge_input_type__.__name__
+
+        # Schema uses tagsMerge (plural) vs sceneMerge/performerMerge (singular)
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}Merge"
+        if type_name == "Tag":
+            operation_key = "tagsMerge"
+
+        # Merge returns the merged entity with its fields
+        fields = " ".join(cls._get_field_names())
+        mutation = f"""
+            mutation Merge{type_name}($input: {input_type_name}!) {{
+                {operation_key}(input: $input) {{
+                    {fields}
+                }}
+            }}
+        """
+
+        result = await client.execute(mutation, {"input": input_data})
+        entity_data = result.get(operation_key)
+
+        # Invalidate source entities from cache
+        if cls._store is not None:
+            for sid in source_ids:
+                cls._store.invalidate(cls, sid)
+
+        if entity_data is None:
+            return None
+
+        return cls.from_dict(entity_data)
 
     @staticmethod
     async def _get_id(obj: Any) -> str | None:

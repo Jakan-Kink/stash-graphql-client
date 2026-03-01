@@ -61,6 +61,12 @@ class StudioUpdateInput(StashInput):
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
 
 
+class StudioDestroyInput(StashInput):
+    """Input for destroying a studio from schema/types/studio.graphql."""
+
+    id: str  # ID!
+
+
 class Studio(StashObject):
     """Studio type from schema/types/studio.graphql."""
 
@@ -68,6 +74,7 @@ class Studio(StashObject):
     __short_repr_fields__ = ("name",)
     __update_input_type__ = StudioUpdateInput
     __create_input_type__ = StudioCreateInput
+    __destroy_input_type__ = StudioDestroyInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -213,12 +220,6 @@ class BulkStudioUpdateInput(StashInput):
     details: str | None | UnsetType = UNSET  # String
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
-
-
-class StudioDestroyInput(StashInput):
-    """Input for destroying a studio from schema/types/studio.graphql."""
-
-    id: str  # ID!
 
 
 class FindStudiosResultType(StashResult):

@@ -94,6 +94,12 @@ class GroupUpdateInput(StashInput):
     )
 
 
+class GroupDestroyInput(StashInput):
+    """Input for destroying groups."""
+
+    id: str  # ID!
+
+
 class Group(StashObject):
     """Group type from schema."""
 
@@ -101,6 +107,7 @@ class Group(StashObject):
     __short_repr_fields__ = ("name",)
     __update_input_type__ = GroupUpdateInput
     __create_input_type__ = GroupCreateInput
+    __destroy_input_type__ = GroupDestroyInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -426,12 +433,6 @@ class BulkGroupUpdateInput(StashInput):
     sub_groups: BulkUpdateGroupDescriptionsInput | None | UnsetType = (
         UNSET  # BulkUpdateGroupDescriptionsInput
     )
-
-
-class GroupDestroyInput(StashInput):
-    """Input for destroying groups."""
-
-    id: str  # ID!
 
 
 class ReorderSubGroupsInput(StashInput):
