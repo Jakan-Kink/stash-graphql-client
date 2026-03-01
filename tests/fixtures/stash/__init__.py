@@ -7,6 +7,7 @@ This module provides:
 """
 
 from tests.fixtures.stash.graphql_responses import (
+    create_capability_response,
     create_config_defaults_result,
     create_config_dlna_result,
     create_config_general_result,
@@ -36,6 +37,7 @@ from tests.fixtures.stash.graphql_responses import (
     create_tag_create_result,
     create_tag_dict,
     create_version_dict,
+    make_server_capabilities,
 )
 from tests.fixtures.stash.type_factories import (
     GalleryFactory,
@@ -61,6 +63,9 @@ from tests.fixtures.stash.type_factories import (
 
 
 __all__ = [
+    # Capability Fixtures
+    "create_capability_response",
+    "make_server_capabilities",
     # Type Factories
     "GalleryFactory",
     "GroupFactory",

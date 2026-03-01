@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import FindTagsResultType, Tag, TagDestroyInput
 from ...types.unset import is_set
 from ..protocols import StashClientProtocol
@@ -22,7 +23,7 @@ class TagClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.FIND_TAG_QUERY,
+                fragment_store.FIND_TAG_QUERY,
                 {"id": id},
             )
             if result and result.get("findTag"):
@@ -67,7 +68,7 @@ class TagClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_TAGS_QUERY,
+                fragment_store.FIND_TAGS_QUERY,
                 {"filter": filter_, "tag_filter": tag_filter},
             )
             return FindTagsResultType(**result["findTags"])
@@ -92,7 +93,7 @@ class TagClientMixin(StashClientProtocol):
         try:
             input_data = await tag.to_input()
             result = await self.execute(
-                fragments.CREATE_TAG_MUTATION,
+                fragment_store.CREATE_TAG_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Tag, result["tagCreate"])
@@ -134,7 +135,7 @@ class TagClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.TAGS_MERGE_MUTATION,
+                fragment_store.TAGS_MERGE_MUTATION,
                 {"input": {"source": source, "destination": destination}},
             )
             # Clear caches since we've modified tags
@@ -184,7 +185,7 @@ class TagClientMixin(StashClientProtocol):
                 input_data["child_ids"] = child_ids
 
             result = await self.execute(
-                fragments.BULK_TAG_UPDATE_MUTATION,
+                fragment_store.BULK_TAG_UPDATE_MUTATION,
                 {"input": input_data},
             )
             # Clear caches since we've modified tags
@@ -212,7 +213,7 @@ class TagClientMixin(StashClientProtocol):
         try:
             input_data = await tag.to_input()
             result = await self.execute(
-                fragments.UPDATE_TAG_MUTATION,
+                fragment_store.UPDATE_TAG_MUTATION,
                 {"input": input_data},
             )
             # Clear caches since we've modified a tag

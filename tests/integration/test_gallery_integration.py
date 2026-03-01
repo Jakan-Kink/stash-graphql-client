@@ -134,7 +134,7 @@ async def test_create_and_find_gallery(
 ) -> None:
     """Test creating a gallery and finding it."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a new gallery
@@ -175,7 +175,7 @@ async def test_create_and_update_gallery(
 ) -> None:
     """Test creating and updating a gallery."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create gallery
@@ -217,7 +217,7 @@ async def test_create_and_destroy_gallery(
 ) -> None:
     """Test creating and destroying a gallery."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create gallery
@@ -266,7 +266,7 @@ async def test_galleries_update_multiple(
 ) -> None:
     """Test updating multiple galleries individually."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create multiple test galleries
@@ -314,7 +314,7 @@ async def test_set_and_reset_gallery_cover(
 ) -> None:
     """Test setting and resetting gallery cover image."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -372,7 +372,7 @@ async def test_add_and_remove_gallery_images(
 ) -> None:
     """Test adding and removing images from a gallery."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -428,7 +428,7 @@ async def test_update_gallery_images_add_mode(
 ) -> None:
     """Test updating gallery images in ADD mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -469,7 +469,7 @@ async def test_update_gallery_images_remove_mode(
 ) -> None:
     """Test updating gallery images in REMOVE mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -510,7 +510,7 @@ async def test_update_gallery_images_set_mode(
 ) -> None:
     """Test updating gallery images in SET mode (adds via addGalleryImages)."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -550,7 +550,7 @@ async def test_update_gallery_images_invalid_mode(
 ) -> None:
     """Test updating gallery images with invalid mode raises error."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -582,7 +582,7 @@ async def test_create_and_destroy_gallery_chapter(
 ) -> None:
     """Test creating and destroying a gallery chapter."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -643,7 +643,7 @@ async def test_create_and_update_gallery_chapter(
 ) -> None:
     """Test creating and updating a gallery chapter."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a test gallery
@@ -703,7 +703,7 @@ async def test_bulk_gallery_update(
 ) -> None:
     """Test bulk updating galleries."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create multiple test galleries
@@ -746,7 +746,7 @@ async def test_gallery_destroy_multiple(
 ) -> None:
     """Test destroying multiple galleries at once."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create multiple test galleries

@@ -38,6 +38,8 @@ Usage:
 
 from typing import Any
 
+from stash_graphql_client.capabilities import ServerCapabilities
+
 
 def create_graphql_response(operation: str, data: Any = None) -> dict[str, Any]:
     """Create a GraphQL response envelope.
@@ -1052,7 +1054,61 @@ def create_group_description_dict(
     }
 
 
+def create_capability_response(
+    app_schema: int = 75,
+    version: str = "v0.30.0-test",
+    has_dup: bool = False,
+    status: str = "OK",
+) -> dict[str, Any]:
+    """Create a capability detection GraphQL response for respx mocking.
+
+    This returns the full ``{"data": {...}}`` envelope matching the response
+    from ``CAPABILITY_DETECTION_QUERY``.
+
+    Args:
+        app_schema: The server's appSchema version (75 = v0.30.0 minimum).
+        version: Server version string (e.g. "v0.30.0", "v0.30.1-98-gc874bd56").
+        has_dup: Whether the DuplicationCriterionInput type exists.
+        status: System status string (typically "OK").
+
+    Returns:
+        Complete GraphQL response dict with capability detection data.
+    """
+    return {
+        "data": {
+            "version": {"version": version},
+            "systemStatus": {"appSchema": app_schema, "status": status},
+            "_dup": {"name": "DuplicationCriterionInput"} if has_dup else None,
+        }
+    }
+
+
+def make_server_capabilities(
+    app_schema: int = 75,
+    version: str = "v0.30.0-test",
+    has_dup: bool = False,
+) -> ServerCapabilities:
+    """Build a ServerCapabilities instance for testing.
+
+    Args:
+        app_schema: The server's appSchema version (75 = v0.30.0 minimum).
+        version: Server version string.
+        has_dup: Whether the DuplicationCriterionInput type exists.
+
+    Returns:
+        Frozen ServerCapabilities dataclass instance.
+    """
+    return ServerCapabilities(
+        app_schema=app_schema,
+        version_string=version,
+        has_duplication_criterion_input=has_dup,
+    )
+
+
 __all__ = [
+    # Capability fixtures
+    "create_capability_response",
+    "make_server_capabilities",
     # Config fixtures
     "create_config_defaults_result",
     "create_config_dlna_result",

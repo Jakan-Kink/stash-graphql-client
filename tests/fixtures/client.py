@@ -1,6 +1,7 @@
 """Test configuration and fixtures for StashClient tests."""
 
 import contextlib
+import json
 import warnings
 from collections.abc import AsyncGenerator, AsyncIterator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -13,6 +14,7 @@ import respx
 from stash_graphql_client import StashClient, StashEntityStore
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.types.scene import Scene, SceneCreateInput
+from tests.fixtures.stash.graphql_responses import create_capability_response
 
 
 __all__ = [
@@ -54,13 +56,25 @@ async def mock_gql_ws_connect():
     """Mock the GQL client's connect_async for websocket connections.
 
     This fixture patches the gql.Client.connect_async method to return
-    a mock session, preventing actual connection attempts.
+    a mock session with an async execute() that returns capability detection
+    data, preventing actual connection attempts.
 
     Yields:
         AsyncMock: The mocked connect_async method
     """
+    # Capability detection response for _raw_execute() during initialize().
+    # v0.30.0 = appSchema 75 (minimum supported).
+    _capability_response = {
+        "version": {"version": "v0.30.0-test"},
+        "systemStatus": {"appSchema": 75, "status": "OK"},
+        "_dup": None,
+    }
+
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock(return_value=_capability_response)
+
     with patch("gql.Client.connect_async", new_callable=AsyncMock) as mock:
-        mock.return_value = MagicMock()
+        mock.return_value = mock_session
         yield mock
 
 
@@ -175,21 +189,39 @@ async def respx_stash_client(
         ```
     """
     with respx.mock:
-        # Default response for any unmatched GraphQL requests
-        respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {}})
-        )
+        # Default response for GraphQL requests — includes capability detection
+        # response so that StashClient.initialize() succeeds.
+        def _graphql_responder(request: httpx.Request) -> httpx.Response:
+            """Route GraphQL requests: return capability data for detection, empty otherwise."""
+            body = json.loads(request.content)
+            query = body.get("query", "")
+
+            # Capability detection query contains "systemStatus" + "__type"
+            if "systemStatus" in query and "__type" in query:
+                return httpx.Response(
+                    200,
+                    json=create_capability_response(has_dup=True),
+                )
+
+            return httpx.Response(200, json={"data": {}})
+
+        respx.post("http://localhost:9999/graphql").mock(side_effect=_graphql_responder)
 
         # Initialize the client (will use mocked HTTP)
         client = await stash_context.get_client()
 
-        yield client
+        # Clear call history from capability detection so tests see a clean slate
+        for route in respx.routes:
+            route.calls.clear()
 
-        # Reset respx to prevent route pollution
-        respx.reset()
+        try:
+            yield client
+        finally:
+            # Reset respx to prevent route pollution
+            respx.reset()
 
-        # Close the client
-        await client.close()
+            # Close the client
+            await client.close()
 
 
 @pytest_asyncio.fixture
@@ -395,8 +427,11 @@ async def stash_cleanup_tracker():
                     return result
 
                 # Fast string check: only inspect if result contains "Create" mutations
+                # or the saveFilter upsert (which has no "Create" in its key)
                 result_keys = result.keys()
-                has_create = any("Create" in key for key in result_keys)
+                has_create = any(
+                    "Create" in key or key == "saveFilter" for key in result_keys
+                )
                 if not has_create:
                     return result
 
@@ -449,6 +484,12 @@ async def stash_cleanup_tracker():
                     and group_id not in created_objects["groups"]
                 ):
                     created_objects["groups"].append(group_id)
+                elif "saveFilter" in result and (
+                    (obj_data := result["saveFilter"])
+                    and (filter_id := obj_data.get("id"))
+                    and filter_id not in created_objects["saved_filters"]
+                ):
+                    created_objects["saved_filters"].append(filter_id)
 
                 return result
 

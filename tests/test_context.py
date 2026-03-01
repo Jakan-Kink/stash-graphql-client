@@ -139,22 +139,12 @@ class TestStashContextProperties:
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_store_returns_store_after_initialization(
-        self, respx_mock: respx.MockRouter
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock: respx.MockRouter
     ) -> None:
         """Test store property returns StashEntityStore after initialization."""
-        # Mock configuration endpoint
-        respx_mock.get("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "data": {
-                        "configuration": {
-                            "general": {"stashes": []},
-                            "interface": {"language": "en-US"},
-                        }
-                    }
-                },
-            )
+        # Mock GraphQL endpoint (handles capability detection + any other queries)
+        respx_mock.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(200, json={"data": {}})
         )
 
         context = StashContext(

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import TypeAdapter
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     FindScenesResultType,
     HistoryMutationResult,
@@ -81,7 +82,7 @@ class SceneClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_SCENE_QUERY,
+                fragment_store.FIND_SCENE_QUERY,
                 {"id": id},
                 result_type=Scene,
             )
@@ -190,7 +191,7 @@ class SceneClientMixin(StashClientProtocol):
         try:
             # execute() with result_type returns the typed object directly
             return await self.execute(
-                fragments.FIND_SCENES_QUERY,
+                fragment_store.FIND_SCENES_QUERY,
                 {"filter": filter_, "scene_filter": scene_filter},
                 result_type=FindScenesResultType,
             )
@@ -261,7 +262,7 @@ class SceneClientMixin(StashClientProtocol):
         try:
             input_data = await scene.to_input()
             return await self.execute(
-                fragments.CREATE_SCENE_MUTATION,
+                fragment_store.CREATE_SCENE_MUTATION,
                 {"input": input_data},
                 result_type=Scene,
             )
@@ -346,7 +347,7 @@ class SceneClientMixin(StashClientProtocol):
         try:
             input_data = await scene.to_input()
             return await self.execute(
-                fragments.UPDATE_SCENE_MUTATION,
+                fragment_store.UPDATE_SCENE_MUTATION,
                 {"input": input_data},
                 result_type=Scene,
             )
@@ -370,7 +371,7 @@ class SceneClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.FIND_DUPLICATE_SCENES_QUERY,
+                fragment_store.FIND_DUPLICATE_SCENES_QUERY,
                 {
                     "distance": distance,
                     "duration_diff": duration_diff,
@@ -429,7 +430,7 @@ class SceneClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.SCENE_WALL_QUERY,
+                fragment_store.SCENE_WALL_QUERY,
                 {"q": q},
             )
 
@@ -452,7 +453,7 @@ class SceneClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.BULK_SCENE_UPDATE_MUTATION,
+                fragment_store.BULK_SCENE_UPDATE_MUTATION,
                 {"input": input_data},
             )
             return [
@@ -473,7 +474,7 @@ class SceneClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.SCENES_UPDATE_MUTATION,
+                fragment_store.SCENES_UPDATE_MUTATION,
                 {"input": [await scene.to_input() for scene in scenes]},
             )
 
@@ -571,7 +572,7 @@ class SceneClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_SCENE_BY_HASH_QUERY,
+                fragment_store.FIND_SCENE_BY_HASH_QUERY,
                 {"input": input_dict},
                 result_type=Scene,
             )
@@ -789,7 +790,7 @@ class SceneClientMixin(StashClientProtocol):
 
         try:
             return await self.execute(
-                fragments.SCENE_MERGE_MUTATION,
+                fragment_store.SCENE_MERGE_MUTATION,
                 {"input": input_dict},
                 result_type=Scene,
             )
@@ -1149,7 +1150,7 @@ class SceneClientMixin(StashClientProtocol):
         """
         try:
             return await self.execute(
-                fragments.FIND_SCENES_BY_PATH_REGEX_QUERY,
+                fragment_store.FIND_SCENES_BY_PATH_REGEX_QUERY,
                 {"filter": filter_},
                 result_type=FindScenesResultType,
             )

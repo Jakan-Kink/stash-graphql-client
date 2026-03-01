@@ -57,6 +57,11 @@ class PHashDuplicationCriterionInput(StashInput):
     distance: int | None | UnsetType = UNSET  # Int
 
 
+# Canonical name in newer Stash versions (appSchema >= 84).
+# Older servers use PHashDuplicationCriterionInput; newer servers renamed it.
+DuplicationCriterionInput = PHashDuplicationCriterionInput
+
+
 class StashIDCriterionInput(StashInput):
     """Input for StashID criterion."""
 

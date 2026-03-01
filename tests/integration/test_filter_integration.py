@@ -34,7 +34,7 @@ async def test_save_filter_scenes_mode(
 ) -> None:
     """Test saving a new filter for scenes mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -69,7 +69,7 @@ async def test_save_filter_performers_mode(
 ) -> None:
     """Test saving a new filter for performers mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -104,7 +104,7 @@ async def test_save_filter_galleries_mode(
 ) -> None:
     """Test saving a new filter for galleries mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -136,7 +136,7 @@ async def test_save_filter_with_dict_input(
 ) -> None:
     """Test saving a filter using dictionary input instead of SaveFilterInput."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter using dict
@@ -169,7 +169,7 @@ async def test_save_filter_with_find_filter(
 ) -> None:
     """Test saving a filter with find_filter parameters."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter with find_filter options
@@ -203,7 +203,7 @@ async def test_save_filter_with_object_filter(
 ) -> None:
     """Test saving a filter with object_filter parameters."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter with object_filter options
@@ -241,7 +241,7 @@ async def test_save_filter_update_existing(
 ) -> None:
     """Test updating an existing filter by providing an id."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create initial filter
@@ -290,7 +290,7 @@ async def test_save_filter_update_with_ui_options(
 ) -> None:
     """Test updating filter ui_options."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create initial filter
@@ -341,7 +341,7 @@ async def test_destroy_saved_filter(
 ) -> None:
     """Test destroying a saved filter."""
     async with (
-        stash_cleanup_tracker(stash_client) as _,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as _,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a filter to destroy
@@ -380,7 +380,7 @@ async def test_destroy_saved_filter_with_dict(
 ) -> None:
     """Test destroying a filter using dictionary input."""
     async with (
-        stash_cleanup_tracker(stash_client) as _,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as _,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a filter to destroy
@@ -415,7 +415,7 @@ async def test_destroy_nonexistent_filter_raises_error(
 ) -> None:
     """Test destroying a nonexistent filter raises an error."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
         # Try to destroy a filter that doesn't exist
@@ -443,7 +443,7 @@ async def test_save_filters_multiple_modes(
 ) -> None:
     """Test creating filters for multiple different modes."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filters for different modes
@@ -478,7 +478,7 @@ async def test_save_update_destroy_filter_lifecycle(
 ) -> None:
     """Test complete filter lifecycle: save, update, and destroy."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # 1. Create filter
@@ -531,7 +531,7 @@ async def test_save_multiple_filters_same_mode(
 ) -> None:
     """Test creating multiple filters for the same mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create multiple filters for the same mode

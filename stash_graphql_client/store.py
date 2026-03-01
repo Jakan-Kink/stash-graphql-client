@@ -14,9 +14,9 @@ from datetime import timedelta
 from itertools import batched
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
-from . import fragments
 from .client.utils import sanitize_model_data
 from .errors import StashError, StashIntegrationError
+from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import StashObject
 
@@ -2178,32 +2178,32 @@ class StashEntityStore:
         # Map type names to their query info
         query_map: dict[str, tuple[str, str, str]] = {
             "Scene": (
-                fragments.FIND_SCENES_QUERY,
+                fragment_store.FIND_SCENES_QUERY,
                 "findScenes",
                 "scene_filter",
             ),
             "Performer": (
-                fragments.FIND_PERFORMERS_QUERY,
+                fragment_store.FIND_PERFORMERS_QUERY,
                 "findPerformers",
                 "performer_filter",
             ),
             "Studio": (
-                fragments.FIND_STUDIOS_QUERY,
+                fragment_store.FIND_STUDIOS_QUERY,
                 "findStudios",
                 "studio_filter",
             ),
             "Tag": (
-                fragments.FIND_TAGS_QUERY,
+                fragment_store.FIND_TAGS_QUERY,
                 "findTags",
                 "tag_filter",
             ),
             "Gallery": (
-                fragments.FIND_GALLERIES_QUERY,
+                fragment_store.FIND_GALLERIES_QUERY,
                 "findGalleries",
                 "gallery_filter",
             ),
             "Image": (
-                fragments.FIND_IMAGES_QUERY,
+                fragment_store.FIND_IMAGES_QUERY,
                 "findImages",
                 "image_filter",
             ),

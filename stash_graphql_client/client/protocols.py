@@ -22,6 +22,8 @@ from ..types.metadata import SystemStatus
 if TYPE_CHECKING:
     from loguru import Logger
 
+    from ..capabilities import ServerCapabilities
+
 
 T = TypeVar("T")
 
@@ -36,7 +38,7 @@ class StashClientProtocol(Protocol):
     # Properties
     log: Logger
     url: str
-    fragments: Any  # Module containing GraphQL fragments
+    _capabilities: ServerCapabilities | None  # Detected server capabilities
     schema: Any  # GraphQL schema (None if disabled)
 
     # GQL clients (kept open for persistent connections)

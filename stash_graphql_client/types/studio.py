@@ -15,6 +15,8 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -39,6 +41,7 @@ class StudioCreateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 76)
 
 
 class StudioUpdateInput(StashInput):
@@ -59,6 +62,9 @@ class StudioUpdateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 76)
+    )
 
 
 class StudioDestroyInput(StashInput):
@@ -124,6 +130,10 @@ class Studio(StashObject):
         UNSET  # [Group!]! - Any to avoid circular import
     )
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
+
+    # Capability-gated fields
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 76)
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
 
     @model_validator(mode="before")
     @classmethod

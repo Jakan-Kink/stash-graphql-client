@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,8 @@ from .base import (
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -123,6 +125,7 @@ class GalleryCreateInput(StashInput):
     studio_id: str | None | UnsetType = UNSET  # ID
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     performer_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 81)
 
 
 class GalleryUpdateInput(StashInput):
@@ -148,6 +151,9 @@ class GalleryUpdateInput(StashInput):
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     performer_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     primary_file_id: str | None | UnsetType = UNSET  # ID
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 81)
+    )
 
 
 class GalleryDestroyInput(StashInput):
@@ -211,6 +217,9 @@ class Gallery(StashObject):
     performers: list[Performer] | UnsetType = UNSET
     paths: GalleryPathsType | UnsetType = UNSET
 
+    # Capability-gated fields (appSchema >= 81)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 81)
+
     async def image(self, index: int) -> Image:
         """Get image at index from this gallery.
 
@@ -239,7 +248,7 @@ class Gallery(StashObject):
                 last_image = await gallery.image(gallery.image_count - 1)
             ```
         """
-        from stash_graphql_client import fragments
+        from stash_graphql_client.fragments import fragment_store
         from stash_graphql_client.types.unset import is_set
 
         # Validate gallery has ID
@@ -255,7 +264,7 @@ class Gallery(StashObject):
 
         # Query the gallery.image(index) resolver via store's client
         query = f"""
-        {fragments.IMAGE_QUERY_FRAGMENTS}
+        {fragment_store.IMAGE_QUERY_FRAGMENTS}
         query GalleryImage($galleryId: ID!, $index: Int!) {{
             findGallery(id: $galleryId) {{
                 image(index: $index) {{

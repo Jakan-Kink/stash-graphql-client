@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     BulkStudioUpdateInput,
     FindStudiosResultType,
@@ -27,7 +28,7 @@ class StudioClientMixin(StashClientProtocol):
         """
         try:
             return await self.execute(
-                fragments.FIND_STUDIO_QUERY,
+                fragment_store.FIND_STUDIO_QUERY,
                 {"id": id},
                 result_type=Studio,
             )
@@ -68,7 +69,7 @@ class StudioClientMixin(StashClientProtocol):
 
         try:
             return await self.execute(
-                fragments.FIND_STUDIOS_QUERY,
+                fragment_store.FIND_STUDIOS_QUERY,
                 {"filter": filter_, "studio_filter": studio_filter},
                 result_type=FindStudiosResultType,
             )
@@ -93,7 +94,7 @@ class StudioClientMixin(StashClientProtocol):
         try:
             input_data = await studio.to_input()
             return await self.execute(
-                fragments.CREATE_STUDIO_MUTATION,
+                fragment_store.CREATE_STUDIO_MUTATION,
                 {"input": input_data},
                 result_type=Studio,
             )
@@ -120,7 +121,7 @@ class StudioClientMixin(StashClientProtocol):
         try:
             input_data = await studio.to_input()
             return await self.execute(
-                fragments.UPDATE_STUDIO_MUTATION,
+                fragment_store.UPDATE_STUDIO_MUTATION,
                 {"input": input_data},
                 result_type=Studio,
             )
@@ -241,7 +242,7 @@ class StudioClientMixin(StashClientProtocol):
                 input_dict = validated.to_graphql()
 
             return await self.execute(
-                fragments.BULK_STUDIO_UPDATE_MUTATION,
+                fragment_store.BULK_STUDIO_UPDATE_MUTATION,
                 {"input": input_dict},
                 result_type=list[Studio],
             )

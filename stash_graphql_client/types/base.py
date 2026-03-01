@@ -53,6 +53,7 @@ from pydantic import (
 
 from stash_graphql_client import fragments
 from stash_graphql_client.errors import StashIntegrationError, StashUnmappedFieldWarning
+from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
 from stash_graphql_client.types.unset import UNSET, UnsetType, is_set
@@ -1247,12 +1248,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         # Map type names to their corresponding find queries
         query_map = {
-            "Scene": fragments.FIND_SCENE_QUERY,
-            "Performer": fragments.FIND_PERFORMER_QUERY,
-            "Studio": fragments.FIND_STUDIO_QUERY,
-            "Tag": fragments.FIND_TAG_QUERY,
-            "Gallery": fragments.FIND_GALLERY_QUERY,
-            "Image": fragments.FIND_IMAGE_QUERY,
+            "Scene": fragment_store.FIND_SCENE_QUERY,
+            "Performer": fragment_store.FIND_PERFORMER_QUERY,
+            "Studio": fragment_store.FIND_STUDIO_QUERY,
+            "Tag": fragment_store.FIND_TAG_QUERY,
+            "Gallery": fragment_store.FIND_GALLERY_QUERY,
+            "Image": fragment_store.FIND_IMAGE_QUERY,
             "SceneMarker": fragments.FIND_MARKER_QUERY,
         }
 

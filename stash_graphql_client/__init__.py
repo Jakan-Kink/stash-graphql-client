@@ -20,6 +20,7 @@ Example:
 
 from importlib.metadata import PackageNotFoundError, version
 
+from stash_graphql_client.capabilities import ServerCapabilities
 from stash_graphql_client.client import StashClient
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.logging import (
@@ -79,6 +80,7 @@ __all__ = [
     # Client
     "StashClient",
     "StashContext",
+    "ServerCapabilities",
     # Store
     "StashEntityStore",
     "CacheEntry",

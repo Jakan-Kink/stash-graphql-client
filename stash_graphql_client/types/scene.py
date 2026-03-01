@@ -17,7 +17,8 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput, VideoFile
-from .scalars import Time
+from .metadata import CustomFieldsInput
+from .scalars import Map, Time
 from .unset import UNSET, UnsetType
 
 
@@ -133,6 +134,9 @@ class SceneUpdateInput(StashInput):
     resume_time: float | None | UnsetType = UNSET  # Float (snake_case in schema)
     play_duration: float | None | UnsetType = UNSET  # Float (snake_case in schema)
     primary_file_id: str | None | UnsetType = UNSET  # ID (snake_case in schema)
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
+    )
 
 
 class SceneDestroyInput(StashInput):
@@ -249,6 +253,9 @@ class Scene(StashObject):
     captions: list[VideoCaption] | None | UnsetType = (
         UNSET  # [VideoCaption!] - nullable list
     )
+
+    # Capability-gated fields (appSchema >= 79)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 79)
 
     # Relationship definitions with their mappings
     __relationships__ = {
@@ -434,6 +441,9 @@ class SceneCreateInput(StashInput):
     cover_image: str | None | UnsetType = UNSET  # String (URL or base64)
     stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
     file_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
+    )
 
 
 class BulkSceneUpdateInput(StashInput):
