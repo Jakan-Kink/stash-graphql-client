@@ -1573,6 +1573,20 @@ async def test_stash_client_verify_ssl_string_conversion(respx_mock) -> None:
     This test covers the string-to-bool conversion in StashClient.initialize() (base.py:130-131).
     The conversion happens during initialize(), not __init__.
     """
+    # Mock the GraphQL endpoint (capability detection happens during initialize)
+    respx_mock.post("http://localhost:9999/graphql").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "version": {"version": "v0.30.0"},
+                    "systemStatus": {"appSchema": 75, "status": "OK"},
+                    "_dup": None,
+                }
+            },
+        )
+    )
+
     # Test "false" string - ensures the False branch of line 131 is covered
     client_false = StashClient(
         conn={"Host": "localhost", "Port": 9999},
@@ -1614,3 +1628,78 @@ async def test_port_negative_raises_valueerror() -> None:
 
     with pytest.raises(ValueError, match="Port must be 0-65535"):
         await context.get_client()
+
+
+# =============================================================================
+# initialize() idempotency and _raw_execute() guard tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_base_initialize_is_idempotent(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Calling StashClientBase.initialize() twice is a no-op the second time (covers base.py L124).
+
+    StashClient overrides initialize() with its own early-return guard,
+    so we call through the base class explicitly to hit L124 in base.py.
+    """
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl=False,
+    )
+    client = await context.get_client()
+    try:
+        assert client._initialized
+
+        # Call the *base class* initialize() directly — should early-return at L124
+        await StashClientBase.initialize(client)
+
+        # Still initialized, no error
+        assert client._initialized
+    finally:
+        await client.close()
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_raw_execute_no_session_raises() -> None:
+    """_raw_execute() raises RuntimeError when session is not connected (covers L285).
+
+    _session is set to None during initialize() at L217 and only becomes
+    truthy after connect_async succeeds at L255.  We simulate the "session
+    not yet connected" state by setting the attribute directly.
+    """
+    client = StashClient({"Host": "localhost", "Port": 9999}, verify_ssl=False)
+    # Simulate the state after L217 but before L255 (session created but not connected)
+    client._session = None
+
+    with pytest.raises(RuntimeError, match="GQL session not available"):
+        await client._raw_execute("{ version { version } }")
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_raw_execute_with_variables(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """_raw_execute() sets operation.variable_values when variables are provided (covers L291)."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl=False,
+    )
+    client = await context.get_client()
+    try:
+        variables = {"id": "123"}
+        result = await client._raw_execute(
+            "query FindScene($id: ID!) { findScene(id: $id) { id } }",
+            variables=variables,
+        )
+        # The mock session returns the capability response for any execute call,
+        # but the important thing is that it didn't raise
+        assert isinstance(result, dict)
+    finally:
+        await client.close()
+        await context.close()

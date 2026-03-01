@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     AssignSceneFileInput,
     BaseFile,
@@ -390,7 +391,7 @@ class FileClientMixin(StashClientProtocol):
 
         try:
             return await self.execute(
-                fragments.FIND_FOLDER_QUERY,
+                fragment_store.FIND_FOLDER_QUERY,
                 {"id": id, "path": path},
                 result_type=Folder,
             )
@@ -423,7 +424,7 @@ class FileClientMixin(StashClientProtocol):
                 folder_filter_dict = folder_filter
 
             return await self.execute(
-                fragments.FIND_FOLDERS_QUERY,
+                fragment_store.FIND_FOLDERS_QUERY,
                 {
                     "folder_filter": folder_filter_dict,
                     "filter": filter_,

@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     BulkSceneMarkerUpdateInput,
     FindSceneMarkersResultType,
@@ -123,7 +124,7 @@ class MarkerClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.SCENE_MARKER_TAG_QUERY,
+                fragment_store.SCENE_MARKER_TAG_QUERY,
                 {"scene_id": scene_id},
             )
             # Explicitly convert to list of dictionaries

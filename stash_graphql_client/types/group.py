@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +15,8 @@ from .base import (
     StashResult,
 )
 from .enums import BulkUpdateIdMode
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -59,6 +61,7 @@ class GroupCreateInput(StashInput):
         UNSET  # String (URL or base64 encoded data URL)
     )
     back_image: str | None | UnsetType = UNSET  # String (URL or base64)
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 82)
 
 
 class GroupUpdateInput(StashInput):
@@ -91,6 +94,9 @@ class GroupUpdateInput(StashInput):
     )
     back_image: str | None | UnsetType = (
         UNSET  # String (URL or base64 encoded data URL)
+    )
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 82)
     )
 
 
@@ -151,6 +157,9 @@ class Group(StashObject):
         default=UNSET, ge=0
     )  # Int! (Resolver with optional depth)
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
+
+    # Capability-gated fields (appSchema >= 82)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 82)
 
     # Field definitions with their conversion functions
     __field_conversions__ = {

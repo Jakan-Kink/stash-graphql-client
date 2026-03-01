@@ -128,6 +128,17 @@ class StashUnmappedFieldWarning(UserWarning):
     """
 
 
+class StashVersionError(StashError):
+    """Raised when the Stash server version is too old to be supported.
+
+    This occurs when the server's appSchema is below the minimum required
+    by this client version (MIN_SUPPORTED_APP_SCHEMA = 75, i.e. Stash v0.30.0).
+    """
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+
+
 __all__ = [
     "StashCleanupWarning",
     "StashConfigurationError",
@@ -138,4 +149,5 @@ __all__ = [
     "StashServerError",
     "StashSystemNotReadyError",
     "StashUnmappedFieldWarning",
+    "StashVersionError",
 ]

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import Field
 
-from stash_graphql_client.fragments import FIND_PERFORMERS_QUERY
+from stash_graphql_client.fragments import fragment_store
 
 from .base import (
     BulkUpdateIds,
@@ -79,6 +79,8 @@ class PerformerCreateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class PerformerUpdateInput(StashInput):
@@ -116,6 +118,8 @@ class PerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class BulkPerformerUpdateInput(StashInput):
@@ -243,6 +247,10 @@ class Performer(StashObject):
     weight: int | None | UnsetType = UNSET  # Int
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
 
+    # Capability-gated fields (appSchema >= 78)
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+
     async def update_avatar(
         self, client: StashClient, image_path: str | Path
     ) -> Performer:
@@ -351,7 +359,7 @@ class Performer(StashObject):
         """
         try:
             result = await client.execute(
-                FIND_PERFORMERS_QUERY,
+                fragment_store.FIND_PERFORMERS_QUERY,
                 {
                     "filter": None,
                     "performer_filter": {"name": {"value": name, "modifier": "EQUALS"}},

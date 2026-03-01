@@ -241,6 +241,12 @@ class Folder(StashObject):
     parent_folder: Folder | None | UnsetType = UNSET  # Folder
     zip_file: BasicFile | None | UnsetType = UNSET  # BasicFile
 
+    # Capability-gated fields (appSchema >= 84)
+    basename: str | None | UnsetType = UNSET  # String (appSchema >= 84)
+    parent_folders: list[Folder] | None | UnsetType = (
+        UNSET  # [Folder!] (appSchema >= 84)
+    )
+
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input.
 

@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     BulkGroupUpdateInput,
     FindGroupsResultType,
@@ -53,7 +54,7 @@ class GroupClientMixin(StashClientProtocol):
         try:
             # Use result_type to let execute() handle Pydantic decoding with field aliases
             result = await self.execute(
-                fragments.FIND_GROUP_QUERY,
+                fragment_store.FIND_GROUP_QUERY,
                 {"id": group_id},
                 result_type=Group,
             )
@@ -177,7 +178,7 @@ class GroupClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_GROUPS_QUERY,
+                fragment_store.FIND_GROUPS_QUERY,
                 {"filter": filter_, "group_filter": group_filter, "ids": ids},
             )
             return self._decode_result(FindGroupsResultType, result["findGroups"])
@@ -239,7 +240,7 @@ class GroupClientMixin(StashClientProtocol):
         """
         input_data = await group.to_input()
         return await self.execute(
-            fragments.CREATE_GROUP_MUTATION,
+            fragment_store.CREATE_GROUP_MUTATION,
             {"input": input_data},
             result_type=Group,
         )
@@ -287,7 +288,7 @@ class GroupClientMixin(StashClientProtocol):
 
         input_data = await group.to_input()
         return await self.execute(
-            fragments.UPDATE_GROUP_MUTATION,
+            fragment_store.UPDATE_GROUP_MUTATION,
             {"input": input_data},
             result_type=Group,
         )
@@ -422,7 +423,7 @@ class GroupClientMixin(StashClientProtocol):
             )
 
         result = await self.execute(
-            fragments.BULK_GROUP_UPDATE_MUTATION,
+            fragment_store.BULK_GROUP_UPDATE_MUTATION,
             {"input": input_data.to_graphql()},
         )
         return [

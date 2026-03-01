@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     BulkImageUpdateInput,
     FindImagesResultType,
@@ -28,7 +29,7 @@ class ImageClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.FIND_IMAGE_QUERY,
+                fragment_store.FIND_IMAGE_QUERY,
                 {"id": id},
             )
             if result and result.get("findImage"):
@@ -71,7 +72,7 @@ class ImageClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_IMAGES_QUERY,
+                fragment_store.FIND_IMAGES_QUERY,
                 {"filter": filter_, "image_filter": image_filter},
             )
             return self._decode_result(FindImagesResultType, result["findImages"])
@@ -98,7 +99,7 @@ class ImageClientMixin(StashClientProtocol):
         try:
             input_data = await image.to_input()
             result = await self.execute(
-                fragments.CREATE_IMAGE_MUTATION,
+                fragment_store.CREATE_IMAGE_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Image, result["imageCreate"])
@@ -125,7 +126,7 @@ class ImageClientMixin(StashClientProtocol):
         try:
             input_data = await image.to_input()
             result = await self.execute(
-                fragments.UPDATE_IMAGE_MUTATION,
+                fragment_store.UPDATE_IMAGE_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Image, result["imageUpdate"])
@@ -266,7 +267,7 @@ class ImageClientMixin(StashClientProtocol):
                 input_dict = validated.to_graphql()
 
             result = await self.execute(
-                fragments.BULK_IMAGE_UPDATE_MUTATION,
+                fragment_store.BULK_IMAGE_UPDATE_MUTATION,
                 {"input": input_dict},
             )
 
@@ -324,7 +325,7 @@ class ImageClientMixin(StashClientProtocol):
                     input_list.append(update)
 
             result = await self.execute(
-                fragments.IMAGES_UPDATE_MUTATION,
+                fragment_store.IMAGES_UPDATE_MUTATION,
                 {"input": input_list},
             )
 

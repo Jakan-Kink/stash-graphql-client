@@ -16,6 +16,8 @@ from .base import (
     StashResult,
 )
 from .files import ImageFile, VideoFile
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -69,6 +71,9 @@ class ImageUpdateInput(StashInput):
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     gallery_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     primary_file_id: str | None | UnsetType = UNSET  # ID
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 83)
+    )
 
 
 class Image(StashObject):
@@ -118,6 +123,9 @@ class Image(StashObject):
     galleries: list[Gallery] | UnsetType = Field(default=UNSET)  # [Gallery!]!
     tags: list[Tag] | UnsetType = Field(default=UNSET)  # [Tag!]!
     performers: list[Performer] | UnsetType = Field(default=UNSET)  # [Performer!]!
+
+    # Capability-gated fields (appSchema >= 83)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 83)
 
     # Relationship definitions with their mappings
     __relationships__ = {
