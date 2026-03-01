@@ -775,42 +775,38 @@ class StashObject(FromGraphQLMixin, BaseModel):
         elif current_value is related_obj:
             setattr(self, field_name, None)
 
-    def __init__(self, **data: Any) -> None:
-        """Initialize StashObject with UUID4 auto-generation for new objects.
+    @model_validator(mode="before")
+    @classmethod
+    def _inject_uuid(cls, data: Any) -> Any:
+        """Auto-generate UUID4 for new objects without an ID.
 
-        If no 'id' is provided, automatically generates a UUID4 hex string (32 chars)
-        and sets the _is_new flag to True. This temporary ID is replaced with the
-        server-assigned ID after save operations.
-
-        Args:
-            **data: Field values for the object
+        If no 'id' is provided (or it is None/empty), generates a UUID4 hex
+        string (32 chars) before Pydantic validates fields. This temporary ID
+        is replaced with the server-assigned ID after save operations.
         """
-        # Save original state before modifying data
-        is_new_object = (
-            "id" not in data or data.get("id") is None or data.get("id") == ""
-        )
+        if not isinstance(data, dict):
+            return data
+        if not data.get("id"):
+            new_id = uuid.uuid4().hex
+            data = {**data, "id": new_id}
+            log.debug(f"Auto-generated UUID4 for new {cls.__name__}: {new_id}")
+        return data
 
-        # Auto-generate UUID4 for new objects without an ID
-        if is_new_object:
-            data["id"] = uuid.uuid4().hex
-            log.debug(
-                f"Auto-generated UUID4 for new {self.__class__.__name__}: {data['id']}"
-            )
+    @model_validator(mode="after")
+    def _set_is_new(self) -> Self:
+        """Set _is_new flag: True when the id looks like an auto-generated UUID4.
 
-        super().__init__(**data)
+        A 32-char non-digit hex string is either a UUID4 we injected above or a
+        UUID4 passed in explicitly by the caller — both mean the object hasn't
+        been saved to the server yet.
 
-        # _received_fields is auto-initialized to set() by PrivateAttr default_factory
-        # _is_new is auto-initialized to False by PrivateAttr default
-
-        # Set _is_new flag based on ID logic
-        # Use data["id"] directly (already computed above) rather than self.id to
-        # avoid Pydantic's attribute lookup, which can fail intermittently on
-        # Python 3.14 when model state is in flux across xdist workers.
-        obj_id: str = data["id"]
-        if is_new_object:
-            self._is_new = True
-        else:
+        Guards against non-string id values (e.g., UNSET) that can arrive when
+        a model_construct()-built instance is later re-validated as a field value.
+        """
+        obj_id = self.id
+        if isinstance(obj_id, str):
             self._is_new = len(obj_id) == 32 and not obj_id.isdigit()
+        return self
 
     @classmethod
     def new(cls: type[T], **data: Any) -> T:
