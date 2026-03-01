@@ -1537,3 +1537,25 @@ class ScraperClientMixin(StashClientProtocol):
         except Exception as e:
             self.log.error(f"Failed to batch tag studios: {e}")
             raise
+
+    async def stashbox_batch_tag_tag(
+        self,
+        input_data: dict[str, Any],
+    ) -> str:
+        """Batch tag tags from StashBox.
+
+        Args:
+            input_data: Batch tag input dictionary (StashBoxBatchTagInput)
+
+        Returns:
+            Job ID
+        """
+        try:
+            result = await self.execute(
+                fragments.STASHBOX_BATCH_TAG_TAG_MUTATION,
+                {"input": input_data},
+            )
+            return str(result.get("stashBoxBatchTagTag", ""))
+        except Exception as e:
+            self.log.error(f"Failed to batch tag tags: {e}")
+            raise

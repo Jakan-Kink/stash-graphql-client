@@ -433,3 +433,60 @@ async def test_stashbox_batch_studio_tag_error_raises(
         await respx_stash_client.stashbox_batch_studio_tag(input_dict)
 
     assert len(graphql_route.calls) == 1
+
+
+# =============================================================================
+# stashbox_batch_tag_tag tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_stashbox_batch_tag_tag(respx_stash_client: StashClient) -> None:
+    """Test batch tagging tags from StashBox."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("stashBoxBatchTagTag", "job-789"),
+            )
+        ]
+    )
+
+    input_dict = {
+        "stash_box_endpoint": "https://stashdb.org",
+        "tag_ids": ["t1", "t2"],
+    }
+
+    result = await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+
+    assert result == "job-789"
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "stashBoxBatchTagTag" in req["query"]
+    assert req["variables"]["input"]["stash_box_endpoint"] == "https://stashdb.org"
+    assert req["variables"]["input"]["tag_ids"] == ["t1", "t2"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_stashbox_batch_tag_tag_error_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test that stashbox_batch_tag_tag raises on error."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+        ]
+    )
+
+    input_dict = {
+        "stash_box_endpoint": "https://stashdb.org",
+        "tag_ids": ["t1"],
+    }
+
+    with pytest.raises(StashGraphQLError):
+        await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+
+    assert len(graphql_route.calls) == 1

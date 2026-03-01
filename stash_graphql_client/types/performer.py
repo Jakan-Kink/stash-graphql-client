@@ -154,6 +154,8 @@ class BulkPerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class PerformerDestroyInput(StashInput):

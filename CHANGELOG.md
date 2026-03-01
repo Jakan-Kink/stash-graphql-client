@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b3] - 2026-03-01
+
+### Added
+
+- **Entity lifecycle methods on `StashObject`**: `entity.delete(client)`, `EntityType.bulk_destroy(client, ids)`, `EntityType.merge(client, source_ids, destination_id)` — replaces manual mutation calls; auto-invalidates cache on delete. New `ClassVar` hooks: `__destroy_input_type__`, `__bulk_destroy_input_type__`, `__merge_input_type__`
+- **`StashEntityStore` additions**: `get_cached()` (sync cache-only lookup), `delete()` (delete + invalidate), `invalidate(entity)` overload
+- **Server capability detection** (`capabilities.py`): `ServerCapabilities` frozen dataclass; `detect_capabilities()` issues a single combined introspection query at connect time; raises `StashVersionError` for servers below appSchema 75 (pre-v0.30.0)
+- **Dynamic `FragmentStore`**: rebuilt at connect time via `fragment_store.rebuild(capabilities)` so version-gated fields are included only when supported; `StashClient.initialize()` runs detection then rebuild
+- **`StashVersionError`** exported from `stash_graphql_client`; **`StashContext.capabilities`** property exposes detected capabilities
+- **Schema alignment** (Stash appSchema 71–84):
+  - New client methods: `destroy_files()`, `reveal_file_in_file_manager()`, `reveal_folder_in_file_manager()`, `stashbox_batch_tag_tag()`
+  - Filter additions: `PerformerFilterType` (`marker_count`, `markers_filter`, `career_start`, `career_end`); `GroupFilterType` (`scene_count`, `custom_fields`); `ImageFilterType` (`phash_distance`); `FolderFilterType` (`basename`)
+  - Input additions: `BulkPerformerUpdateInput` (`career_start`, `career_end`); Scene/Gallery/Image/Group bulk inputs (`custom_fields`); `StudioCreateInput`/`UpdateInput` (`organized`); `TagsMergeInput` (`values`)
+  - Config: sprite fields on `ConfigGeneralResult`; `disableCustomizations` on `ConfigInterfaceInput`/`Result`
+  - Metadata: `GenerateMetadataInput` (`imagePhashes`, `imageIDs`, `galleryIDs`); `ScanMetadata*` (`scanGenerateImagePhashes`); `IdentifyMetadataOptions*` (`performerGenders`); `BackupDatabaseInput` (`includeBlobs`)
+  - `ScrapedTag` (`description`, `alias_list`); `TagsMergeInput` (`values`)
+- **Architecture documentation**: `docs/architecture/capabilities-and-fragments.md` replaces the obsolete `docs/api/fragments.md`
+
+### Changed
+
+- All client mixins reference `fragment_store.*` instead of module-level `fragments.*` constants
+- `invalidate()` renamed from `clear_type()` → `invalidate_type()`; `default_ttl` replaces `ttl_seconds` on `StashEntityStore`
+- `log.error()` → `log.exception()` in all exception handlers (preserves full tracebacks)
+- Subscription teardown: explicit `aclose()` in `finally` blocks prevents C-level crashes on Python 3.14+ under xdist
+
+### Fixed
+
+- **Pydantic v2 `UserWarning`** in `StashObject`: replaced `__init__` override with `mode='before'` (`_inject_uuid`) and `mode='after'` (`_set_is_new`) `model_validator`s
+- **`Performer.custom_fields`** fragment: moved to `_BASE_PERFORMER_FIELDS` (available since appSchema 71, below the library minimum of 75); was incorrectly gated at appSchema 78 alongside `career_start`/`career_end`
+- **`Folder` fragment**: `parent_folders` now injected alongside `basename` under `has_folder_basename`
+
+### Testing
+
+- `tests/types/test_delete_merge.py`, `tests/test_capabilities.py`, `tests/test_fragment_store.py`; tests for new file/scraper methods
+- `conftest.py`: `NO_PROXY=*` for xdist stability; gallery/image tests serialized with `xdist_group("gallery_image")`
+- Subscription integration test: `BaseException` wrapper around WebSocket teardown + 120 s timeout override
+
 ## [0.11.0b2] - 2026-02-15
 
 ### Added

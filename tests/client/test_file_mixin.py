@@ -877,3 +877,130 @@ async def test_find_folders_error_returns_empty(
     assert len(result.folders) == 0
 
     assert len(graphql_route.calls) == 1
+
+
+# =============================================================================
+# destroy_files tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_destroy_files(respx_stash_client: StashClient) -> None:
+    """Test destroying file DB entries without deleting files from disk."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("destroyFiles", True))
+        ]
+    )
+
+    result = await respx_stash_client.destroy_files(ids=["1", "2", "3"])
+
+    assert result is True
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "destroyFiles" in req["query"]
+    assert req["variables"]["ids"] == ["1", "2", "3"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_destroy_files_error_raises(respx_stash_client: StashClient) -> None:
+    """Test that destroy_files raises on error."""
+    respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+        ]
+    )
+
+    with pytest.raises(StashGraphQLError):
+        await respx_stash_client.destroy_files(ids=["1"])
+
+
+# =============================================================================
+# reveal_file_in_file_manager tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_reveal_file_in_file_manager(respx_stash_client: StashClient) -> None:
+    """Test revealing a file in the OS file manager."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("revealFileInFileManager", True),
+            )
+        ]
+    )
+
+    result = await respx_stash_client.reveal_file_in_file_manager(id="file-42")
+
+    assert result is True
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "revealFileInFileManager" in req["query"]
+    assert req["variables"]["id"] == "file-42"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_reveal_file_in_file_manager_error_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test that reveal_file_in_file_manager raises on error."""
+    respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+        ]
+    )
+
+    with pytest.raises(StashGraphQLError):
+        await respx_stash_client.reveal_file_in_file_manager(id="file-42")
+
+
+# =============================================================================
+# reveal_folder_in_file_manager tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_reveal_folder_in_file_manager(respx_stash_client: StashClient) -> None:
+    """Test revealing a folder in the OS file manager."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response("revealFolderInFileManager", True),
+            )
+        ]
+    )
+
+    result = await respx_stash_client.reveal_folder_in_file_manager(id="folder-7")
+
+    assert result is True
+
+    assert len(graphql_route.calls) == 1
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "revealFolderInFileManager" in req["query"]
+    assert req["variables"]["id"] == "folder-7"
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_reveal_folder_in_file_manager_error_raises(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test that reveal_folder_in_file_manager raises on error."""
+    respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(500, json={"errors": [{"message": "Server error"}]})
+        ]
+    )
+
+    with pytest.raises(StashGraphQLError):
+        await respx_stash_client.reveal_folder_in_file_manager(id="folder-7")

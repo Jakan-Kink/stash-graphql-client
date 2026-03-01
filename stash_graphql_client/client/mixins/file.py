@@ -369,6 +369,75 @@ class FileClientMixin(StashClientProtocol):
             self.log.error(f"Failed to delete files: {e}")
             raise
 
+    async def destroy_files(self, ids: list[str]) -> bool:
+        """Destroy file database entries without deleting files from disk.
+
+        Unlike delete_files, this only removes the DB entry. The file remains
+        on disk and will be re-scanned if the path is still monitored.
+
+        Args:
+            ids: List of file IDs to destroy
+
+        Returns:
+            True if the operation was successful
+
+        Raises:
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.DESTROY_FILES_MUTATION,
+                {"ids": ids},
+            )
+            return result.get("destroyFiles") is True
+        except Exception as e:
+            self.log.error(f"Failed to destroy files: {e}")
+            raise
+
+    async def reveal_file_in_file_manager(self, id: str) -> bool:
+        """Open the file's containing folder in the OS file manager.
+
+        Args:
+            id: File ID to reveal
+
+        Returns:
+            True if the operation was accepted by the server
+
+        Raises:
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.REVEAL_FILE_IN_FILE_MANAGER_MUTATION,
+                {"id": id},
+            )
+            return result.get("revealFileInFileManager") is True
+        except Exception as e:
+            self.log.error(f"Failed to reveal file in file manager: {e}")
+            raise
+
+    async def reveal_folder_in_file_manager(self, id: str) -> bool:
+        """Open the folder in the OS file manager.
+
+        Args:
+            id: Folder ID to reveal
+
+        Returns:
+            True if the operation was accepted by the server
+
+        Raises:
+            gql.TransportError: If the request fails
+        """
+        try:
+            result = await self.execute(
+                fragments.REVEAL_FOLDER_IN_FILE_MANAGER_MUTATION,
+                {"id": id},
+            )
+            return result.get("revealFolderInFileManager") is True
+        except Exception as e:
+            self.log.error(f"Failed to reveal folder in file manager: {e}")
+            raise
+
     async def find_folder(
         self,
         id: str | None = None,

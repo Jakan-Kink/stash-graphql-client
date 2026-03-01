@@ -442,6 +442,9 @@ class BulkGroupUpdateInput(StashInput):
     sub_groups: BulkUpdateGroupDescriptionsInput | None | UnsetType = (
         UNSET  # BulkUpdateGroupDescriptionsInput
     )
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 82)
+    )
 
 
 class ReorderSubGroupsInput(StashInput):

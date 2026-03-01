@@ -352,6 +352,7 @@ class CacheEntry(Generic[T]):
 class StashEntityStore:
     """
     Identity map and caching layer for Stash entities.
+    StashEntityStore is a pure cache — it has no global side effects on construction.
     """
 
     def __init__(self, client: StashClient, default_ttl: timedelta | int | None = None):
@@ -363,10 +364,24 @@ class StashEntityStore:
 
         # Thread safety
         self._lock = RLock()
-
-        # Wire up store to StashObject
-        StashObject._store = self
 ```
+
+The identity map is activated by `StashContext`, which creates the store **and** wires it to
+`StashObject` as part of client initialization, then un-wires it on close:
+
+```python
+# StashContext.get_client() — called on __aenter__
+self._store = StashEntityStore(self._client)
+StashObject._store = self._store   # ← activates identity map
+
+# StashContext.close() — called when ref_count reaches 0
+self._store.invalidate_all()
+StashObject._store = None          # ← deactivates identity map
+```
+
+`StashEntityStore.__init__` deliberately does **not** set `StashObject._store` so that the
+store can be constructed without global side effects. `StashContext` owns the wiring because
+it also owns the cleanup.
 
 **Key design decisions:**
 

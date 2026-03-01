@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from .base import FromGraphQLMixin, StashInput
 from .enums import (
+    GenderEnum,
     IdentifyFieldStrategy,
     ImportDuplicateEnum,
     ImportMissingRefEnum,
@@ -61,6 +62,13 @@ class GenerateMetadataInput(StashInput):
     interactiveHeatmapsSpeeds: bool | UnsetType = UNSET  # Boolean
     imageThumbnails: bool | UnsetType = UNSET  # Boolean
     clipPreviews: bool | UnsetType = UNSET  # Boolean
+    imagePhashes: bool | UnsetType = UNSET  # Boolean (appSchema >= 84)
+    imageIDs: list[str] | None | UnsetType = (
+        UNSET  # [ID!] (image ids to generate for) (appSchema >= 84)
+    )
+    galleryIDs: list[str] | None | UnsetType = (
+        UNSET  # [ID!] (gallery ids to generate for) (appSchema >= 84)
+    )
     sceneIDs: list[str] | None | UnsetType = UNSET  # [ID!] (scene ids to generate for)
     markerIDs: list[str] | None | UnsetType = (
         UNSET  # [ID!] (marker ids to generate for)
@@ -144,6 +152,9 @@ class ScanMetadataInput(StashInput):
     scanGenerateClipPreviews: bool | None | UnsetType = (
         UNSET  # Boolean (Generate image clip previews during scan)
     )
+    scanGenerateImagePhashes: bool | None | UnsetType = (
+        UNSET  # Boolean (Generate image phashes during scan) (appSchema >= 84)
+    )
     filter: ScanMetaDataFilterInput | None | UnsetType = (
         UNSET  # ScanMetaDataFilterInput (Filter options for the scan)
     )
@@ -175,6 +186,9 @@ class ScanMetadataOptions(BaseModel):
     )
     scanGenerateClipPreviews: bool | UnsetType = (
         UNSET  # Boolean! (Generate image clip previews during scan)
+    )
+    scanGenerateImagePhashes: bool | UnsetType = (
+        UNSET  # Boolean! (Generate image phashes during scan) (appSchema >= 84)
     )
 
 
@@ -279,6 +293,9 @@ class IdentifyMetadataOptionsInput(StashInput):
     skipSingleNamePerformerTag: str | None | UnsetType = (
         UNSET  # String (tag to tag skipped single name performers with)
     )
+    performerGenders: list[GenderEnum] | None | UnsetType = (
+        UNSET  # [GenderEnum!] (only identify performers with these genders) (appSchema >= 84)
+    )
 
 
 class IdentifyFieldOptions(BaseModel):
@@ -315,6 +332,9 @@ class IdentifyMetadataOptions(BaseModel):
     )
     skipSingleNamePerformerTag: str | None | UnsetType = (
         UNSET  # String (tag to tag skipped single name performers with)
+    )
+    performerGenders: list[GenderEnum] | None | UnsetType = (
+        UNSET  # [GenderEnum!] (only identify performers with these genders) (appSchema >= 84)
     )
 
 
@@ -358,6 +378,9 @@ class BackupDatabaseInput(StashInput):
     """Input for database backup from schema/types/metadata.graphql."""
 
     download: bool | None | UnsetType = UNSET  # Boolean
+    include_blobs: bool | None | UnsetType = Field(
+        default=UNSET, alias="includeBlobs"
+    )  # Boolean (appSchema >= 84)
 
 
 class AnonymiseDatabaseInput(StashInput):

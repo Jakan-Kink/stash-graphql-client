@@ -145,6 +145,7 @@ class SceneDestroyInput(StashInput):
     id: str  # ID!
     delete_file: bool | None | UnsetType = UNSET  # Boolean
     delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class ScenesDestroyInput(StashInput):
@@ -153,6 +154,7 @@ class ScenesDestroyInput(StashInput):
     ids: list[str] | UnsetType = UNSET  # [ID!]!
     delete_file: bool | None | UnsetType = UNSET  # Boolean
     delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class SceneMergeInput(StashInput):
@@ -476,6 +478,9 @@ class BulkSceneUpdateInput(StashInput):
     )
     group_ids: BulkUpdateIds | None | UnsetType = (
         UNSET  # BulkUpdateIds (snake_case in schema)
+    )
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
     )
 
 

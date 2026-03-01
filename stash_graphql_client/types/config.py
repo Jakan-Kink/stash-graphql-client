@@ -203,6 +203,21 @@ class ConfigGeneralInput(StashInput):
     plugin_package_sources: list[Any] | None | UnsetType = Field(
         default=UNSET, alias="pluginPackageSources"
     )  # [PackageSourceInput!]
+    sprite_screenshot_size: int | None | UnsetType = Field(
+        default=UNSET, alias="spriteScreenshotSize"
+    )  # Int (appSchema >= 84)
+    use_custom_sprite_interval: bool | None | UnsetType = Field(
+        default=UNSET, alias="useCustomSpriteInterval"
+    )  # Boolean (appSchema >= 84)
+    sprite_interval: float | None | UnsetType = Field(
+        default=UNSET, alias="spriteInterval"
+    )  # Float (appSchema >= 84)
+    minimum_sprites: int | None | UnsetType = Field(
+        default=UNSET, alias="minimumSprites"
+    )  # Int (appSchema >= 84)
+    maximum_sprites: int | None | UnsetType = Field(
+        default=UNSET, alias="maximumSprites"
+    )  # Int (appSchema >= 84)
 
     @model_validator(mode="after")
     def _reject_path_modifications(self):
@@ -380,6 +395,21 @@ class ConfigGeneralResult(FromGraphQLMixin, BaseModel):
     plugin_package_sources: list[Any] | UnsetType = Field(
         default=UNSET, alias="pluginPackageSources"
     )  # [PackageSource!]!
+    sprite_screenshot_size: int | UnsetType = Field(
+        default=UNSET, alias="spriteScreenshotSize"
+    )  # Int! (appSchema >= 84)
+    use_custom_sprite_interval: bool | UnsetType = Field(
+        default=UNSET, alias="useCustomSpriteInterval"
+    )  # Boolean! (appSchema >= 84)
+    sprite_interval: float | UnsetType = Field(
+        default=UNSET, alias="spriteInterval"
+    )  # Float! (appSchema >= 84)
+    minimum_sprites: int | UnsetType = Field(
+        default=UNSET, alias="minimumSprites"
+    )  # Int! (appSchema >= 84)
+    maximum_sprites: int | UnsetType = Field(
+        default=UNSET, alias="maximumSprites"
+    )  # Int! (appSchema >= 84)
 
 
 class ConfigDisableDropdownCreateInput(StashInput):
@@ -503,6 +533,9 @@ class ConfigInterfaceInput(StashInput):
     notifications_enabled: bool | None | UnsetType = Field(
         default=UNSET, alias="notificationsEnabled"
     )  # Boolean
+    disable_customizations: bool | None | UnsetType = Field(
+        default=UNSET, alias="disableCustomizations"
+    )  # Boolean (appSchema >= 84)
 
 
 class ConfigDisableDropdownCreate(FromGraphQLMixin, BaseModel):
@@ -584,6 +617,9 @@ class ConfigInterfaceResult(FromGraphQLMixin, BaseModel):
     use_stash_hosted_funscript: bool | None | UnsetType = Field(
         default=UNSET, alias="useStashHostedFunscript"
     )  # Boolean
+    disable_customizations: bool | None | UnsetType = Field(
+        default=UNSET, alias="disableCustomizations"
+    )  # Boolean (appSchema >= 84)
 
 
 class ConfigDLNAInput(StashInput):

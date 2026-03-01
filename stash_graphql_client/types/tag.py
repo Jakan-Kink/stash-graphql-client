@@ -84,6 +84,9 @@ class TagsMergeInput(StashInput):
 
     source: list[str]  # [ID!]!
     destination: str  # ID!
+    values: TagUpdateInput | None | UnsetType = (
+        UNSET  # TagUpdateInput (appSchema >= 84)
+    )
 
 
 class Tag(StashObject):

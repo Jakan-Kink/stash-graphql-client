@@ -166,6 +166,7 @@ class GalleryDestroyInput(StashInput):
     ids: list[str]  # [ID!]!
     delete_file: bool | None | UnsetType = UNSET  # Boolean
     delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class Gallery(StashObject):
@@ -440,6 +441,9 @@ class BulkGalleryUpdateInput(StashInput):
     studio_id: str | None | UnsetType = UNSET  # ID
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     performer_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 81)
+    )
 
 
 class FindGalleriesResultType(StashResult):

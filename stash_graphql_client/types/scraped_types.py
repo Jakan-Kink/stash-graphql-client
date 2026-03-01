@@ -77,6 +77,10 @@ class ScrapedTag(FromGraphQLMixin, BaseModel):
     remote_site_id: str | None | UnsetType = Field(
         default=UNSET, alias="remoteSiteID"
     )  # String - Remote site ID, if applicable
+    description: str | None | UnsetType = UNSET  # String (appSchema >= 84)
+    alias_list: list[str] | None | UnsetType = Field(
+        default=UNSET, alias="aliasList"
+    )  # [String!] (appSchema >= 84)
 
 
 class ScrapedStudio(FromGraphQLMixin, BaseModel):

@@ -385,58 +385,47 @@ class Scene(StashObject):
             await self.save()
 ```
 
-### Filter Query Helpers
+### Filter Query Relationships (Studio, Performer, etc.)
+
+Some inverse relationships — like "all scenes for a studio" — aren't direct fields on the entity.
+Studio has a `scene_count` resolver field but no `scenes` list. Querying scenes by studio requires
+a filter query via the client or store.
+
+**Using the client directly:**
 
 ```python
-class Studio(StashObject):
-    async def get_scenes(
-        self,
-        page: int = 1,
-        per_page: int = 40,
-        sort: str = "date",
-        direction: str = "DESC",
-        **additional_filters
-    ) -> "FindScenesResultType":
-        """Query all scenes for this studio using filter-based query.
+# All scenes for a studio (paginated)
+result = await client.find_scenes(
+    filter={"page": 1, "per_page": 40, "sort": "date", "direction": "DESC"},
+    scene_filter={"studios": {"value": [studio.id], "modifier": "INCLUDES"}},
+)
+print(f"{result.count} scenes, first page: {result.scenes}")
 
-        This is more powerful than a direct field since it supports:
-        - Pagination
-        - Sorting
-        - Additional filters
-
-        Args:
-            page: Page number (1-indexed)
-            per_page: Results per page
-            sort: Sort field (date, title, rating, etc.)
-            direction: Sort direction (ASC/DESC)
-            **additional_filters: Additional scene filters
-
-        Returns:
-            FindScenesResultType with count and scenes
-        """
-        from .client import StashClient  # Avoid circular import
-
-        client = self._get_client()
-        return await client.find_scenes(
-            filter={"page": page, "per_page": per_page, "sort": sort, "direction": direction},
-            scene_filter={"studios": {"value": [self.id], "modifier": "INCLUDES"}, **additional_filters}
-        )
-
-    async def get_scene_count(self) -> int:
-        """Get count of scenes for this studio (uses resolver field)."""
-        # If already loaded, return cached
-        if self.scene_count is not UNSET:
-            return self.scene_count
-
-        # Otherwise re-fetch with scene_count field
-        client = self._get_client()
-        fresh = await client.find_studio(self.id, fields=["scene_count"])
-        return fresh.scene_count
+# Just the scene count (populate the resolver field)
+await store.populate(studio, fields=["scene_count"])
+print(studio.scene_count)
 ```
 
-### Complex Object Helpers
+**Streaming over a large set with `populated_filter_iter`:**
 
-> **Note**: The Group convenience helpers shown below are planned for future implementation. Currently, manage group relationships using direct field assignment with `containing_groups` and `sub_groups` fields. See [Quick Reference - Convenience Helpers](../reference/quick-reference.md#convenience-helper-methods) for currently implemented helpers.
+```python
+# Iterate all unorganized scenes for a studio, populating files as you go
+async for scene in store.populated_filter_iter(
+    Scene,
+    required_fields=["files__path"],
+    predicate=lambda s: (
+        s.studio is not None
+        and s.studio.id == studio.id
+        and not s.organized
+    ),
+):
+    print(scene.files[0].path)
+```
+
+> **Note**: Per-entity lazy-loader methods (`studio.get_scenes()`, `studio.get_scene_count()`)
+> are not implemented. Use the client filter queries and store methods shown above instead.
+
+### Complex Object Helpers
 
 ```python
 class Group(StashObject):

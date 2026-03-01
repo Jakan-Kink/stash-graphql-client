@@ -41,6 +41,7 @@ class StudioCreateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
     custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 76)
 
 
@@ -62,6 +63,7 @@ class StudioUpdateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
     custom_fields: CustomFieldsInput | None | UnsetType = (
         UNSET  # CustomFieldsInput (appSchema >= 76)
     )
@@ -230,6 +232,7 @@ class BulkStudioUpdateInput(StashInput):
     details: str | None | UnsetType = UNSET  # String
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class FindStudiosResultType(StashResult):

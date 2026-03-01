@@ -82,6 +82,7 @@ class ImageDestroyInput(StashInput):
     id: str  # ID!
     delete_file: bool | None | UnsetType = UNSET  # Boolean
     delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class ImagesDestroyInput(StashInput):
@@ -90,6 +91,7 @@ class ImagesDestroyInput(StashInput):
     ids: list[str] | UnsetType = UNSET  # [ID!]!
     delete_file: bool | None | UnsetType = UNSET  # Boolean
     delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class Image(StashObject):
@@ -288,6 +290,9 @@ class BulkImageUpdateInput(StashInput):
     performer_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     gallery_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 83)
+    )
 
 
 class FindImagesResultType(StashResult):

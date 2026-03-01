@@ -386,7 +386,11 @@ _BASE_PERFORMER_FIELDS = """
         __typename
         id
     }
+    custom_fields
 """
+# NOTE: custom_fields is a base field (no capability gate needed).
+# It was added in Stash migration 71 — below the library's MIN_SUPPORTED_APP_SCHEMA of 75,
+# so it is present on every server this library supports.
 PERFORMER_FIELDS = _BASE_PERFORMER_FIELDS
 
 # Studio fragments
@@ -1877,6 +1881,30 @@ mutation StashBoxBatchStudioTag($input: StashBoxBatchTagInput!) {
 }
 """
 
+STASHBOX_BATCH_TAG_TAG_MUTATION = """
+mutation StashBoxBatchTagTag($input: StashBoxBatchTagInput!) {
+    stashBoxBatchTagTag(input: $input)
+}
+"""
+
+DESTROY_FILES_MUTATION = """
+mutation DestroyFiles($ids: [ID!]!) {
+    destroyFiles(ids: $ids)
+}
+"""
+
+REVEAL_FILE_IN_FILE_MANAGER_MUTATION = """
+mutation RevealFileInFileManager($id: ID!) {
+    revealFileInFileManager(id: $id)
+}
+"""
+
+REVEAL_FOLDER_IN_FILE_MANAGER_MUTATION = """
+mutation RevealFolderInFileManager($id: ID!) {
+    revealFolderInFileManager(id: $id)
+}
+"""
+
 # =============================================================================
 # DLNA Operations
 # =============================================================================
@@ -2056,7 +2084,7 @@ class FragmentStore:
         # -- Performer --
         performer = _BASE_PERFORMER_FIELDS
         if caps.has_performer_career_start_end:
-            performer += "    career_start\n    career_end\n    custom_fields\n"
+            performer += "    career_start\n    career_end\n"
         self.PERFORMER_FIELDS = performer
 
         # -- Studio --
@@ -2096,6 +2124,10 @@ class FragmentStore:
         folder = _BASE_FOLDER_FIELDS
         if caps.has_folder_basename:
             folder = _inject_named_fragment_fields(folder, "    basename")
+            folder = _inject_named_fragment_fields(
+                folder,
+                "    parent_folders {\n        __typename\n        id\n        path\n    }",
+            )
         self.FOLDER_FIELDS = folder
 
     def _build_queries(self) -> None:
