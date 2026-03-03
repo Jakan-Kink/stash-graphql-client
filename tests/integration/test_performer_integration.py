@@ -152,12 +152,13 @@ async def test_create_and_find_performer(
 ) -> None:
     """Test creating a performer and retrieving it by ID."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         performer = await stash_client.create_performer(
             Performer(name="SGC Inttest Create")
         )
+        cleanup["performers"].append(performer.id)
 
         assert len(calls) == 1, "Expected 1 GraphQL call for create_performer"
         assert "performerCreate" in calls[0]["query"]
@@ -188,12 +189,13 @@ async def test_update_performer(
 ) -> None:
     """Test creating a performer and updating their details."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         performer = await stash_client.create_performer(
             Performer(name="SGC Inttest Update")
         )
+        cleanup["performers"].append(performer.id)
         assert performer.id is not None
 
         calls.clear()
@@ -218,12 +220,13 @@ async def test_performer_destroy(
 ) -> None:
     """Test creating a performer and then destroying them."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         performer = await stash_client.create_performer(
             Performer(name="SGC Inttest Destroy")
         )
+        cleanup["performers"].append(performer.id)
         assert performer.id is not None
 
         calls.clear()
@@ -253,7 +256,7 @@ async def test_performers_destroy_bulk(
 ) -> None:
     """Test bulk-destroying multiple performers in a single call."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         perf_a = await stash_client.create_performer(
@@ -262,6 +265,8 @@ async def test_performers_destroy_bulk(
         perf_b = await stash_client.create_performer(
             Performer(name="SGC Inttest Bulk Destroy B")
         )
+        cleanup["performers"].append(perf_a.id)
+        cleanup["performers"].append(perf_b.id)
         assert perf_a.id is not None
         assert perf_b.id is not None
 
@@ -287,7 +292,7 @@ async def test_bulk_performer_update(
 ) -> None:
     """Test updating multiple performers' details in a single bulk call."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         perf_a = await stash_client.create_performer(
@@ -296,6 +301,8 @@ async def test_bulk_performer_update(
         perf_b = await stash_client.create_performer(
             Performer(name="SGC Inttest Bulk Update B")
         )
+        cleanup["performers"].append(perf_a.id)
+        cleanup["performers"].append(perf_b.id)
         assert perf_a.id is not None
         assert perf_b.id is not None
 
@@ -331,7 +338,7 @@ async def test_performer_merge(
         )
 
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         source = await stash_client.create_performer(
@@ -340,6 +347,8 @@ async def test_performer_merge(
         dest = await stash_client.create_performer(
             Performer(name="SGC Inttest Merge Dest")
         )
+        cleanup["performers"].append(source.id)
+        cleanup["performers"].append(dest.id)
         assert source.id is not None
         assert dest.id is not None
 

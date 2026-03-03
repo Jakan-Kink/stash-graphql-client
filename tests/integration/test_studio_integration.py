@@ -128,7 +128,7 @@ async def test_create_and_find_studio(
 ) -> None:
     """Test creating a studio and retrieving it by ID."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         studio = await stash_client.create_studio(
@@ -163,7 +163,7 @@ async def test_create_and_find_studio(
 async def test_update_studio(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test creating a studio and updating its details."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         studio = await stash_client.create_studio(
@@ -192,7 +192,7 @@ async def test_update_studio(stash_client: StashClient, stash_cleanup_tracker) -
 async def test_studio_destroy(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test creating a studio and then destroying it."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         studio = await stash_client.create_studio(
@@ -227,7 +227,7 @@ async def test_studios_destroy_bulk(
 ) -> None:
     """Test bulk-destroying multiple studios in a single call."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         studio_a = await stash_client.create_studio(
@@ -268,7 +268,7 @@ async def test_bulk_studio_update(
         pytest.skip("Server does not support bulkStudioUpdate")
 
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         studio_a = await stash_client.create_studio(

@@ -6,11 +6,7 @@ Tests scene marker operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
-from stash_graphql_client.types import (
-    BulkSceneMarkerUpdateInput,
-    SceneMarker,
-    Tag,
-)
+from stash_graphql_client.types import BulkSceneMarkerUpdateInput, SceneMarker, Tag
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import capture_graphql_calls
 
@@ -147,7 +143,7 @@ async def test_create_update_destroy_marker(
 ) -> None:
     """Test full marker lifecycle: create, update, destroy."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Find an existing scene to attach the marker to
@@ -221,7 +217,7 @@ async def test_bulk_scene_marker_update(
         pytest.skip("Server does not support bulkSceneMarkerUpdate")
 
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Find an existing scene to attach markers to

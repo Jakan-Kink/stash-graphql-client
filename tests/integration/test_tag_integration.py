@@ -119,10 +119,11 @@ async def test_create_and_find_tag(
 ) -> None:
     """Test creating a tag and retrieving it by ID."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         tag = await stash_client.create_tag(Tag(name="sgc-inttest-create"))
+        cleanup["tags"].append(tag.id)
 
         assert len(calls) == 1, "Expected 1 GraphQL call for create_tag"
         assert "tagCreate" in calls[0]["query"]
@@ -151,10 +152,11 @@ async def test_create_and_find_tag(
 async def test_update_tag(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test creating a tag and updating its description."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         tag = await stash_client.create_tag(Tag(name="sgc-inttest-update"))
+        cleanup["tags"].append(tag.id)
         assert tag.id is not None
 
         calls.clear()
@@ -177,10 +179,11 @@ async def test_update_tag(stash_client: StashClient, stash_cleanup_tracker) -> N
 async def test_tag_destroy(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test creating a tag and then destroying it."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         tag = await stash_client.create_tag(Tag(name="sgc-inttest-destroy"))
+        cleanup["tags"].append(tag.id)
         assert tag.id is not None
 
         calls.clear()
@@ -210,11 +213,13 @@ async def test_tags_destroy_bulk(
 ) -> None:
     """Test bulk-destroying multiple tags in a single call."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         tag_a = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-destroy-a"))
         tag_b = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-destroy-b"))
+        cleanup["tags"].append(tag_a.id)
+        cleanup["tags"].append(tag_b.id)
         assert tag_a.id is not None
         assert tag_b.id is not None
 
@@ -240,11 +245,13 @@ async def test_bulk_tag_update(
 ) -> None:
     """Test updating multiple tags' description in a single bulk call."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         tag_a = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-a"))
         tag_b = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-b"))
+        cleanup["tags"].append(tag_a.id)
+        cleanup["tags"].append(tag_b.id)
         assert tag_a.id is not None
         assert tag_b.id is not None
 
@@ -271,11 +278,13 @@ async def test_bulk_tag_update(
 async def test_tags_merge(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test merging a source tag into a destination tag."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         source = await stash_client.create_tag(Tag(name="sgc-inttest-merge-source"))
         dest = await stash_client.create_tag(Tag(name="sgc-inttest-merge-dest"))
+        cleanup["tags"].append(source.id)
+        cleanup["tags"].append(dest.id)
         assert source.id is not None
         assert dest.id is not None
 

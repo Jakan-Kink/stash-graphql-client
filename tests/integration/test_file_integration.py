@@ -6,6 +6,7 @@ Tests file and folder operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.errors import StashGraphQLError
 from tests.fixtures import capture_graphql_calls
 
 
@@ -230,7 +231,12 @@ async def test_reveal_file_in_file_manager(
         file_id = result.files[0].id
         calls.clear()
 
-        outcome = await stash_client.reveal_file_in_file_manager(file_id)
+        try:
+            outcome = await stash_client.reveal_file_in_file_manager(file_id)
+        except StashGraphQLError as e:
+            if "access denied" in str(e).lower():
+                pytest.skip("Server denied revealFileInFileManager (headless/Docker)")
+            raise
 
         assert len(calls) == 1, (
             "Expected 1 GraphQL call for reveal_file_in_file_manager"
@@ -267,7 +273,12 @@ async def test_reveal_folder_in_file_manager(
         folder_id = result.folders[0].id
         calls.clear()
 
-        outcome = await stash_client.reveal_folder_in_file_manager(folder_id)
+        try:
+            outcome = await stash_client.reveal_folder_in_file_manager(folder_id)
+        except StashGraphQLError as e:
+            if "access denied" in str(e).lower():
+                pytest.skip("Server denied revealFolderInFileManager (headless/Docker)")
+            raise
 
         assert len(calls) == 1, (
             "Expected 1 GraphQL call for reveal_folder_in_file_manager"

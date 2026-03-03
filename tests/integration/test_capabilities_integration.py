@@ -618,7 +618,7 @@ async def test_performer_career_fields_propagate_from_server(
     caps = stash_client._capabilities
     assert caps is not None
 
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         performer = await stash_client.create_performer(
             Performer(name="SGC Caps E2E Performer")
         )
@@ -673,7 +673,7 @@ async def test_studio_organized_field_propagates_from_server(
     caps = stash_client._capabilities
     assert caps is not None
 
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         studio = await stash_client.create_studio(
             Studio(name="SGC Caps E2E Studio Organized")
         )
@@ -714,7 +714,7 @@ async def test_studio_custom_fields_propagate_from_server(
     caps = stash_client._capabilities
     assert caps is not None
 
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         studio = await stash_client.create_studio(
             Studio(name="SGC Caps E2E Studio Custom Fields")
         )
@@ -750,7 +750,7 @@ async def test_tag_custom_fields_propagate_from_server(
     caps = stash_client._capabilities
     assert caps is not None
 
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         tag = await stash_client.create_tag(Tag(name="sgc-caps-e2e-tag-custom-fields"))
         cleanup["tags"].append(tag.id)
         assert tag.id is not None
@@ -789,7 +789,7 @@ async def test_group_custom_fields_propagate_from_server(
     caps = stash_client._capabilities
     assert caps is not None
 
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         group = await stash_client.create_group(
             Group(name="SGC Caps E2E Group Custom Fields")
         )
