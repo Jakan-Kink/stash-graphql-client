@@ -404,6 +404,13 @@ _BASE_STUDIO_FIELDS = """
     image_path
     aliases
     details
+    rating100
+    favorite
+    stash_ids {
+        __typename
+        endpoint
+        stash_id
+    }
     tags {
         __typename
         id

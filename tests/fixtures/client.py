@@ -200,7 +200,9 @@ async def respx_stash_client(
             if "systemStatus" in query and "__type" in query:
                 return httpx.Response(
                     200,
-                    json=create_capability_response(has_dup=True),
+                    json=create_capability_response(
+                        has_duplication_criterion_input=True
+                    ),
                 )
 
             return httpx.Response(200, json={"data": {}})

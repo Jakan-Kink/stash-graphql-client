@@ -803,7 +803,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Guards against non-string id values (e.g., UNSET) that can arrive when
         a model_construct()-built instance is later re-validated as a field value.
         """
-        obj_id = self.id
+        obj_id = getattr(self, "id", None)
         if isinstance(obj_id, str):
             self._is_new = len(obj_id) == 32 and not obj_id.isdigit()
         return self
@@ -1723,10 +1723,11 @@ class StashObject(FromGraphQLMixin, BaseModel):
             else await self._to_input_dirty()
         )
 
-        # Serialize to dict - single point of serialization
-        result_dict: dict[str, Any] = input_obj.model_dump(
-            exclude_none=True, exclude={"client_mutation_id"}
-        )
+        # Serialize to dict - exclude UNSET fields, keep None (to clear values)
+        # StashInput.to_graphql() builds an explicit exclude set for UNSET fields.
+        # model_dump(exclude_none=True) would only exclude None, leaving UNSET
+        # objects in the dict that cannot be JSON-serialized by the gql transport.
+        result_dict: dict[str, Any] = input_obj.to_graphql()
         log.debug(f"Converted {self.__type_name__} to input: {result_dict}")
         return result_dict
 

@@ -160,7 +160,7 @@ class TestFragmentStoreRebuild:
     def test_rebuild_max_schema_all_fields(self) -> None:
         """rebuild(appSchema=84) adds all gated fields."""
         store = FragmentStore()
-        caps = make_server_capabilities(84, has_dup=True)
+        caps = make_server_capabilities(84, has_duplication_criterion_input=True)
         store.rebuild(caps)
 
         # Scene gets custom_fields
@@ -300,7 +300,7 @@ class TestFragmentStoreQueries:
     def test_queries_reflect_rebuilt_fields(self) -> None:
         """Queries embed the rebuilt fields, not the base ones."""
         store = FragmentStore()
-        caps = make_server_capabilities(84, has_dup=True)
+        caps = make_server_capabilities(84, has_duplication_criterion_input=True)
         store.rebuild(caps)
 
         # Scene queries should contain custom_fields via SceneFragment

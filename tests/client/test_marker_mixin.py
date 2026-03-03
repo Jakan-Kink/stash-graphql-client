@@ -554,8 +554,15 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneMarkerCreate" in req["query"]
-    assert req["variables"]["input"]["title"] == "New Chapter"
-    assert req["variables"]["input"]["seconds"] == 45.0
+    inp = req["variables"]["input"]
+    assert inp["title"] == "New Chapter"
+    assert inp["seconds"] == 45.0
+    # These required fields must be serialized — not silently dropped as UNSET
+    assert inp["scene_id"] == "scene_123"
+    assert inp["primary_tag_id"] == "tag_123"
+    # Optional UNSET fields must NOT appear in the payload
+    assert "end_seconds" not in inp
+    assert "tag_ids" not in inp
 
 
 @pytest.mark.asyncio

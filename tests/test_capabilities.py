@@ -101,8 +101,21 @@ class TestServerCapabilitiesProperties:
 
     @pytest.mark.unit
     def test_max_schema_all_capabilities(self) -> None:
-        """appSchema 84 — all capabilities enabled."""
-        caps = make_server_capabilities(84, has_dup=True)
+        """Very high appSchema — all schema-gated capabilities enabled."""
+        caps = make_server_capabilities(
+            9999,
+            has_duplication_criterion_input=True,
+            has_performer_merge_input=True,
+            has_bulk_scene_marker_update=True,
+            has_bulk_studio_update=True,
+            has_destroy_files=True,
+            has_reveal_file_in_file_manager=True,
+            has_reveal_folder_in_file_manager=True,
+            has_stashbox_batch_tag_tag=True,
+            has_stashbox_batch_performer_tag=True,
+            has_stashbox_batch_studio_tag=True,
+            has_scrape_single_tag=True,
+        )
         assert caps.has_studio_custom_fields
         assert caps.has_tag_custom_fields
         assert caps.has_performer_career_start_end
@@ -113,14 +126,30 @@ class TestServerCapabilitiesProperties:
         assert caps.has_image_custom_fields
         assert caps.has_folder_basename
         assert caps.uses_new_duplication_type
+        assert caps.has_performer_merge_input
+        assert caps.has_bulk_scene_marker_update
+        assert caps.has_bulk_studio_update
+        assert caps.has_destroy_files
+        assert caps.has_reveal_file_in_file_manager
+        assert caps.has_reveal_folder_in_file_manager
+        assert caps.has_stashbox_batch_tag_tag
+        assert caps.has_stashbox_batch_performer_tag
+        assert caps.has_stashbox_batch_studio_tag
+        assert caps.has_scrape_single_tag
 
     @pytest.mark.unit
     def test_uses_new_duplication_type(self) -> None:
         """uses_new_duplication_type delegates to has_duplication_criterion_input."""
-        assert not make_server_capabilities(84, has_dup=False).uses_new_duplication_type
-        assert make_server_capabilities(84, has_dup=True).uses_new_duplication_type
+        assert not make_server_capabilities(
+            84, has_duplication_criterion_input=False
+        ).uses_new_duplication_type
+        assert make_server_capabilities(
+            84, has_duplication_criterion_input=True
+        ).uses_new_duplication_type
         # Independent of appSchema — purely based on __type probe
-        assert make_server_capabilities(75, has_dup=True).uses_new_duplication_type
+        assert make_server_capabilities(
+            75, has_duplication_criterion_input=True
+        ).uses_new_duplication_type
 
     @pytest.mark.unit
     def test_frozen_dataclass(self) -> None:
@@ -172,7 +201,7 @@ class TestDetectCapabilitiesViaClient:
                     json=create_capability_response(
                         app_schema=84,
                         version="v0.30.1-98-gc874bd56",
-                        has_dup=True,
+                        has_duplication_criterion_input=True,
                     ),
                 )
             )
@@ -267,12 +296,18 @@ class TestCapabilityConstants:
 
     @pytest.mark.unit
     def test_capability_query_contains_required_fields(self) -> None:
-        """The detection query probes version, systemStatus, and __type."""
+        """The detection query probes version, systemStatus, __type, Mutation, and Query fields."""
         assert "version" in CAPABILITY_DETECTION_QUERY
         assert "systemStatus" in CAPABILITY_DETECTION_QUERY
         assert "appSchema" in CAPABILITY_DETECTION_QUERY
         assert "__type" in CAPABILITY_DETECTION_QUERY
         assert "DuplicationCriterionInput" in CAPABILITY_DETECTION_QUERY
+        assert "PerformerMergeInput" in CAPABILITY_DETECTION_QUERY
+        # Mutation presence probe
+        assert "Mutation" in CAPABILITY_DETECTION_QUERY
+        assert "fields" in CAPABILITY_DETECTION_QUERY
+        # Query presence probe (for query-type features like scrapeSingleTag)
+        assert "Query" in CAPABILITY_DETECTION_QUERY
 
 
 # ---------------------------------------------------------------------------

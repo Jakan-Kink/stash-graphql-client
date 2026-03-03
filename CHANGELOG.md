@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b4] - 2026-03-02
+
+### Added
+
+- **`ServerCapabilities` — mutation/query presence detection**: `CAPABILITY_DETECTION_QUERY` now
+  also enumerates all `Mutation` and `Query` field names. Nine new raw boolean fields gate
+  version-added operations: `has_performer_merge_input`, `has_bulk_scene_marker_update`,
+  `has_bulk_studio_update`, `has_destroy_files`, `has_reveal_file_in_file_manager`,
+  `has_reveal_folder_in_file_manager`, `has_stashbox_batch_tag_tag`,
+  `has_stashbox_batch_performer_tag`, `has_stashbox_batch_studio_tag`, `has_scrape_single_tag`
+
+### Fixed
+
+- **`_BASE_STUDIO_FIELDS` missing fields**: `rating100`, `favorite`, and `stash_ids` were absent
+  from the base studio fragment; all three are now included unconditionally (present since before
+  appSchema 75)
+- **`StashObject.to_input()` UNSET serialization**: Replaced `model_dump(exclude_none=True)` with
+  `input_obj.to_graphql()` — `exclude_none=True` only strips `None`, leaving `UNSET` sentinels
+  that fail JSON serialization in the gql transport
+- **`StashObject._set_is_new` validator**: `self.id` → `getattr(self, "id", None)` to guard
+  against `AttributeError` on `model_construct()`-built instances
+
+### CI / Infrastructure
+
+- **Stash initialization step**: Both CI jobs now query `systemStatus { status }` after the
+  readiness wait and run the `setup` mutation when status is `SETUP`. The previous readiness
+  check (`version { build_time }`) responded even in pre-setup mode, causing nil pointer
+  dereferences in virtually every resolver on fresh runners.
+- **Subscription tests — ffmpeg graceful skip**: Three subscription tests now skip instead of
+  failing when `metadata_scan()` raises `ValueError` mentioning ffmpeg/ffprobe (absent from the
+  `stash:development` Docker image)
+
+### Testing
+
+- New integration tests for file, folder, marker, performer, studio, and tag operations covering
+  find/pagination, nonexistent-returns-None, full CRUD lifecycle, and bulk operations
+- `tests/integration/test_capabilities_integration.py`: 11 tests covering mutation fragment
+  spot-checks, capability flag propagation, and appSchema-derived property monotonicity
+
 ## [0.11.0b3] - 2026-03-01
 
 ### Added
@@ -810,7 +849,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b2...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b4...HEAD
+[0.11.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b3...v0.11.0b4
+[0.11.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b2...v0.11.0b3
 [0.11.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...v0.11.0b2
 [0.11.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0b1
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14

@@ -133,6 +133,54 @@ jobs:
             sleep 2
           done
 
+      - name: Initialize Stash if needed
+        run: |
+          python3 - << 'PYEOF'
+          import urllib.request, json, time, sys
+
+          GRAPHQL_URL = "http://localhost:9999/graphql"
+
+          def graphql(query, variables=None):
+              payload = {"query": query}
+              if variables:
+                  payload["variables"] = variables
+              data = json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  GRAPHQL_URL, data=data,
+                  headers={"Content-Type": "application/json"}
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  return json.loads(resp.read())
+
+          result = graphql("{ systemStatus { status } }")
+          status = result["data"]["systemStatus"]["status"]
+          print(f"Stash system status: {status}")
+
+          if status == "SETUP":
+              print("Running initial Stash setup...")
+              setup = graphql(
+                  "mutation Setup($input: SetupInput!) { setup(input: $input) }",
+                  {"input": {
+                      "configLocation": "",
+                      "stashes": [],
+                      "databaseFile": "/metadata/stash-lib.sqlite",
+                      "generatedLocation": "/generated",
+                      "cacheLocation": "/cache",
+                      "storeBlobsInDatabase": True,
+                      "blobsLocation": "",
+                  }}
+              )
+              print(f"Setup result: {setup}")
+              if setup.get("data", {}).get("setup") is True:
+                  print("Setup completed, waiting for initialization...")
+                  time.sleep(5)
+              else:
+                  print("Setup failed!", file=sys.stderr)
+                  sys.exit(1)
+          else:
+              print(f"Stash already configured (status: {status})")
+          PYEOF
+
       - name: Run tests with pytest
         run: |
           poetry run pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy -n auto
@@ -241,6 +289,54 @@ jobs:
             echo "Attempt $i/30: Stash not ready yet, waiting..."
             sleep 2
           done
+
+      - name: Initialize Stash if needed
+        run: |
+          python3 - << 'PYEOF'
+          import urllib.request, json, time, sys
+
+          GRAPHQL_URL = "http://localhost:9999/graphql"
+
+          def graphql(query, variables=None):
+              payload = {"query": query}
+              if variables:
+                  payload["variables"] = variables
+              data = json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  GRAPHQL_URL, data=data,
+                  headers={"Content-Type": "application/json"}
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  return json.loads(resp.read())
+
+          result = graphql("{ systemStatus { status } }")
+          status = result["data"]["systemStatus"]["status"]
+          print(f"Stash system status: {status}")
+
+          if status == "SETUP":
+              print("Running initial Stash setup...")
+              setup = graphql(
+                  "mutation Setup($input: SetupInput!) { setup(input: $input) }",
+                  {"input": {
+                      "configLocation": "",
+                      "stashes": [],
+                      "databaseFile": "/metadata/stash-lib.sqlite",
+                      "generatedLocation": "/generated",
+                      "cacheLocation": "/cache",
+                      "storeBlobsInDatabase": True,
+                      "blobsLocation": "",
+                  }}
+              )
+              print(f"Setup result: {setup}")
+              if setup.get("data", {}).get("setup") is True:
+                  print("Setup completed, waiting for initialization...")
+                  time.sleep(5)
+              else:
+                  print("Setup failed!", file=sys.stderr)
+                  sys.exit(1)
+          else:
+              print(f"Stash already configured (status: {status})")
+          PYEOF
 
       - name: Run tests with pytest
         run: |

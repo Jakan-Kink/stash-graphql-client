@@ -1054,11 +1054,40 @@ def create_group_description_dict(
     }
 
 
+# Registry mapping ServerCapabilities field name -> (graphql_alias, graphql_type_name).
+# Add a new entry here whenever a new __type probe is added to CAPABILITY_DETECTION_QUERY.
+_TYPE_PROBE_REGISTRY: dict[str, tuple[str, str]] = {
+    "has_duplication_criterion_input": ("_dup", "DuplicationCriterionInput"),
+    "has_performer_merge_input": ("_performer_merge", "PerformerMergeInput"),
+}
+
+# Registry mapping ServerCapabilities field name -> mutation name.
+# Add a new entry here whenever a new mutation is added to Stash that needs probing.
+# These are checked via membership in `__type(name: "Mutation") { fields { name } }`.
+_MUTATION_REGISTRY: dict[str, str] = {
+    "has_bulk_scene_marker_update": "bulkSceneMarkerUpdate",
+    "has_bulk_studio_update": "bulkStudioUpdate",
+    "has_destroy_files": "destroyFiles",
+    "has_reveal_file_in_file_manager": "revealFileInFileManager",
+    "has_reveal_folder_in_file_manager": "revealFolderInFileManager",
+    "has_stashbox_batch_tag_tag": "stashBoxBatchTagTag",
+    "has_stashbox_batch_performer_tag": "stashBoxBatchPerformerTag",
+    "has_stashbox_batch_studio_tag": "stashBoxBatchStudioTag",
+}
+
+# Registry mapping ServerCapabilities field name -> query name.
+# Add a new entry here whenever a new query is added to Stash that needs probing.
+# These are checked via membership in `__type(name: "Query") { fields { name } }`.
+_QUERY_REGISTRY: dict[str, str] = {
+    "has_scrape_single_tag": "scrapeSingleTag",
+}
+
+
 def create_capability_response(
     app_schema: int = 75,
     version: str = "v0.30.0-test",
-    has_dup: bool = False,
     status: str = "OK",
+    **type_probe_flags: bool,
 ) -> dict[str, Any]:
     """Create a capability detection GraphQL response for respx mocking.
 
@@ -1068,40 +1097,69 @@ def create_capability_response(
     Args:
         app_schema: The server's appSchema version (75 = v0.30.0 minimum).
         version: Server version string (e.g. "v0.30.0", "v0.30.1-98-gc874bd56").
-        has_dup: Whether the DuplicationCriterionInput type exists.
         status: System status string (typically "OK").
+        **type_probe_flags: Keyword flags for probes, keyed by the corresponding
+            ``ServerCapabilities`` field name.
+            e.g. ``has_duplication_criterion_input=True``,
+            ``has_performer_merge_input=True``,
+            ``has_bulk_scene_marker_update=True``.
 
     Returns:
         Complete GraphQL response dict with capability detection data.
     """
-    return {
-        "data": {
-            "version": {"version": version},
-            "systemStatus": {"appSchema": app_schema, "status": status},
-            "_dup": {"name": "DuplicationCriterionInput"} if has_dup else None,
-        }
+    data: dict[str, Any] = {
+        "version": {"version": version},
+        "systemStatus": {"appSchema": app_schema, "status": status},
     }
+    # Build __type probe fields
+    for field_name, (alias, type_name) in _TYPE_PROBE_REGISTRY.items():
+        present = type_probe_flags.get(field_name, False)
+        data[alias] = {"name": type_name} if present else None
+    # Build _mutations field from mutation registry flags
+    present_mutations = [
+        mutation_name
+        for field_name, mutation_name in _MUTATION_REGISTRY.items()
+        if type_probe_flags.get(field_name, False)
+    ]
+    data["_mutations"] = {"fields": [{"name": n} for n in present_mutations]}
+    # Build _queries field from query registry flags
+    present_queries = [
+        query_name
+        for field_name, query_name in _QUERY_REGISTRY.items()
+        if type_probe_flags.get(field_name, False)
+    ]
+    data["_queries"] = {"fields": [{"name": n} for n in present_queries]}
+    return {"data": data}
 
 
 def make_server_capabilities(
     app_schema: int = 75,
     version: str = "v0.30.0-test",
-    has_dup: bool = False,
+    **type_probe_flags: bool,
 ) -> ServerCapabilities:
     """Build a ServerCapabilities instance for testing.
 
     Args:
         app_schema: The server's appSchema version (75 = v0.30.0 minimum).
         version: Server version string.
-        has_dup: Whether the DuplicationCriterionInput type exists.
+        **type_probe_flags: Keyword flags for probes, keyed by the corresponding
+            ``ServerCapabilities`` field name.
+            e.g. ``has_duplication_criterion_input=True``,
+            ``has_performer_merge_input=True``,
+            ``has_bulk_scene_marker_update=True``.
 
     Returns:
         Frozen ServerCapabilities dataclass instance.
     """
+    all_flags = {
+        field: type_probe_flags.get(field, False)
+        for registry in (_TYPE_PROBE_REGISTRY, _MUTATION_REGISTRY, _QUERY_REGISTRY)
+        for field in registry
+    }
     return ServerCapabilities(
         app_schema=app_schema,
         version_string=version,
-        has_duplication_criterion_input=has_dup,
+        **all_flags,
     )
 
 
@@ -1109,6 +1167,8 @@ __all__ = [
     # Capability fixtures
     "create_capability_response",
     "make_server_capabilities",
+    "_MUTATION_REGISTRY",
+    "_QUERY_REGISTRY",
     # Config fixtures
     "create_config_defaults_result",
     "create_config_dlna_result",

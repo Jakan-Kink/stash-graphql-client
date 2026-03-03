@@ -8,8 +8,8 @@ The GraphQL schema files in `schema/` are reference documentation from the upstr
 # If stash-upstream remote doesn't exist yet, add it:
 git remote add stash-upstream https://github.com/stashapp/stash.git
 
-# Fetch latest upstream
-git fetch stash-upstream develop
+# Fetch latest upstream (--no-tags prevents Stash's release tags leaking into this repo)
+git fetch --no-tags stash-upstream develop
 
 # Switch to a new branch, so you can push this up to GH and pass the linting protection on main
 git checkout -b chore/schema_update

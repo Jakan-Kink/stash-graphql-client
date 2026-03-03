@@ -251,24 +251,33 @@ class TestToInputPatterns:
 
     @pytest.mark.asyncio
     async def test_to_input_excludes_unset_fields(self):
-        """to_input() should exclude UNSET fields (conceptual test)."""
-        tag = Tag(id="123", name="Test Tag")
+        """to_input() should exclude UNSET fields.
 
-        # In a future implementation with UNSET support:
-        # tag.description = UNSET  # Never touched
-        # tag.aliases = None        # Explicitly null
-        # tag.ignore_auto_tag = True  # Set to value
+        For new objects (_to_input_all path): all non-UNSET fields are included.
+        For existing objects (_to_input_dirty path): only changed fields + id.
+        """
+        # New tag (no id = UUID4 auto-assigned → _is_new=True → _to_input_all)
+        new_tag = Tag(name="Test Tag")
+        new_input = await new_tag.to_input()
 
-        input_dict = await tag.to_input()
+        # name was set, so it must appear
+        assert "name" in new_input
+        # UNSET fields must NOT appear (not JSON-serializable, and not meaningful to send)
+        assert "description" not in new_input
+        assert "aliases" not in new_input
 
-        # Should always include ID for updates
-        assert "id" in input_dict
+        # Existing tag that has changed (id="123" → numeric → not new → _to_input_dirty)
+        existing_tag = Tag(id="123", name="Original")
+        existing_tag.name = "Updated"  # Mark dirty
+        existing_input = await existing_tag.to_input()
 
-        # Should always include set fields
-        assert "name" in input_dict
-
-        # Note: Current implementation may not fully support UNSET exclusion
-        # This test demonstrates the intended pattern for future implementation
+        # ID always included for updates
+        assert "id" in existing_input
+        # Changed field included
+        assert "name" in existing_input
+        assert existing_input["name"] == "Updated"
+        # Unchanged/UNSET fields excluded
+        assert "description" not in existing_input
 
     def test_building_input_with_unset_checks(self):
         """Demonstrate pattern for building input dict with UNSET checks."""

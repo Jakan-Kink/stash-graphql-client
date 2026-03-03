@@ -19,12 +19,32 @@ if TYPE_CHECKING:
 # Minimum supported appSchema version (Stash v0.30.0)
 MIN_SUPPORTED_APP_SCHEMA = 75
 
-# Combined introspection query — fetches version info + type probes in a single round trip
+# Combined introspection query — fetches version info + type probes + mutation/query presence
+# in a single round trip.
 CAPABILITY_DETECTION_QUERY = """{
     version { version }
     systemStatus { appSchema status }
     _dup: __type(name: "DuplicationCriterionInput") { name }
+    _performer_merge: __type(name: "PerformerMergeInput") { name }
+    _mutations: __type(name: "Mutation") { fields { name } }
+    _queries: __type(name: "Query") { fields { name } }
 }"""
+
+# Mutation/query names tracked for log output. Keep in sync with the constructor
+# arguments below and with _MUTATION_REGISTRY / _QUERY_REGISTRY in the test fixtures.
+_TRACKED_MUTATIONS: frozenset[str] = frozenset(
+    {
+        "bulkSceneMarkerUpdate",
+        "bulkStudioUpdate",
+        "destroyFiles",
+        "revealFileInFileManager",
+        "revealFolderInFileManager",
+        "stashBoxBatchTagTag",
+        "stashBoxBatchPerformerTag",
+        "stashBoxBatchStudioTag",
+    }
+)
+_TRACKED_QUERIES: frozenset[str] = frozenset({"scrapeSingleTag"})
 
 
 @dataclass(frozen=True)
@@ -38,11 +58,34 @@ class ServerCapabilities:
         app_schema: The server's appSchema version number.
         version_string: The server's version string (e.g. "v0.30.0").
         has_duplication_criterion_input: Whether the DuplicationCriterionInput type exists.
+        has_performer_merge_input: Whether the PerformerMergeInput type exists (v0.30.2+).
+        has_bulk_scene_marker_update: Whether the bulkSceneMarkerUpdate mutation exists.
+        has_bulk_studio_update: Whether the bulkStudioUpdate mutation exists.
+        has_destroy_files: Whether the destroyFiles mutation exists.
+        has_reveal_file_in_file_manager: Whether the revealFileInFileManager mutation exists.
+        has_reveal_folder_in_file_manager: Whether the revealFolderInFileManager mutation exists.
+        has_stashbox_batch_tag_tag: Whether the stashBoxBatchTagTag mutation exists.
+        has_stashbox_batch_performer_tag: Whether the stashBoxBatchPerformerTag mutation exists.
+        has_stashbox_batch_studio_tag: Whether the stashBoxBatchStudioTag mutation exists.
+        has_scrape_single_tag: Whether the scrapeSingleTag query exists.
     """
 
     app_schema: int
     version_string: str
+    # __type probe fields (input type existence)
     has_duplication_criterion_input: bool
+    has_performer_merge_input: bool
+    # Mutation presence fields (Mutation.__type.fields membership)
+    has_bulk_scene_marker_update: bool
+    has_bulk_studio_update: bool
+    has_destroy_files: bool
+    has_reveal_file_in_file_manager: bool
+    has_reveal_folder_in_file_manager: bool
+    has_stashbox_batch_tag_tag: bool
+    has_stashbox_batch_performer_tag: bool
+    has_stashbox_batch_studio_tag: bool
+    # Query presence fields (Query.__type.fields membership)
+    has_scrape_single_tag: bool
 
     # --- Derived capability properties (based on appSchema) ---
 
@@ -148,16 +191,38 @@ async def detect_capabilities(
 
     # Detect type existence via __type probes
     has_dup = result.get("_dup") is not None
+    has_performer_merge = result.get("_performer_merge") is not None
+
+    # Detect mutation presence via Mutation type field list
+    mutations_data = result.get("_mutations") or {}
+    mutation_names: set[str] = {f["name"] for f in (mutations_data.get("fields") or [])}
+
+    # Detect query presence via Query type field list
+    queries_data = result.get("_queries") or {}
+    query_names: set[str] = {f["name"] for f in (queries_data.get("fields") or [])}
 
     capabilities = ServerCapabilities(
         app_schema=app_schema,
         version_string=version_string,
         has_duplication_criterion_input=has_dup,
+        has_performer_merge_input=has_performer_merge,
+        has_bulk_scene_marker_update="bulkSceneMarkerUpdate" in mutation_names,
+        has_bulk_studio_update="bulkStudioUpdate" in mutation_names,
+        has_destroy_files="destroyFiles" in mutation_names,
+        has_reveal_file_in_file_manager="revealFileInFileManager" in mutation_names,
+        has_reveal_folder_in_file_manager="revealFolderInFileManager" in mutation_names,
+        has_stashbox_batch_tag_tag="stashBoxBatchTagTag" in mutation_names,
+        has_stashbox_batch_performer_tag="stashBoxBatchPerformerTag" in mutation_names,
+        has_stashbox_batch_studio_tag="stashBoxBatchStudioTag" in mutation_names,
+        has_scrape_single_tag="scrapeSingleTag" in query_names,
     )
 
     log.info(
         f"Server capabilities detected: version={version_string}, "
-        f"appSchema={app_schema}, has_dup_criterion={has_dup}"
+        f"appSchema={app_schema}, has_dup_criterion={has_dup}, "
+        f"has_performer_merge={has_performer_merge}, "
+        f"mutations={sorted(mutation_names & _TRACKED_MUTATIONS)}, "
+        f"queries={sorted(query_names & _TRACKED_QUERIES)}"
     )
 
     return capabilities

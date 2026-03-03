@@ -379,7 +379,12 @@ async def test_job_lifecycle_includes_remove_event(
             await asyncio.sleep(0.5)
 
             # Trigger scan and get job ID
-            result = await stash_client.metadata_scan()
+            try:
+                result = await stash_client.metadata_scan()
+            except ValueError as e:
+                if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
+                    pytest.skip("ffmpeg/ffprobe not available in test environment")
+                raise
             job_id = result
             assert job_id is not None, "metadata_scan should return job ID"
 
@@ -474,7 +479,12 @@ async def test_check_job_status_with_real_jobs(
     """
     async with stash_cleanup_tracker(stash_client, auto_capture=False):
         # Trigger scan and get job ID
-        result = await stash_client.metadata_scan()
+        try:
+            result = await stash_client.metadata_scan()
+        except ValueError as e:
+            if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
+                pytest.skip("ffmpeg/ffprobe not available in test environment")
+            raise
         job_id = result  # metadata_scan returns job ID directly as string
         assert job_id is not None, "metadata_scan should return job ID"
 
@@ -642,7 +652,12 @@ async def test_job_queue(stash_client: StashClient, stash_cleanup_tracker) -> No
         assert isinstance(initial_queue, list), "job_queue should return a list"
 
         # Trigger a job
-        job_id = await stash_client.metadata_scan()
+        try:
+            job_id = await stash_client.metadata_scan()
+        except ValueError as e:
+            if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
+                pytest.skip("ffmpeg/ffprobe not available in test environment")
+            raise
         assert job_id is not None, "metadata_scan should return job ID"
 
         # Get queue again (should include our job)
