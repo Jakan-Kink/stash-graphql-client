@@ -23,9 +23,7 @@ class PluginSetting(FromGraphQLMixin, BaseModel):
 
     name: str | UnsetType = UNSET  # String!
     type: PluginSettingTypeEnum | UnsetType = UNSET  # PluginSettingTypeEnum!
-    display_name: str | None | UnsetType = Field(
-        default=UNSET, alias="displayName"
-    )  # String
+    display_name: str | None | UnsetType = UNSET  # String
     description: str | None | UnsetType = UNSET  # String
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -46,6 +46,15 @@ class GeneratePreviewOptionsInput(StashInput):
 class GenerateMetadataInput(StashInput):
     """Input for metadata generation from schema/types/metadata.graphql."""
 
+    __safe_to_eat__: ClassVar[frozenset[str]] = frozenset(
+        {
+            "paths",
+            "imageIDs",
+            "galleryIDs",
+            "imagePhashes",
+        }
+    )
+
     covers: bool | UnsetType = UNSET  # Boolean
     sprites: bool | UnsetType = UNSET  # Boolean
     previews: bool | UnsetType = UNSET  # Boolean
@@ -68,6 +77,9 @@ class GenerateMetadataInput(StashInput):
     )
     galleryIDs: list[str] | None | UnsetType = (
         UNSET  # [ID!] (gallery ids to generate for) (appSchema >= 84)
+    )
+    paths: list[str] | None | UnsetType = (
+        UNSET  # [String!] (paths to run generate on, in addition to the other ID lists)
     )
     sceneIDs: list[str] | None | UnsetType = UNSET  # [ID!] (scene ids to generate for)
     markerIDs: list[str] | None | UnsetType = (

@@ -213,7 +213,7 @@ async def test_bulk_scene_marker_update(
     Requires has_bulk_scene_marker_update capability (bulkSceneMarkerUpdate mutation).
     Requires at least one scene in the Stash instance.
     """
-    if not stash_client._capabilities.has_bulk_scene_marker_update:
+    if not stash_client._capabilities.has_mutation("bulkSceneMarkerUpdate"):
         pytest.skip("Server does not support bulkSceneMarkerUpdate")
 
     async with (

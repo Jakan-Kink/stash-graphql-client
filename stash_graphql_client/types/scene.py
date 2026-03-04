@@ -213,28 +213,14 @@ class Scene(StashObject):
     )  # Int, not used in this client
     studio: Studio | None | UnsetType = UNSET  # Studio
     interactive: bool | None | UnsetType = UNSET  # Boolean
-    interactive_speed: int | None | UnsetType = Field(
-        default=UNSET, alias="interactiveSpeed"
-    )  # Int
+    interactive_speed: int | None | UnsetType = UNSET  # Int
     # created_at and updated_at inherited from StashObject
-    last_played_at: Time | None | UnsetType = Field(
-        default=UNSET, alias="lastPlayedAt"
-    )  # Time
-    resume_time: float | None | UnsetType = Field(
-        default=UNSET, alias="resumeTime"
-    )  # Float
-    play_duration: float | None | UnsetType = Field(
-        default=UNSET, alias="playDuration"
-    )  # Float
-    play_count: int | None | UnsetType = Field(
-        default=UNSET, ge=0, alias="playCount"
-    )  # Int
-    play_history: list[Time] | None | UnsetType = Field(
-        default=UNSET, alias="playHistory"
-    )  # [Time!]
-    o_history: list[Time] | None | UnsetType = Field(
-        default=UNSET, alias="oHistory"
-    )  # [Time!]
+    last_played_at: Time | None | UnsetType = UNSET  # Time
+    resume_time: float | None | UnsetType = UNSET  # Float
+    play_duration: float | None | UnsetType = UNSET  # Float
+    play_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
+    play_history: list[Time] | None | UnsetType = UNSET  # [Time!]
+    o_history: list[Time] | None | UnsetType = UNSET  # [Time!]
 
     # Required fields
     urls: list[str] | UnsetType = UNSET  # [String!]!

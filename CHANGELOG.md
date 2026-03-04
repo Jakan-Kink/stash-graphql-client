@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b5] - 2026-03-04
+
+### Added
+
+- **`__schema` introspection**: Capability detection replaced individual `__type` probes with a
+  single `__schema` introspection query. `ServerCapabilities` now exposes dynamic lookup methods
+  (`has_query()`, `has_mutation()`, `has_type()`, `type_has_field()`, `input_has_field()`) instead
+  of per-feature boolean fields
+- **`__safe_to_eat__` input gating**: `StashInput` subclasses can declare fields that may be
+  absent on older servers; `to_graphql()` silently strips them when unsupported, raises
+  `ValueError` for unlisted unsupported fields
+- **`GenerateMetadataInput.paths`** with `__safe_to_eat__` gating (also gates `imageIDs`,
+  `galleryIDs`, `imagePhashes`)
+- **`ScrapedPerformer` / `ScrapedPerformerInput`**: added missing `career_start`, `career_end`
+
+### Changed
+
+- **Metadata mixin**: removed manual `paths` capability check — now handled declaratively by
+  `__safe_to_eat__`
+- **Performer dirty tracking**: added missing `__tracked_fields__` / `__field_conversions__`
+  entries for `rating100`, `favorite`, `ignore_auto_tag`, `career_start`, `career_end`
+- **Studio dirty tracking**: added missing entries for `rating100`, `favorite`,
+  `ignore_auto_tag`, `organized`
+
+### Fixed
+
+- **~30 incorrect Pydantic aliases** verified against live server:
+  - `ScrapedPerformerInput` (8 wrong aliases) and `ScrapedSceneInput` (1) — `to_graphql()`
+    was producing field names the server rejects
+  - `Scene` (7), `ScrapedPerformer`/`ScrapedTag`/`ScrapedStudio`/`ScrapedScene`/`ScrapedMovie`/
+    `ScrapedGroup`/`ScraperSource` (~12), `PluginSetting` (1), `Package`/`PackageSource` (3
+    redundant self-referencing aliases)
+
+### CI / Infrastructure
+
+- Stash setup/init step in CI workflow (systemStatus check + setup mutation)
+- Skip `revealFile`/`revealFolder` tests on access denied (headless Docker)
+- Belt-and-suspenders cleanup appends in tag/performer integration tests
+- Skip subscription tests when ffmpeg/ffprobe unavailable
+
+### Testing
+
+- New `test_safe_to_eat_gating.py` (9 tests) and `test_metadata_integration.py`
+- Capability tests rewritten for `__schema`-based detection and lookup methods
+- Updated test fixtures for `__schema`-format capability responses
+
 ## [0.11.0b4] - 2026-03-02
 
 ### Added

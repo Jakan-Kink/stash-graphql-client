@@ -67,7 +67,12 @@ async def mock_gql_ws_connect():
     _capability_response = {
         "version": {"version": "v0.30.0-test"},
         "systemStatus": {"appSchema": 75, "status": "OK"},
-        "_dup": None,
+        "__schema": {
+            "queryType": {"name": "Query", "fields": []},
+            "mutationType": {"name": "Mutation", "fields": []},
+            "subscriptionType": {"name": "Subscription", "fields": []},
+            "types": [],
+        },
     }
 
     mock_session = MagicMock()
@@ -196,12 +201,12 @@ async def respx_stash_client(
             body = json.loads(request.content)
             query = body.get("query", "")
 
-            # Capability detection query contains "systemStatus" + "__type"
-            if "systemStatus" in query and "__type" in query:
+            # Capability detection query contains "systemStatus" + "__schema"
+            if "systemStatus" in query and "__schema" in query:
                 return httpx.Response(
                     200,
                     json=create_capability_response(
-                        has_duplication_criterion_input=True
+                        type_names={"DuplicationCriterionInput"},
                     ),
                 )
 

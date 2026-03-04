@@ -23,7 +23,7 @@ from tests.fixtures.stash.graphql_responses import (
 
 
 # ---------------------------------------------------------------------------
-# ServerCapabilities property tests
+# ServerCapabilities appSchema-derived property tests
 # ---------------------------------------------------------------------------
 
 
@@ -104,17 +104,21 @@ class TestServerCapabilitiesProperties:
         """Very high appSchema — all schema-gated capabilities enabled."""
         caps = make_server_capabilities(
             9999,
-            has_duplication_criterion_input=True,
-            has_performer_merge_input=True,
-            has_bulk_scene_marker_update=True,
-            has_bulk_studio_update=True,
-            has_destroy_files=True,
-            has_reveal_file_in_file_manager=True,
-            has_reveal_folder_in_file_manager=True,
-            has_stashbox_batch_tag_tag=True,
-            has_stashbox_batch_performer_tag=True,
-            has_stashbox_batch_studio_tag=True,
-            has_scrape_single_tag=True,
+            type_names={
+                "DuplicationCriterionInput",
+                "PerformerMergeInput",
+            },
+            mutation_names={
+                "bulkSceneMarkerUpdate",
+                "bulkStudioUpdate",
+                "destroyFiles",
+                "revealFileInFileManager",
+                "revealFolderInFileManager",
+                "stashBoxBatchTagTag",
+                "stashBoxBatchPerformerTag",
+                "stashBoxBatchStudioTag",
+            },
+            query_names={"scrapeSingleTag"},
         )
         assert caps.has_studio_custom_fields
         assert caps.has_tag_custom_fields
@@ -126,29 +130,27 @@ class TestServerCapabilitiesProperties:
         assert caps.has_image_custom_fields
         assert caps.has_folder_basename
         assert caps.uses_new_duplication_type
-        assert caps.has_performer_merge_input
-        assert caps.has_bulk_scene_marker_update
-        assert caps.has_bulk_studio_update
-        assert caps.has_destroy_files
-        assert caps.has_reveal_file_in_file_manager
-        assert caps.has_reveal_folder_in_file_manager
-        assert caps.has_stashbox_batch_tag_tag
-        assert caps.has_stashbox_batch_performer_tag
-        assert caps.has_stashbox_batch_studio_tag
-        assert caps.has_scrape_single_tag
+        assert caps.has_type("PerformerMergeInput")
+        assert caps.has_mutation("bulkSceneMarkerUpdate")
+        assert caps.has_mutation("bulkStudioUpdate")
+        assert caps.has_mutation("destroyFiles")
+        assert caps.has_mutation("revealFileInFileManager")
+        assert caps.has_mutation("revealFolderInFileManager")
+        assert caps.has_mutation("stashBoxBatchTagTag")
+        assert caps.has_mutation("stashBoxBatchPerformerTag")
+        assert caps.has_mutation("stashBoxBatchStudioTag")
+        assert caps.has_query("scrapeSingleTag")
 
     @pytest.mark.unit
     def test_uses_new_duplication_type(self) -> None:
-        """uses_new_duplication_type delegates to has_duplication_criterion_input."""
-        assert not make_server_capabilities(
-            84, has_duplication_criterion_input=False
-        ).uses_new_duplication_type
+        """uses_new_duplication_type delegates to has_type('DuplicationCriterionInput')."""
+        assert not make_server_capabilities(84).uses_new_duplication_type
         assert make_server_capabilities(
-            84, has_duplication_criterion_input=True
+            84, type_names={"DuplicationCriterionInput"}
         ).uses_new_duplication_type
-        # Independent of appSchema — purely based on __type probe
+        # Independent of appSchema — purely based on type existence
         assert make_server_capabilities(
-            75, has_duplication_criterion_input=True
+            75, type_names={"DuplicationCriterionInput"}
         ).uses_new_duplication_type
 
     @pytest.mark.unit
@@ -157,6 +159,72 @@ class TestServerCapabilitiesProperties:
         caps = make_server_capabilities(75)
         with pytest.raises(AttributeError):
             caps.app_schema = 84  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
+# Lookup method tests
+# ---------------------------------------------------------------------------
+
+
+class TestLookupMethods:
+    """Test has_query(), has_mutation(), has_type(), type_has_field(), input_has_field()."""
+
+    @pytest.mark.unit
+    def test_has_query(self) -> None:
+        caps = make_server_capabilities(
+            75, query_names={"findScenes", "findPerformers"}
+        )
+        assert caps.has_query("findScenes")
+        assert caps.has_query("findPerformers")
+        assert not caps.has_query("scrapeSingleTag")
+
+    @pytest.mark.unit
+    def test_has_mutation(self) -> None:
+        caps = make_server_capabilities(75, mutation_names={"bulkStudioUpdate"})
+        assert caps.has_mutation("bulkStudioUpdate")
+        assert not caps.has_mutation("destroyFiles")
+
+    @pytest.mark.unit
+    def test_has_subscription(self) -> None:
+        caps = make_server_capabilities(
+            75, subscription_names={"jobsSubscribe", "loggingSubscribe"}
+        )
+        assert caps.has_subscription("jobsSubscribe")
+        assert caps.has_subscription("loggingSubscribe")
+        assert not caps.has_subscription("nonExistent")
+
+    @pytest.mark.unit
+    def test_has_type(self) -> None:
+        caps = make_server_capabilities(75, type_names={"Scene", "Tag"})
+        assert caps.has_type("Scene")
+        assert caps.has_type("Tag")
+        assert not caps.has_type("NonExistent")
+
+    @pytest.mark.unit
+    def test_type_has_field(self) -> None:
+        caps = make_server_capabilities(
+            75,
+            type_fields={
+                "Scene": frozenset({"id", "title", "custom_fields"}),
+            },
+        )
+        assert caps.type_has_field("Scene", "id")
+        assert caps.type_has_field("Scene", "title")
+        assert not caps.type_has_field("Scene", "nonexistent")
+        assert not caps.type_has_field("NonExistent", "id")
+
+    @pytest.mark.unit
+    def test_input_has_field(self) -> None:
+        caps = make_server_capabilities(
+            75,
+            type_fields={
+                "GenerateMetadataInput": frozenset({"covers", "sprites", "paths"}),
+            },
+        )
+        assert caps.input_has_field("GenerateMetadataInput", "covers")
+        assert caps.input_has_field("GenerateMetadataInput", "paths")
+        assert not caps.input_has_field("GenerateMetadataInput", "imageIDs")
+        assert not caps.input_has_field("UnknownInput", "covers")
 
 
 # ---------------------------------------------------------------------------
@@ -186,7 +254,7 @@ class TestDetectCapabilitiesViaClient:
                 assert client._capabilities is not None
                 assert client._capabilities.app_schema == 75
                 assert client._capabilities.version_string == "v0.30.0"
-                assert not client._capabilities.has_duplication_criterion_input
+                assert not client._capabilities.has_type("DuplicationCriterionInput")
             finally:
                 await client.close()
 
@@ -201,7 +269,7 @@ class TestDetectCapabilitiesViaClient:
                     json=create_capability_response(
                         app_schema=84,
                         version="v0.30.1-98-gc874bd56",
-                        has_duplication_criterion_input=True,
+                        type_names={"DuplicationCriterionInput"},
                     ),
                 )
             )
@@ -211,7 +279,7 @@ class TestDetectCapabilitiesViaClient:
                 assert caps is not None
                 assert caps.app_schema == 84
                 assert caps.version_string == "v0.30.1-98-gc874bd56"
-                assert caps.has_duplication_criterion_input
+                assert caps.has_type("DuplicationCriterionInput")
                 assert caps.has_folder_basename
                 assert caps.uses_new_duplication_type
             finally:
@@ -296,18 +364,16 @@ class TestCapabilityConstants:
 
     @pytest.mark.unit
     def test_capability_query_contains_required_fields(self) -> None:
-        """The detection query probes version, systemStatus, __type, Mutation, and Query fields."""
+        """The detection query probes version, systemStatus, and __schema fields."""
         assert "version" in CAPABILITY_DETECTION_QUERY
         assert "systemStatus" in CAPABILITY_DETECTION_QUERY
         assert "appSchema" in CAPABILITY_DETECTION_QUERY
-        assert "__type" in CAPABILITY_DETECTION_QUERY
-        assert "DuplicationCriterionInput" in CAPABILITY_DETECTION_QUERY
-        assert "PerformerMergeInput" in CAPABILITY_DETECTION_QUERY
-        # Mutation presence probe
-        assert "Mutation" in CAPABILITY_DETECTION_QUERY
-        assert "fields" in CAPABILITY_DETECTION_QUERY
-        # Query presence probe (for query-type features like scrapeSingleTag)
-        assert "Query" in CAPABILITY_DETECTION_QUERY
+        assert "__schema" in CAPABILITY_DETECTION_QUERY
+        assert "queryType" in CAPABILITY_DETECTION_QUERY
+        assert "mutationType" in CAPABILITY_DETECTION_QUERY
+        assert "subscriptionType" in CAPABILITY_DETECTION_QUERY
+        assert "types" in CAPABILITY_DETECTION_QUERY
+        assert "inputFields" in CAPABILITY_DETECTION_QUERY
 
 
 # ---------------------------------------------------------------------------

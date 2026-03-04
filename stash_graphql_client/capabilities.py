@@ -2,12 +2,20 @@
 
 Detects the Stash server's appSchema version and available features at connect time.
 Used by FragmentStore to build version-appropriate GraphQL fragments.
+
+Instead of individual ``__type`` probes (which require adding a new alias, boolean
+field, and registry entry for every capability), this module uses a single
+``__schema`` introspection query that returns the full type catalog.  Parsed
+schema data is stored on ``ServerCapabilities`` so capabilities can be queried
+dynamically via lookup methods like ``has_mutation()``, ``has_type()``, and
+``input_has_field()``.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from .errors import StashError, StashVersionError
@@ -19,32 +27,18 @@ if TYPE_CHECKING:
 # Minimum supported appSchema version (Stash v0.30.0)
 MIN_SUPPORTED_APP_SCHEMA = 75
 
-# Combined introspection query — fetches version info + type probes + mutation/query presence
+# Combined introspection query — fetches version info + full schema catalog
 # in a single round trip.
 CAPABILITY_DETECTION_QUERY = """{
     version { version }
     systemStatus { appSchema status }
-    _dup: __type(name: "DuplicationCriterionInput") { name }
-    _performer_merge: __type(name: "PerformerMergeInput") { name }
-    _mutations: __type(name: "Mutation") { fields { name } }
-    _queries: __type(name: "Query") { fields { name } }
-}"""
-
-# Mutation/query names tracked for log output. Keep in sync with the constructor
-# arguments below and with _MUTATION_REGISTRY / _QUERY_REGISTRY in the test fixtures.
-_TRACKED_MUTATIONS: frozenset[str] = frozenset(
-    {
-        "bulkSceneMarkerUpdate",
-        "bulkStudioUpdate",
-        "destroyFiles",
-        "revealFileInFileManager",
-        "revealFolderInFileManager",
-        "stashBoxBatchTagTag",
-        "stashBoxBatchPerformerTag",
-        "stashBoxBatchStudioTag",
+    __schema {
+        queryType { name fields { name } }
+        mutationType { name fields { name } }
+        subscriptionType { name fields { name } }
+        types { name kind fields { name } inputFields { name } }
     }
-)
-_TRACKED_QUERIES: frozenset[str] = frozenset({"scrapeSingleTag"})
+}"""
 
 
 @dataclass(frozen=True)
@@ -52,40 +46,63 @@ class ServerCapabilities:
     """Immutable snapshot of detected server capabilities.
 
     Created once during client initialization and used by FragmentStore
-    to build version-appropriate GraphQL fragments.
+    to build version-appropriate GraphQL fragments, and by ``StashInput.to_graphql()``
+    for runtime field gating.
+
+    Instead of individual boolean flags for each capability, this class stores
+    parsed schema data (frozensets of type/field names) and provides lookup
+    methods for dynamic capability queries.
 
     Attributes:
         app_schema: The server's appSchema version number.
         version_string: The server's version string (e.g. "v0.30.0").
-        has_duplication_criterion_input: Whether the DuplicationCriterionInput type exists.
-        has_performer_merge_input: Whether the PerformerMergeInput type exists (v0.30.2+).
-        has_bulk_scene_marker_update: Whether the bulkSceneMarkerUpdate mutation exists.
-        has_bulk_studio_update: Whether the bulkStudioUpdate mutation exists.
-        has_destroy_files: Whether the destroyFiles mutation exists.
-        has_reveal_file_in_file_manager: Whether the revealFileInFileManager mutation exists.
-        has_reveal_folder_in_file_manager: Whether the revealFolderInFileManager mutation exists.
-        has_stashbox_batch_tag_tag: Whether the stashBoxBatchTagTag mutation exists.
-        has_stashbox_batch_performer_tag: Whether the stashBoxBatchPerformerTag mutation exists.
-        has_stashbox_batch_studio_tag: Whether the stashBoxBatchStudioTag mutation exists.
-        has_scrape_single_tag: Whether the scrapeSingleTag query exists.
+        query_names: Names of all root query fields.
+        mutation_names: Names of all root mutation fields.
+        subscription_names: Names of all root subscription fields.
+        type_names: Names of all types in the schema.
+        type_fields: Mapping of type name -> frozenset of field/inputField names.
     """
 
     app_schema: int
     version_string: str
-    # __type probe fields (input type existence)
-    has_duplication_criterion_input: bool
-    has_performer_merge_input: bool
-    # Mutation presence fields (Mutation.__type.fields membership)
-    has_bulk_scene_marker_update: bool
-    has_bulk_studio_update: bool
-    has_destroy_files: bool
-    has_reveal_file_in_file_manager: bool
-    has_reveal_folder_in_file_manager: bool
-    has_stashbox_batch_tag_tag: bool
-    has_stashbox_batch_performer_tag: bool
-    has_stashbox_batch_studio_tag: bool
-    # Query presence fields (Query.__type.fields membership)
-    has_scrape_single_tag: bool
+    # Parsed schema data
+    query_names: frozenset[str] = field(default_factory=frozenset)
+    mutation_names: frozenset[str] = field(default_factory=frozenset)
+    subscription_names: frozenset[str] = field(default_factory=frozenset)
+    type_names: frozenset[str] = field(default_factory=frozenset)
+    type_fields: MappingProxyType[str, frozenset[str]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+
+    # --- Dynamic lookup methods ---
+
+    def has_query(self, name: str) -> bool:
+        """Check if a root query field exists."""
+        return name in self.query_names
+
+    def has_mutation(self, name: str) -> bool:
+        """Check if a root mutation field exists."""
+        return name in self.mutation_names
+
+    def has_subscription(self, name: str) -> bool:
+        """Check if a root subscription field exists."""
+        return name in self.subscription_names
+
+    def has_type(self, name: str) -> bool:
+        """Check if a type exists in the schema."""
+        return name in self.type_names
+
+    def type_has_field(self, type_name: str, field_name: str) -> bool:
+        """Check if an OBJECT type has a specific field."""
+        return field_name in self.type_fields.get(type_name, frozenset())
+
+    def input_has_field(self, type_name: str, field_name: str) -> bool:
+        """Check if an INPUT_OBJECT type has a specific inputField.
+
+        Uses the same ``type_fields`` map — both OBJECT ``fields`` and
+        INPUT_OBJECT ``inputFields`` are stored under the type name.
+        """
+        return field_name in self.type_fields.get(type_name, frozenset())
 
     # --- Derived capability properties (based on appSchema) ---
 
@@ -137,7 +154,7 @@ class ServerCapabilities:
     @property
     def uses_new_duplication_type(self) -> bool:
         """Whether the server uses DuplicationCriterionInput (vs PHashDuplicationCriterionInput)."""
-        return self.has_duplication_criterion_input
+        return self.has_type("DuplicationCriterionInput")
 
 
 # Type alias for the execute function passed to detect_capabilities
@@ -148,10 +165,10 @@ async def detect_capabilities(
     execute_fn: ExecuteFn,
     log: Any,
 ) -> ServerCapabilities:
-    """Detect server capabilities via introspection.
+    """Detect server capabilities via ``__schema`` introspection.
 
     Runs a single combined query to determine the server's appSchema version
-    and available types. The execute_fn should be a low-level function that
+    and full type catalog. The execute_fn should be a low-level function that
     bypasses the normal _ensure_initialized() check (since we're calling this
     during initialization).
 
@@ -161,7 +178,7 @@ async def detect_capabilities(
         log: Logger instance (duck-typed).
 
     Returns:
-        ServerCapabilities instance with detected feature flags.
+        ServerCapabilities instance with parsed schema data.
 
     Raises:
         StashVersionError: If the server's appSchema < MIN_SUPPORTED_APP_SCHEMA.
@@ -189,40 +206,59 @@ async def detect_capabilities(
             f"Please upgrade to Stash v0.30.0 or later."
         )
 
-    # Detect type existence via __type probes
-    has_dup = result.get("_dup") is not None
-    has_performer_merge = result.get("_performer_merge") is not None
+    # Parse __schema introspection data
+    schema_data = result.get("__schema") or {}
 
-    # Detect mutation presence via Mutation type field list
-    mutations_data = result.get("_mutations") or {}
-    mutation_names: set[str] = {f["name"] for f in (mutations_data.get("fields") or [])}
+    # Extract query names
+    query_type = schema_data.get("queryType") or {}
+    query_names = frozenset(f["name"] for f in (query_type.get("fields") or []))
 
-    # Detect query presence via Query type field list
-    queries_data = result.get("_queries") or {}
-    query_names: set[str] = {f["name"] for f in (queries_data.get("fields") or [])}
+    # Extract mutation names
+    mutation_type = schema_data.get("mutationType") or {}
+    mutation_names = frozenset(f["name"] for f in (mutation_type.get("fields") or []))
+
+    # Extract subscription names
+    subscription_type = schema_data.get("subscriptionType") or {}
+    subscription_names = frozenset(
+        f["name"] for f in (subscription_type.get("fields") or [])
+    )
+
+    # Build type_fields map and type_names set
+    type_fields_dict: dict[str, frozenset[str]] = {}
+    all_type_names: set[str] = set()
+
+    for type_info in schema_data.get("types") or []:
+        type_name = type_info.get("name", "")
+        kind = type_info.get("kind", "")
+        all_type_names.add(type_name)
+
+        # OBJECT types use "fields", INPUT_OBJECT types use "inputFields"
+        if kind == "OBJECT" and type_info.get("fields"):
+            type_fields_dict[type_name] = frozenset(
+                f["name"] for f in type_info["fields"]
+            )
+        elif kind == "INPUT_OBJECT" and type_info.get("inputFields"):
+            type_fields_dict[type_name] = frozenset(
+                f["name"] for f in type_info["inputFields"]
+            )
 
     capabilities = ServerCapabilities(
         app_schema=app_schema,
         version_string=version_string,
-        has_duplication_criterion_input=has_dup,
-        has_performer_merge_input=has_performer_merge,
-        has_bulk_scene_marker_update="bulkSceneMarkerUpdate" in mutation_names,
-        has_bulk_studio_update="bulkStudioUpdate" in mutation_names,
-        has_destroy_files="destroyFiles" in mutation_names,
-        has_reveal_file_in_file_manager="revealFileInFileManager" in mutation_names,
-        has_reveal_folder_in_file_manager="revealFolderInFileManager" in mutation_names,
-        has_stashbox_batch_tag_tag="stashBoxBatchTagTag" in mutation_names,
-        has_stashbox_batch_performer_tag="stashBoxBatchPerformerTag" in mutation_names,
-        has_stashbox_batch_studio_tag="stashBoxBatchStudioTag" in mutation_names,
-        has_scrape_single_tag="scrapeSingleTag" in query_names,
+        query_names=query_names,
+        mutation_names=mutation_names,
+        subscription_names=subscription_names,
+        type_names=frozenset(all_type_names),
+        type_fields=MappingProxyType(type_fields_dict),
     )
 
     log.info(
         f"Server capabilities detected: version={version_string}, "
-        f"appSchema={app_schema}, has_dup_criterion={has_dup}, "
-        f"has_performer_merge={has_performer_merge}, "
-        f"mutations={sorted(mutation_names & _TRACKED_MUTATIONS)}, "
-        f"queries={sorted(query_names & _TRACKED_QUERIES)}"
+        f"appSchema={app_schema}, "
+        f"types={len(all_type_names)}, "
+        f"queries={len(query_names)}, "
+        f"mutations={len(mutation_names)}, "
+        f"subscriptions={len(subscription_names)}"
     )
 
     return capabilities

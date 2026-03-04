@@ -264,7 +264,7 @@ async def test_bulk_studio_update(
 
     Requires has_bulk_studio_update capability (bulkStudioUpdate mutation).
     """
-    if not stash_client._capabilities.has_bulk_studio_update:
+    if not stash_client._capabilities.has_mutation("bulkStudioUpdate"):
         pytest.skip("Server does not support bulkStudioUpdate")
 
     async with (

@@ -96,6 +96,7 @@ class Studio(StashObject):
         "rating100",  # StudioCreateInput/StudioUpdateInput
         "favorite",  # StudioCreateInput/StudioUpdateInput
         "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
+        "organized",  # StudioUpdateInput (appSchema >= 80)
     }
 
     # All fields are optional in client (fragment-based loading)
@@ -164,6 +165,10 @@ class Studio(StashObject):
         "urls": list,
         "aliases": list,
         "details": str,
+        "rating100": int,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
+        "organized": bool,
     }
 
     __relationships__ = {

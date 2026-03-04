@@ -323,11 +323,19 @@ class StashInput(BaseModel):
     """Base class for all Stash GraphQL input types.
 
     Configures Pydantic to accept both Python snake_case field names
-    and GraphQL camelCase aliases during construction, while serializing
-    to camelCase for GraphQL using Field aliases and by_alias=True.
+    and GraphQL aliases during construction, while serializing
+    to GraphQL field names using Field aliases and by_alias=True.
 
     This allows tests and Python code to use Pythonic naming conventions
     while ensuring GraphQL compatibility.
+
+    Capability Gating (``__safe_to_eat__``):
+        Subclasses may declare a ``__safe_to_eat__`` class variable containing
+        GraphQL field names (as they appear in the schema) that are known to be
+        absent on older server versions.
+        When ``to_graphql()`` detects that the server schema lacks one of these
+        fields, it silently strips it (with a warning) instead of raising.
+        Unsupported fields **not** in ``__safe_to_eat__`` raise ``ValueError``.
 
     Example:
         ```python
@@ -342,6 +350,9 @@ class StashInput(BaseModel):
         obj.to_graphql()  # {"myField": "value"}
         ```
     """
+
+    # GraphQL field names safe to silently strip when the server doesn't support them.
+    __safe_to_eat__: ClassVar[frozenset[str]] = frozenset()
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -399,8 +410,15 @@ class StashInput(BaseModel):
         - None fields to explicitly clear/null values in GraphQL
         - Regular values to be sent normally
 
+        After building the dict, applies capability gating: if the
+        ``fragment_store`` has detected server capabilities, every key
+        is checked against the server schema.  Fields listed in
+        ``__safe_to_eat__`` are silently stripped (with a warning) when
+        the server doesn't support them; other unsupported fields raise
+        ``ValueError``.
+
         Returns:
-            Dictionary ready to send to GraphQL API with camelCase field names
+            Dictionary ready to send to GraphQL API with GraphQL field names
 
         Example:
             ```python
@@ -425,7 +443,35 @@ class StashInput(BaseModel):
 
         # Dump with JSON serialization, excluding UNSET fields
         # Pydantic will handle the alias conversion and exclude the right fields
-        return self.model_dump(by_alias=True, mode="json", exclude=exclude_fields)
+        result = self.model_dump(by_alias=True, mode="json", exclude=exclude_fields)
+
+        # Apply capability gating if server capabilities are available
+        caps = fragment_store._capabilities
+        if caps is not None:
+            self._apply_capability_gating(result, caps)
+
+        return result
+
+    def _apply_capability_gating(self, result: dict[str, Any], caps: Any) -> None:
+        """Check all fields against server schema and gate unsupported ones.
+
+        Fields in ``__safe_to_eat__`` are silently stripped (with warning).
+        Other unsupported fields raise ``ValueError``.
+        If the type itself is not in the schema, gating is skipped entirely.
+        """
+        type_name = type(self).__name__
+        if not caps.has_type(type_name):
+            return  # Type not in schema — skip gating
+
+        for key in list(result.keys()):
+            if not caps.input_has_field(type_name, key):
+                if key in self.__safe_to_eat__:
+                    msg = f"Server lacks '{key}' on {type_name}; stripping from request"
+                    log.warning(msg)
+                    warnings.warn(msg, stacklevel=3)
+                    del result[key]
+                else:
+                    raise ValueError(f"Server does not support '{key}' on {type_name}")
 
 
 class BulkUpdateStrings(StashInput):

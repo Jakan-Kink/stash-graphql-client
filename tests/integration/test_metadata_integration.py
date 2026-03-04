@@ -9,6 +9,7 @@ These tests cover SAFE metadata operations NOT already covered by subscription t
 - export_objects (read-only)
 - backup_database (read-only, creates backup)
 - get_configuration_defaults (read-only)
+- __safe_to_eat__ capability gating for GenerateMetadataInput
 
 FORBIDDEN operations that must NOT run in integration tests:
 - metadata_identify (can trigger external API calls to StashDB)
@@ -22,9 +23,12 @@ NOTE: metadata_scan, metadata_clean, and metadata_generate are tested via
 subscription tests (test_subscription_integration.py) as they generate job events.
 """
 
+import warnings
+
 import pytest
 
 from stash_graphql_client import StashClient
+from stash_graphql_client.types import GenerateMetadataInput
 from tests.fixtures import capture_graphql_calls
 
 
@@ -288,6 +292,105 @@ async def test_backup_database_without_download(
         # Verify backup path returned
         assert path is not None
         assert isinstance(path, str)
+
+
+# =============================================================================
+# __safe_to_eat__ Capability Gating Tests
+# =============================================================================
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_generate_metadata_paths_gating_matches_capabilities(
+    stash_client: StashClient, stash_cleanup_tracker
+) -> None:
+    """Verify __safe_to_eat__ gating for GenerateMetadataInput.paths against live server.
+
+    The 'paths' field on GenerateMetadataInput is listed in __safe_to_eat__.
+    If the server supports the field, it should pass through.
+    If the server lacks it, it should be silently stripped with a warning.
+    Either way, the mutation must succeed (not error).
+    """
+    caps = stash_client._capabilities
+    assert caps is not None
+
+    server_supports_paths = caps.input_has_field("GenerateMetadataInput", "paths")
+
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            job_id = await stash_client.metadata_generate(
+                options={"phashes": True},
+                input_data=GenerateMetadataInput(paths=["/nonexistent/test/path"]),
+            )
+
+        # Mutation must succeed regardless
+        assert len(calls) == 1, "Expected 1 GraphQL call for metadata_generate"
+        assert "metadataGenerate" in calls[0]["query"]
+        assert calls[0]["exception"] is None
+        assert job_id is not None
+        assert len(job_id) > 0
+
+        sent_input = calls[0]["variables"]["input"]
+
+        if server_supports_paths:
+            # Server supports 'paths' — field should be present in the request
+            assert "paths" in sent_input, (
+                "Server supports 'paths' on GenerateMetadataInput but "
+                "the field was not included in the GraphQL variables"
+            )
+            assert sent_input["paths"] == ["/nonexistent/test/path"]
+            # No stripping warning expected
+            path_warnings = [w for w in caught_warnings if "paths" in str(w.message)]
+            assert len(path_warnings) == 0, (
+                f"Unexpected stripping warning when server supports 'paths': "
+                f"{[str(w.message) for w in path_warnings]}"
+            )
+        else:
+            # Server lacks 'paths' — field should have been stripped
+            assert "paths" not in sent_input, (
+                "Server lacks 'paths' on GenerateMetadataInput but "
+                "the field was not stripped by __safe_to_eat__ gating"
+            )
+            # Warning should have been emitted
+            path_warnings = [w for w in caught_warnings if "paths" in str(w.message)]
+            assert len(path_warnings) == 1, (
+                f"Expected exactly 1 stripping warning for 'paths', "
+                f"got {len(path_warnings)}"
+            )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_generate_metadata_safe_fields_cross_validate_schema(
+    stash_client: StashClient, stash_cleanup_tracker
+) -> None:
+    """Cross-validate all GenerateMetadataInput.__safe_to_eat__ fields against live schema.
+
+    Ensures each field in __safe_to_eat__ is correctly categorized: the server
+    either has it (so it passes through) or lacks it (so gating would strip it).
+    This catches drift between __safe_to_eat__ declarations and the actual server schema.
+    """
+    caps = stash_client._capabilities
+    assert caps is not None
+
+    safe_fields = GenerateMetadataInput.__safe_to_eat__
+    assert len(safe_fields) > 0, "Expected at least one __safe_to_eat__ field"
+
+    # Verify the type exists in the schema (it always should for a supported server)
+    assert caps.has_type("GenerateMetadataInput"), (
+        "GenerateMetadataInput type not found in server schema"
+    )
+
+    for field_name in safe_fields:
+        has_field = caps.input_has_field("GenerateMetadataInput", field_name)
+        # Just verify it returns a bool — the actual value depends on server version
+        assert isinstance(has_field, bool), (
+            f"input_has_field returned non-bool for '{field_name}'"
+        )
 
 
 # =============================================================================

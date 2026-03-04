@@ -108,6 +108,7 @@ def test_studio_class_variables() -> None:
         "rating100",
         "favorite",
         "ignore_auto_tag",
+        "organized",
     }
     assert Studio.__tracked_fields__ == expected_tracked_fields
 
@@ -122,6 +123,10 @@ def test_studio_field_conversions() -> None:
         "urls": list,
         "aliases": list,
         "details": str,
+        "rating100": int,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
+        "organized": bool,
     }
 
     for field, conversion in expected_conversions.items():

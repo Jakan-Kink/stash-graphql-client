@@ -217,7 +217,7 @@ async def test_reveal_file_in_file_manager(
     and returns True regardless of desktop availability, so we only verify the
     round-trip succeeds.
     """
-    if not stash_client._capabilities.has_reveal_file_in_file_manager:
+    if not stash_client._capabilities.has_mutation("revealFileInFileManager"):
         pytest.skip("Server does not support revealFileInFileManager")
 
     async with (
@@ -259,7 +259,7 @@ async def test_reveal_folder_in_file_manager(
     and returns True regardless of desktop availability, so we only verify the
     round-trip succeeds.
     """
-    if not stash_client._capabilities.has_reveal_folder_in_file_manager:
+    if not stash_client._capabilities.has_mutation("revealFolderInFileManager"):
         pytest.skip("Server does not support revealFolderInFileManager")
 
     async with (

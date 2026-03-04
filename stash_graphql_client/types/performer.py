@@ -206,6 +206,11 @@ class Performer(StashObject):
         "death_date",  # PerformerCreateInput/PerformerUpdateInput
         "hair_color",  # PerformerCreateInput/PerformerUpdateInput
         "weight",  # PerformerCreateInput/PerformerUpdateInput
+        "rating100",  # PerformerCreateInput/PerformerUpdateInput
+        "favorite",  # PerformerCreateInput/PerformerUpdateInput
+        "ignore_auto_tag",  # PerformerCreateInput/PerformerUpdateInput
+        "career_start",  # PerformerUpdateInput (appSchema >= 78)
+        "career_end",  # PerformerUpdateInput (appSchema >= 78)
     }
 
     # Required fields from schema
@@ -325,6 +330,11 @@ class Performer(StashObject):
         "death_date": str,
         "hair_color": str,
         "weight": int,
+        "rating100": int,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
+        "career_start": int,
+        "career_end": int,
     }
 
     __relationships__ = {
