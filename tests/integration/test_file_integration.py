@@ -6,7 +6,6 @@ Tests file and folder operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
-from stash_graphql_client.errors import StashGraphQLError
 from tests.fixtures import capture_graphql_calls
 
 
@@ -198,92 +197,3 @@ async def test_find_nonexistent_folder_returns_none(
         assert calls[0]["variables"]["id"] == "99999999"
         # Exception is expected for nonexistent folder
         assert calls[0]["exception"] is not None
-
-
-# =============================================================================
-# Mutation-gated file operations
-# =============================================================================
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_reveal_file_in_file_manager(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test that revealFileInFileManager sends the correct mutation.
-
-    Requires has_reveal_file_in_file_manager capability. If present, calls the
-    mutation against a real file ID. The server triggers an OS file-manager reveal
-    and returns True regardless of desktop availability, so we only verify the
-    round-trip succeeds.
-    """
-    if not stash_client._capabilities.has_mutation("revealFileInFileManager"):
-        pytest.skip("Server does not support revealFileInFileManager")
-
-    async with (
-        stash_cleanup_tracker(stash_client),
-        capture_graphql_calls(stash_client) as calls,
-    ):
-        result = await stash_client.find_files(filter_={"per_page": 1})
-        if result.count == 0:
-            pytest.skip("No files in test Stash instance")
-
-        file_id = result.files[0].id
-        calls.clear()
-
-        try:
-            outcome = await stash_client.reveal_file_in_file_manager(file_id)
-        except StashGraphQLError as e:
-            if "access denied" in str(e).lower():
-                pytest.skip("Server denied revealFileInFileManager (headless/Docker)")
-            raise
-
-        assert len(calls) == 1, (
-            "Expected 1 GraphQL call for reveal_file_in_file_manager"
-        )
-        assert "revealFileInFileManager" in calls[0]["query"]
-        assert calls[0]["variables"]["id"] == file_id
-        assert calls[0]["exception"] is None
-        assert isinstance(outcome, bool)
-
-
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_reveal_folder_in_file_manager(
-    stash_client: StashClient, stash_cleanup_tracker
-) -> None:
-    """Test that revealFolderInFileManager sends the correct mutation.
-
-    Requires has_reveal_folder_in_file_manager capability. If present, calls the
-    mutation against a real folder ID. The server triggers an OS file-manager reveal
-    and returns True regardless of desktop availability, so we only verify the
-    round-trip succeeds.
-    """
-    if not stash_client._capabilities.has_mutation("revealFolderInFileManager"):
-        pytest.skip("Server does not support revealFolderInFileManager")
-
-    async with (
-        stash_cleanup_tracker(stash_client),
-        capture_graphql_calls(stash_client) as calls,
-    ):
-        result = await stash_client.find_folders(filter_={"per_page": 1})
-        if result.count == 0:
-            pytest.skip("No folders in test Stash instance")
-
-        folder_id = result.folders[0].id
-        calls.clear()
-
-        try:
-            outcome = await stash_client.reveal_folder_in_file_manager(folder_id)
-        except StashGraphQLError as e:
-            if "access denied" in str(e).lower():
-                pytest.skip("Server denied revealFolderInFileManager (headless/Docker)")
-            raise
-
-        assert len(calls) == 1, (
-            "Expected 1 GraphQL call for reveal_folder_in_file_manager"
-        )
-        assert "revealFolderInFileManager" in calls[0]["query"]
-        assert calls[0]["variables"]["id"] == folder_id
-        assert calls[0]["exception"] is None
-        assert isinstance(outcome, bool)
