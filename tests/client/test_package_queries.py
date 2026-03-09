@@ -13,7 +13,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import PackageType
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -67,7 +67,10 @@ async def test_installed_packages_scraper_enum(respx_stash_client: StashClient) 
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 1
     assert packages[0].package_id == "scraper-1"
@@ -100,7 +103,10 @@ async def test_installed_packages_plugin_string(
         ]
     )
 
-    packages = await respx_stash_client.installed_packages("Plugin")
+    try:
+        packages = await respx_stash_client.installed_packages("Plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 1
     assert packages[0].package_id == "plugin-1"
@@ -142,7 +148,10 @@ async def test_installed_packages_multiple(respx_stash_client: StashClient) -> N
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 3
     assert packages[0].package_id == "pkg-1"
@@ -179,7 +188,10 @@ async def test_installed_packages_with_dependencies(
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_set(packages)
     assert len(packages) == 1
@@ -218,7 +230,10 @@ async def test_installed_packages_with_source_package(
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_set(packages)
     assert len(packages) == 1
@@ -256,7 +271,10 @@ async def test_installed_packages_with_metadata(
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_set(packages)
     assert len(packages) == 1
@@ -278,7 +296,10 @@ async def test_installed_packages_empty(respx_stash_client: StashClient) -> None
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 0
     assert len(graphql_route.calls) == 1
@@ -296,7 +317,10 @@ async def test_installed_packages_error_returns_empty(
         ]
     )
 
-    packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    try:
+        packages = await respx_stash_client.installed_packages(PackageType.PLUGIN)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 0
     assert len(graphql_route.calls) == 1
@@ -325,10 +349,13 @@ async def test_available_packages_scraper_enum(respx_stash_client: StashClient) 
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        PackageType.SCRAPER,
-        "https://stashapp.github.io/scrapers",
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            PackageType.SCRAPER,
+            "https://stashapp.github.io/scrapers",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 1
     assert packages[0].package_id == "scraper-available-1"
@@ -362,10 +389,13 @@ async def test_available_packages_plugin_string(
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        "Plugin",
-        "https://stashapp.github.io/plugins",
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            "Plugin",
+            "https://stashapp.github.io/plugins",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 1
     assert packages[0].package_id == "plugin-available-1"
@@ -407,10 +437,13 @@ async def test_available_packages_multiple(respx_stash_client: StashClient) -> N
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        PackageType.SCRAPER,
-        "https://example.com/packages",
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            PackageType.SCRAPER,
+            "https://example.com/packages",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 3
     assert packages[0].package_id == "avail-1"
@@ -442,10 +475,13 @@ async def test_available_packages_custom_source(
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        PackageType.PLUGIN,
-        custom_source,
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            PackageType.PLUGIN,
+            custom_source,
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 1
     assert packages[0].package_id == "custom-pkg"
@@ -465,10 +501,13 @@ async def test_available_packages_empty(respx_stash_client: StashClient) -> None
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        PackageType.SCRAPER,
-        "https://empty.com/packages",
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            PackageType.SCRAPER,
+            "https://empty.com/packages",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 0
     assert len(graphql_route.calls) == 1
@@ -486,10 +525,13 @@ async def test_available_packages_error_returns_empty(
         ]
     )
 
-    packages = await respx_stash_client.available_packages(
-        PackageType.PLUGIN,
-        "https://failing.com/packages",
-    )
+    try:
+        packages = await respx_stash_client.available_packages(
+            PackageType.PLUGIN,
+            "https://failing.com/packages",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(packages) == 0
     assert len(graphql_route.calls) == 1

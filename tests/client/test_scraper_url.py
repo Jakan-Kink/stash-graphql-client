@@ -15,7 +15,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import ScrapeContentType
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -165,9 +165,12 @@ async def test_scrape_url_scene(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/scene/123", ScrapeContentType.SCENE
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/scene/123", ScrapeContentType.SCENE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Test Scene"
@@ -196,9 +199,12 @@ async def test_scrape_url_performer(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/performer/456", ScrapeContentType.PERFORMER
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/performer/456", ScrapeContentType.PERFORMER
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "Jane Doe"
@@ -223,10 +229,13 @@ async def test_scrape_url_studio(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/studio/789",
-        ScrapeContentType.SCENE,  # Studio can be part of scene scraping
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/studio/789",
+            ScrapeContentType.SCENE,  # Studio can be part of scene scraping
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "Acme Studios"
@@ -248,9 +257,12 @@ async def test_scrape_url_gallery(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/gallery/111", ScrapeContentType.GALLERY
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/gallery/111", ScrapeContentType.GALLERY
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Photo Gallery"
@@ -274,9 +286,12 @@ async def test_scrape_url_image(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/image/222", ScrapeContentType.IMAGE
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/image/222", ScrapeContentType.IMAGE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Single Image"
@@ -299,9 +314,12 @@ async def test_scrape_url_group(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/group/333", ScrapeContentType.GROUP
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/group/333", ScrapeContentType.GROUP
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "Movie Series"
@@ -323,9 +341,12 @@ async def test_scrape_url_unknown_typename(respx_stash_client: StashClient) -> N
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/unknown", ScrapeContentType.SCENE
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/unknown", ScrapeContentType.SCENE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
     assert len(graphql_route.calls) == 1
@@ -341,9 +362,12 @@ async def test_scrape_url_null_result(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/notfound", ScrapeContentType.SCENE
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/notfound", ScrapeContentType.SCENE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
     assert len(graphql_route.calls) == 1
@@ -359,9 +383,12 @@ async def test_scrape_url_error_returns_none(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.scrape_url(
-        "https://example.com/scene/123", ScrapeContentType.SCENE
-    )
+    try:
+        result = await respx_stash_client.scrape_url(
+            "https://example.com/scene/123", ScrapeContentType.SCENE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
     assert len(graphql_route.calls) == 1
@@ -390,7 +417,12 @@ async def test_scrape_scene_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_scene_url("https://example.com/scene/999")
+    try:
+        result = await respx_stash_client.scrape_scene_url(
+            "https://example.com/scene/999"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Specific Scene"
@@ -424,9 +456,12 @@ async def test_scrape_scene_url_with_nested_data(
         ]
     )
 
-    result = await respx_stash_client.scrape_scene_url(
-        "https://example.com/scene/complex"
-    )
+    try:
+        result = await respx_stash_client.scrape_scene_url(
+            "https://example.com/scene/complex"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Complex Scene"
@@ -459,9 +494,12 @@ async def test_scrape_performer_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_performer_url(
-        "https://example.com/performer/john"
-    )
+    try:
+        result = await respx_stash_client.scrape_performer_url(
+            "https://example.com/performer/john"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "John Doe"
@@ -491,9 +529,12 @@ async def test_scrape_gallery_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_gallery_url(
-        "https://example.com/gallery/photoset"
-    )
+    try:
+        result = await respx_stash_client.scrape_gallery_url(
+            "https://example.com/gallery/photoset"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Photo Set"
@@ -521,9 +562,12 @@ async def test_scrape_image_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_image_url(
-        "https://example.com/image/photo"
-    )
+    try:
+        result = await respx_stash_client.scrape_image_url(
+            "https://example.com/image/photo"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.title == "Photo Image"
@@ -551,9 +595,12 @@ async def test_scrape_movie_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_movie_url(
-        "https://example.com/movie/classic"
-    )
+    try:
+        result = await respx_stash_client.scrape_movie_url(
+            "https://example.com/movie/classic"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "Classic Movie"
@@ -581,9 +628,12 @@ async def test_scrape_group_url(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scrape_group_url(
-        "https://example.com/group/series"
-    )
+    try:
+        result = await respx_stash_client.scrape_group_url(
+            "https://example.com/group/series"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.name == "Film Series"
@@ -606,9 +656,12 @@ async def test_scrape_url_methods_return_none_on_error(
         ]
     )
 
-    result = await respx_stash_client.scrape_scene_url(
-        "https://example.com/scene/error"
-    )
+    try:
+        result = await respx_stash_client.scrape_scene_url(
+            "https://example.com/scene/error"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
     assert len(graphql_route.calls) == 1

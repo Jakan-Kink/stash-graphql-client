@@ -24,6 +24,7 @@ from tests.fixtures import (
     create_find_scenes_result,
     create_graphql_response,
     create_scene_dict,
+    dump_graphql_calls,
 )
 
 
@@ -195,7 +196,10 @@ async def test_find_scenes_with_comprehensive_spies(
         print("STARTING TEST EXECUTION")
         print("=" * 80)
 
-        result = await respx_stash_client.find_scenes()
+        try:
+            result = await respx_stash_client.find_scenes()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         print("=" * 80)
         print("TEST EXECUTION COMPLETE")

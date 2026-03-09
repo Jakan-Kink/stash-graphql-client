@@ -28,6 +28,7 @@ from tests.fixtures import (
     create_performer_dict,
     create_studio_dict,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -46,7 +47,10 @@ async def test_find_image(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    image = await respx_stash_client.find_image("123")
+    try:
+        image = await respx_stash_client.find_image("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert image is not None
@@ -70,7 +74,10 @@ async def test_find_image_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    image = await respx_stash_client.find_image("999")
+    try:
+        image = await respx_stash_client.find_image("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert image is None
 
@@ -86,7 +93,10 @@ async def test_find_image_error_returns_none(respx_stash_client: StashClient) ->
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    image = await respx_stash_client.find_image("error_image")
+    try:
+        image = await respx_stash_client.find_image("error_image")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert image is None
 
@@ -116,7 +126,10 @@ async def test_find_images(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_images()
+    try:
+        result = await respx_stash_client.find_images()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert result.count == 1
@@ -149,7 +162,10 @@ async def test_find_images_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_images()
+    try:
+        result = await respx_stash_client.find_images()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.images)
@@ -187,7 +203,12 @@ async def test_find_images_with_filter(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_images(filter_={"per_page": 10, "page": 1})
+    try:
+        result = await respx_stash_client.find_images(
+            filter_={"per_page": 10, "page": 1}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.images)
@@ -218,7 +239,10 @@ async def test_find_images_with_query(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_images(q="Search Result")
+    try:
+        result = await respx_stash_client.find_images(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.images)
@@ -248,7 +272,10 @@ async def test_find_images_with_image_filter(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.find_images(image_filter={"organized": True})
+    try:
+        result = await respx_stash_client.find_images(image_filter={"organized": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
 
@@ -268,7 +295,10 @@ async def test_find_images_error_returns_empty(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.find_images()
+    try:
+        result = await respx_stash_client.find_images()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.images)
@@ -296,7 +326,10 @@ async def test_find_image_with_studio(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    image = await respx_stash_client.find_image("123")
+    try:
+        image = await respx_stash_client.find_image("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert image is not None
     assert is_set(image.studio)
@@ -327,7 +360,10 @@ async def test_find_image_with_performers(respx_stash_client: StashClient) -> No
         ]
     )
 
-    image = await respx_stash_client.find_image("123")
+    try:
+        image = await respx_stash_client.find_image("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert image is not None
     assert is_set(image.performers)
@@ -358,7 +394,10 @@ async def test_find_image_with_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    image = await respx_stash_client.find_image("123")
+    try:
+        image = await respx_stash_client.find_image("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert image is not None
     assert is_set(image.tags)
@@ -379,7 +418,10 @@ async def test_image_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.image_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.image_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -400,9 +442,12 @@ async def test_image_destroy_with_options(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.image_destroy(
-        {"id": "123", "delete_file": True, "delete_generated": False}
-    )
+    try:
+        result = await respx_stash_client.image_destroy(
+            {"id": "123", "delete_file": True, "delete_generated": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -424,7 +469,10 @@ async def test_image_destroy_with_model_input(respx_stash_client: StashClient) -
     )
 
     input_data = ImageDestroyInput(id="123", delete_file=True)
-    result = await respx_stash_client.image_destroy(input_data)
+    try:
+        result = await respx_stash_client.image_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -444,7 +492,10 @@ async def test_images_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.images_destroy({"ids": ["123", "456", "789"]})
+    try:
+        result = await respx_stash_client.images_destroy({"ids": ["123", "456", "789"]})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -465,9 +516,12 @@ async def test_images_destroy_with_options(respx_stash_client: StashClient) -> N
         ]
     )
 
-    result = await respx_stash_client.images_destroy(
-        {"ids": ["123", "456"], "delete_file": True, "delete_generated": True}
-    )
+    try:
+        result = await respx_stash_client.images_destroy(
+            {"ids": ["123", "456"], "delete_file": True, "delete_generated": True}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -490,7 +544,10 @@ async def test_images_destroy_with_model_input(respx_stash_client: StashClient) 
     )
 
     input_data = ImagesDestroyInput(ids=["123", "456"], delete_file=False)
-    result = await respx_stash_client.images_destroy(input_data)
+    try:
+        result = await respx_stash_client.images_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -522,7 +579,10 @@ async def test_create_image(respx_stash_client: StashClient, mock_image) -> None
         ]
     )
 
-    result = await respx_stash_client.create_image(mock_image)
+    try:
+        result = await respx_stash_client.create_image(mock_image)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "new_123"
@@ -552,7 +612,10 @@ async def test_update_image(respx_stash_client: StashClient, mock_image) -> None
         ]
     )
 
-    result = await respx_stash_client.update_image(mock_image)
+    try:
+        result = await respx_stash_client.update_image(mock_image)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -582,8 +645,11 @@ async def test_create_image_error(respx_stash_client: StashClient, mock_image) -
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to create image"):
-        await respx_stash_client.create_image(mock_image)
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to create image"):
+            await respx_stash_client.create_image(mock_image)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -600,8 +666,11 @@ async def test_update_image_error(respx_stash_client: StashClient, mock_image) -
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to update image"):
-        await respx_stash_client.update_image(mock_image)
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to update image"):
+            await respx_stash_client.update_image(mock_image)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -618,8 +687,11 @@ async def test_image_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to delete image"):
-        await respx_stash_client.image_destroy({"id": "123"})
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to delete image"):
+            await respx_stash_client.image_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -636,8 +708,11 @@ async def test_images_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to delete images"):
-        await respx_stash_client.images_destroy({"ids": ["123", "456"]})
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to delete images"):
+            await respx_stash_client.images_destroy({"ids": ["123", "456"]})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -658,8 +733,11 @@ async def test_bulk_image_update_error(respx_stash_client: StashClient) -> None:
         ids=["1", "2"], tag_ids=BulkUpdateIds(ids=["tag1"], mode=BulkUpdateIdMode.ADD)
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to bulk update images"):
-        await respx_stash_client.bulk_image_update(input_data)
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to bulk update images"):
+            await respx_stash_client.bulk_image_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -683,7 +761,10 @@ async def test_bulk_image_update_success(respx_stash_client: StashClient) -> Non
         ids=["1", "2"], tag_ids=BulkUpdateIds(ids=["tag1"], mode=BulkUpdateIdMode.ADD)
     )
 
-    result = await respx_stash_client.bulk_image_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_image_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "1"
@@ -716,7 +797,10 @@ async def test_bulk_image_update_with_dict(respx_stash_client: StashClient) -> N
         "rating100": 80,
     }
 
-    result = await respx_stash_client.bulk_image_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_image_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "1"
@@ -741,7 +825,10 @@ async def test_image_increment_o_success(respx_stash_client: StashClient) -> Non
         side_effect=[httpx.Response(200, json={"data": {"imageIncrementO": 5}})]
     )
 
-    new_count = await respx_stash_client.image_increment_o("123")
+    try:
+        new_count = await respx_stash_client.image_increment_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert new_count == 5
     assert len(graphql_route.calls) == 1
@@ -762,8 +849,11 @@ async def test_image_increment_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to increment O-count"):
-        await respx_stash_client.image_increment_o("123")
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to increment O-count"):
+            await respx_stash_client.image_increment_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -776,7 +866,10 @@ async def test_image_decrement_o_success(respx_stash_client: StashClient) -> Non
         side_effect=[httpx.Response(200, json={"data": {"imageDecrementO": 3}})]
     )
 
-    new_count = await respx_stash_client.image_decrement_o("123")
+    try:
+        new_count = await respx_stash_client.image_decrement_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert new_count == 3
     assert len(graphql_route.calls) == 1
@@ -797,8 +890,11 @@ async def test_image_decrement_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to decrement O-count"):
-        await respx_stash_client.image_decrement_o("123")
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to decrement O-count"):
+            await respx_stash_client.image_decrement_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -811,7 +907,10 @@ async def test_image_reset_o_success(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json={"data": {"imageResetO": 0}})]
     )
 
-    new_count = await respx_stash_client.image_reset_o("123")
+    try:
+        new_count = await respx_stash_client.image_reset_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert new_count == 0
     assert len(graphql_route.calls) == 1
@@ -832,8 +931,11 @@ async def test_image_reset_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Failed to reset O-count"):
-        await respx_stash_client.image_reset_o("123")
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to reset O-count"):
+            await respx_stash_client.image_reset_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -864,7 +966,10 @@ async def test_images_update_success(respx_stash_client: StashClient) -> None:
         ImageUpdateInput(id="2", title="Updated Image 2", rating100=90),
     ]
 
-    result = await respx_stash_client.images_update(updates)
+    try:
+        result = await respx_stash_client.images_update(updates)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify results
     assert len(result) == 2
@@ -904,7 +1009,10 @@ async def test_images_update_with_dicts(respx_stash_client: StashClient) -> None
         {"id": "2", "rating100": 75},
     ]
 
-    result = await respx_stash_client.images_update(updates)
+    try:
+        result = await respx_stash_client.images_update(updates)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "1"
@@ -924,7 +1032,10 @@ async def test_images_update_empty_list(respx_stash_client: StashClient) -> None
         side_effect=[httpx.Response(200, json={"data": {"imagesUpdate": []}})]
     )
 
-    result = await respx_stash_client.images_update([])
+    try:
+        result = await respx_stash_client.images_update([])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 0
     assert len(graphql_route.calls) == 1
@@ -944,7 +1055,10 @@ async def test_images_update_error(respx_stash_client: StashClient) -> None:
 
     updates = [ImageUpdateInput(id="1", title="Test")]
 
-    with pytest.raises(StashGraphQLError, match="Failed to update images"):
-        await respx_stash_client.images_update(updates)
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to update images"):
+            await respx_stash_client.images_update(updates)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

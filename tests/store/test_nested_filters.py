@@ -22,6 +22,7 @@ import respx
 from stash_graphql_client import Image, StashEntityStore
 from stash_graphql_client.types import Gallery, GalleryChapter, Scene
 from stash_graphql_client.types.unset import UNSET
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import (
     ImageFactory,
     ImageFileFactory,
@@ -465,15 +466,18 @@ class TestFilterAndPopulateWithNestedFields:
         )
 
         # Filter with nested field - should auto-populate
-        results = await store.filter_and_populate(
-            Image,
-            required_fields=["visual_files__path", "visual_files__size"],
-            predicate=lambda i: any(
-                f.size > 1_000_000  # type: ignore[operator]
-                for f in i.visual_files  # type: ignore[union-attr]
-                if f.size is not UNSET
-            ),
-        )
+        try:
+            results = await store.filter_and_populate(
+                Image,
+                required_fields=["visual_files__path", "visual_files__size"],
+                predicate=lambda i: any(
+                    f.size > 1_000_000  # type: ignore[operator]
+                    for f in i.visual_files  # type: ignore[union-attr]
+                    if f.size is not UNSET
+                ),
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should make GraphQL calls to populate missing nested fields
         assert len(graphql_route.calls) >= 1
@@ -647,7 +651,10 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate with nested spec - should skip because parent is None
-        await store.populate(studio, fields=["parent_studio__name"])
+        try:
+            await store.populate(studio, fields=["parent_studio__name"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify no GraphQL calls
         assert len(graphql_route.calls) == 0
@@ -692,7 +699,10 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate with nested field on single object
-        await store.populate(child, fields=["parent_studio__name"])
+        try:
+            await store.populate(child, fields=["parent_studio__name"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should make at least 1 GraphQL call
         assert len(graphql_route.calls) >= 1
@@ -716,7 +726,7 @@ class TestNestedFieldEdgeCases:
         store._cache_entity(image)
 
         # Mock GraphQL response (may or may not be called)
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -733,7 +743,10 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate - should skip non-StashObject items gracefully
-        result = await store.populate(image, fields=["visual_files__path"])
+        try:
+            result = await store.populate(image, fields=["visual_files__path"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should not crash, just skip the non-StashObject item
         assert result is not None
@@ -760,7 +773,7 @@ class TestNestedFieldEdgeCases:
         store._cache_entity(file1)
 
         # Mock response for populating the ImageFile
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200,
                 json=create_graphql_response(
@@ -771,7 +784,10 @@ class TestNestedFieldEdgeCases:
         )
 
         # Populate nested field - should skip the string item, populate the StashObject
-        result = await store.populate(image, fields=["visual_files__path"])
+        try:
+            result = await store.populate(image, fields=["visual_files__path"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should not crash - string item is skipped in the loop (line 1253->1252 branch)
         assert result is not None
@@ -859,7 +875,12 @@ class TestNestedFieldEdgeCases:
         # The for loop on line 1227 iterates twice for the two tuples
         # Each iteration takes the elif on line 1249 for single object
         # After first iteration, loop branches back to 1227 for second (line 1249->1227)
-        result = await store.populate(scene, fields=["studio__urls", "studio__details"])
+        try:
+            result = await store.populate(
+                scene, fields=["studio__urls", "studio__details"]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should make exactly 1 call (both fields fetched together)
         assert len(graphql_route.calls) == 1

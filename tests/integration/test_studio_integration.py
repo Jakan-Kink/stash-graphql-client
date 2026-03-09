@@ -8,7 +8,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import BulkStudioUpdateInput, Studio
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -21,7 +21,10 @@ async def test_find_studios_returns_results(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_studios()
+        try:
+            result = await stash_client.find_studios()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_studios"
@@ -48,7 +51,12 @@ async def test_find_studios_with_pagination(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_studios(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_studios(
+                filter_={"per_page": 10, "page": 1}
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_studios"
@@ -74,7 +82,10 @@ async def test_find_nonexistent_studio_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio = await stash_client.find_studio("99999999")
+        try:
+            studio = await stash_client.find_studio("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_studio"
@@ -97,7 +108,10 @@ async def test_find_studios_with_q_parameter(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_studios(q="test")
+        try:
+            result = await stash_client.find_studios(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_studios"
@@ -131,9 +145,12 @@ async def test_create_and_find_studio(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio = await stash_client.create_studio(
-            Studio(name="SGC Inttest Create Studio")
-        )
+        try:
+            studio = await stash_client.create_studio(
+                Studio(name="SGC Inttest Create Studio")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_studio")
         cleanup["studios"].append(studio.id)
 
         assert len(calls) == 1, "Expected 1 GraphQL call for create_studio"
@@ -146,7 +163,10 @@ async def test_create_and_find_studio(
 
         calls.clear()
 
-        found = await stash_client.find_studio(studio.id)
+        try:
+            found = await stash_client.find_studio(studio.id)
+        finally:
+            dump_graphql_calls(calls, "find_studio")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_studio"
         assert "findStudio" in calls[0]["query"]
@@ -166,16 +186,22 @@ async def test_update_studio(stash_client: StashClient, stash_cleanup_tracker) -
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio = await stash_client.create_studio(
-            Studio(name="SGC Inttest Update Studio")
-        )
+        try:
+            studio = await stash_client.create_studio(
+                Studio(name="SGC Inttest Update Studio")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_studio")
         cleanup["studios"].append(studio.id)
         assert studio.id is not None
 
         calls.clear()
 
         studio.details = "integration test details"
-        updated = await stash_client.update_studio(studio)
+        try:
+            updated = await stash_client.update_studio(studio)
+        finally:
+            dump_graphql_calls(calls, "update_studio")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for update_studio"
         assert "studioUpdate" in calls[0]["query"]
@@ -195,15 +221,21 @@ async def test_studio_destroy(stash_client: StashClient, stash_cleanup_tracker) 
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio = await stash_client.create_studio(
-            Studio(name="SGC Inttest Destroy Studio")
-        )
+        try:
+            studio = await stash_client.create_studio(
+                Studio(name="SGC Inttest Destroy Studio")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_studio")
         cleanup["studios"].append(studio.id)
         assert studio.id is not None
 
         calls.clear()
 
-        result = await stash_client.studio_destroy({"id": studio.id})
+        try:
+            result = await stash_client.studio_destroy({"id": studio.id})
+        finally:
+            dump_graphql_calls(calls, "studio_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for studio_destroy"
         assert "studioDestroy" in calls[0]["query"]
@@ -215,7 +247,10 @@ async def test_studio_destroy(stash_client: StashClient, stash_cleanup_tracker) 
 
         calls.clear()
 
-        gone = await stash_client.find_studio(studio.id)
+        try:
+            gone = await stash_client.find_studio(studio.id)
+        finally:
+            dump_graphql_calls(calls, "find_studio")
         assert gone is None
 
 
@@ -230,12 +265,15 @@ async def test_studios_destroy_bulk(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio_a = await stash_client.create_studio(
-            Studio(name="SGC Inttest Bulk Destroy Studio A")
-        )
-        studio_b = await stash_client.create_studio(
-            Studio(name="SGC Inttest Bulk Destroy Studio B")
-        )
+        try:
+            studio_a = await stash_client.create_studio(
+                Studio(name="SGC Inttest Bulk Destroy Studio A")
+            )
+            studio_b = await stash_client.create_studio(
+                Studio(name="SGC Inttest Bulk Destroy Studio B")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_studios")
         cleanup["studios"].append(studio_a.id)
         cleanup["studios"].append(studio_b.id)
         assert studio_a.id is not None
@@ -243,7 +281,10 @@ async def test_studios_destroy_bulk(
 
         calls.clear()
 
-        result = await stash_client.studios_destroy([studio_a.id, studio_b.id])
+        try:
+            result = await stash_client.studios_destroy([studio_a.id, studio_b.id])
+        finally:
+            dump_graphql_calls(calls, "studios_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for studios_destroy"
         assert "studiosDestroy" in calls[0]["query"]
@@ -271,12 +312,15 @@ async def test_bulk_studio_update(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        studio_a = await stash_client.create_studio(
-            Studio(name="SGC Inttest Bulk Update Studio A")
-        )
-        studio_b = await stash_client.create_studio(
-            Studio(name="SGC Inttest Bulk Update Studio B")
-        )
+        try:
+            studio_a = await stash_client.create_studio(
+                Studio(name="SGC Inttest Bulk Update Studio A")
+            )
+            studio_b = await stash_client.create_studio(
+                Studio(name="SGC Inttest Bulk Update Studio B")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_studios")
         cleanup["studios"].append(studio_a.id)
         cleanup["studios"].append(studio_b.id)
         assert studio_a.id is not None
@@ -284,9 +328,12 @@ async def test_bulk_studio_update(
 
         calls.clear()
 
-        updated = await stash_client.bulk_studio_update(
-            BulkStudioUpdateInput(ids=[studio_a.id, studio_b.id], rating100=75)
-        )
+        try:
+            updated = await stash_client.bulk_studio_update(
+                BulkStudioUpdateInput(ids=[studio_a.id, studio_b.id], rating100=75)
+            )
+        finally:
+            dump_graphql_calls(calls, "bulk_studio_update")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for bulk_studio_update"
         assert "bulkStudioUpdate" in calls[0]["query"]

@@ -24,6 +24,7 @@ from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
+from tests.fixtures import dump_graphql_calls
 
 
 class TestChangeTracking:
@@ -197,12 +198,15 @@ class TestFindById:
     async def test_find_by_id_exception_returns_none(self, respx_stash_client) -> None:
         """Test find_by_id() returns None on exception - covers lines 765-766."""
         # Mock to raise an exception
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=Exception("Network error")
         )
 
         # Call find_by_id
-        result = await Tag.find_by_id(respx_stash_client, "tag-error")
+        try:
+            result = await Tag.find_by_id(respx_stash_client, "tag-error")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should return None instead of raising
         assert result is None
@@ -224,12 +228,15 @@ class TestFindById:
 
         # Mock response
         response_data = {"data": {"findCustomType": {"id": "custom-1", "name": "Test"}}}
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json=response_data)
         )
 
         # Call find_by_id - should build fallback query since CustomType not in query_map
-        result = await CustomType.find_by_id(respx_stash_client, "custom-1")
+        try:
+            result = await CustomType.find_by_id(respx_stash_client, "custom-1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should return the object
         assert result is not None
@@ -303,14 +310,17 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock response missing the operation key
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json={"data": {"wrong_key": {"id": "123"}}}
             )
         )
 
-        with pytest.raises(ValueError, match="Missing 'tagCreate' in response"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Missing 'tagCreate' in response"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_raises_when_operation_result_is_none(
@@ -321,12 +331,15 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock response with None result
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json={"data": {"tagCreate": None}})
         )
 
-        with pytest.raises(ValueError, match="Create operation returned None"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Create operation returned None"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_wraps_exceptions(
@@ -337,12 +350,15 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock to raise exception
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=Exception("Network error")
         )
 
-        with pytest.raises(ValueError, match="Failed to save Tag"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Failed to save Tag"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_new_object_updates_id_and_marks_clean(
@@ -355,7 +371,7 @@ class TestSaveMethod:
         assert tag.is_new()
 
         # Mock successful create response
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -370,7 +386,10 @@ class TestSaveMethod:
         )
 
         # Save should update ID and mark clean
-        await tag.save(respx_stash_client)
+        try:
+            await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was updated from UUID to server ID
         assert tag.id == "server-assigned-123"
@@ -395,7 +414,7 @@ class TestSaveMethod:
         assert not tag.is_new()
 
         # Mock successful update response
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -410,7 +429,10 @@ class TestSaveMethod:
         )
 
         # Save should NOT update ID (already has server ID) but should mark clean
-        await tag.save(respx_stash_client)
+        try:
+            await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was NOT changed
         assert tag.id == "existing-123"

@@ -37,6 +37,7 @@ from tests.fixtures import (
     create_config_general_result,
     create_config_interface_result,
     create_graphql_response,
+    dump_graphql_calls,
 )
 
 
@@ -58,7 +59,10 @@ async def test_configure_general_with_dict(respx_stash_client: StashClient) -> N
         ]
     )
 
-    result = await respx_stash_client.configure_general({"parallelTasks": 4})
+    try:
+        result = await respx_stash_client.configure_general({"parallelTasks": 4})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.parallel_tasks == 4
@@ -84,7 +88,10 @@ async def test_configure_general_with_model(respx_stash_client: StashClient) -> 
     )
 
     input_data = ConfigGeneralInput(parallelTasks=8, previewSegmentDuration=5)
-    result = await respx_stash_client.configure_general(input_data)
+    try:
+        result = await respx_stash_client.configure_general(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.parallel_tasks == 8
@@ -124,7 +131,10 @@ async def test_configure_interface_with_dict(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.configure_interface({"language": "de-DE"})
+    try:
+        result = await respx_stash_client.configure_interface({"language": "de-DE"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.language == "de-DE"
@@ -149,7 +159,10 @@ async def test_configure_interface_with_model(respx_stash_client: StashClient) -
     )
 
     input_data = ConfigInterfaceInput(cssEnabled=True, javascriptEnabled=True)
-    result = await respx_stash_client.configure_interface(input_data)
+    try:
+        result = await respx_stash_client.configure_interface(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.css_enabled is True
@@ -191,7 +204,12 @@ async def test_configure_dlna_with_dict(respx_stash_client: StashClient) -> None
         ]
     )
 
-    result = await respx_stash_client.configure_dlna({"enabled": True, "port": 1339})
+    try:
+        result = await respx_stash_client.configure_dlna(
+            {"enabled": True, "port": 1339}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.enabled is True
@@ -219,7 +237,10 @@ async def test_configure_dlna_with_model(respx_stash_client: StashClient) -> Non
     input_data = ConfigDLNAInput(
         serverName="my-stash", whitelistedIPs=["192.168.1.100"]
     )
-    result = await respx_stash_client.configure_dlna(input_data)
+    try:
+        result = await respx_stash_client.configure_dlna(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.server_name == "my-stash"
@@ -260,9 +281,12 @@ async def test_configure_defaults_with_dict(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.configure_defaults(
-        {"deleteFile": True, "deleteGenerated": True}
-    )
+    try:
+        result = await respx_stash_client.configure_defaults(
+            {"deleteFile": True, "deleteGenerated": True}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.delete_file is True
@@ -288,7 +312,10 @@ async def test_configure_defaults_with_model(respx_stash_client: StashClient) ->
     )
 
     input_data = ConfigDefaultSettingsInput(deleteFile=False, deleteGenerated=False)
-    result = await respx_stash_client.configure_defaults(input_data)
+    try:
+        result = await respx_stash_client.configure_defaults(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.delete_file is False
@@ -326,7 +353,10 @@ async def test_configure_ui_with_full_input(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.configure_ui(input_data=ui_config)
+    try:
+        result = await respx_stash_client.configure_ui(input_data=ui_config)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ui_config
     assert len(graphql_route.calls) == 1
@@ -349,7 +379,10 @@ async def test_configure_ui_with_partial_input(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.configure_ui(partial=partial_config)
+    try:
+        result = await respx_stash_client.configure_ui(partial=partial_config)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == merged_result
     assert len(graphql_route.calls) == 1
@@ -391,7 +424,10 @@ async def test_configure_ui_setting_string_value(
         ]
     )
 
-    result = await respx_stash_client.configure_ui_setting("theme", "dark")
+    try:
+        result = await respx_stash_client.configure_ui_setting("theme", "dark")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == result_config
     assert len(graphql_route.calls) == 1
@@ -414,7 +450,10 @@ async def test_configure_ui_setting_bool_value(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.configure_ui_setting("showAdvanced", True)
+    try:
+        result = await respx_stash_client.configure_ui_setting("showAdvanced", True)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == result_config
     assert len(graphql_route.calls) == 1
@@ -435,7 +474,10 @@ async def test_configure_ui_setting_null_value(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.configure_ui_setting("oldSetting", None)
+    try:
+        result = await respx_stash_client.configure_ui_setting("oldSetting", None)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == result_config
     assert len(graphql_route.calls) == 1
@@ -477,7 +519,10 @@ async def test_generate_api_key_with_dict(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.generate_api_key({})
+    try:
+        result = await respx_stash_client.generate_api_key({})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == new_api_key
     assert len(graphql_route.calls) == 1
@@ -499,7 +544,10 @@ async def test_generate_api_key_with_model(respx_stash_client: StashClient) -> N
     )
 
     input_data = GenerateAPIKeyInput(clear=False)
-    result = await respx_stash_client.generate_api_key(input_data)
+    try:
+        result = await respx_stash_client.generate_api_key(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == new_api_key
     assert len(graphql_route.calls) == 1
@@ -516,7 +564,10 @@ async def test_generate_api_key_clear(respx_stash_client: StashClient) -> None:
     )
 
     input_data = GenerateAPIKeyInput(clear=True)
-    result = await respx_stash_client.generate_api_key(input_data)
+    try:
+        result = await respx_stash_client.generate_api_key(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ""
     assert len(graphql_route.calls) == 1
@@ -562,7 +613,10 @@ async def test_find_saved_filter_success(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.find_saved_filter("filter-123")
+    try:
+        result = await respx_stash_client.find_saved_filter("filter-123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "filter-123"
@@ -584,7 +638,10 @@ async def test_find_saved_filter_not_found(respx_stash_client: StashClient) -> N
         ]
     )
 
-    result = await respx_stash_client.find_saved_filter("nonexistent")
+    try:
+        result = await respx_stash_client.find_saved_filter("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
     assert len(graphql_route.calls) == 1
@@ -640,7 +697,10 @@ async def test_find_saved_filters_no_mode(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.find_saved_filters()
+    try:
+        result = await respx_stash_client.find_saved_filters()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "filter-1"
@@ -672,7 +732,10 @@ async def test_find_saved_filters_with_mode(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.find_saved_filters(mode=FilterMode.SCENES)
+    try:
+        result = await respx_stash_client.find_saved_filters(mode=FilterMode.SCENES)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0].mode == "SCENES"
@@ -721,9 +784,12 @@ async def test_configure_scraping_with_dict(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.configure_scraping(
-        {"scraperUserAgent": "CustomAgent/1.0"}
-    )
+    try:
+        result = await respx_stash_client.configure_scraping(
+            {"scraperUserAgent": "CustomAgent/1.0"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.scraper_user_agent == "CustomAgent/1.0"
@@ -753,7 +819,10 @@ async def test_configure_scraping_with_model(respx_stash_client: StashClient) ->
     input_data = ConfigScrapingInput(
         scraperUserAgent="MyAgent/2.0", scraperCertCheck=False
     )
-    result = await respx_stash_client.configure_scraping(input_data)
+    try:
+        result = await respx_stash_client.configure_scraping(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.scraper_user_agent == "MyAgent/2.0"
@@ -798,13 +867,16 @@ async def test_validate_stashbox_credentials_with_dict(
         ]
     )
 
-    result = await respx_stash_client.validate_stashbox_credentials(
-        {
-            "endpoint": "https://stashdb.org/graphql",
-            "api_key": "test-key",
-            "name": "StashDB",
-        }
-    )
+    try:
+        result = await respx_stash_client.validate_stashbox_credentials(
+            {
+                "endpoint": "https://stashdb.org/graphql",
+                "api_key": "test-key",
+                "name": "StashDB",
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.valid is True
@@ -836,7 +908,10 @@ async def test_validate_stashbox_credentials_with_model(
         api_key="invalid-key",
         name="StashDB",
     )
-    result = await respx_stash_client.validate_stashbox_credentials(input_data)
+    try:
+        result = await respx_stash_client.validate_stashbox_credentials(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.valid is False
@@ -881,7 +956,10 @@ async def test_enable_dlna_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.enable_dlna({})
+    try:
+        result = await respx_stash_client.enable_dlna({})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -900,7 +978,10 @@ async def test_enable_dlna_with_model(respx_stash_client: StashClient) -> None:
     )
 
     input_data = EnableDLNAInput()
-    result = await respx_stash_client.enable_dlna(input_data)
+    try:
+        result = await respx_stash_client.enable_dlna(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -935,7 +1016,10 @@ async def test_disable_dlna_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.disable_dlna({})
+    try:
+        result = await respx_stash_client.disable_dlna({})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -954,7 +1038,10 @@ async def test_disable_dlna_with_model(respx_stash_client: StashClient) -> None:
     )
 
     input_data = DisableDLNAInput()
-    result = await respx_stash_client.disable_dlna(input_data)
+    try:
+        result = await respx_stash_client.disable_dlna(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -989,9 +1076,12 @@ async def test_add_temp_dlna_ip_with_dict(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.add_temp_dlna_ip(
-        {"address": "192.168.1.100", "duration": 3600}
-    )
+    try:
+        result = await respx_stash_client.add_temp_dlna_ip(
+            {"address": "192.168.1.100", "duration": 3600}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1011,7 +1101,10 @@ async def test_add_temp_dlna_ip_with_model(respx_stash_client: StashClient) -> N
     )
 
     input_data = AddTempDLNAIPInput(address="10.0.0.5", duration=7200)
-    result = await respx_stash_client.add_temp_dlna_ip(input_data)
+    try:
+        result = await respx_stash_client.add_temp_dlna_ip(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1048,7 +1141,12 @@ async def test_remove_temp_dlna_ip_with_dict(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.remove_temp_dlna_ip({"address": "192.168.1.100"})
+    try:
+        result = await respx_stash_client.remove_temp_dlna_ip(
+            {"address": "192.168.1.100"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1068,7 +1166,10 @@ async def test_remove_temp_dlna_ip_with_model(respx_stash_client: StashClient) -
     )
 
     input_data = RemoveTempDLNAIPInput(address="10.0.0.5")
-    result = await respx_stash_client.remove_temp_dlna_ip(input_data)
+    try:
+        result = await respx_stash_client.remove_temp_dlna_ip(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1110,7 +1211,10 @@ async def test_get_configuration(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.get_configuration()
+    try:
+        result = await respx_stash_client.get_configuration()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.general is not None

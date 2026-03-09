@@ -23,7 +23,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 def create_scene_stream_endpoint_dict(
@@ -92,7 +92,10 @@ async def test_scene_streams_success_multiple_endpoints(
         ]
     )
 
-    result = await respx_stash_client.scene_streams("123")
+    try:
+        result = await respx_stash_client.scene_streams("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result is a list of SceneStreamEndpoint objects
     assert result is not None
@@ -136,7 +139,10 @@ async def test_scene_streams_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_streams("456")
+    try:
+        result = await respx_stash_client.scene_streams("456")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify empty list returned
     assert result is not None
@@ -173,7 +179,10 @@ async def test_scene_streams_single(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_streams("789")
+    try:
+        result = await respx_stash_client.scene_streams("789")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify single stream
     assert result is not None
@@ -234,7 +243,10 @@ async def test_scene_streams_with_various_mime_types(
         ]
     )
 
-    result = await respx_stash_client.scene_streams("mime-test-123")
+    try:
+        result = await respx_stash_client.scene_streams("mime-test-123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify all MIME types preserved correctly
     assert len(result) == 4
@@ -272,7 +284,10 @@ async def test_scene_streams_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_streams("nonexistent")
+    try:
+        result = await respx_stash_client.scene_streams("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify empty list returned on error (following project pattern)
     assert result == []
@@ -296,7 +311,10 @@ async def test_scene_streams_server_error(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.scene_streams("server-error-scene")
+    try:
+        result = await respx_stash_client.scene_streams("server-error-scene")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify empty list returned on server error
     assert result == []
@@ -323,7 +341,10 @@ async def test_scene_streams_empty_id_returns_empty_list(
         side_effect=[httpx.Response(200, json={"errors": [{"message": "Invalid ID"}]})]
     )
 
-    result = await respx_stash_client.scene_streams("")
+    try:
+        result = await respx_stash_client.scene_streams("")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Current behavior: returns empty list on error
     assert result == []
@@ -352,7 +373,10 @@ async def test_scene_streams_none_id_returns_empty_list(
     )
 
     # None is passed through to GraphQL, which returns an error
-    result = await respx_stash_client.scene_streams(None)  # type: ignore[arg-type]
+    try:
+        result = await respx_stash_client.scene_streams(None)  # type: ignore[arg-type]
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Current behavior: returns empty list on error
     assert result == []
@@ -389,7 +413,10 @@ async def test_scene_streams_special_characters_in_url(
         ]
     )
 
-    result = await respx_stash_client.scene_streams("123")
+    try:
+        result = await respx_stash_client.scene_streams("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify URL with query parameters preserved
     assert len(result) == 1
@@ -426,7 +453,10 @@ async def test_scene_streams_long_labels(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.scene_streams("label-test")
+    try:
+        result = await respx_stash_client.scene_streams("label-test")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify long label preserved
     assert len(result) == 1
@@ -468,7 +498,10 @@ async def test_scene_streams_unicode_in_labels(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.scene_streams("unicode-test")
+    try:
+        result = await respx_stash_client.scene_streams("unicode-test")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify Unicode labels preserved
     assert len(result) == 2
@@ -492,7 +525,10 @@ async def test_scene_streams_no_result_key(respx_stash_client: StashClient) -> N
         side_effect=[httpx.Response(200, json={"data": {"otherField": "value"}})]
     )
 
-    result = await respx_stash_client.scene_streams("no-key-test")
+    try:
+        result = await respx_stash_client.scene_streams("no-key-test")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify empty list returned when key missing
     assert result == []

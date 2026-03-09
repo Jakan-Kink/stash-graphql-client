@@ -14,7 +14,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Job, JobStatus
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -36,7 +36,10 @@ async def test_job_queue_empty_returns_list(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        jobs = await stash_client.job_queue()
+        try:
+            jobs = await stash_client.job_queue()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for job_queue"
@@ -75,7 +78,10 @@ async def test_find_job_with_valid_nonexistent_id(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Use a large numeric ID that's unlikely to exist
-        job = await stash_client.find_job("999999")
+        try:
+            job = await stash_client.find_job("999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_job"
@@ -102,9 +108,15 @@ async def test_find_job_validates_response_structure(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        await stash_client.metadata_clean({"dryRun": True})
+        try:
+            await stash_client.metadata_clean({"dryRun": True})
+        finally:
+            dump_graphql_calls(calls, "metadata_clean")
         # First, get the current job queue to find a real job ID if available
-        queue = await stash_client.job_queue()
+        try:
+            queue = await stash_client.job_queue()
+        finally:
+            dump_graphql_calls(calls, "job_queue")
 
         # We need at least one job to complete this test
         if not queue:
@@ -117,7 +129,10 @@ async def test_find_job_validates_response_structure(
         calls.clear()
 
         # Find the job
-        job = await stash_client.find_job(job_id)
+        try:
+            job = await stash_client.find_job(job_id)
+        finally:
+            dump_graphql_calls(calls, "find_job")
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_job"
@@ -160,7 +175,10 @@ async def test_stop_all_jobs_returns_boolean(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.stop_all_jobs()
+        try:
+            result = await stash_client.stop_all_jobs()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for stop_all_jobs"
@@ -188,7 +206,10 @@ async def test_stop_nonexistent_job_returns_boolean(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.stop_job("999999")
+        try:
+            result = await stash_client.stop_job("999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for stop_job"
@@ -277,7 +298,10 @@ async def test_wait_for_job_returns_none_for_invalid_input(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.wait_for_job("")
+        try:
+            result = await stash_client.wait_for_job("")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify no GraphQL calls were made (early return)
         assert len(calls) == 0, "Expected 0 GraphQL calls for empty job_id"

@@ -19,7 +19,7 @@ from stash_graphql_client.types import (
     StatsResultType,
     SystemStatus,
 )
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -34,7 +34,10 @@ async def test_get_system_status(
 ) -> None:
     """Test getting the Stash system status."""
     async with capture_graphql_calls(stash_client) as calls:
-        status = await stash_client.get_system_status()
+        try:
+            status = await stash_client.get_system_status()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for get_system_status"
@@ -58,7 +61,10 @@ async def test_check_system_ready_when_ok(
     """Test check_system_ready when system is in OK status."""
     async with capture_graphql_calls(stash_client) as calls:
         # This should not raise an exception when system is OK
-        await stash_client.check_system_ready()
+        try:
+            await stash_client.check_system_ready()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for check_system_ready"
@@ -77,7 +83,10 @@ async def test_check_system_ready_when_ok(
 async def test_stats(stash_client: StashClient) -> None:
     """Test getting system statistics."""
     async with capture_graphql_calls(stash_client) as calls:
-        stats = await stash_client.stats()
+        try:
+            stats = await stash_client.stats()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for stats"
@@ -109,7 +118,10 @@ async def test_stats(stash_client: StashClient) -> None:
 async def test_logs(stash_client: StashClient) -> None:
     """Test retrieving system logs."""
     async with capture_graphql_calls(stash_client) as calls:
-        logs = await stash_client.logs()
+        try:
+            logs = await stash_client.logs()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for logs"
@@ -141,7 +153,10 @@ async def test_logs(stash_client: StashClient) -> None:
 async def test_dlna_status(stash_client: StashClient) -> None:
     """Test getting DLNA server status."""
     async with capture_graphql_calls(stash_client) as calls:
-        dlna_status = await stash_client.dlna_status()
+        try:
+            dlna_status = await stash_client.dlna_status()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for dlna_status"
@@ -170,7 +185,10 @@ async def test_dlna_status(stash_client: StashClient) -> None:
 async def test_directory_root(stash_client: StashClient) -> None:
     """Test browsing root directories."""
     async with capture_graphql_calls(stash_client) as calls:
-        dir_info = await stash_client.directory()
+        try:
+            dir_info = await stash_client.directory()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for directory root"
@@ -195,7 +213,10 @@ async def test_directory_with_locale(
 ) -> None:
     """Test directory browsing with custom locale."""
     async with capture_graphql_calls(stash_client) as calls:
-        dir_info = await stash_client.directory(locale="pt-BR")
+        try:
+            dir_info = await stash_client.directory(locale="pt-BR")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for directory with locale"
@@ -217,7 +238,10 @@ async def test_directory_with_path(
     """Test directory browsing with specific path."""
     async with capture_graphql_calls(stash_client) as calls:
         # Try to browse a common path
-        dir_info = await stash_client.directory(path="/")
+        try:
+            dir_info = await stash_client.directory(path="/")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for directory with path"
@@ -245,7 +269,12 @@ async def test_sql_query_simple_select(
     """Test executing a simple SQL SELECT query."""
     async with capture_graphql_calls(stash_client) as calls:
         # Simple query to get count of scenes (read-only)
-        result = await stash_client.sql_query("SELECT COUNT(*) as count FROM scenes")
+        try:
+            result = await stash_client.sql_query(
+                "SELECT COUNT(*) as count FROM scenes"
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for sql_query"
@@ -271,9 +300,12 @@ async def test_sql_query_with_args(
     """Test SQL query with parameter arguments."""
     async with capture_graphql_calls(stash_client) as calls:
         # Query with parameters
-        result = await stash_client.sql_query(
-            "SELECT id FROM scenes WHERE rating > ?", args=[80]
-        )
+        try:
+            result = await stash_client.sql_query(
+                "SELECT id FROM scenes WHERE rating > ?", args=[80]
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for sql_query with args"
@@ -297,10 +329,13 @@ async def test_sql_query_with_multiple_args(
     """Test SQL query with multiple parameter arguments."""
     async with capture_graphql_calls(stash_client) as calls:
         # Query with multiple parameters
-        result = await stash_client.sql_query(
-            "SELECT id, title FROM scenes WHERE rating > ? AND created_at > ?",
-            args=[70, "2023-01-01"],
-        )
+        try:
+            result = await stash_client.sql_query(
+                "SELECT id, title FROM scenes WHERE rating > ? AND created_at > ?",
+                args=[70, "2023-01-01"],
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, (
@@ -338,10 +373,13 @@ async def test_sql_exec_count_affected_rows(
     """
     async with capture_graphql_calls(stash_client) as calls:
         # Execute a no-op UPDATE (WHERE condition false) to verify response structure
-        result = await stash_client.sql_exec(
-            "UPDATE scenes SET created_at = created_at WHERE id = ?",
-            args=["nonexistent-id"],
-        )
+        try:
+            result = await stash_client.sql_exec(
+                "UPDATE scenes SET created_at = created_at WHERE id = ?",
+                args=["nonexistent-id"],
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for sql_exec"
@@ -370,9 +408,12 @@ async def test_sql_exec_with_no_args(
     """Test SQL exec without arguments."""
     async with capture_graphql_calls(stash_client) as calls:
         # Execute a no-op query to verify structure
-        result = await stash_client.sql_exec(
-            "UPDATE scenes SET created_at = created_at WHERE 0"
-        )
+        try:
+            result = await stash_client.sql_exec(
+                "UPDATE scenes SET created_at = created_at WHERE 0"
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for sql_exec without args"
@@ -395,9 +436,12 @@ async def test_sql_exec_last_insert_id(
     """Test SQL exec result includes last_insert_id field."""
     async with capture_graphql_calls(stash_client) as calls:
         # Execute a query that won't insert but will return last_insert_id
-        result = await stash_client.sql_exec(
-            "UPDATE scenes SET created_at = created_at WHERE 0"
-        )
+        try:
+            result = await stash_client.sql_exec(
+                "UPDATE scenes SET created_at = created_at WHERE 0"
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for sql_exec"

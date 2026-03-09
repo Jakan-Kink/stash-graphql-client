@@ -12,7 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import JobStatus
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -39,7 +39,10 @@ async def test_find_job_success(respx_stash_client: StashClient) -> None:
         )
     )
 
-    job = await respx_stash_client.find_job("job-123")
+    try:
+        job = await respx_stash_client.find_job("job-123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job is not None
     assert job.id == "job-123"
@@ -69,7 +72,10 @@ async def test_find_job_not_found(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json=create_graphql_response("findJob", None))]
     )
 
-    job = await respx_stash_client.find_job("nonexistent")
+    try:
+        job = await respx_stash_client.find_job("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job is None
     assert len(graphql_route.calls) == 1
@@ -91,7 +97,10 @@ async def test_find_job_graphql_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job = await respx_stash_client.find_job("error-job")
+    try:
+        job = await respx_stash_client.find_job("error-job")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job is None
     assert len(graphql_route.calls) == 1
@@ -111,7 +120,10 @@ async def test_find_job_result_with_errors_key(respx_stash_client: StashClient) 
         ]
     )
 
-    job = await respx_stash_client.find_job("error-job")
+    try:
+        job = await respx_stash_client.find_job("error-job")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job is None
     assert len(graphql_route.calls) == 1
@@ -250,7 +262,10 @@ async def test_stop_job_success(respx_stash_client: StashClient) -> None:
         return_value=httpx.Response(200, json=create_graphql_response("stopJob", True))
     )
 
-    result = await respx_stash_client.stop_job("job-123")
+    try:
+        result = await respx_stash_client.stop_job("job-123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -300,7 +315,10 @@ async def test_stop_all_jobs_success(respx_stash_client: StashClient) -> None:
         )
     )
 
-    result = await respx_stash_client.stop_all_jobs()
+    try:
+        result = await respx_stash_client.stop_all_jobs()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -370,7 +388,10 @@ async def test_job_queue_success(respx_stash_client: StashClient) -> None:
         )
     )
 
-    jobs = await respx_stash_client.job_queue()
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(jobs) == 2
     assert jobs[0].id == "job-1"

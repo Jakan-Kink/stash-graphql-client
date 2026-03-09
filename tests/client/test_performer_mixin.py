@@ -30,6 +30,7 @@ from tests.fixtures import (
     create_find_performers_result,
     create_graphql_response,
     create_performer_dict,
+    dump_graphql_calls,
 )
 
 
@@ -52,7 +53,10 @@ async def test_find_performer_by_id(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    performer = await respx_stash_client.find_performer("123")
+    try:
+        performer = await respx_stash_client.find_performer("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is not None
     assert performer.id == "123"
@@ -74,7 +78,10 @@ async def test_find_performer_not_found(respx_stash_client: StashClient) -> None
         ]
     )
 
-    performer = await respx_stash_client.find_performer("999")
+    try:
+        performer = await respx_stash_client.find_performer("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is None
     assert len(graphql_route.calls) == 1
@@ -97,7 +104,10 @@ async def test_find_performer_error_returns_none(
     )
 
     # Use numeric ID to take the direct lookup path (not name search)
-    performer = await respx_stash_client.find_performer("999")
+    try:
+        performer = await respx_stash_client.find_performer("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is None
     assert len(graphql_route.calls) == 1
@@ -127,7 +137,10 @@ async def test_find_performer_by_name_dict_filter(
     )
 
     # Pass a dict with "name" to trigger the dict branch
-    performer = await respx_stash_client.find_performer({"name": "Performer Name"})
+    try:
+        performer = await respx_stash_client.find_performer({"name": "Performer Name"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is not None
     assert performer.id == "123"
@@ -178,7 +191,10 @@ async def test_find_performer_by_name_falls_back_to_alias(
         side_effect=mock_response
     )
 
-    performer = await respx_stash_client.find_performer({"name": "Alias Name"})
+    try:
+        performer = await respx_stash_client.find_performer({"name": "Alias Name"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is not None
     assert performer.id == "456"
@@ -216,7 +232,10 @@ async def test_find_performer_by_name_not_found(
         ]
     )
 
-    performer = await respx_stash_client.find_performer({"name": "Nonexistent"})
+    try:
+        performer = await respx_stash_client.find_performer({"name": "Nonexistent"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert performer is None
     # Called twice - once for name, once for alias
@@ -264,7 +283,10 @@ async def test_find_performers(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_performers()
+    try:
+        result = await respx_stash_client.find_performers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.performers)
@@ -297,7 +319,10 @@ async def test_find_performers_with_q_parameter(
         ]
     )
 
-    result = await respx_stash_client.find_performers(q="Search Result")
+    try:
+        result = await respx_stash_client.find_performers(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.performers)
@@ -333,9 +358,12 @@ async def test_find_performers_with_custom_filter(
     )
 
     # Provide a custom filter_ to skip the default {"per_page": -1}
-    result = await respx_stash_client.find_performers(
-        filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
-    )
+    try:
+        result = await respx_stash_client.find_performers(
+            filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.performers)
@@ -362,7 +390,10 @@ async def test_find_performers_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_performers()
+    try:
+        result = await respx_stash_client.find_performers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.performers)
@@ -399,7 +430,10 @@ async def test_create_performer(respx_stash_client: StashClient) -> None:
     )
 
     performer = Performer(id="new", name="New Performer", gender=GenderEnum.FEMALE)
-    result = await respx_stash_client.create_performer(performer)
+    try:
+        result = await respx_stash_client.create_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "new_performer_123"
@@ -459,7 +493,10 @@ async def test_create_performer_already_exists_fallback(
     )
 
     performer = Performer(id="new", name="Existing Performer")
-    result = await respx_stash_client.create_performer(performer)
+    try:
+        result = await respx_stash_client.create_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "existing_123"
@@ -484,8 +521,11 @@ async def test_create_performer_error_raises(respx_stash_client: StashClient) ->
 
     performer = Performer(id="new", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_performer(performer)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -534,8 +574,11 @@ async def test_create_performer_already_exists_but_not_found_raises(
     performer = Performer(id="new", name="Ghost Performer")
 
     # Should re-raise the original exception since performer wasn't found
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_performer(performer)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should have made 2 calls - create then find (which returned empty)
     assert len(graphql_route.calls) == 2
@@ -572,7 +615,10 @@ async def test_update_performer(respx_stash_client: StashClient) -> None:
     performer.name = "Updated Performer"
     performer.gender = GenderEnum.MALE
 
-    result = await respx_stash_client.update_performer(performer)
+    try:
+        result = await respx_stash_client.update_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -599,8 +645,11 @@ async def test_update_performer_error_raises(respx_stash_client: StashClient) ->
 
     performer = Performer(id="123", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_performer(performer)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_performer(performer)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -635,7 +684,10 @@ async def test_update_performer_image(respx_stash_client: StashClient) -> None:
     performer = Performer(id="123", name="Performer")
     image_url = "data:image/jpeg;base64,/9j/4AAQSkZJRg=="
 
-    result = await respx_stash_client.update_performer_image(performer, image_url)
+    try:
+        result = await respx_stash_client.update_performer_image(performer, image_url)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -665,10 +717,13 @@ async def test_update_performer_image_error_raises(
 
     performer = Performer(id="123", name="Performer")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_performer_image(
-            performer, "data:image/jpeg;base64,xxx"
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_performer_image(
+                performer, "data:image/jpeg;base64,xxx"
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -688,7 +743,10 @@ async def test_performer_destroy_with_dict(respx_stash_client: StashClient) -> N
         ]
     )
 
-    result = await respx_stash_client.performer_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.performer_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -713,7 +771,10 @@ async def test_performer_destroy_with_input_type(
     )
 
     input_data = PerformerDestroyInput(id="123")
-    result = await respx_stash_client.performer_destroy(input_data)
+    try:
+        result = await respx_stash_client.performer_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -736,8 +797,11 @@ async def test_performer_destroy_error_raises(respx_stash_client: StashClient) -
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.performer_destroy({"id": "123"})
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.performer_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -757,7 +821,10 @@ async def test_performers_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.performers_destroy(["123", "456", "789"])
+    try:
+        result = await respx_stash_client.performers_destroy(["123", "456", "789"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -780,8 +847,11 @@ async def test_performers_destroy_error_raises(respx_stash_client: StashClient) 
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.performers_destroy(["123", "456"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.performers_destroy(["123", "456"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -820,7 +890,10 @@ async def test_bulk_performer_update_with_dict(respx_stash_client: StashClient) 
         "gender": "FEMALE",
     }
 
-    result = await respx_stash_client.bulk_performer_update(input_dict)
+    try:
+        result = await respx_stash_client.bulk_performer_update(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].id == "p1"
@@ -863,7 +936,10 @@ async def test_bulk_performer_update_with_input_type(
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
-    result = await respx_stash_client.bulk_performer_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_performer_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "p1"
@@ -899,8 +975,11 @@ async def test_bulk_performer_update_error_raises(
         gender=GenderEnum.FEMALE,
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.bulk_performer_update(input_data)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.bulk_performer_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -932,7 +1011,10 @@ async def test_all_performers(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.all_performers()
+    try:
+        result = await respx_stash_client.all_performers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].id == "p1"
@@ -960,7 +1042,10 @@ async def test_all_performers_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.all_performers()
+    try:
+        result = await respx_stash_client.all_performers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
     assert len(graphql_route.calls) == 1
@@ -994,7 +1079,10 @@ async def test_map_performer_ids_string_input_found_by_name(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(["John Doe"])
+    try:
+        result = await respx_stash_client.map_performer_ids(["John Doe"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]
     assert len(graphql_route.calls) == 1
@@ -1043,7 +1131,10 @@ async def test_map_performer_ids_string_input_found_by_alias(
         side_effect=mock_response
     )
 
-    result = await respx_stash_client.map_performer_ids(["Jane Alias"])
+    try:
+        result = await respx_stash_client.map_performer_ids(["Jane Alias"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p2"]
     assert len(graphql_route.calls) == 2
@@ -1084,9 +1175,12 @@ async def test_map_performer_ids_string_input_multiple_matches_return_first(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        ["Common Name"], on_multiple=OnMultipleMatch.RETURN_FIRST
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["Common Name"], on_multiple=OnMultipleMatch.RETURN_FIRST
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]  # Returns first match
     assert len(graphql_route.calls) == 1
@@ -1118,9 +1212,12 @@ async def test_map_performer_ids_string_input_multiple_matches_return_none(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        ["Ambiguous Name"], on_multiple=OnMultipleMatch.RETURN_NONE
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["Ambiguous Name"], on_multiple=OnMultipleMatch.RETURN_NONE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []  # Returns empty - skipped the performer
     assert len(graphql_route.calls) == 1
@@ -1153,9 +1250,12 @@ async def test_map_performer_ids_string_input_multiple_matches_default_fallback(
     )
 
     # Use RETURN_LIST (which falls through to else branch)
-    result = await respx_stash_client.map_performer_ids(
-        ["Multiple Name"], on_multiple=OnMultipleMatch.RETURN_LIST
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["Multiple Name"], on_multiple=OnMultipleMatch.RETURN_LIST
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]  # Falls back to first match
     assert len(graphql_route.calls) == 1
@@ -1184,7 +1284,10 @@ async def test_map_performer_ids_string_input_single_match(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(["Single Match"])
+    try:
+        result = await respx_stash_client.map_performer_ids(["Single Match"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]
     assert len(graphql_route.calls) == 1
@@ -1220,7 +1323,12 @@ async def test_map_performer_ids_string_input_not_found_create_false(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(["Nonexistent"], create=False)
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["Nonexistent"], create=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
     assert len(graphql_route.calls) == 2
@@ -1263,7 +1371,12 @@ async def test_map_performer_ids_string_input_not_found_create_true(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(["New Performer"], create=True)
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["New Performer"], create=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["new_p1"]
     assert len(graphql_route.calls) == 3
@@ -1297,7 +1410,12 @@ async def test_map_performer_ids_dict_input_found(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids([{"name": "Dict Performer"}])
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict Performer"}]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]
     assert len(graphql_route.calls) == 1
@@ -1333,9 +1451,12 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_none(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_NONE
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_NONE
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
     assert len(graphql_route.calls) == 1
@@ -1367,9 +1488,12 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_first(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        [{"name": "Dict First"}], on_multiple=OnMultipleMatch.RETURN_FIRST
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict First"}], on_multiple=OnMultipleMatch.RETURN_FIRST
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]
     assert len(graphql_route.calls) == 1
@@ -1404,9 +1528,12 @@ async def test_map_performer_ids_dict_input_not_found_create_true(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        [{"name": "New Dict"}], create=True
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "New Dict"}], create=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["new_p1"]
     assert len(graphql_route.calls) == 2
@@ -1433,9 +1560,12 @@ async def test_map_performer_ids_dict_input_not_found_create_false(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        [{"name": "Missing Dict"}], create=False
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Missing Dict"}], create=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
     assert len(graphql_route.calls) == 1
@@ -1482,7 +1612,10 @@ async def test_map_performer_ids_performer_object_without_id(
         ]
     )
 
-    result = await respx_stash_client.map_performer_ids([performer])
+    try:
+        result = await respx_stash_client.map_performer_ids([performer])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1"]
     assert len(graphql_route.calls) == 1
@@ -1526,9 +1659,12 @@ async def test_map_performer_ids_error_handling_continues(
     )
 
     # First performer will error (caught and continued), second will succeed
-    result = await respx_stash_client.map_performer_ids(
-        ["Error Performer", "Good Performer"]
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["Error Performer", "Good Performer"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should have one ID from successful performer (error was caught and continued)
     assert result == ["p1"]
@@ -1577,9 +1713,12 @@ async def test_map_performer_ids_mixed_input_types(
         side_effect=mock_response
     )
 
-    result = await respx_stash_client.map_performer_ids(
-        ["String Input", {"name": "Dict Input"}, performer_with_id]
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            ["String Input", {"name": "Dict Input"}, performer_with_id]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ["p1", "p2", "p3"]
     assert len(graphql_route.calls) == 2
@@ -1642,9 +1781,12 @@ async def test_map_performer_ids_dict_input_multiple_matches_else_default(
     )
 
     # Use RETURN_LIST - falls through to else branch which defaults to first match
-    result = await respx_stash_client.map_performer_ids(
-        [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_LIST
-    )
+    try:
+        result = await respx_stash_client.map_performer_ids(
+            [{"name": "Dict Multiple"}], on_multiple=OnMultipleMatch.RETURN_LIST
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Else branch defaults to first match (lines 719-724)
     assert result == ["p1"]
@@ -1714,9 +1856,12 @@ async def test_map_performer_ids_exception_handling(
         respx_stash_client, "find_performers", side_effect=mock_find_performers
     ):
         # First performer causes exception, second succeeds
-        result = await respx_stash_client.map_performer_ids(
-            ["Error Performer", "Valid Performer"]
-        )
+        try:
+            result = await respx_stash_client.map_performer_ids(
+                ["Error Performer", "Valid Performer"]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     # First performer was skipped due to exception (caught at lines 736-738)
     # Second performer succeeded
@@ -1747,7 +1892,10 @@ async def test_map_performer_ids_performer_object_with_id_but_name_unset(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_performer_ids([performer])
+    try:
+        result = await respx_stash_client.map_performer_ids([performer])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Performer with UNSET name is skipped - no ID added
     assert len(result) == 0
@@ -1980,7 +2128,10 @@ async def test_performer_merge_with_input_type(
         destination="destination-123",
     )
 
-    result = await respx_stash_client.performer_merge(input_data)
+    try:
+        result = await respx_stash_client.performer_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "destination-123"
@@ -2022,7 +2173,10 @@ async def test_performer_merge_with_dict_input(
         "destination": "dest-456",
     }
 
-    result = await respx_stash_client.performer_merge(input_dict)
+    try:
+        result = await respx_stash_client.performer_merge(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "dest-456"
@@ -2072,7 +2226,10 @@ async def test_performer_merge_with_values_override(
         ),
     )
 
-    result = await respx_stash_client.performer_merge(input_data)
+    try:
+        result = await respx_stash_client.performer_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "dest-789"
@@ -2111,8 +2268,11 @@ async def test_performer_merge_error_raises(respx_stash_client: StashClient) -> 
         destination="dest-999",
     )
 
-    with pytest.raises(StashGraphQLError, match="Cannot merge"):
-        await respx_stash_client.performer_merge(input_data)
+    try:
+        with pytest.raises(StashGraphQLError, match="Cannot merge"):
+            await respx_stash_client.performer_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -2142,9 +2302,12 @@ async def test_performer_merge_version_check(respx_stash_client: StashClient) ->
         destination="dest-1",
     )
 
-    with pytest.raises(
-        StashGraphQLError, match=r"performerMerge requires Stash v0\.30\.2\+"
-    ):
-        await respx_stash_client.performer_merge(input_data)
+    try:
+        with pytest.raises(
+            StashGraphQLError, match=r"performerMerge requires Stash v0\.30\.2\+"
+        ):
+            await respx_stash_client.performer_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

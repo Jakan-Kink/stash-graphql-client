@@ -13,7 +13,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import DestroyFilterInput, FilterMode, SaveFilterInput
 from stash_graphql_client.types.filters import FindFilterType
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 def create_saved_filter_dict(
@@ -62,7 +62,10 @@ async def test_save_filter_create_new(respx_stash_client: StashClient) -> None:
         ui_options={"display_mode": "grid"},
     )
 
-    saved_filter = await respx_stash_client.save_filter(input_data)
+    try:
+        saved_filter = await respx_stash_client.save_filter(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert saved_filter is not None
@@ -100,7 +103,10 @@ async def test_save_filter_update_existing(respx_stash_client: StashClient) -> N
         name="Updated Performers Filter",
     )
 
-    saved_filter = await respx_stash_client.save_filter(input_data)
+    try:
+        saved_filter = await respx_stash_client.save_filter(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert saved_filter is not None
@@ -131,12 +137,15 @@ async def test_save_filter_with_dict_input(respx_stash_client: StashClient) -> N
         ]
     )
 
-    saved_filter = await respx_stash_client.save_filter(
-        {
-            "mode": "GALLERIES",
-            "name": "Gallery Filter",
-        }
-    )
+    try:
+        saved_filter = await respx_stash_client.save_filter(
+            {
+                "mode": "GALLERIES",
+                "name": "Gallery Filter",
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert saved_filter is not None
@@ -162,7 +171,10 @@ async def test_destroy_saved_filter(respx_stash_client: StashClient) -> None:
     )
 
     input_data = DestroyFilterInput(id="123")
-    result = await respx_stash_client.destroy_saved_filter(input_data)
+    try:
+        result = await respx_stash_client.destroy_saved_filter(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is True
@@ -186,7 +198,10 @@ async def test_destroy_saved_filter_with_dict(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.destroy_saved_filter({"id": "456"})
+    try:
+        result = await respx_stash_client.destroy_saved_filter({"id": "456"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is True
@@ -209,7 +224,10 @@ async def test_destroy_saved_filter_failure(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.destroy_saved_filter({"id": "999"})
+    try:
+        result = await respx_stash_client.destroy_saved_filter({"id": "999"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is False
@@ -226,8 +244,13 @@ async def test_save_filter_error_raises(respx_stash_client: StashClient) -> None
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    with pytest.raises(Exception, match="error"):
-        await respx_stash_client.save_filter({"mode": "SCENES", "name": "Error Filter"})
+    try:
+        with pytest.raises(Exception, match="error"):
+            await respx_stash_client.save_filter(
+                {"mode": "SCENES", "name": "Error Filter"}
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -242,7 +265,10 @@ async def test_destroy_saved_filter_error_raises(
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    with pytest.raises(Exception, match="error"):
-        await respx_stash_client.destroy_saved_filter({"id": "error"})
+    try:
+        with pytest.raises(Exception, match="error"):
+            await respx_stash_client.destroy_saved_filter({"id": "error"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

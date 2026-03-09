@@ -8,7 +8,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import BulkPerformerUpdateInput, Performer
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -21,7 +21,10 @@ async def test_find_performers_returns_results(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_performers()
+        try:
+            result = await stash_client.find_performers()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performers"
@@ -45,7 +48,12 @@ async def test_find_performers_with_pagination(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_performers(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_performers(
+                filter_={"per_page": 10, "page": 1}
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performers"
@@ -70,7 +78,10 @@ async def test_find_nonexistent_performer_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        performer = await stash_client.find_performer("99999999")
+        try:
+            performer = await stash_client.find_performer("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performer"
@@ -94,11 +105,14 @@ async def test_find_performer_by_name_filter(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Search for a performer that likely doesn't exist
-        result = await stash_client.find_performers(
-            performer_filter={
-                "name": {"value": "NonexistentPerformer12345", "modifier": "EQUALS"}
-            }
-        )
+        try:
+            result = await stash_client.find_performers(
+                performer_filter={
+                    "name": {"value": "NonexistentPerformer12345", "modifier": "EQUALS"}
+                }
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performers"
@@ -123,7 +137,10 @@ async def test_find_performers_with_q_parameter(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_performers(q="test")
+        try:
+            result = await stash_client.find_performers(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performers"
@@ -155,9 +172,12 @@ async def test_create_and_find_performer(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        performer = await stash_client.create_performer(
-            Performer(name="SGC Inttest Create")
-        )
+        try:
+            performer = await stash_client.create_performer(
+                Performer(name="SGC Inttest Create")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performer")
         cleanup["performers"].append(performer.id)
 
         assert len(calls) == 1, "Expected 1 GraphQL call for create_performer"
@@ -170,7 +190,10 @@ async def test_create_and_find_performer(
 
         calls.clear()
 
-        found = await stash_client.find_performer(performer.id)
+        try:
+            found = await stash_client.find_performer(performer.id)
+        finally:
+            dump_graphql_calls(calls, "find_performer")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_performer"
         assert "findPerformer" in calls[0]["query"]
@@ -192,16 +215,22 @@ async def test_update_performer(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        performer = await stash_client.create_performer(
-            Performer(name="SGC Inttest Update")
-        )
+        try:
+            performer = await stash_client.create_performer(
+                Performer(name="SGC Inttest Update")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performer")
         cleanup["performers"].append(performer.id)
         assert performer.id is not None
 
         calls.clear()
 
         performer.details = "integration test details"
-        updated = await stash_client.update_performer(performer)
+        try:
+            updated = await stash_client.update_performer(performer)
+        finally:
+            dump_graphql_calls(calls, "update_performer")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for update_performer"
         assert "performerUpdate" in calls[0]["query"]
@@ -223,15 +252,21 @@ async def test_performer_destroy(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        performer = await stash_client.create_performer(
-            Performer(name="SGC Inttest Destroy")
-        )
+        try:
+            performer = await stash_client.create_performer(
+                Performer(name="SGC Inttest Destroy")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performer")
         cleanup["performers"].append(performer.id)
         assert performer.id is not None
 
         calls.clear()
 
-        result = await stash_client.performer_destroy({"id": performer.id})
+        try:
+            result = await stash_client.performer_destroy({"id": performer.id})
+        finally:
+            dump_graphql_calls(calls, "performer_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for performer_destroy"
         assert "performerDestroy" in calls[0]["query"]
@@ -244,7 +279,10 @@ async def test_performer_destroy(
         calls.clear()
 
         # Confirm the performer is gone
-        gone = await stash_client.find_performer(performer.id)
+        try:
+            gone = await stash_client.find_performer(performer.id)
+        finally:
+            dump_graphql_calls(calls, "find_performer")
         assert gone is None
 
 
@@ -259,12 +297,15 @@ async def test_performers_destroy_bulk(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        perf_a = await stash_client.create_performer(
-            Performer(name="SGC Inttest Bulk Destroy A")
-        )
-        perf_b = await stash_client.create_performer(
-            Performer(name="SGC Inttest Bulk Destroy B")
-        )
+        try:
+            perf_a = await stash_client.create_performer(
+                Performer(name="SGC Inttest Bulk Destroy A")
+            )
+            perf_b = await stash_client.create_performer(
+                Performer(name="SGC Inttest Bulk Destroy B")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performers")
         cleanup["performers"].append(perf_a.id)
         cleanup["performers"].append(perf_b.id)
         assert perf_a.id is not None
@@ -272,7 +313,10 @@ async def test_performers_destroy_bulk(
 
         calls.clear()
 
-        result = await stash_client.performers_destroy([perf_a.id, perf_b.id])
+        try:
+            result = await stash_client.performers_destroy([perf_a.id, perf_b.id])
+        finally:
+            dump_graphql_calls(calls, "performers_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for performers_destroy"
         assert "performersDestroy" in calls[0]["query"]
@@ -295,12 +339,15 @@ async def test_bulk_performer_update(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        perf_a = await stash_client.create_performer(
-            Performer(name="SGC Inttest Bulk Update A")
-        )
-        perf_b = await stash_client.create_performer(
-            Performer(name="SGC Inttest Bulk Update B")
-        )
+        try:
+            perf_a = await stash_client.create_performer(
+                Performer(name="SGC Inttest Bulk Update A")
+            )
+            perf_b = await stash_client.create_performer(
+                Performer(name="SGC Inttest Bulk Update B")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performers")
         cleanup["performers"].append(perf_a.id)
         cleanup["performers"].append(perf_b.id)
         assert perf_a.id is not None
@@ -308,12 +355,15 @@ async def test_bulk_performer_update(
 
         calls.clear()
 
-        updated_performers = await stash_client.bulk_performer_update(
-            BulkPerformerUpdateInput(
-                ids=[perf_a.id, perf_b.id],
-                details="bulk-updated",
+        try:
+            updated_performers = await stash_client.bulk_performer_update(
+                BulkPerformerUpdateInput(
+                    ids=[perf_a.id, perf_b.id],
+                    details="bulk-updated",
+                )
             )
-        )
+        finally:
+            dump_graphql_calls(calls, "bulk_performer_update")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for bulk_performer_update"
         assert "bulkPerformerUpdate" in calls[0]["query"]
@@ -341,12 +391,15 @@ async def test_performer_merge(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        source = await stash_client.create_performer(
-            Performer(name="SGC Inttest Merge Source")
-        )
-        dest = await stash_client.create_performer(
-            Performer(name="SGC Inttest Merge Dest")
-        )
+        try:
+            source = await stash_client.create_performer(
+                Performer(name="SGC Inttest Merge Source")
+            )
+            dest = await stash_client.create_performer(
+                Performer(name="SGC Inttest Merge Dest")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_performers")
         cleanup["performers"].append(source.id)
         cleanup["performers"].append(dest.id)
         assert source.id is not None
@@ -354,9 +407,12 @@ async def test_performer_merge(
 
         calls.clear()
 
-        merged = await stash_client.performer_merge(
-            {"source": [source.id], "destination": dest.id}
-        )
+        try:
+            merged = await stash_client.performer_merge(
+                {"source": [source.id], "destination": dest.id}
+            )
+        finally:
+            dump_graphql_calls(calls, "performer_merge")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for performer_merge"
         assert "performerMerge" in calls[0]["query"]

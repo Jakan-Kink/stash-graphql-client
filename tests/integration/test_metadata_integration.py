@@ -29,7 +29,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import GenerateMetadataInput
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -47,7 +47,10 @@ async def test_get_configuration_defaults_returns_config(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        config = await stash_client.get_configuration_defaults()
+        try:
+            config = await stash_client.get_configuration_defaults()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for get_configuration_defaults"
@@ -77,7 +80,10 @@ async def test_metadata_clean_generated_with_dry_run(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        job_id = await stash_client.metadata_clean_generated({"dryRun": True})
+        try:
+            job_id = await stash_client.metadata_clean_generated({"dryRun": True})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for metadata_clean_generated"
@@ -102,13 +108,16 @@ async def test_metadata_clean_generated_selective_cleanup(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        job_id = await stash_client.metadata_clean_generated(
-            {
-                "sprites": True,
-                "screenshots": True,
-                "dryRun": True,
-            }
-        )
+        try:
+            job_id = await stash_client.metadata_clean_generated(
+                {
+                    "sprites": True,
+                    "screenshots": True,
+                    "dryRun": True,
+                }
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for metadata_clean_generated"
@@ -138,7 +147,10 @@ async def test_metadata_auto_tag_with_all_performers(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        job_id = await stash_client.metadata_auto_tag({"performers": ["*"]})
+        try:
+            job_id = await stash_client.metadata_auto_tag({"performers": ["*"]})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for metadata_auto_tag"
@@ -163,12 +175,15 @@ async def test_metadata_auto_tag_with_specific_ids(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        job_id = await stash_client.metadata_auto_tag(
-            {
-                "performers": ["1", "2"],
-                "studios": ["5"],
-            }
-        )
+        try:
+            job_id = await stash_client.metadata_auto_tag(
+                {
+                    "performers": ["1", "2"],
+                    "studios": ["5"],
+                }
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for metadata_auto_tag"
@@ -198,7 +213,10 @@ async def test_export_objects_all_scenes(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        token = await stash_client.export_objects({"scenes": {"all": True}})
+        try:
+            token = await stash_client.export_objects({"scenes": {"all": True}})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for export_objects"
@@ -224,9 +242,12 @@ async def test_export_objects_specific_ids(
         capture_graphql_calls(stash_client) as calls,
     ):
         performer_ids = ["1", "2", "3"]
-        token = await stash_client.export_objects(
-            {"performers": {"ids": performer_ids}}
-        )
+        try:
+            token = await stash_client.export_objects(
+                {"performers": {"ids": performer_ids}}
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for export_objects"
@@ -255,7 +276,10 @@ async def test_backup_database_with_download(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        token = await stash_client.backup_database({"download": True})
+        try:
+            token = await stash_client.backup_database({"download": True})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for backup_database"
@@ -280,7 +304,10 @@ async def test_backup_database_without_download(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        path = await stash_client.backup_database({"download": False})
+        try:
+            path = await stash_client.backup_database({"download": False})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for backup_database"
@@ -322,10 +349,13 @@ async def test_generate_metadata_paths_gating_matches_capabilities(
     ):
         with warnings.catch_warnings(record=True) as caught_warnings:
             warnings.simplefilter("always")
-            job_id = await stash_client.metadata_generate(
-                options={"phashes": True},
-                input_data=GenerateMetadataInput(paths=["/nonexistent/test/path"]),
-            )
+            try:
+                job_id = await stash_client.metadata_generate(
+                    options={"phashes": True},
+                    input_data=GenerateMetadataInput(paths=["/nonexistent/test/path"]),
+                )
+            finally:
+                dump_graphql_calls(calls)
 
         # Mutation must succeed regardless
         assert len(calls) == 1, "Expected 1 GraphQL call for metadata_generate"

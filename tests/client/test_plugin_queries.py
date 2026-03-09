@@ -12,7 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -106,7 +106,10 @@ async def test_get_plugins(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    plugins = await respx_stash_client.get_plugins()
+    try:
+        plugins = await respx_stash_client.get_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(plugins) == 1
     assert plugins[0].id == "plugin-1"
@@ -134,7 +137,10 @@ async def test_get_plugins_multiple(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    plugins = await respx_stash_client.get_plugins()
+    try:
+        plugins = await respx_stash_client.get_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(plugins) == 3
     assert plugins[0].id == "plugin-1"
@@ -155,7 +161,10 @@ async def test_get_plugins_empty(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json=create_graphql_response("plugins", []))]
     )
 
-    plugins = await respx_stash_client.get_plugins()
+    try:
+        plugins = await respx_stash_client.get_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(plugins) == 0
     assert len(graphql_route.calls) == 1
@@ -173,7 +182,10 @@ async def test_get_plugins_error_returns_empty(
         ]
     )
 
-    plugins = await respx_stash_client.get_plugins()
+    try:
+        plugins = await respx_stash_client.get_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(plugins) == 0
     assert len(graphql_route.calls) == 1
@@ -201,7 +213,10 @@ async def test_get_plugin_tasks(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    tasks = await respx_stash_client.get_plugin_tasks()
+    try:
+        tasks = await respx_stash_client.get_plugin_tasks()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tasks) == 1
     assert tasks[0].name == "scan_library"
@@ -238,7 +253,10 @@ async def test_get_plugin_tasks_multiple(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    tasks = await respx_stash_client.get_plugin_tasks()
+    try:
+        tasks = await respx_stash_client.get_plugin_tasks()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tasks) == 2
     assert tasks[0].name == "scan"
@@ -261,7 +279,10 @@ async def test_get_plugin_tasks_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    tasks = await respx_stash_client.get_plugin_tasks()
+    try:
+        tasks = await respx_stash_client.get_plugin_tasks()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tasks) == 0
     assert len(graphql_route.calls) == 1
@@ -279,7 +300,10 @@ async def test_get_plugin_tasks_error_returns_empty(
         ]
     )
 
-    tasks = await respx_stash_client.get_plugin_tasks()
+    try:
+        tasks = await respx_stash_client.get_plugin_tasks()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tasks) == 0
     assert len(graphql_route.calls) == 1

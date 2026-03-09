@@ -16,7 +16,7 @@ from stash_graphql_client.types import (
     StashBoxDraftSubmissionInput,
     StashBoxFingerprintSubmissionInput,
 )
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -46,7 +46,10 @@ async def test_submit_stashbox_fingerprints_with_dict(
         "scene_ids": ["scene123"],
     }
 
-    result = await respx_stash_client.submit_stashbox_fingerprints(input_dict)
+    try:
+        result = await respx_stash_client.submit_stashbox_fingerprints(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -78,7 +81,10 @@ async def test_submit_stashbox_fingerprints_with_input_type(
         stash_box_endpoint="https://stashdb.org",
     )
 
-    result = await respx_stash_client.submit_stashbox_fingerprints(input_data)
+    try:
+        result = await respx_stash_client.submit_stashbox_fingerprints(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -107,8 +113,11 @@ async def test_submit_stashbox_fingerprints_error_raises(
         "scene_ids": ["scene123"],
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.submit_stashbox_fingerprints(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.submit_stashbox_fingerprints(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -141,7 +150,10 @@ async def test_submit_stashbox_scene_draft_with_dict(
         "id": "scene456",
     }
 
-    result = await respx_stash_client.submit_stashbox_scene_draft(input_dict)
+    try:
+        result = await respx_stash_client.submit_stashbox_scene_draft(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "draft-123"
 
@@ -174,7 +186,10 @@ async def test_submit_stashbox_scene_draft_with_input_type(
         id="scene789",
     )
 
-    result = await respx_stash_client.submit_stashbox_scene_draft(input_data)
+    try:
+        result = await respx_stash_client.submit_stashbox_scene_draft(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "draft-456"
 
@@ -203,8 +218,11 @@ async def test_submit_stashbox_scene_draft_error_raises(
         "id": "scene123",
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.submit_stashbox_scene_draft(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.submit_stashbox_scene_draft(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -239,7 +257,10 @@ async def test_submit_stashbox_performer_draft_with_dict(
         "id": "performer456",
     }
 
-    result = await respx_stash_client.submit_stashbox_performer_draft(input_dict)
+    try:
+        result = await respx_stash_client.submit_stashbox_performer_draft(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "performer-draft-123"
 
@@ -274,7 +295,10 @@ async def test_submit_stashbox_performer_draft_with_input_type(
         id="performer789",
     )
 
-    result = await respx_stash_client.submit_stashbox_performer_draft(input_data)
+    try:
+        result = await respx_stash_client.submit_stashbox_performer_draft(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "performer-draft-456"
 
@@ -303,8 +327,11 @@ async def test_submit_stashbox_performer_draft_error_raises(
         "id": "performer123",
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.submit_stashbox_performer_draft(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.submit_stashbox_performer_draft(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -335,7 +362,10 @@ async def test_stashbox_batch_performer_tag(respx_stash_client: StashClient) -> 
         "performer_ids": ["p1", "p2", "p3"],
     }
 
-    result = await respx_stash_client.stashbox_batch_performer_tag(input_dict)
+    try:
+        result = await respx_stash_client.stashbox_batch_performer_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "job-123"
 
@@ -366,8 +396,11 @@ async def test_stashbox_batch_performer_tag_error_raises(
         "performer_ids": ["p1"],
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.stashbox_batch_performer_tag(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.stashbox_batch_performer_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -398,7 +431,10 @@ async def test_stashbox_batch_studio_tag(respx_stash_client: StashClient) -> Non
         "studio_ids": ["s1", "s2", "s3"],
     }
 
-    result = await respx_stash_client.stashbox_batch_studio_tag(input_dict)
+    try:
+        result = await respx_stash_client.stashbox_batch_studio_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "job-456"
 
@@ -429,8 +465,11 @@ async def test_stashbox_batch_studio_tag_error_raises(
         "studio_ids": ["s1"],
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.stashbox_batch_studio_tag(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.stashbox_batch_studio_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -458,7 +497,10 @@ async def test_stashbox_batch_tag_tag(respx_stash_client: StashClient) -> None:
         "tag_ids": ["t1", "t2"],
     }
 
-    result = await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+    try:
+        result = await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "job-789"
 
@@ -486,7 +528,10 @@ async def test_stashbox_batch_tag_tag_error_raises(
         "tag_ids": ["t1"],
     }
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.stashbox_batch_tag_tag(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

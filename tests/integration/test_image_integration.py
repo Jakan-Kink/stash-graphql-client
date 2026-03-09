@@ -14,7 +14,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # Serialize with gallery tests — gallery deletion breaks image queries
@@ -36,7 +36,10 @@ async def test_find_images_returns_results(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_images()
+        try:
+            result = await stash_client.find_images()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_images"
@@ -62,7 +65,10 @@ async def test_find_images_with_pagination(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_images(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_images(filter_={"per_page": 10, "page": 1})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_images"
@@ -87,7 +93,10 @@ async def test_find_nonexistent_image_returns_none(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        image = await stash_client.find_image("99999999")
+        try:
+            image = await stash_client.find_image("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_image"
@@ -110,7 +119,10 @@ async def test_find_images_with_q_parameter(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_images(q="test")
+        try:
+            result = await stash_client.find_images(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_images"

@@ -26,6 +26,7 @@ from tests.fixtures import (
     create_find_studios_result,
     create_graphql_response,
     create_studio_dict,
+    dump_graphql_calls,
 )
 
 
@@ -46,7 +47,10 @@ async def test_find_studio_by_id(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    studio = await respx_stash_client.find_studio("123")
+    try:
+        studio = await respx_stash_client.find_studio("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert studio is not None
     assert studio.id == "123"
@@ -68,7 +72,10 @@ async def test_find_studio_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    studio = await respx_stash_client.find_studio("999")
+    try:
+        studio = await respx_stash_client.find_studio("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert studio is None
     assert len(graphql_route.calls) == 1
@@ -84,7 +91,10 @@ async def test_find_studio_error_returns_none(respx_stash_client: StashClient) -
         ]
     )
 
-    studio = await respx_stash_client.find_studio("error_id")
+    try:
+        studio = await respx_stash_client.find_studio("error_id")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert studio is None
     assert len(graphql_route.calls) == 1
@@ -113,7 +123,10 @@ async def test_find_studios(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_studios()
+    try:
+        result = await respx_stash_client.find_studios()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.studios)
@@ -142,7 +155,10 @@ async def test_find_studios_with_q_parameter(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.find_studios(q="Search Result")
+    try:
+        result = await respx_stash_client.find_studios(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.studios)
@@ -173,9 +189,12 @@ async def test_find_studios_with_custom_filter(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.find_studios(
-        filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
-    )
+    try:
+        result = await respx_stash_client.find_studios(
+            filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.studios)
@@ -201,7 +220,10 @@ async def test_find_studios_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_studios()
+    try:
+        result = await respx_stash_client.find_studios()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.studios)
@@ -237,7 +259,10 @@ async def test_create_studio(respx_stash_client: StashClient) -> None:
     )
 
     studio = Studio(id="new", name="New Studio")
-    result = await respx_stash_client.create_studio(studio)
+    try:
+        result = await respx_stash_client.create_studio(studio)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "new_studio_123"
@@ -263,8 +288,11 @@ async def test_create_studio_error_raises(respx_stash_client: StashClient) -> No
 
     studio = Studio(id="new", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_studio(studio)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_studio(studio)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -297,7 +325,10 @@ async def test_update_studio(respx_stash_client: StashClient) -> None:
     studio = Studio(id="123", name="Original Name")
     studio.name = "Updated Studio"
 
-    result = await respx_stash_client.update_studio(studio)
+    try:
+        result = await respx_stash_client.update_studio(studio)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -323,8 +354,11 @@ async def test_update_studio_error_raises(respx_stash_client: StashClient) -> No
 
     studio = Studio(id="123", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_studio(studio)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_studio(studio)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -344,7 +378,10 @@ async def test_studio_destroy_with_dict(respx_stash_client: StashClient) -> None
         ]
     )
 
-    result = await respx_stash_client.studio_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.studio_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -367,7 +404,10 @@ async def test_studio_destroy_with_input_type(respx_stash_client: StashClient) -
     )
 
     input_data = StudioDestroyInput(id="123")
-    result = await respx_stash_client.studio_destroy(input_data)
+    try:
+        result = await respx_stash_client.studio_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -390,8 +430,11 @@ async def test_studio_destroy_error_raises(respx_stash_client: StashClient) -> N
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.studio_destroy({"id": "123"})
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.studio_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -411,7 +454,10 @@ async def test_studios_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.studios_destroy(["123", "456", "789"])
+    try:
+        result = await respx_stash_client.studios_destroy(["123", "456", "789"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -434,8 +480,11 @@ async def test_studios_destroy_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.studios_destroy(["123", "456"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.studios_destroy(["123", "456"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -472,7 +521,10 @@ async def test_bulk_studio_update_with_dict(respx_stash_client: StashClient) -> 
         "rating100": 80,
     }
 
-    result = await respx_stash_client.bulk_studio_update(input_dict)
+    try:
+        result = await respx_stash_client.bulk_studio_update(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].id == "s1"
@@ -513,7 +565,10 @@ async def test_bulk_studio_update_with_input_type(
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
-    result = await respx_stash_client.bulk_studio_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_studio_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "s1"
@@ -545,8 +600,11 @@ async def test_bulk_studio_update_error_raises(respx_stash_client: StashClient) 
         rating100=80,
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.bulk_studio_update(input_data)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.bulk_studio_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -585,7 +643,10 @@ async def test_find_studio_hierarchy_multi_level(
         ]
     )
 
-    hierarchy = await respx_stash_client.find_studio_hierarchy("child")
+    try:
+        hierarchy = await respx_stash_client.find_studio_hierarchy("child")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify hierarchy is ordered from root to child
     assert len(hierarchy) == 3
@@ -621,7 +682,10 @@ async def test_find_studio_hierarchy_single_studio(
         ]
     )
 
-    hierarchy = await respx_stash_client.find_studio_hierarchy("solo")
+    try:
+        hierarchy = await respx_stash_client.find_studio_hierarchy("solo")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return single studio
     assert len(hierarchy) == 1
@@ -644,7 +708,10 @@ async def test_find_studio_hierarchy_not_found(respx_stash_client: StashClient) 
         ]
     )
 
-    hierarchy = await respx_stash_client.find_studio_hierarchy("nonexistent")
+    try:
+        hierarchy = await respx_stash_client.find_studio_hierarchy("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty list
     assert len(hierarchy) == 0
@@ -681,7 +748,10 @@ async def test_find_studio_root_from_child(respx_stash_client: StashClient) -> N
         ]
     )
 
-    root = await respx_stash_client.find_studio_root("child")
+    try:
+        root = await respx_stash_client.find_studio_root("child")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return the root studio
     assert root is not None
@@ -709,7 +779,10 @@ async def test_find_studio_root_already_root(respx_stash_client: StashClient) ->
         ]
     )
 
-    root = await respx_stash_client.find_studio_root("already_root")
+    try:
+        root = await respx_stash_client.find_studio_root("already_root")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return itself
     assert root is not None
@@ -732,7 +805,10 @@ async def test_find_studio_root_not_found(respx_stash_client: StashClient) -> No
         ]
     )
 
-    root = await respx_stash_client.find_studio_root("nonexistent")
+    try:
+        root = await respx_stash_client.find_studio_root("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return None
     assert root is None
@@ -776,7 +852,12 @@ async def test_map_studio_ids_string_input(respx_stash_client: StashClient) -> N
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(["Studio One", "Studio Two"])
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            ["Studio One", "Studio Two"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 2
     assert studio_ids[0] == "s1"
@@ -811,7 +892,10 @@ async def test_map_studio_ids_dict_input(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids([{"name": "Dict Studio"}])
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids([{"name": "Dict Studio"}])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
     assert studio_ids[0] == "s1"
@@ -864,7 +948,10 @@ async def test_map_studio_ids_studio_object_new_searches_by_name(
 
     # New studio object (auto-generates UUID, is_new() == True)
     studio_obj = Studio(name="Test Studio")
-    studio_ids = await respx_stash_client.map_studio_ids([studio_obj])
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids([studio_obj])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
     assert studio_ids[0] == "found_id"
@@ -900,7 +987,12 @@ async def test_map_studio_ids_create_missing(respx_stash_client: StashClient) ->
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(["New Studio"], create=True)
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            ["New Studio"], create=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
     assert studio_ids[0] == "new_id"
@@ -934,9 +1026,12 @@ async def test_map_studio_ids_not_found_no_create(
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(
-        ["Missing Studio"], create=False
-    )
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            ["Missing Studio"], create=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should skip missing studio
     assert len(studio_ids) == 0
@@ -977,9 +1072,12 @@ async def test_map_studio_ids_mixed_types(respx_stash_client: StashClient) -> No
 
     # Mix of Studio object with ID, string, and dict
     studio_obj = Studio(id="s0", name="Object Studio")
-    studio_ids = await respx_stash_client.map_studio_ids(
-        [studio_obj, "String Studio", {"name": "Dict Studio"}]
-    )
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            [studio_obj, "String Studio", {"name": "Dict Studio"}]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 3
     assert studio_ids[0] == "s0"  # Direct from object
@@ -1014,7 +1112,12 @@ async def test_map_studio_ids_error_handling(respx_stash_client: StashClient) ->
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(["Error Studio", "OK Studio"])
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            ["Error Studio", "OK Studio"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should skip error studio and continue
     assert len(studio_ids) == 1
@@ -1048,9 +1151,12 @@ async def test_map_studio_ids_create_from_dict(respx_stash_client: StashClient) 
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(
-        [{"name": "New Dict Studio"}], create=True
-    )
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            [{"name": "New Dict Studio"}], create=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
     assert studio_ids[0] == "new_dict_id"
@@ -1079,9 +1185,12 @@ async def test_map_studio_ids_dict_not_found_no_create(
         ]
     )
 
-    studio_ids = await respx_stash_client.map_studio_ids(
-        [{"name": "Missing Dict Studio"}], create=False
-    )
+    try:
+        studio_ids = await respx_stash_client.map_studio_ids(
+            [{"name": "Missing Dict Studio"}], create=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should skip missing studio
     assert len(studio_ids) == 0
@@ -1121,12 +1230,15 @@ async def test_map_studio_ids_dict_without_name(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_studio_ids(
-        [
-            {"other_field": "value"},
-            {"name": ""},
-        ]  # Dict without name, dict with empty name
-    )
+    try:
+        result = await respx_stash_client.map_studio_ids(
+            [
+                {"other_field": "value"},
+                {"name": ""},
+            ]  # Dict without name, dict with empty name
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Dicts without valid name are skipped
     assert len(result) == 0
@@ -1174,7 +1286,12 @@ async def test_map_studio_ids_exception_handling_patched(
     with patch.object(
         respx_stash_client, "find_studios", side_effect=mock_find_studios
     ):
-        result = await respx_stash_client.map_studio_ids(["FailStudio", "GoodStudio"])
+        try:
+            result = await respx_stash_client.map_studio_ids(
+                ["FailStudio", "GoodStudio"]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     # First studio failed (exception caught at lines 429-431), second succeeded
     assert len(result) == 1
@@ -1206,7 +1323,10 @@ async def test_map_studio_ids_studio_object_with_id_but_name_unset(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_studio_ids([studio])
+    try:
+        result = await respx_stash_client.map_studio_ids([studio])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Studio with UNSET name is skipped - no ID added
     assert len(result) == 0

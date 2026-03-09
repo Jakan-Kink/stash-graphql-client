@@ -15,7 +15,7 @@ import pytest
 import respx
 
 from stash_graphql_client.types.tag import Tag
-from tests.fixtures import create_find_tags_result, create_tag_dict
+from tests.fixtures import create_find_tags_result, create_tag_dict, dump_graphql_calls
 
 
 @pytest.mark.unit
@@ -35,7 +35,10 @@ async def test_tag_find_by_name_exact_match(respx_stash_client) -> None:
         )
 
         # Call find_by_name with real client
-        result = await Tag.find_by_name(respx_stash_client, "Action")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "Action")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify GraphQL call was made with EQUALS modifier
         assert len(route.calls) == 1
@@ -74,7 +77,10 @@ async def test_tag_find_by_name_case_insensitive_match(respx_stash_client) -> No
         )
 
         # Call find_by_name with "Diva" (different case)
-        result = await Tag.find_by_name(respx_stash_client, "Diva")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "Diva")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Should have made 2 calls
         assert len(route.calls) == 2
@@ -120,7 +126,10 @@ async def test_tag_find_by_name_case_insensitive_filters_results(
         )
 
         # Call find_by_name
-        result = await Tag.find_by_name(respx_stash_client, "diva")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "diva")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Should have made 2 calls
         assert len(route.calls) == 2
@@ -150,7 +159,10 @@ async def test_tag_find_by_name_not_found(respx_stash_client) -> None:
         )
 
         # Call find_by_name
-        result = await Tag.find_by_name(respx_stash_client, "NonExistent")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "NonExistent")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Should have made 2 calls (exact then case-insensitive)
         assert len(route.calls) == 2
@@ -173,7 +185,10 @@ async def test_tag_find_by_name_exception(respx_stash_client) -> None:
         )
 
         # Call find_by_name
-        result = await Tag.find_by_name(respx_stash_client, "Action")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "Action")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify GraphQL call was attempted
         assert len(route.calls) == 1
@@ -208,7 +223,10 @@ async def test_tag_find_by_name_case_insensitive_no_exact_match(
         )
 
         # Call find_by_name with "action"
-        result = await Tag.find_by_name(respx_stash_client, "action")
+        try:
+            result = await Tag.find_by_name(respx_stash_client, "action")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Should have made 2 calls
         assert len(route.calls) == 2

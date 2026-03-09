@@ -24,6 +24,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
 from stash_graphql_client.types import Job, JobStatus, JobStatusUpdate, LogEntry
+from tests.fixtures import dump_graphql_calls
 
 
 # =============================================================================
@@ -412,7 +413,10 @@ async def test_check_job_status_found_running(
         ]
     )
 
-    is_done, status = await respx_stash_client._check_job_status("job_123")
+    try:
+        is_done, status = await respx_stash_client._check_job_status("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_done is False
     assert status == JobStatus.RUNNING
@@ -448,7 +452,10 @@ async def test_check_job_status_found_finished(
         ]
     )
 
-    is_done, status = await respx_stash_client._check_job_status("job_123")
+    try:
+        is_done, status = await respx_stash_client._check_job_status("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_done is True
     assert status == JobStatus.FINISHED
@@ -463,7 +470,7 @@ async def test_check_job_status_found_cancelled(
     respx_stash_client: StashClient,
 ) -> None:
     """Test _check_job_status with a cancelled job."""
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -481,7 +488,10 @@ async def test_check_job_status_found_cancelled(
         ]
     )
 
-    is_done, status = await respx_stash_client._check_job_status("job_123")
+    try:
+        is_done, status = await respx_stash_client._check_job_status("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_done is True
     assert status == JobStatus.CANCELLED
@@ -500,7 +510,10 @@ async def test_check_job_status_not_found(respx_stash_client: StashClient) -> No
         ]
     )
 
-    is_done, status = await respx_stash_client._check_job_status("nonexistent")
+    try:
+        is_done, status = await respx_stash_client._check_job_status("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert is_done is None
     assert status is None
@@ -539,7 +552,10 @@ async def test_wait_for_job_with_updates_already_finished(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -562,7 +578,10 @@ async def test_wait_for_job_with_updates_not_found(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates("nonexistent")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("nonexistent")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
 
@@ -577,7 +596,7 @@ async def test_wait_for_job_with_updates_via_subscription(
 ) -> None:
     """Test wait_for_job_with_updates receives updates via subscription."""
     # First call: job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -629,7 +648,10 @@ async def test_wait_for_job_with_updates_via_subscription(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -641,7 +663,7 @@ async def test_wait_for_job_with_updates_wrong_status(
 ) -> None:
     """Test wait_for_job_with_updates when job finishes with wrong status."""
     # Job is running initially
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -680,9 +702,12 @@ async def test_wait_for_job_with_updates_wrong_status(
     )
 
     # Wait for FINISHED but job gets CANCELLED
-    result = await respx_stash_client.wait_for_job_with_updates(
-        "job_123", status=JobStatus.FINISHED
-    )
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates(
+            "job_123", status=JobStatus.FINISHED
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
 
@@ -694,7 +719,7 @@ async def test_wait_for_job_with_updates_timeout(
 ) -> None:
     """Test wait_for_job_with_updates handles timeout."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -730,7 +755,12 @@ async def test_wait_for_job_with_updates_timeout(
     respx_stash_client._ws_session = MockWebSocketSession([])
 
     # Use very short timeout
-    result = await respx_stash_client.wait_for_job_with_updates("job_123", timeout=0.1)
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates(
+            "job_123", timeout=0.1
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return None due to timeout
     assert result is None
@@ -743,7 +773,7 @@ async def test_wait_for_job_with_updates_timeout_during_wait(
 ) -> None:
     """Test wait_for_job_with_updates handles timeout while waiting for updates."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -778,7 +808,12 @@ async def test_wait_for_job_with_updates_timeout_during_wait(
     respx_stash_client._ws_session = BlockingWebSocketSession()
 
     # Use very short timeout - should trigger TimeoutError exception
-    result = await respx_stash_client.wait_for_job_with_updates("job_123", timeout=0.1)
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates(
+            "job_123", timeout=0.1
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return None due to timeout exception
     assert result is None
@@ -791,7 +826,7 @@ async def test_wait_for_job_with_updates_ignores_other_jobs(
 ) -> None:
     """Test wait_for_job_with_updates ignores updates for other jobs."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -845,7 +880,10 @@ async def test_wait_for_job_with_updates_ignores_other_jobs(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -857,7 +895,7 @@ async def test_wait_for_job_with_updates_handles_string_status(
 ) -> None:
     """Test wait_for_job_with_updates handles status as string."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -895,7 +933,10 @@ async def test_wait_for_job_with_updates_handles_string_status(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -907,7 +948,7 @@ async def test_wait_for_job_with_updates_handles_missing_status(
 ) -> None:
     """Test wait_for_job_with_updates handles update without status."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -971,7 +1012,10 @@ async def test_wait_for_job_with_updates_handles_missing_status(
     with patch.object(
         respx_stash_client, "subscribe_to_jobs", side_effect=mock_subscribe
     ):
-        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+        try:
+            result = await respx_stash_client.wait_for_job_with_updates("job_123")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
         assert result is True
 
 
@@ -983,7 +1027,7 @@ async def test_wait_for_job_with_updates_subscription_exception_fallback(
     """Test wait_for_job_with_updates falls back to polling on subscription error."""
     # First call: job is running
     # Second call: job is finished (for fallback polling)
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -1018,7 +1062,10 @@ async def test_wait_for_job_with_updates_subscription_exception_fallback(
     # Set up WebSocket session to raise exception
     respx_stash_client._ws_session = MockWebSocketSession(Exception("Connection error"))
 
-    result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates("job_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should have fallen back to polling and succeeded
     assert result is True
@@ -1031,7 +1078,7 @@ async def test_wait_for_job_with_updates_custom_status(
 ) -> None:
     """Test wait_for_job_with_updates with custom status to wait for."""
     # Job is running
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -1069,9 +1116,12 @@ async def test_wait_for_job_with_updates_custom_status(
         ]
     )
 
-    result = await respx_stash_client.wait_for_job_with_updates(
-        "job_123", status=JobStatus.RUNNING
-    )
+    try:
+        result = await respx_stash_client.wait_for_job_with_updates(
+            "job_123", status=JobStatus.RUNNING
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 

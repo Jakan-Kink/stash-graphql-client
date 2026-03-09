@@ -26,6 +26,7 @@ from tests.fixtures import (
     create_performer_dict,
     create_studio_dict,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -48,7 +49,10 @@ async def test_find_gallery(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    gallery = await respx_stash_client.find_gallery("123")
+    try:
+        gallery = await respx_stash_client.find_gallery("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert gallery is not None
@@ -74,7 +78,10 @@ async def test_find_gallery_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    gallery = await respx_stash_client.find_gallery("999")
+    try:
+        gallery = await respx_stash_client.find_gallery("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert gallery is None
 
@@ -90,7 +97,10 @@ async def test_find_gallery_error_returns_none(respx_stash_client: StashClient) 
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    gallery = await respx_stash_client.find_gallery("error_gallery")
+    try:
+        gallery = await respx_stash_client.find_gallery("error_gallery")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert gallery is None
 
@@ -118,7 +128,10 @@ async def test_find_galleries(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_galleries()
+    try:
+        result = await respx_stash_client.find_galleries()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert result.count == 1
@@ -148,7 +161,10 @@ async def test_find_galleries_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_galleries()
+    try:
+        result = await respx_stash_client.find_galleries()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert len(result.galleries) == 0
@@ -175,9 +191,12 @@ async def test_find_galleries_with_filter(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.find_galleries(
-        filter_={"per_page": 10, "page": 1}
-    )
+    try:
+        result = await respx_stash_client.find_galleries(
+            filter_={"per_page": 10, "page": 1}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert result.galleries[0].title == "Filtered Gallery"
@@ -207,7 +226,10 @@ async def test_find_galleries_with_query(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.find_galleries(q="Search Result")
+    try:
+        result = await respx_stash_client.find_galleries(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert result.galleries[0].title == "Search Result Gallery"
@@ -238,7 +260,12 @@ async def test_find_galleries_with_gallery_filter(
         ]
     )
 
-    result = await respx_stash_client.find_galleries(gallery_filter={"organized": True})
+    try:
+        result = await respx_stash_client.find_galleries(
+            gallery_filter={"organized": True}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
 
@@ -260,7 +287,10 @@ async def test_find_galleries_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_galleries()
+    try:
+        result = await respx_stash_client.find_galleries()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert len(result.galleries) == 0
@@ -287,7 +317,10 @@ async def test_find_gallery_with_studio(respx_stash_client: StashClient) -> None
         ]
     )
 
-    gallery = await respx_stash_client.find_gallery("123")
+    try:
+        gallery = await respx_stash_client.find_gallery("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert gallery is not None
     assert gallery.studio is not None
@@ -320,7 +353,10 @@ async def test_find_gallery_with_performers(respx_stash_client: StashClient) -> 
         ]
     )
 
-    gallery = await respx_stash_client.find_gallery("123")
+    try:
+        gallery = await respx_stash_client.find_gallery("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert gallery is not None
     assert is_set(gallery.performers)
@@ -353,7 +389,10 @@ async def test_find_gallery_with_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    gallery = await respx_stash_client.find_gallery("123")
+    try:
+        gallery = await respx_stash_client.find_gallery("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert gallery is not None
     assert is_set(gallery.tags)
@@ -374,7 +413,10 @@ async def test_gallery_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.gallery_destroy(ids=["123", "456"])
+    try:
+        result = await respx_stash_client.gallery_destroy(ids=["123", "456"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -395,9 +437,12 @@ async def test_gallery_destroy_with_options(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.gallery_destroy(
-        ids=["123"], delete_file=True, delete_generated=False
-    )
+    try:
+        result = await respx_stash_client.gallery_destroy(
+            ids=["123"], delete_file=True, delete_generated=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -418,9 +463,12 @@ async def test_add_gallery_images(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.add_gallery_images(
-        gallery_id="123", image_ids=["img_1", "img_2", "img_3"]
-    )
+    try:
+        result = await respx_stash_client.add_gallery_images(
+            gallery_id="123", image_ids=["img_1", "img_2", "img_3"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -444,9 +492,12 @@ async def test_remove_gallery_images(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.remove_gallery_images(
-        gallery_id="123", image_ids=["img_1", "img_2"]
-    )
+    try:
+        result = await respx_stash_client.remove_gallery_images(
+            gallery_id="123", image_ids=["img_1", "img_2"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -468,9 +519,12 @@ async def test_set_gallery_cover(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.set_gallery_cover(
-        gallery_id="123", cover_image_id="img_cover"
-    )
+    try:
+        result = await respx_stash_client.set_gallery_cover(
+            gallery_id="123", cover_image_id="img_cover"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -492,7 +546,10 @@ async def test_reset_gallery_cover(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.reset_gallery_cover(gallery_id="123")
+    try:
+        result = await respx_stash_client.reset_gallery_cover(gallery_id="123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -522,9 +579,12 @@ async def test_gallery_chapter_create(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.gallery_chapter_create(
-        gallery_id="gallery_123", title="Chapter 1", image_index=0
-    )
+    try:
+        result = await respx_stash_client.gallery_chapter_create(
+            gallery_id="gallery_123", title="Chapter 1", image_index=0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "chapter_123"
@@ -571,9 +631,12 @@ async def test_gallery_chapter_update(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.gallery_chapter_update(
-        id="chapter_123", title="Updated Chapter", image_index=5
-    )
+    try:
+        result = await respx_stash_client.gallery_chapter_update(
+            id="chapter_123", title="Updated Chapter", image_index=5
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "chapter_123"
@@ -612,7 +675,10 @@ async def test_gallery_chapter_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.gallery_chapter_destroy(id="chapter_123")
+    try:
+        result = await respx_stash_client.gallery_chapter_destroy(id="chapter_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -648,7 +714,10 @@ async def test_create_gallery(respx_stash_client: StashClient) -> None:
         code="NEW-001",
     )
 
-    result = await respx_stash_client.create_gallery(gallery)
+    try:
+        result = await respx_stash_client.create_gallery(gallery)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is not None
@@ -673,8 +742,11 @@ async def test_create_gallery_error_raises(respx_stash_client: StashClient) -> N
 
     gallery = Gallery(id="new", title="Fail Gallery")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_gallery(gallery)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_gallery(gallery)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -700,7 +772,10 @@ async def test_update_gallery(respx_stash_client: StashClient) -> None:
     gallery = Gallery(id="gallery_123", title="Original Gallery")
     gallery.title = "Updated Gallery"
 
-    result = await respx_stash_client.update_gallery(gallery)
+    try:
+        result = await respx_stash_client.update_gallery(gallery)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is not None
@@ -726,8 +801,11 @@ async def test_update_gallery_error_raises(respx_stash_client: StashClient) -> N
     gallery = Gallery(id="gallery_123", title="Fail Gallery")
     gallery.title = "Updated Title"
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_gallery(gallery)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_gallery(gallery)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -761,7 +839,10 @@ async def test_galleries_update_success(respx_stash_client: StashClient) -> None
         Gallery(id="gallery_2", title="Updated Gallery 2"),
     ]
 
-    result = await respx_stash_client.galleries_update(galleries)
+    try:
+        result = await respx_stash_client.galleries_update(galleries)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -788,8 +869,11 @@ async def test_galleries_update_error_raises(respx_stash_client: StashClient) ->
 
     galleries = [Gallery(id="gallery_1", title="Fail Gallery")]
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.galleries_update(galleries)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.galleries_update(galleries)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -809,8 +893,11 @@ async def test_gallery_destroy_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.gallery_destroy(ids=["123"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.gallery_destroy(ids=["123"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -827,10 +914,13 @@ async def test_remove_gallery_images_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.remove_gallery_images(
-            gallery_id="123", image_ids=["img_1"]
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.remove_gallery_images(
+                gallery_id="123", image_ids=["img_1"]
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -845,10 +935,13 @@ async def test_set_gallery_cover_error_raises(respx_stash_client: StashClient) -
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.set_gallery_cover(
-            gallery_id="123", cover_image_id="img_cover"
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.set_gallery_cover(
+                gallery_id="123", cover_image_id="img_cover"
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -865,8 +958,11 @@ async def test_reset_gallery_cover_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.reset_gallery_cover(gallery_id="123")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.reset_gallery_cover(gallery_id="123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -883,10 +979,13 @@ async def test_add_gallery_images_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.add_gallery_images(
-            gallery_id="123", image_ids=["img_1"]
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.add_gallery_images(
+                gallery_id="123", image_ids=["img_1"]
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -908,10 +1007,13 @@ async def test_gallery_chapter_create_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.gallery_chapter_create(
-            gallery_id="123", title="Chapter 1", image_index=0
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.gallery_chapter_create(
+                gallery_id="123", title="Chapter 1", image_index=0
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -940,9 +1042,12 @@ async def test_gallery_chapter_update_with_gallery_id(
         ]
     )
 
-    result = await respx_stash_client.gallery_chapter_update(
-        id="chapter_123", gallery_id="new_gallery_456"
-    )
+    try:
+        result = await respx_stash_client.gallery_chapter_update(
+            id="chapter_123", gallery_id="new_gallery_456"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "chapter_123"
@@ -966,10 +1071,13 @@ async def test_gallery_chapter_update_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.gallery_chapter_update(
-            id="chapter_123", title="Updated Chapter"
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.gallery_chapter_update(
+                id="chapter_123", title="Updated Chapter"
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -986,8 +1094,11 @@ async def test_gallery_chapter_destroy_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.gallery_chapter_destroy(id="chapter_123")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.gallery_chapter_destroy(id="chapter_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1018,7 +1129,10 @@ async def test_bulk_gallery_update_success(respx_stash_client: StashClient) -> N
         organized=True,
     )
 
-    result = await respx_stash_client.bulk_gallery_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_gallery_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "1"
@@ -1052,7 +1166,10 @@ async def test_bulk_gallery_update_with_dict(respx_stash_client: StashClient) ->
         "rating100": 80,
     }
 
-    result = await respx_stash_client.bulk_gallery_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_gallery_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "1"
@@ -1079,8 +1196,11 @@ async def test_bulk_gallery_update_error(respx_stash_client: StashClient) -> Non
 
     input_data = BulkGalleryUpdateInput(ids=["1", "2"], organized=True)
 
-    with pytest.raises(StashGraphQLError, match="Failed to bulk update galleries"):
-        await respx_stash_client.bulk_gallery_update(input_data)
+    try:
+        with pytest.raises(StashGraphQLError, match="Failed to bulk update galleries"):
+            await respx_stash_client.bulk_gallery_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1100,9 +1220,12 @@ async def test_update_gallery_images_mode_set(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.update_gallery_images(
-        gallery_id="123", image_ids=["img_1", "img_2"], mode="SET"
-    )
+    try:
+        result = await respx_stash_client.update_gallery_images(
+            gallery_id="123", image_ids=["img_1", "img_2"], mode="SET"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1124,9 +1247,12 @@ async def test_update_gallery_images_mode_add(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.update_gallery_images(
-        gallery_id="456", image_ids=["img_3"], mode="ADD"
-    )
+    try:
+        result = await respx_stash_client.update_gallery_images(
+            gallery_id="456", image_ids=["img_3"], mode="ADD"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1152,9 +1278,12 @@ async def test_update_gallery_images_mode_remove(
         ]
     )
 
-    result = await respx_stash_client.update_gallery_images(
-        gallery_id="789", image_ids=["img_4", "img_5"], mode="REMOVE"
-    )
+    try:
+        result = await respx_stash_client.update_gallery_images(
+            gallery_id="789", image_ids=["img_4", "img_5"], mode="REMOVE"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1179,9 +1308,12 @@ async def test_update_gallery_images_default_mode_set(
     )
 
     # Call without mode parameter - should default to SET
-    result = await respx_stash_client.update_gallery_images(
-        gallery_id="default_gallery", image_ids=["img_default"]
-    )
+    try:
+        result = await respx_stash_client.update_gallery_images(
+            gallery_id="default_gallery", image_ids=["img_default"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1215,9 +1347,12 @@ async def test_update_gallery_images_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_gallery_images(
-            gallery_id="error_gallery", image_ids=["img_error"], mode="SET"
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_gallery_images(
+                gallery_id="error_gallery", image_ids=["img_error"], mode="SET"
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

@@ -16,7 +16,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -75,7 +75,10 @@ async def test_directory_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="/home/user/videos")
+    try:
+        result = await respx_stash_client.directory(path="/home/user/videos")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/home/user/videos"
@@ -107,7 +110,10 @@ async def test_directory_with_parent(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="/media/stash/scenes")
+    try:
+        result = await respx_stash_client.directory(path="/media/stash/scenes")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/media/stash/scenes"
@@ -135,7 +141,10 @@ async def test_directory_root(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="/")
+    try:
+        result = await respx_stash_client.directory(path="/")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/"
@@ -166,7 +175,10 @@ async def test_directory_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="/home/user/empty_folder")
+    try:
+        result = await respx_stash_client.directory(path="/home/user/empty_folder")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/home/user/empty_folder"
@@ -192,7 +204,12 @@ async def test_directory_with_custom_locale(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.directory(path="/home/user/docs", locale="fr-FR")
+    try:
+        result = await respx_stash_client.directory(
+            path="/home/user/docs", locale="fr-FR"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/home/user/docs"
@@ -219,7 +236,10 @@ async def test_directory_windows_path(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="C:\\Users\\Admin\\Videos")
+    try:
+        result = await respx_stash_client.directory(path="C:\\Users\\Admin\\Videos")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "C:\\Users\\Admin\\Videos"
@@ -309,9 +329,12 @@ async def test_directory_special_characters_in_path(
         ]
     )
 
-    result = await respx_stash_client.directory(
-        path="/media/files & folders/user's stuff"
-    )
+    try:
+        result = await respx_stash_client.directory(
+            path="/media/files & folders/user's stuff"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/media/files & folders/user's stuff"
@@ -338,7 +361,10 @@ async def test_directory_network_path(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="\\\\server\\share\\videos")
+    try:
+        result = await respx_stash_client.directory(path="\\\\server\\share\\videos")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "\\\\server\\share\\videos"
@@ -363,7 +389,10 @@ async def test_directory_unicode_path(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.directory(path="/home/用户/视频")
+    try:
+        result = await respx_stash_client.directory(path="/home/用户/视频")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.path == "/home/用户/视频"

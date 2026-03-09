@@ -13,6 +13,7 @@ Fixture Organization:
 
 from tests.fixtures.client import (
     capture_graphql_calls,
+    dump_graphql_calls,
     mock_entity_store,
     mock_gql_ws_connect,
     mock_ws_transport,
@@ -88,6 +89,7 @@ __all__ = [
     "make_server_capabilities",
     # Client Fixtures
     "capture_graphql_calls",
+    "dump_graphql_calls",
     "enable_scene_creation",
     "mock_entity_store",
     "mock_gql_ws_connect",

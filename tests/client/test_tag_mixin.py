@@ -19,6 +19,7 @@ from tests.fixtures import (
     create_find_tags_result,
     create_graphql_response,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -39,7 +40,10 @@ async def test_find_tag_by_id(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    tag = await respx_stash_client.find_tag("123")
+    try:
+        tag = await respx_stash_client.find_tag("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert tag is not None
     assert tag.id == "123"
@@ -59,7 +63,10 @@ async def test_find_tag_not_found(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json=create_graphql_response("findTag", None))]
     )
 
-    tag = await respx_stash_client.find_tag("999")
+    try:
+        tag = await respx_stash_client.find_tag("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert tag is None
     assert len(graphql_route.calls) == 1
@@ -75,7 +82,10 @@ async def test_find_tag_error_returns_none(respx_stash_client: StashClient) -> N
         ]
     )
 
-    tag = await respx_stash_client.find_tag("error_id")
+    try:
+        tag = await respx_stash_client.find_tag("error_id")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert tag is None
     assert len(graphql_route.calls) == 1
@@ -104,7 +114,10 @@ async def test_find_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_tags()
+    try:
+        result = await respx_stash_client.find_tags()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert len(result.tags) == 1
@@ -134,7 +147,10 @@ async def test_find_tags_with_q_parameter(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.find_tags(q="Search Result")
+    try:
+        result = await respx_stash_client.find_tags(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert result.tags[0].name == "Search Result"
@@ -163,9 +179,12 @@ async def test_find_tags_with_custom_filter(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.find_tags(
-        filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
-    )
+    try:
+        result = await respx_stash_client.find_tags(
+            filter_={"page": 2, "per_page": 10, "sort": "name", "direction": "ASC"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert result.tags[0].name == "Paginated Result"
@@ -187,7 +206,10 @@ async def test_find_tags_error_returns_empty(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.find_tags()
+    try:
+        result = await respx_stash_client.find_tags()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert len(result.tags) == 0
@@ -221,7 +243,10 @@ async def test_create_tag(respx_stash_client: StashClient) -> None:
     )
 
     tag = Tag(id="new", name="New Tag")
-    result = await respx_stash_client.create_tag(tag)
+    try:
+        result = await respx_stash_client.create_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "new_tag_123"
@@ -276,7 +301,10 @@ async def test_create_tag_already_exists_fallback(
     )
 
     tag = Tag(id="new", name="Existing Tag")
-    result = await respx_stash_client.create_tag(tag)
+    try:
+        result = await respx_stash_client.create_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "existing_123"
@@ -324,8 +352,11 @@ async def test_create_tag_already_exists_but_not_found_raises(
 
     tag = Tag(id="new", name="Ghost Tag")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_tag(tag)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should have made 2 calls - create then find (which returned empty)
     assert len(graphql_route.calls) == 2
@@ -346,8 +377,11 @@ async def test_create_tag_error_raises(respx_stash_client: StashClient) -> None:
 
     tag = Tag(id="new", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_tag(tag)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -374,10 +408,13 @@ async def test_tags_merge(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.tags_merge(
-        source=["tag1", "tag2", "tag3"],
-        destination="dest_tag",
-    )
+    try:
+        result = await respx_stash_client.tags_merge(
+            source=["tag1", "tag2", "tag3"],
+            destination="dest_tag",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "dest_tag"
@@ -403,8 +440,11 @@ async def test_tags_merge_error_raises(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.tags_merge(source=["tag1"], destination="dest")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.tags_merge(source=["tag1"], destination="dest")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -435,14 +475,17 @@ async def test_bulk_tag_update(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.bulk_tag_update(
-        ids=["t1", "t2", "t3"],
-        description="Updated description",
-        aliases=["alias1", "alias2"],
-        favorite=True,
-        parent_ids=["parent1"],
-        child_ids=["child1"],
-    )
+    try:
+        result = await respx_stash_client.bulk_tag_update(
+            ids=["t1", "t2", "t3"],
+            description="Updated description",
+            aliases=["alias1", "alias2"],
+            favorite=True,
+            parent_ids=["parent1"],
+            child_ids=["child1"],
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].id == "t1"
@@ -476,7 +519,10 @@ async def test_bulk_tag_update_minimal(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.bulk_tag_update(ids=["t1"])
+    try:
+        result = await respx_stash_client.bulk_tag_update(ids=["t1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0].id == "t1"
@@ -500,8 +546,11 @@ async def test_bulk_tag_update_error_raises(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.bulk_tag_update(ids=["t1", "t2"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.bulk_tag_update(ids=["t1", "t2"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -534,7 +583,10 @@ async def test_update_tag(respx_stash_client: StashClient) -> None:
     tag = Tag(id="123", name="Original Name")
     tag.name = "Updated Tag"
 
-    result = await respx_stash_client.update_tag(tag)
+    try:
+        result = await respx_stash_client.update_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -560,8 +612,11 @@ async def test_update_tag_error_raises(respx_stash_client: StashClient) -> None:
 
     tag = Tag(id="123", name="Will Fail")
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_tag(tag)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_tag(tag)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -581,7 +636,10 @@ async def test_tag_destroy_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.tag_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.tag_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -604,7 +662,10 @@ async def test_tag_destroy_with_input_type(respx_stash_client: StashClient) -> N
     )
 
     input_data = TagDestroyInput(id="123")
-    result = await respx_stash_client.tag_destroy(input_data)
+    try:
+        result = await respx_stash_client.tag_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -627,8 +688,11 @@ async def test_tag_destroy_error_raises(respx_stash_client: StashClient) -> None
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.tag_destroy({"id": "123"})
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.tag_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -648,7 +712,10 @@ async def test_tags_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.tags_destroy(["123", "456", "789"])
+    try:
+        result = await respx_stash_client.tags_destroy(["123", "456", "789"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -671,8 +738,11 @@ async def test_tags_destroy_error_raises(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.tags_destroy(["123", "456"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.tags_destroy(["123", "456"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -703,7 +773,10 @@ async def test_map_tag_ids_string_input_found(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.map_tag_ids(["Action"])
+    try:
+        result = await respx_stash_client.map_tag_ids(["Action"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "tag123"
@@ -736,7 +809,10 @@ async def test_map_tag_ids_string_input_not_found_no_create(
         ]
     )
 
-    result = await respx_stash_client.map_tag_ids(["MissingTag"], create=False)
+    try:
+        result = await respx_stash_client.map_tag_ids(["MissingTag"], create=False)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Tag not found and create=False, so empty list
     assert len(result) == 0
@@ -778,7 +854,10 @@ async def test_map_tag_ids_string_input_not_found_with_create(
         side_effect=mock_response
     )
 
-    result = await respx_stash_client.map_tag_ids(["NewTag"], create=True)
+    try:
+        result = await respx_stash_client.map_tag_ids(["NewTag"], create=True)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "new_tag_456"
@@ -801,7 +880,10 @@ async def test_map_tag_ids_tag_object_with_id(respx_stash_client: StashClient) -
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_tag_ids([tag])
+    try:
+        result = await respx_stash_client.map_tag_ids([tag])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "existing123"
@@ -835,7 +917,10 @@ async def test_map_tag_ids_tag_object_without_id(
 
     # Create Tag object without ID using model_construct to avoid auto-generated ID
     tag = Tag.model_construct(name="Drama", id=None)
-    result = await respx_stash_client.map_tag_ids([tag])
+    try:
+        result = await respx_stash_client.map_tag_ids([tag])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "drama789"
@@ -866,7 +951,10 @@ async def test_map_tag_ids_dict_input_found(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.map_tag_ids([{"name": "Comedy"}])
+    try:
+        result = await respx_stash_client.map_tag_ids([{"name": "Comedy"}])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "comedy555"
@@ -910,7 +998,12 @@ async def test_map_tag_ids_dict_input_with_create(
         side_effect=mock_response
     )
 
-    result = await respx_stash_client.map_tag_ids([{"name": "Thriller"}], create=True)
+    try:
+        result = await respx_stash_client.map_tag_ids(
+            [{"name": "Thriller"}], create=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0] == "thriller999"
@@ -932,7 +1025,10 @@ async def test_map_tag_ids_dict_input_without_name(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_tag_ids([{"other_field": "value"}])
+    try:
+        result = await respx_stash_client.map_tag_ids([{"other_field": "value"}])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Dict without name is skipped
     assert len(result) == 0
@@ -991,13 +1087,16 @@ async def test_map_tag_ids_mixed_input_types(respx_stash_client: StashClient) ->
         side_effect=mock_response
     )
 
-    result = await respx_stash_client.map_tag_ids(
-        [
-            tag_with_id,  # Has ID - no lookup
-            tag_without_id,  # No ID - lookup by name
-            {"name": "Comedy"},  # Dict - lookup by name
-        ]
-    )
+    try:
+        result = await respx_stash_client.map_tag_ids(
+            [
+                tag_with_id,  # Has ID - no lookup
+                tag_without_id,  # No ID - lookup by name
+                {"name": "Comedy"},  # Dict - lookup by name
+            ]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0] == "id1"  # Direct from Tag with ID
@@ -1044,7 +1143,10 @@ async def test_map_tag_ids_exception_handling(respx_stash_client: StashClient) -
     )
 
     with patch.object(respx_stash_client, "find_tags", side_effect=mock_find_tags):
-        result = await respx_stash_client.map_tag_ids(["FailTag", "GoodTag"])
+        try:
+            result = await respx_stash_client.map_tag_ids(["FailTag", "GoodTag"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     # First tag failed (exception caught at lines 383-385), second succeeded
     assert len(result) == 1
@@ -1068,7 +1170,10 @@ async def test_map_tag_ids_empty_list(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_tag_ids([])
+    try:
+        result = await respx_stash_client.map_tag_ids([])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 0
     assert len(graphql_route.calls) == 0
@@ -1091,7 +1196,10 @@ async def test_map_tag_ids_tag_object_with_empty_name(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_tag_ids([tag])
+    try:
+        result = await respx_stash_client.map_tag_ids([tag])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Empty name tag is skipped
     assert len(result) == 0
@@ -1119,9 +1227,12 @@ async def test_map_tag_ids_dict_not_found_no_create(
         ]
     )
 
-    result = await respx_stash_client.map_tag_ids(
-        [{"name": "MissingTag"}], create=False
-    )
+    try:
+        result = await respx_stash_client.map_tag_ids(
+            [{"name": "MissingTag"}], create=False
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Tag not found and create=False, so empty list
     assert len(result) == 0
@@ -1148,7 +1259,10 @@ async def test_map_tag_ids_tag_object_with_id_but_name_unset(
         side_effect=[httpx.Response(200, json={})]
     )
 
-    result = await respx_stash_client.map_tag_ids([tag])
+    try:
+        result = await respx_stash_client.map_tag_ids([tag])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Tag with no ID and UNSET name is skipped - no ID added
     assert len(result) == 0

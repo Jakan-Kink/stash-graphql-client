@@ -15,7 +15,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Gallery, GalleryChapter
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # Serialize with image tests — gallery deletion breaks image queries
@@ -37,7 +37,10 @@ async def test_find_galleries_returns_results(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries()
+        try:
+            result = await stash_client.find_galleries()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_galleries"
@@ -60,7 +63,12 @@ async def test_find_galleries_with_pagination(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_galleries(
+                filter_={"per_page": 10, "page": 1}
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_galleries"
@@ -84,7 +92,10 @@ async def test_find_nonexistent_gallery_returns_none(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        gallery = await stash_client.find_gallery("99999999")
+        try:
+            gallery = await stash_client.find_gallery("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_gallery"
@@ -107,7 +118,10 @@ async def test_find_galleries_with_q_parameter(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries(q="test")
+        try:
+            result = await stash_client.find_galleries(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_galleries"
@@ -142,7 +156,10 @@ async def test_create_and_find_gallery(
             title="Integration Test Gallery",
         )
 
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         # Verify creation call
@@ -160,7 +177,10 @@ async def test_create_and_find_gallery(
 
         # Clear calls and verify we can find it
         calls.clear()
-        found_gallery = await stash_client.find_gallery(created_gallery.id)
+        try:
+            found_gallery = await stash_client.find_gallery(created_gallery.id)
+        finally:
+            dump_graphql_calls(calls, "find_gallery")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_gallery"
         assert "findGallery" in calls[0]["query"]
@@ -183,7 +203,10 @@ async def test_create_and_update_gallery(
             title="Test Gallery Before Update",
         )
 
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         # Verify creation
@@ -195,7 +218,10 @@ async def test_create_and_update_gallery(
         created_gallery.title = "Test Gallery After Update"
         created_gallery.rating100 = 80
 
-        updated_gallery = await stash_client.update_gallery(created_gallery)
+        try:
+            updated_gallery = await stash_client.update_gallery(created_gallery)
+        finally:
+            dump_graphql_calls(calls, "update_gallery")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for update_gallery"
@@ -222,7 +248,10 @@ async def test_create_and_destroy_gallery(
     ):
         # Create gallery
         new_gallery = Gallery.new(title="Gallery to be destroyed")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
         gallery_id = created_gallery.id
 
@@ -231,11 +260,14 @@ async def test_create_and_destroy_gallery(
         calls.clear()
 
         # Destroy the gallery
-        success = await stash_client.gallery_destroy(
-            [gallery_id],
-            delete_file=False,
-            delete_generated=False,
-        )
+        try:
+            success = await stash_client.gallery_destroy(
+                [gallery_id],
+                delete_file=False,
+                delete_generated=False,
+            )
+        finally:
+            dump_graphql_calls(calls, "gallery_destroy")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for gallery_destroy"
@@ -250,7 +282,10 @@ async def test_create_and_destroy_gallery(
 
         # Verify it's gone
         calls.clear()
-        found_gallery = await stash_client.find_gallery(gallery_id)
+        try:
+            found_gallery = await stash_client.find_gallery(gallery_id)
+        finally:
+            dump_graphql_calls(calls, "find_gallery")
         assert found_gallery is None
 
 
@@ -273,8 +308,15 @@ async def test_galleries_update_multiple(
         gallery1 = Gallery.new(title="Multi Update Test 1")
         gallery2 = Gallery.new(title="Multi Update Test 2")
 
-        created1 = await stash_client.create_gallery(gallery1)
-        created2 = await stash_client.create_gallery(gallery2)
+        try:
+            created1 = await stash_client.create_gallery(gallery1)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
+        calls.clear()
+        try:
+            created2 = await stash_client.create_gallery(gallery2)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].extend([created1.id, created2.id])
 
         calls.clear()
@@ -285,7 +327,12 @@ async def test_galleries_update_multiple(
         created2.title = "Multi Update Test 2 Updated"
         created2.rating100 = 75
 
-        updated_galleries = await stash_client.galleries_update([created1, created2])
+        try:
+            updated_galleries = await stash_client.galleries_update(
+                [created1, created2]
+            )
+        finally:
+            dump_graphql_calls(calls, "galleries_update")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for galleries_update"
@@ -319,13 +366,19 @@ async def test_set_and_reset_gallery_cover(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Cover")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images from Stash
-        images_result = await stash_client.find_images(filter_={"per_page": 1})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         cover_image_id = (
             images_result.images[0].id
             if (is_set(images_result.images) and images_result.images)
@@ -335,10 +388,13 @@ async def test_set_and_reset_gallery_cover(
 
         if cover_image_id:
             # Set a cover image using a real image ID
-            await stash_client.set_gallery_cover(
-                created_gallery.id,
-                cover_image_id,
-            )
+            try:
+                await stash_client.set_gallery_cover(
+                    created_gallery.id,
+                    cover_image_id,
+                )
+            finally:
+                dump_graphql_calls(calls, "set_gallery_cover")
 
             # Verify set cover call
             assert len(calls) == 1, "Expected 1 GraphQL call for set_gallery_cover"
@@ -350,7 +406,10 @@ async def test_set_and_reset_gallery_cover(
             calls.clear()
 
         # Reset the cover image
-        await stash_client.reset_gallery_cover(created_gallery.id)
+        try:
+            await stash_client.reset_gallery_cover(created_gallery.id)
+        finally:
+            dump_graphql_calls(calls, "reset_gallery_cover")
 
         # Verify reset cover call
         assert len(calls) == 1, "Expected 1 GraphQL call for reset_gallery_cover"
@@ -377,13 +436,19 @@ async def test_add_and_remove_gallery_images(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Images")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images from Stash
-        images_result = await stash_client.find_images(filter_={"per_page": 2})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 2})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         image_ids = (
             [img.id for img in images_result.images[:2]]
             if is_set(images_result.images)
@@ -392,10 +457,13 @@ async def test_add_and_remove_gallery_images(
         calls.clear()
 
         # Add images to gallery
-        await stash_client.add_gallery_images(
-            created_gallery.id,
-            image_ids,
-        )
+        try:
+            await stash_client.add_gallery_images(
+                created_gallery.id,
+                image_ids,
+            )
+        finally:
+            dump_graphql_calls(calls, "add_gallery_images")
 
         # Verify add images call
         assert len(calls) == 1, "Expected 1 GraphQL call for add_gallery_images"
@@ -407,10 +475,13 @@ async def test_add_and_remove_gallery_images(
         calls.clear()
 
         # Remove images from gallery
-        await stash_client.remove_gallery_images(
-            created_gallery.id,
-            [image_ids[0]],
-        )
+        try:
+            await stash_client.remove_gallery_images(
+                created_gallery.id,
+                [image_ids[0]],
+            )
+        finally:
+            dump_graphql_calls(calls, "remove_gallery_images")
 
         # Verify remove images call
         assert len(calls) == 1, "Expected 1 GraphQL call for remove_gallery_images"
@@ -433,13 +504,19 @@ async def test_update_gallery_images_add_mode(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Image Update ADD")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images from Stash
-        images_result = await stash_client.find_images(filter_={"per_page": 1})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         image_ids = (
             [img.id for img in images_result.images[:1]]
             if is_set(images_result.images)
@@ -448,11 +525,14 @@ async def test_update_gallery_images_add_mode(
         calls.clear()
 
         # Update gallery images in ADD mode
-        await stash_client.update_gallery_images(
-            created_gallery.id,
-            image_ids,
-            mode="ADD",
-        )
+        try:
+            await stash_client.update_gallery_images(
+                created_gallery.id,
+                image_ids,
+                mode="ADD",
+            )
+        finally:
+            dump_graphql_calls(calls, "update_gallery_images")
 
         # Verify call
         assert len(calls) == 1, "Expected 1 GraphQL call for update_gallery_images"
@@ -474,13 +554,19 @@ async def test_update_gallery_images_remove_mode(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Image Update REMOVE")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images from Stash to add first
-        images_result = await stash_client.find_images(filter_={"per_page": 1})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         image_ids = (
             [img.id for img in images_result.images[:1]]
             if is_set(images_result.images)
@@ -489,11 +575,14 @@ async def test_update_gallery_images_remove_mode(
         calls.clear()
 
         # Update gallery images in REMOVE mode
-        await stash_client.update_gallery_images(
-            created_gallery.id,
-            image_ids,
-            mode="REMOVE",
-        )
+        try:
+            await stash_client.update_gallery_images(
+                created_gallery.id,
+                image_ids,
+                mode="REMOVE",
+            )
+        finally:
+            dump_graphql_calls(calls, "update_gallery_images")
 
         # Verify call
         assert len(calls) == 1, "Expected 1 GraphQL call for update_gallery_images"
@@ -515,13 +604,19 @@ async def test_update_gallery_images_set_mode(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Image Update SET")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images from Stash
-        images_result = await stash_client.find_images(filter_={"per_page": 2})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 2})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         image_ids = (
             [img.id for img in images_result.images[:2]]
             if is_set(images_result.images)
@@ -530,11 +625,14 @@ async def test_update_gallery_images_set_mode(
         calls.clear()
 
         # Update gallery images in SET mode
-        await stash_client.update_gallery_images(
-            created_gallery.id,
-            image_ids,
-            mode="SET",
-        )
+        try:
+            await stash_client.update_gallery_images(
+                created_gallery.id,
+                image_ids,
+                mode="SET",
+            )
+        finally:
+            dump_graphql_calls(calls, "update_gallery_images")
 
         # Verify call (SET mode uses addGalleryImages)
         assert len(calls) == 1, "Expected 1 GraphQL call for update_gallery_images"
@@ -555,18 +653,24 @@ async def test_update_gallery_images_invalid_mode(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Invalid Mode")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Attempt invalid mode
-        with pytest.raises(ValueError, match="mode must be one of"):
-            await stash_client.update_gallery_images(
-                created_gallery.id,
-                ["test_image"],
-                mode="INVALID",
-            )
+        try:
+            with pytest.raises(ValueError, match="mode must be one of"):
+                await stash_client.update_gallery_images(
+                    created_gallery.id,
+                    ["test_image"],
+                    mode="INVALID",
+                )
+        finally:
+            dump_graphql_calls(calls, "update_gallery_images_invalid_mode")
 
 
 # =============================================================================
@@ -587,24 +691,36 @@ async def test_create_and_destroy_gallery_chapter(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Chapters")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images and add to gallery first
-        images_result = await stash_client.find_images(filter_={"per_page": 1})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         if is_set(images_result.images) and images_result.images:
             image_ids = [img.id for img in images_result.images[:1]]
-            await stash_client.add_gallery_images(created_gallery.id, image_ids)
+            try:
+                await stash_client.add_gallery_images(created_gallery.id, image_ids)
+            finally:
+                dump_graphql_calls(calls, "add_gallery_images")
             calls.clear()
 
             # Create a chapter (image_index must be > 0, chapters are 1-indexed)
-            chapter = await stash_client.gallery_chapter_create(
-                gallery_id=created_gallery.id,
-                title="Chapter 1",
-                image_index=1,
-            )
+            try:
+                chapter = await stash_client.gallery_chapter_create(
+                    gallery_id=created_gallery.id,
+                    title="Chapter 1",
+                    image_index=1,
+                )
+            finally:
+                dump_graphql_calls(calls, "gallery_chapter_create")
 
             # Verify create chapter call
             assert len(calls) == 1, "Expected 1 GraphQL call for gallery_chapter_create"
@@ -624,7 +740,10 @@ async def test_create_and_destroy_gallery_chapter(
             calls.clear()
 
             # Destroy the chapter
-            await stash_client.gallery_chapter_destroy(chapter_id)
+            try:
+                await stash_client.gallery_chapter_destroy(chapter_id)
+            finally:
+                dump_graphql_calls(calls, "gallery_chapter_destroy")
 
             # Verify destroy chapter call
             assert len(calls) == 1, (
@@ -648,34 +767,49 @@ async def test_create_and_update_gallery_chapter(
     ):
         # Create a test gallery
         new_gallery = Gallery.new(title="Test Gallery for Chapter Update")
-        created_gallery = await stash_client.create_gallery(new_gallery)
+        try:
+            created_gallery = await stash_client.create_gallery(new_gallery)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].append(created_gallery.id)
 
         calls.clear()
 
         # Fetch real images and add to gallery first
-        images_result = await stash_client.find_images(filter_={"per_page": 5})
+        try:
+            images_result = await stash_client.find_images(filter_={"per_page": 5})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         if is_set(images_result.images) and images_result.images:
             image_ids = [img.id for img in images_result.images[:5]]
-            await stash_client.add_gallery_images(created_gallery.id, image_ids)
+            try:
+                await stash_client.add_gallery_images(created_gallery.id, image_ids)
+            finally:
+                dump_graphql_calls(calls, "add_gallery_images")
             calls.clear()
 
             # Create a chapter (image_index must be > 0, chapters are 1-indexed)
-            chapter = await stash_client.gallery_chapter_create(
-                gallery_id=created_gallery.id,
-                title="Chapter 1",
-                image_index=1,
-            )
+            try:
+                chapter = await stash_client.gallery_chapter_create(
+                    gallery_id=created_gallery.id,
+                    title="Chapter 1",
+                    image_index=1,
+                )
+            finally:
+                dump_graphql_calls(calls, "gallery_chapter_create")
 
             assert len(calls) == 1
             calls.clear()
 
             # Update the chapter (use a valid image index from our added images)
-            updated_chapter = await stash_client.gallery_chapter_update(
-                id=chapter.id,
-                title="Chapter 1 Updated",
-                image_index=5,
-            )
+            try:
+                updated_chapter = await stash_client.gallery_chapter_update(
+                    id=chapter.id,
+                    title="Chapter 1 Updated",
+                    image_index=5,
+                )
+            finally:
+                dump_graphql_calls(calls, "gallery_chapter_update")
 
             # Verify update chapter call
             assert len(calls) == 1, "Expected 1 GraphQL call for gallery_chapter_update"
@@ -710,20 +844,30 @@ async def test_bulk_gallery_update(
         gallery1 = Gallery.new(title="Bulk Test Gallery 1")
         gallery2 = Gallery.new(title="Bulk Test Gallery 2")
 
-        created1 = await stash_client.create_gallery(gallery1)
-        created2 = await stash_client.create_gallery(gallery2)
+        try:
+            created1 = await stash_client.create_gallery(gallery1)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
+        calls.clear()
+        try:
+            created2 = await stash_client.create_gallery(gallery2)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         cleanup["galleries"].extend([created1.id, created2.id])
 
         calls.clear()
 
         # Bulk update both galleries
-        updated_galleries = await stash_client.bulk_gallery_update(
-            {
-                "ids": [created1.id, created2.id],
-                "organized": True,
-                "rating100": 85,
-            }
-        )
+        try:
+            updated_galleries = await stash_client.bulk_gallery_update(
+                {
+                    "ids": [created1.id, created2.id],
+                    "organized": True,
+                    "rating100": 85,
+                }
+            )
+        finally:
+            dump_graphql_calls(calls, "bulk_gallery_update")
 
         # Verify bulk update call
         assert len(calls) == 1, "Expected 1 GraphQL call for bulk_gallery_update"
@@ -753,19 +897,29 @@ async def test_gallery_destroy_multiple(
         gallery1 = Gallery.new(title="Multi Destroy Test Gallery 1")
         gallery2 = Gallery.new(title="Multi Destroy Test Gallery 2")
 
-        created1 = await stash_client.create_gallery(gallery1)
-        created2 = await stash_client.create_gallery(gallery2)
+        try:
+            created1 = await stash_client.create_gallery(gallery1)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
+        calls.clear()
+        try:
+            created2 = await stash_client.create_gallery(gallery2)
+        finally:
+            dump_graphql_calls(calls, "create_gallery")
         gallery_ids = [created1.id, created2.id]
         cleanup["galleries"].extend(gallery_ids)
 
         calls.clear()
 
         # Destroy both galleries
-        success = await stash_client.gallery_destroy(
-            gallery_ids,
-            delete_file=False,
-            delete_generated=False,
-        )
+        try:
+            success = await stash_client.gallery_destroy(
+                gallery_ids,
+                delete_file=False,
+                delete_generated=False,
+            )
+        finally:
+            dump_graphql_calls(calls, "gallery_destroy")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for gallery_destroy"
@@ -781,7 +935,14 @@ async def test_gallery_destroy_multiple(
 
         # Verify they're gone
         calls.clear()
-        found1 = await stash_client.find_gallery(created1.id)
-        found2 = await stash_client.find_gallery(created2.id)
+        try:
+            found1 = await stash_client.find_gallery(created1.id)
+        finally:
+            dump_graphql_calls(calls, "find_gallery")
+        calls.clear()
+        try:
+            found2 = await stash_client.find_gallery(created2.id)
+        finally:
+            dump_graphql_calls(calls, "find_gallery")
         assert found1 is None
         assert found2 is None

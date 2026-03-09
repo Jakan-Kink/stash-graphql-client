@@ -26,6 +26,7 @@ __all__ = [
     "mock_entity_store",
     "stash_cleanup_tracker",
     "capture_graphql_calls",
+    "dump_graphql_calls",
     "mock_ws_transport",
     "mock_gql_ws_connect",
 ]
@@ -737,6 +738,59 @@ def enable_scene_creation():
     """
     with patch.object(Scene, "__create_input_type__", SceneCreateInput):
         yield
+
+
+def dump_graphql_calls(calls, label: str = "GraphQL calls") -> None:
+    """Print request/response details for each GraphQL call.
+
+    Works with both respx route.calls (unit tests) and capture_graphql_calls
+    dicts (integration tests). Use in try/finally blocks when debugging test
+    failures:
+
+        graphql_route = respx.post(...).mock(side_effect=[...])
+        try:
+            await some_function_under_test()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        # assertions go here after the try/finally
+
+    Args:
+        calls: respx route.calls, respx.calls list, or capture_graphql_calls list
+        label: Header label for the output
+    """
+    print(f"\n{'=' * 70}")
+    print(f"  {label} ({len(calls)} total)")
+    print(f"{'=' * 70}")
+    for i, call in enumerate(calls):
+        if isinstance(call, dict):
+            # capture_graphql_calls format: {"query", "variables", "result", "exception"}
+            query_str = call.get("query", "")
+            first_line = query_str.strip().split("\n")[0] if query_str else "<empty>"
+            variables = call.get("variables") or {}
+            data_keys = list(call["result"].keys()) if call.get("result") else []
+            print(f"\n  [{i}] {first_line}")
+            print(f"      variables: {json.dumps(variables, default=str)[:200]}")
+            print(f"      response data keys: {data_keys}")
+            if call.get("exception"):
+                print(f"      EXCEPTION: {call['exception']}")
+        else:
+            # respx call format: call.request / call.response
+            req_body = json.loads(call.request.content) if call.request.content else {}
+            query_str = req_body.get("query", "")
+            first_line = query_str.strip().split("\n")[0] if query_str else "<empty>"
+            variables = req_body.get("variables", {})
+            try:
+                resp_body = call.response.json() if call.response else {}
+            except (ValueError, AttributeError):
+                resp_body = {}
+            data_obj = resp_body.get("data") if resp_body else None
+            data_keys = list(data_obj.keys()) if data_obj else []
+            print(f"\n  [{i}] {first_line}")
+            print(f"      variables: {json.dumps(variables, default=str)[:200]}")
+            print(f"      response data keys: {data_keys}")
+            if resp_body.get("errors"):
+                print(f"      ERRORS: {resp_body['errors']}")
+    print(f"\n{'=' * 70}\n")
 
 
 @contextlib.asynccontextmanager

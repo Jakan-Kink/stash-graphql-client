@@ -20,6 +20,7 @@ from stash_graphql_client import (
 )
 from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.markers import SceneMarker
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import (
     SceneFactory,
     TagFactory,
@@ -51,7 +52,10 @@ class TestEntityDelete:
             ]
         )
 
-        result = await tag.delete(respx_stash_client)
+        try:
+            result = await tag.delete(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is True
         assert len(graphql_route.calls) == 1
@@ -71,7 +75,10 @@ class TestEntityDelete:
             ]
         )
 
-        result = await scene.delete(respx_stash_client, delete_file=True)
+        try:
+            result = await scene.delete(respx_stash_client, delete_file=True)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is True
         # Verify the mutation was called with delete_file in input
@@ -91,7 +98,7 @@ class TestEntityDelete:
         assert store.get_cached(Tag, "123") is not None
 
         with patch.object(StashObject, "_store", store):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -100,7 +107,10 @@ class TestEntityDelete:
                 ]
             )
 
-            await tag.delete(respx_stash_client)
+            try:
+                await tag.delete(respx_stash_client)
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         assert store.get_cached(Tag, "123") is None
 
@@ -129,7 +139,7 @@ class TestEntityDelete:
         """Test that delete() raises ValueError when server returns False."""
         tag = TagFactory.build(id="123", name="Test Tag")
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -138,8 +148,11 @@ class TestEntityDelete:
             ]
         )
 
-        with pytest.raises(ValueError, match="Failed to delete"):
-            await tag.delete(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Failed to delete"):
+                await tag.delete(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -148,7 +161,7 @@ class TestEntityDelete:
         gallery = Gallery(id="789", title="Test Gallery")
         gallery._is_new = False  # Mark as existing
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -157,7 +170,10 @@ class TestEntityDelete:
             ]
         )
 
-        result = await gallery.delete(respx_stash_client)
+        try:
+            result = await gallery.delete(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
         assert result is True
 
     @pytest.mark.asyncio
@@ -169,7 +185,7 @@ class TestEntityDelete:
         tag = TagFactory.build(id="123", name="Test Tag")
 
         with patch.object(StashObject, "_store", None):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -178,7 +194,10 @@ class TestEntityDelete:
                 ]
             )
 
-            result = await tag.delete(respx_stash_client)
+            try:
+                result = await tag.delete(respx_stash_client)
+            finally:
+                dump_graphql_calls(graphql_route.calls)
             assert result is True
 
 
@@ -203,7 +222,10 @@ class TestBulkDestroy:
             ]
         )
 
-        result = await Scene.bulk_destroy(respx_stash_client, ["1", "2", "3"])
+        try:
+            result = await Scene.bulk_destroy(respx_stash_client, ["1", "2", "3"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is True
         assert len(graphql_route.calls) == 1
@@ -221,7 +243,10 @@ class TestBulkDestroy:
             ]
         )
 
-        result = await Tag.bulk_destroy(respx_stash_client, ["10", "20"])
+        try:
+            result = await Tag.bulk_destroy(respx_stash_client, ["10", "20"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is True
         assert len(graphql_route.calls) == 1
@@ -240,7 +265,7 @@ class TestBulkDestroy:
         store._cache_entity(tag2)
 
         with patch.object(StashObject, "_store", store):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -249,7 +274,10 @@ class TestBulkDestroy:
                 ]
             )
 
-            await Tag.bulk_destroy(respx_stash_client, ["10", "20"])
+            try:
+                await Tag.bulk_destroy(respx_stash_client, ["10", "20"])
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         assert store.get_cached(Tag, "10") is None
         assert store.get_cached(Tag, "20") is None
@@ -258,7 +286,7 @@ class TestBulkDestroy:
     @pytest.mark.unit
     async def test_bulk_destroy_raises_on_failure(self, respx_stash_client) -> None:
         """Test that bulk_destroy() raises ValueError when server returns False."""
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -267,8 +295,11 @@ class TestBulkDestroy:
             ]
         )
 
-        with pytest.raises(ValueError, match="Failed to bulk delete"):
-            await Tag.bulk_destroy(respx_stash_client, ["1", "2"])
+        try:
+            with pytest.raises(ValueError, match="Failed to bulk delete"):
+                await Tag.bulk_destroy(respx_stash_client, ["1", "2"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -277,7 +308,7 @@ class TestBulkDestroy:
     ) -> None:
         """Test that bulk_destroy() succeeds when _store is None."""
         with patch.object(StashObject, "_store", None):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -286,7 +317,10 @@ class TestBulkDestroy:
                 ]
             )
 
-            result = await Tag.bulk_destroy(respx_stash_client, ["1", "2"])
+            try:
+                result = await Tag.bulk_destroy(respx_stash_client, ["1", "2"])
+            finally:
+                dump_graphql_calls(graphql_route.calls)
             assert result is True
 
 
@@ -313,9 +347,12 @@ class TestMerge:
             ]
         )
 
-        result = await Tag.merge(
-            respx_stash_client, source_ids=["1", "2"], destination_id="3"
-        )
+        try:
+            result = await Tag.merge(
+                respx_stash_client, source_ids=["1", "2"], destination_id="3"
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is not None
         assert result.id == "3"
@@ -326,7 +363,7 @@ class TestMerge:
     @pytest.mark.unit
     async def test_merge_uses_correct_operation_key(self, respx_stash_client) -> None:
         """Test that Tag uses 'tagsMerge' (plural) operation key."""
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -337,9 +374,12 @@ class TestMerge:
             ]
         )
 
-        result = await Tag.merge(
-            respx_stash_client, source_ids=["1"], destination_id="3"
-        )
+        try:
+            result = await Tag.merge(
+                respx_stash_client, source_ids=["1"], destination_id="3"
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
         assert result is not None
 
     @pytest.mark.asyncio
@@ -358,7 +398,7 @@ class TestMerge:
         store._cache_entity(tag3)
 
         with patch.object(StashObject, "_store", store):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -370,9 +410,12 @@ class TestMerge:
                 ]
             )
 
-            await Tag.merge(
-                respx_stash_client, source_ids=["1", "2"], destination_id="3"
-            )
+            try:
+                await Tag.merge(
+                    respx_stash_client, source_ids=["1", "2"], destination_id="3"
+                )
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         # Source entities should be invalidated
         assert store.get_cached(Tag, "1") is None
@@ -382,7 +425,7 @@ class TestMerge:
     @pytest.mark.unit
     async def test_merge_returns_none_when_no_data(self, respx_stash_client) -> None:
         """Test that merge() returns None when server returns no entity data."""
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -391,9 +434,12 @@ class TestMerge:
             ]
         )
 
-        result = await Tag.merge(
-            respx_stash_client, source_ids=["1"], destination_id="3"
-        )
+        try:
+            result = await Tag.merge(
+                respx_stash_client, source_ids=["1"], destination_id="3"
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
         assert result is None
 
     @pytest.mark.asyncio
@@ -418,7 +464,7 @@ class TestMerge:
             "name": "Merged Performer",
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -427,9 +473,12 @@ class TestMerge:
             ]
         )
 
-        result = await Performer.merge(
-            respx_stash_client, source_ids=["1", "2"], destination_id="3"
-        )
+        try:
+            result = await Performer.merge(
+                respx_stash_client, source_ids=["1", "2"], destination_id="3"
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is not None
         assert result.id == "3"
@@ -441,7 +490,7 @@ class TestMerge:
     ) -> None:
         """Test that merge() succeeds when _store is None (no cache to invalidate)."""
         with patch.object(StashObject, "_store", None):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -453,9 +502,12 @@ class TestMerge:
                 ]
             )
 
-            result = await Tag.merge(
-                respx_stash_client, source_ids=["1"], destination_id="3"
-            )
+            try:
+                result = await Tag.merge(
+                    respx_stash_client, source_ids=["1"], destination_id="3"
+                )
+            finally:
+                dump_graphql_calls(graphql_route.calls)
             assert result is not None
             assert result.id == "3"
 
@@ -480,7 +532,7 @@ class TestStoreDelete:
         store._cache_entity(tag)
 
         with patch.object(StashObject, "_store", store):
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -489,7 +541,10 @@ class TestStoreDelete:
                 ]
             )
 
-            result = await store.delete(tag)
+            try:
+                result = await store.delete(tag)
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         assert result is True
         assert store.get_cached(Tag, "123") is None

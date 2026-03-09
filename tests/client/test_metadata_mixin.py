@@ -29,7 +29,7 @@ from stash_graphql_client.types import (
     SetupInput,
     StashConfigInput,
 )
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -51,9 +51,12 @@ async def test_metadata_generate_with_options_none(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_generate(
-        options=None, input_data={"sceneIDs": ["1"]}
-    )
+    try:
+        job_id = await respx_stash_client.metadata_generate(
+            options=None, input_data={"sceneIDs": ["1"]}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-123"
     assert len(graphql_route.calls) == 1
@@ -73,9 +76,12 @@ async def test_metadata_generate_with_input_data_none(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_generate(
-        options={"covers": True}, input_data=None
-    )
+    try:
+        job_id = await respx_stash_client.metadata_generate(
+            options={"covers": True}, input_data=None
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-456"
     assert len(graphql_route.calls) == 1
@@ -93,8 +99,11 @@ async def test_metadata_generate_no_job_id_raises(
         ]
     )
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.metadata_generate(options={"covers": True})
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.metadata_generate(options={"covers": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -180,9 +189,12 @@ async def test_metadata_scan_with_flags_not_none(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_scan(
-        paths=[], flags={"rescan": True, "scanGenerateCovers": False}
-    )
+    try:
+        job_id = await respx_stash_client.metadata_scan(
+            paths=[], flags={"rescan": True, "scanGenerateCovers": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-scan-1"
     assert len(graphql_route.calls) == 2
@@ -228,7 +240,12 @@ async def test_metadata_scan_with_paths_not_none(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_scan(paths=["/path/to/scan"], flags=None)
+    try:
+        job_id = await respx_stash_client.metadata_scan(
+            paths=["/path/to/scan"], flags=None
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-scan-2"
     assert len(graphql_route.calls) == 2
@@ -251,7 +268,10 @@ async def test_metadata_scan_get_defaults_exception(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_scan(paths=[], flags=None)
+    try:
+        job_id = await respx_stash_client.metadata_scan(paths=[], flags=None)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-scan-3"
     assert len(graphql_route.calls) == 2
@@ -294,10 +314,13 @@ async def test_metadata_scan_no_job_id_raises(
         ]
     )
 
-    with pytest.raises(
-        ValueError, match="Failed to start metadata scan - no job ID returned"
-    ):
-        await respx_stash_client.metadata_scan(paths=[], flags=None)
+    try:
+        with pytest.raises(
+            ValueError, match="Failed to start metadata scan - no job ID returned"
+        ):
+            await respx_stash_client.metadata_scan(paths=[], flags=None)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 2
 
@@ -339,8 +362,11 @@ async def test_metadata_scan_execute_exception(
         ]
     )
 
-    with pytest.raises(ValueError, match="Failed to start metadata scan"):
-        await respx_stash_client.metadata_scan(paths=[], flags=None)
+    try:
+        with pytest.raises(ValueError, match="Failed to start metadata scan"):
+            await respx_stash_client.metadata_scan(paths=[], flags=None)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 2
 
@@ -362,9 +388,12 @@ async def test_metadata_clean_with_dict(respx_stash_client: StashClient) -> None
         ]
     )
 
-    job_id = await respx_stash_client.metadata_clean(
-        {"paths": ["/path/to/clean"], "dryRun": False}
-    )
+    try:
+        job_id = await respx_stash_client.metadata_clean(
+            {"paths": ["/path/to/clean"], "dryRun": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-123"
     assert len(graphql_route.calls) == 1
@@ -387,7 +416,10 @@ async def test_metadata_clean_with_model(respx_stash_client: StashClient) -> Non
     )
 
     input_data = CleanMetadataInput(paths=["/another/path"], dryRun=True)
-    job_id = await respx_stash_client.metadata_clean(input_data)
+    try:
+        job_id = await respx_stash_client.metadata_clean(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-456"
     assert len(graphql_route.calls) == 1
@@ -429,9 +461,12 @@ async def test_metadata_clean_generated_with_dict(
         ]
     )
 
-    job_id = await respx_stash_client.metadata_clean_generated(
-        {"sprites": True, "screenshots": True, "dryRun": False}
-    )
+    try:
+        job_id = await respx_stash_client.metadata_clean_generated(
+            {"sprites": True, "screenshots": True, "dryRun": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-789"
     assert len(graphql_route.calls) == 1
@@ -458,7 +493,10 @@ async def test_metadata_clean_generated_with_model(
     input_data = CleanGeneratedInput(
         blobFiles=True, imageThumbnails=True, markers=False, dryRun=True
     )
-    job_id = await respx_stash_client.metadata_clean_generated(input_data)
+    try:
+        job_id = await respx_stash_client.metadata_clean_generated(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-101"
     assert len(graphql_route.calls) == 1
@@ -501,7 +539,10 @@ async def test_export_objects_with_dict(respx_stash_client: StashClient) -> None
         ]
     )
 
-    token = await respx_stash_client.export_objects({"scenes": {"all": True}})
+    try:
+        token = await respx_stash_client.export_objects({"scenes": {"all": True}})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert token == "download-token-abc"  # nosec B105  # noqa: S105
     assert len(graphql_route.calls) == 1
@@ -526,7 +567,10 @@ async def test_export_objects_with_model(respx_stash_client: StashClient) -> Non
         performers=ExportObjectTypeInput(ids=["1", "2", "3"]),
         includeDependencies=True,
     )
-    token = await respx_stash_client.export_objects(input_data)
+    try:
+        token = await respx_stash_client.export_objects(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert token == "download-token-xyz"  # nosec B105  # noqa: S105
     assert len(graphql_route.calls) == 1
@@ -566,13 +610,16 @@ async def test_import_objects_with_dict(respx_stash_client: StashClient) -> None
         ]
     )
 
-    job_id = await respx_stash_client.import_objects(
-        {
-            "file": "/path/to/export.json",
-            "duplicateBehaviour": "IGNORE",
-            "missingRefBehaviour": "FAIL",
-        }
-    )
+    try:
+        job_id = await respx_stash_client.import_objects(
+            {
+                "file": "/path/to/export.json",
+                "duplicateBehaviour": "IGNORE",
+                "missingRefBehaviour": "FAIL",
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "import-job-123"
     assert len(graphql_route.calls) == 1
@@ -598,7 +645,10 @@ async def test_import_objects_with_model(respx_stash_client: StashClient) -> Non
         duplicateBehaviour=ImportDuplicateEnum.OVERWRITE,
         missingRefBehaviour=ImportMissingRefEnum.CREATE,
     )
-    job_id = await respx_stash_client.import_objects(input_data)
+    try:
+        job_id = await respx_stash_client.import_objects(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "import-job-456"
     assert len(graphql_route.calls) == 1
@@ -645,7 +695,10 @@ async def test_backup_database_with_dict(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    token = await respx_stash_client.backup_database({"download": True})
+    try:
+        token = await respx_stash_client.backup_database({"download": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert token == "backup-token-123"  # nosec B105  # noqa: S105
     assert len(graphql_route.calls) == 1
@@ -670,7 +723,10 @@ async def test_backup_database_with_model(respx_stash_client: StashClient) -> No
     )
 
     input_data = BackupDatabaseInput(download=False)
-    path = await respx_stash_client.backup_database(input_data)
+    try:
+        path = await respx_stash_client.backup_database(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert path == "/path/to/backup.sqlite3"
     assert len(graphql_route.calls) == 1
@@ -709,7 +765,10 @@ async def test_anonymise_database_with_dict(respx_stash_client: StashClient) -> 
         ]
     )
 
-    token = await respx_stash_client.anonymise_database({"download": True})
+    try:
+        token = await respx_stash_client.anonymise_database({"download": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert token == "anon-token-123"  # nosec B105  # noqa: S105
     assert len(graphql_route.calls) == 1
@@ -734,7 +793,10 @@ async def test_anonymise_database_with_model(respx_stash_client: StashClient) ->
     )
 
     input_data = AnonymiseDatabaseInput(download=False)
-    path = await respx_stash_client.anonymise_database(input_data)
+    try:
+        path = await respx_stash_client.anonymise_database(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert path == "/path/to/anon-backup.sqlite3"
     assert len(graphql_route.calls) == 1
@@ -773,7 +835,10 @@ async def test_migrate_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.migrate({"backupPath": "/path/to/backup.db"})
+    try:
+        job_id = await respx_stash_client.migrate({"backupPath": "/path/to/backup.db"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "migrate-job-123"
     assert len(graphql_route.calls) == 1
@@ -816,7 +881,10 @@ async def test_migrate_hash_naming_success(respx_stash_client: StashClient) -> N
         ]
     )
 
-    job_id = await respx_stash_client.migrate_hash_naming()
+    try:
+        job_id = await respx_stash_client.migrate_hash_naming()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "hash-migrate-job-123"
     assert len(graphql_route.calls) == 1
@@ -862,9 +930,12 @@ async def test_migrate_scene_screenshots_with_dict(
         ]
     )
 
-    job_id = await respx_stash_client.migrate_scene_screenshots(
-        {"deleteFiles": True, "overwriteExisting": False}
-    )
+    try:
+        job_id = await respx_stash_client.migrate_scene_screenshots(
+            {"deleteFiles": True, "overwriteExisting": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "screenshot-migrate-job-123"
     assert len(graphql_route.calls) == 1
@@ -908,7 +979,10 @@ async def test_migrate_blobs_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.migrate_blobs({"deleteOld": False})
+    try:
+        job_id = await respx_stash_client.migrate_blobs({"deleteOld": False})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "blob-migrate-job-123"
     assert len(graphql_route.calls) == 1
@@ -949,7 +1023,10 @@ async def test_optimise_database_success(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    job_id = await respx_stash_client.optimise_database()
+    try:
+        job_id = await respx_stash_client.optimise_database()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "optimise-job-123"
     assert len(graphql_route.calls) == 1
@@ -984,13 +1061,16 @@ async def test_setup_with_dict(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json=create_graphql_response("setup", True))]
     )
 
-    result = await respx_stash_client.setup(
-        {
-            "stashes": [{"path": "/media/videos", "excludeVideo": False}],
-            "databaseFile": "/data/stash.db",
-            "generatedLocation": "/data/generated",
-        }
-    )
+    try:
+        result = await respx_stash_client.setup(
+            {
+                "stashes": [{"path": "/media/videos", "excludeVideo": False}],
+                "databaseFile": "/data/stash.db",
+                "generatedLocation": "/data/generated",
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1014,7 +1094,10 @@ async def test_setup_with_model(respx_stash_client: StashClient) -> None:
         databaseFile="/data/stash.db",
         generatedLocation="/data/generated",
     )
-    result = await respx_stash_client.setup(input_data)
+    try:
+        result = await respx_stash_client.setup(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -1031,7 +1114,10 @@ async def test_setup_returns_false(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json=create_graphql_response("setup", False))]
     )
 
-    result = await respx_stash_client.setup({"stashes": []})
+    try:
+        result = await respx_stash_client.setup({"stashes": []})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
     assert len(graphql_route.calls) == 1
@@ -1068,7 +1154,10 @@ async def test_download_ffmpeg_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.download_ffmpeg()
+    try:
+        job_id = await respx_stash_client.download_ffmpeg()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "ffmpeg-job-123"
     assert len(graphql_route.calls) == 1
@@ -1113,7 +1202,10 @@ async def test_metadata_auto_tag_success(respx_stash_client: StashClient) -> Non
         studios=["1", "2"],  # Specific studio IDs
         tags=None,  # No tags
     )
-    job_id = await respx_stash_client.metadata_auto_tag(input_data)
+    try:
+        job_id = await respx_stash_client.metadata_auto_tag(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "autotag-job-123"
     assert len(graphql_route.calls) == 1
@@ -1136,14 +1228,17 @@ async def test_metadata_auto_tag_with_dict(respx_stash_client: StashClient) -> N
         ]
     )
 
-    job_id = await respx_stash_client.metadata_auto_tag(
-        {
-            "paths": ["/another/path"],
-            "performers": ["performer-1", "performer-2"],
-            "studios": ["*"],
-            "tags": ["tag-1"],
-        }
-    )
+    try:
+        job_id = await respx_stash_client.metadata_auto_tag(
+            {
+                "paths": ["/another/path"],
+                "performers": ["performer-1", "performer-2"],
+                "studios": ["*"],
+                "tags": ["tag-1"],
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "autotag-job-456"
     assert len(graphql_route.calls) == 1
@@ -1201,7 +1296,10 @@ async def test_metadata_identify_success(respx_stash_client: StashClient) -> Non
         sceneIDs=["scene-1", "scene-2"],
         paths=None,
     )
-    job_id = await respx_stash_client.metadata_identify(input_data)
+    try:
+        job_id = await respx_stash_client.metadata_identify(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "identify-job-123"
     assert len(graphql_route.calls) == 1
@@ -1224,12 +1322,15 @@ async def test_metadata_identify_with_dict(respx_stash_client: StashClient) -> N
         ]
     )
 
-    job_id = await respx_stash_client.metadata_identify(
-        {
-            "sources": [{"source": {"scraper_id": "scraper-2"}}],
-            "paths": ["/path/to/scene.mp4"],
-        }
-    )
+    try:
+        job_id = await respx_stash_client.metadata_identify(
+            {
+                "sources": [{"source": {"scraper_id": "scraper-2"}}],
+                "paths": ["/path/to/scene.mp4"],
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "identify-job-456"
     assert len(graphql_route.calls) == 1
@@ -1275,7 +1376,10 @@ async def test_metadata_import_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.metadata_import()
+    try:
+        job_id = await respx_stash_client.metadata_import()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "import-job-123"
     assert len(graphql_route.calls) == 1
@@ -1316,7 +1420,10 @@ async def test_metadata_export_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.metadata_export()
+    try:
+        job_id = await respx_stash_client.metadata_export()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "export-job-123"
     assert len(graphql_route.calls) == 1

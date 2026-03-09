@@ -8,7 +8,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Tag
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -21,7 +21,10 @@ async def test_find_tags_returns_results(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_tags()
+        try:
+            result = await stash_client.find_tags()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_tags"
@@ -44,7 +47,10 @@ async def test_find_tags_with_pagination(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_tags(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_tags(filter_={"per_page": 10, "page": 1})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_tags"
@@ -68,7 +74,10 @@ async def test_find_nonexistent_tag_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag = await stash_client.find_tag("99999999")
+        try:
+            tag = await stash_client.find_tag("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_tag"
@@ -91,7 +100,10 @@ async def test_find_tags_with_q_parameter(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_tags(q="test")
+        try:
+            result = await stash_client.find_tags(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_tags"
@@ -122,7 +134,10 @@ async def test_create_and_find_tag(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag = await stash_client.create_tag(Tag(name="sgc-inttest-create"))
+        try:
+            tag = await stash_client.create_tag(Tag(name="sgc-inttest-create"))
+        finally:
+            dump_graphql_calls(calls, "create_tag")
         cleanup["tags"].append(tag.id)
 
         assert len(calls) == 1, "Expected 1 GraphQL call for create_tag"
@@ -135,7 +150,10 @@ async def test_create_and_find_tag(
 
         calls.clear()
 
-        found = await stash_client.find_tag(tag.id)
+        try:
+            found = await stash_client.find_tag(tag.id)
+        finally:
+            dump_graphql_calls(calls, "find_tag")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_tag"
         assert "findTag" in calls[0]["query"]
@@ -155,14 +173,20 @@ async def test_update_tag(stash_client: StashClient, stash_cleanup_tracker) -> N
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag = await stash_client.create_tag(Tag(name="sgc-inttest-update"))
+        try:
+            tag = await stash_client.create_tag(Tag(name="sgc-inttest-update"))
+        finally:
+            dump_graphql_calls(calls, "create_tag")
         cleanup["tags"].append(tag.id)
         assert tag.id is not None
 
         calls.clear()
 
         tag.description = "integration test description"
-        updated = await stash_client.update_tag(tag)
+        try:
+            updated = await stash_client.update_tag(tag)
+        finally:
+            dump_graphql_calls(calls, "update_tag")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for update_tag"
         assert "tagUpdate" in calls[0]["query"]
@@ -182,13 +206,19 @@ async def test_tag_destroy(stash_client: StashClient, stash_cleanup_tracker) -> 
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag = await stash_client.create_tag(Tag(name="sgc-inttest-destroy"))
+        try:
+            tag = await stash_client.create_tag(Tag(name="sgc-inttest-destroy"))
+        finally:
+            dump_graphql_calls(calls, "create_tag")
         cleanup["tags"].append(tag.id)
         assert tag.id is not None
 
         calls.clear()
 
-        result = await stash_client.tag_destroy({"id": tag.id})
+        try:
+            result = await stash_client.tag_destroy({"id": tag.id})
+        finally:
+            dump_graphql_calls(calls, "tag_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for tag_destroy"
         assert "tagDestroy" in calls[0]["query"]
@@ -201,7 +231,10 @@ async def test_tag_destroy(stash_client: StashClient, stash_cleanup_tracker) -> 
         calls.clear()
 
         # Confirm the tag is gone
-        gone = await stash_client.find_tag(tag.id)
+        try:
+            gone = await stash_client.find_tag(tag.id)
+        finally:
+            dump_graphql_calls(calls, "find_tag")
         assert gone is None
 
 
@@ -216,8 +249,15 @@ async def test_tags_destroy_bulk(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag_a = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-destroy-a"))
-        tag_b = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-destroy-b"))
+        try:
+            tag_a = await stash_client.create_tag(
+                Tag(name="sgc-inttest-bulk-destroy-a")
+            )
+            tag_b = await stash_client.create_tag(
+                Tag(name="sgc-inttest-bulk-destroy-b")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_tags")
         cleanup["tags"].append(tag_a.id)
         cleanup["tags"].append(tag_b.id)
         assert tag_a.id is not None
@@ -225,7 +265,10 @@ async def test_tags_destroy_bulk(
 
         calls.clear()
 
-        result = await stash_client.tags_destroy([tag_a.id, tag_b.id])
+        try:
+            result = await stash_client.tags_destroy([tag_a.id, tag_b.id])
+        finally:
+            dump_graphql_calls(calls, "tags_destroy")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for tags_destroy"
         assert "tagsDestroy" in calls[0]["query"]
@@ -248,8 +291,11 @@ async def test_bulk_tag_update(
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        tag_a = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-a"))
-        tag_b = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-b"))
+        try:
+            tag_a = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-a"))
+            tag_b = await stash_client.create_tag(Tag(name="sgc-inttest-bulk-update-b"))
+        finally:
+            dump_graphql_calls(calls, "create_tags")
         cleanup["tags"].append(tag_a.id)
         cleanup["tags"].append(tag_b.id)
         assert tag_a.id is not None
@@ -257,10 +303,13 @@ async def test_bulk_tag_update(
 
         calls.clear()
 
-        updated_tags = await stash_client.bulk_tag_update(
-            ids=[tag_a.id, tag_b.id],
-            description="bulk-updated",
-        )
+        try:
+            updated_tags = await stash_client.bulk_tag_update(
+                ids=[tag_a.id, tag_b.id],
+                description="bulk-updated",
+            )
+        finally:
+            dump_graphql_calls(calls, "bulk_tag_update")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for bulk_tag_update"
         assert "bulkTagUpdate" in calls[0]["query"]
@@ -281,8 +330,11 @@ async def test_tags_merge(stash_client: StashClient, stash_cleanup_tracker) -> N
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
-        source = await stash_client.create_tag(Tag(name="sgc-inttest-merge-source"))
-        dest = await stash_client.create_tag(Tag(name="sgc-inttest-merge-dest"))
+        try:
+            source = await stash_client.create_tag(Tag(name="sgc-inttest-merge-source"))
+            dest = await stash_client.create_tag(Tag(name="sgc-inttest-merge-dest"))
+        finally:
+            dump_graphql_calls(calls, "create_tags")
         cleanup["tags"].append(source.id)
         cleanup["tags"].append(dest.id)
         assert source.id is not None
@@ -290,10 +342,13 @@ async def test_tags_merge(stash_client: StashClient, stash_cleanup_tracker) -> N
 
         calls.clear()
 
-        merged = await stash_client.tags_merge(
-            source=[source.id],
-            destination=dest.id,
-        )
+        try:
+            merged = await stash_client.tags_merge(
+                source=[source.id],
+                destination=dest.id,
+            )
+        finally:
+            dump_graphql_calls(calls, "tags_merge")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for tags_merge"
         assert "tagsMerge" in calls[0]["query"]

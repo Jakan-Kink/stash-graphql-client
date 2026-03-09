@@ -13,7 +13,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import ScrapeContentType
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -79,7 +79,10 @@ async def test_list_scrapers_single_type(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "scraper-1"
@@ -124,9 +127,12 @@ async def test_list_scrapers_multiple_types(respx_stash_client: StashClient) -> 
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers(
-        [ScrapeContentType.SCENE, ScrapeContentType.PERFORMER]
-    )
+    try:
+        scrapers = await respx_stash_client.list_scrapers(
+            [ScrapeContentType.SCENE, ScrapeContentType.PERFORMER]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 2
     assert scrapers[0].id == "scraper-1"
@@ -161,15 +167,18 @@ async def test_list_scrapers_all_types(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers(
-        [
-            ScrapeContentType.SCENE,
-            ScrapeContentType.PERFORMER,
-            ScrapeContentType.GALLERY,
-            ScrapeContentType.IMAGE,
-            ScrapeContentType.GROUP,
-        ]
-    )
+    try:
+        scrapers = await respx_stash_client.list_scrapers(
+            [
+                ScrapeContentType.SCENE,
+                ScrapeContentType.PERFORMER,
+                ScrapeContentType.GALLERY,
+                ScrapeContentType.IMAGE,
+                ScrapeContentType.GROUP,
+            ]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "universal-scraper"
@@ -200,7 +209,10 @@ async def test_list_scrapers_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 0
     assert len(graphql_route.calls) == 1
@@ -218,7 +230,10 @@ async def test_list_scrapers_error_returns_empty(
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.SCENE])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 0
     assert len(graphql_route.calls) == 1
@@ -247,7 +262,10 @@ async def test_list_scrapers_performer_type(respx_stash_client: StashClient) -> 
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.PERFORMER])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.PERFORMER])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "perf-scraper"
@@ -275,7 +293,10 @@ async def test_list_scrapers_gallery_type(respx_stash_client: StashClient) -> No
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.GALLERY])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.GALLERY])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "gallery-scraper"
@@ -303,7 +324,10 @@ async def test_list_scrapers_image_type(respx_stash_client: StashClient) -> None
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.IMAGE])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.IMAGE])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "image-scraper"
@@ -331,7 +355,10 @@ async def test_list_scrapers_group_type(respx_stash_client: StashClient) -> None
         ]
     )
 
-    scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.GROUP])
+    try:
+        scrapers = await respx_stash_client.list_scrapers([ScrapeContentType.GROUP])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scrapers) == 1
     assert scrapers[0].id == "group-scraper"

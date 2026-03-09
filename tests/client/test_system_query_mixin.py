@@ -9,6 +9,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash.graphql_responses import create_graphql_response
 
 
@@ -38,7 +39,10 @@ async def test_stats(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.stats()
+    try:
+        result = await respx_stash_client.stats()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.scene_count == 100
     assert result.scenes_size == 5000000000
@@ -78,7 +82,10 @@ async def test_logs(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.logs()
+    try:
+        result = await respx_stash_client.logs()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].level == "Info"
@@ -96,11 +103,14 @@ async def test_logs(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_get_system_status_exception(respx_stash_client: StashClient) -> None:
     """Test get_system_status handles exceptions gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=Exception("Network error")
     )
 
-    result = await respx_stash_client.get_system_status()
+    try:
+        result = await respx_stash_client.get_system_status()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
 
@@ -120,7 +130,7 @@ async def test_check_system_ready_ok_status(respx_stash_client: StashClient) -> 
         "homeDir": "/home/user",
     }
 
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200, json=create_graphql_response("systemStatus", status_data)
@@ -129,7 +139,10 @@ async def test_check_system_ready_ok_status(respx_stash_client: StashClient) -> 
     )
 
     # Should not raise any exception
-    await respx_stash_client.check_system_ready()
+    try:
+        await respx_stash_client.check_system_ready()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
     # If we get here without exception, the test passes
 
 
@@ -153,7 +166,10 @@ async def test_dlna_status_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.dlna_status()
+    try:
+        result = await respx_stash_client.dlna_status()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.running is True
     # Time fields are parsed to datetime objects
@@ -178,11 +194,14 @@ async def test_dlna_status_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_dlna_status_exception(respx_stash_client: StashClient) -> None:
     """Test dlna_status() handles exceptions and returns empty DLNAStatus."""
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=Exception("Network error")
     )
 
-    result = await respx_stash_client.dlna_status()
+    try:
+        result = await respx_stash_client.dlna_status()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty DLNAStatus object on exception
     assert isinstance(result, type(result))
@@ -198,7 +217,10 @@ async def test_dlna_status_no_data(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json={"data": {}})]
     )
 
-    result = await respx_stash_client.dlna_status()
+    try:
+        result = await respx_stash_client.dlna_status()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty DLNAStatus object when no data
     assert isinstance(result, type(result))

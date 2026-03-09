@@ -18,7 +18,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import ConfigDefaultSettingsResult
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -36,7 +36,10 @@ async def test_get_configuration_defaults(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.get_configuration_defaults()
+        try:
+            result = await stash_client.get_configuration_defaults()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for get_configuration_defaults"

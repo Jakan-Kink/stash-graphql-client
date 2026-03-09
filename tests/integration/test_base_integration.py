@@ -7,7 +7,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import SystemStatus
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -20,7 +20,10 @@ async def test_get_system_status(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        status = await stash_client.get_system_status()
+        try:
+            status = await stash_client.get_system_status()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for get_system_status"
@@ -54,7 +57,10 @@ async def test_execute_raw_query(
                 }
             }
         """
-        result = await stash_client.execute(query)
+        try:
+            result = await stash_client.execute(query)
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for execute"
@@ -82,7 +88,10 @@ async def test_find_job_nonexistent(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        job = await stash_client.find_job("nonexistent-job-id")
+        try:
+            job = await stash_client.find_job("nonexistent-job-id")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call was attempted
         assert len(calls) == 1, "Expected 1 GraphQL call for find_job"

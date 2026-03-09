@@ -16,7 +16,7 @@ from stash_graphql_client.capabilities import (
 from stash_graphql_client.fragments import FragmentStore, fragment_store
 from stash_graphql_client.types import Gallery, Group, Performer, Scene, Studio, Tag
 from stash_graphql_client.types.unset import UNSET, is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 from tests.fixtures.stash.graphql_responses import (
     _MUTATION_REGISTRY,
     _QUERY_REGISTRY,
@@ -248,9 +248,12 @@ async def test_capabilities_mutation_flags_match_introspection(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _mutations: __type(name: "Mutation") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _mutations: __type(name: "Mutation") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         assert len(calls) == 1
         assert calls[0]["exception"] is None
@@ -285,9 +288,12 @@ async def test_capabilities_query_flags_match_introspection(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _queries: __type(name: "Query") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _queries: __type(name: "Query") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         assert len(calls) == 1
         assert calls[0]["exception"] is None
@@ -322,9 +328,12 @@ async def test_capabilities_subscription_flags_match_introspection(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _subscriptions: __type(name: "Subscription") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _subscriptions: __type(name: "Subscription") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         assert len(calls) == 1
         assert calls[0]["exception"] is None
@@ -1779,9 +1788,12 @@ async def test_tracked_mutations_subset_of_server_mutations(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _mutations: __type(name: "Mutation") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _mutations: __type(name: "Mutation") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
 
         all_mutations: set[str] = {
@@ -1814,9 +1826,12 @@ async def test_tracked_queries_subset_of_server_queries(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _queries: __type(name: "Query") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _queries: __type(name: "Query") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
 
         all_queries: set[str] = {
@@ -1848,9 +1863,12 @@ async def test_tracked_subscriptions_subset_of_server_subscriptions(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _subscriptions: __type(name: "Subscription") { fields { name } } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _subscriptions: __type(name: "Subscription") { fields { name } } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
 
         all_subscriptions: set[str] = {
@@ -1890,9 +1908,12 @@ async def test_duplication_criterion_type_probe_matches_introspection(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _dup: __type(name: "DuplicationCriterionInput") { name } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _dup: __type(name: "DuplicationCriterionInput") { name } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
 
         type_exists = result.get("_dup") is not None
@@ -1924,9 +1945,12 @@ async def test_performer_merge_type_probe_matches_introspection(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(
-            '{ _pm: __type(name: "PerformerMergeInput") { name } }'
-        )
+        try:
+            result = await stash_client.execute(
+                '{ _pm: __type(name: "PerformerMergeInput") { name } }'
+            )
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
 
         type_exists = result.get("_pm") is not None
@@ -1960,7 +1984,10 @@ async def test_capability_detection_query_accepted_by_server(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.execute(CAPABILITY_DETECTION_QUERY)
+        try:
+            result = await stash_client.execute(CAPABILITY_DETECTION_QUERY)
+        finally:
+            dump_graphql_calls(calls)
         assert len(calls) == 1
         assert calls[0]["exception"] is None
 
