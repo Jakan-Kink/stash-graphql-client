@@ -6,7 +6,7 @@ Tests file and folder operations against a real Stash instance.
 import pytest
 
 from stash_graphql_client import StashClient
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -19,7 +19,10 @@ async def test_find_files_returns_results(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_files()
+        try:
+            result = await stash_client.find_files()
+        finally:
+            dump_graphql_calls(calls)
         if result.count == 0:
             pytest.skip("No files in test Stash instance")
 
@@ -43,7 +46,10 @@ async def test_find_files_with_pagination(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_files(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_files(filter_={"per_page": 10, "page": 1})
+        finally:
+            dump_graphql_calls(calls)
 
         assert len(result.files) <= 10
 
@@ -67,7 +73,10 @@ async def test_find_file_by_id(
         capture_graphql_calls(stash_client) as calls,
     ):
         # First get a file ID from the list
-        result = await stash_client.find_files(filter_={"per_page": 1})
+        try:
+            result = await stash_client.find_files(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_files")
         if result.count == 0:
             pytest.skip("No files in test Stash instance")
 
@@ -81,7 +90,10 @@ async def test_find_file_by_id(
         file_id = result.files[0].id
         calls.clear()
 
-        file = await stash_client.find_file(file_id)
+        try:
+            file = await stash_client.find_file(file_id)
+        finally:
+            dump_graphql_calls(calls, "find_file")
 
         assert file is not None
         assert file.id == file_id
@@ -104,7 +116,10 @@ async def test_find_folders_returns_results(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_folders()
+        try:
+            result = await stash_client.find_folders()
+        finally:
+            dump_graphql_calls(calls)
         if result.count == 0:
             pytest.skip("No files in test Stash instance")
 
@@ -128,7 +143,10 @@ async def test_find_folder_by_id(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_folders(filter_={"per_page": 1})
+        try:
+            result = await stash_client.find_folders(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_folders")
         if result.count == 0:
             pytest.skip("No folders in test Stash instance")
 
@@ -142,7 +160,10 @@ async def test_find_folder_by_id(
         folder_id = result.folders[0].id
         calls.clear()
 
-        folder = await stash_client.find_folder(folder_id)
+        try:
+            folder = await stash_client.find_folder(folder_id)
+        finally:
+            dump_graphql_calls(calls, "find_folder")
 
         assert folder is not None
         assert folder.id == folder_id
@@ -165,7 +186,10 @@ async def test_find_nonexistent_file_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        file = await stash_client.find_file("99999999")
+        try:
+            file = await stash_client.find_file("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         assert file is None
 
@@ -187,7 +211,10 @@ async def test_find_nonexistent_folder_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        folder = await stash_client.find_folder("99999999")
+        try:
+            folder = await stash_client.find_folder("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         assert folder is None
 

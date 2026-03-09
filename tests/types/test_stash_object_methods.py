@@ -10,8 +10,9 @@ This test suite covers:
 
 from __future__ import annotations
 
+import contextlib
 from typing import ClassVar
-from unittest.mock import AsyncMock, PropertyMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -23,6 +24,7 @@ from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
+from tests.fixtures import dump_graphql_calls
 
 
 class TestChangeTracking:
@@ -124,8 +126,9 @@ class TestFieldNames:
             __type_name__ = "TestModel"
             __update_input_type__ = BaseModel
 
-        # Patch model_fields to return empty dict
-        with patch.object(TestModel, "model_fields", {}):
+        # Use patch.dict to clear model_fields in-place — avoids triggering
+        # Pydantic's ModelMetaclass.__setattr__ which calls model_rebuild().
+        with patch.dict(TestModel.model_fields, {}, clear=True):
             # Delete __field_names__ if it exists to force computation
             if hasattr(TestModel, "__field_names__"):
                 delattr(TestModel, "__field_names__")
@@ -164,30 +167,28 @@ class TestFieldNames:
     def test_get_field_names_fallback_exception(self, respx_entity_store) -> None:
         """Test _get_field_names() fallback on exception - covers lines 714-716."""
 
-        class TestModel(StashObject):
-            __type_name__ = "TestModel"
-            __update_input_type__ = BaseModel
+        # Use a non-Pydantic class whose metaclass makes model_fields raise
+        # AttributeError.  Calling _get_field_names.__func__ with this class
+        # exercises the except-branch without touching Pydantic's
+        # ModelMetaclass.__setattr__ (which would trigger model_rebuild and
+        # corrupt global class state for Tag/Scene in the entire worker).
+        class _FailingMeta(type):
+            @property
+            def model_fields(cls) -> dict:  # type: ignore[override]
+                raise AttributeError("Test error")
 
-        # Patch model_fields on the instance's class to raise AttributeError
-        with patch.object(
-            TestModel,
-            "model_fields",
-            new_callable=PropertyMock,
-            side_effect=AttributeError("Test error"),
-        ):
-            # Delete __field_names__ if it exists to force computation
-            if hasattr(TestModel, "__field_names__"):
-                delattr(TestModel, "__field_names__")
+        class _FailingModel(metaclass=_FailingMeta):
+            pass
 
-            # Call _get_field_names()
-            field_names = TestModel._get_field_names()
+        # Ensure no cached __field_names__ from a previous test run
+        with contextlib.suppress(AttributeError):
+            del _FailingModel.__field_names__  # type: ignore[attr-defined]
 
-            # Should fallback to {"id"}
-            assert field_names == {"id"}
+        # Call _get_field_names() with our fake class instead of a real model
+        field_names = StashObject._get_field_names.__func__(_FailingModel)  # type: ignore[attr-defined]
 
-            # Clean up __field_names__ created during the test
-            if hasattr(TestModel, "__field_names__"):
-                delattr(TestModel, "__field_names__")
+        # Should fallback to {"id"}
+        assert field_names == {"id"}
 
 
 class TestFindById:
@@ -197,17 +198,23 @@ class TestFindById:
     async def test_find_by_id_exception_returns_none(self, respx_stash_client) -> None:
         """Test find_by_id() returns None on exception - covers lines 765-766."""
         # Mock to raise an exception
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=Exception("Network error")
         )
 
         # Call find_by_id
-        result = await Tag.find_by_id(respx_stash_client, "tag-error")
+        try:
+            result = await Tag.find_by_id(respx_stash_client, "tag-error")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should return None instead of raising
         assert result is None
 
     @pytest.mark.asyncio
+    @pytest.mark.filterwarnings(
+        "ignore:CustomType.*Unmapped fields:stash_graphql_client.errors.StashUnmappedFieldWarning"
+    )
     async def test_find_by_id_uses_fallback_query_for_unknown_type(
         self, respx_stash_client, respx_entity_store
     ) -> None:
@@ -221,12 +228,15 @@ class TestFindById:
 
         # Mock response
         response_data = {"data": {"findCustomType": {"id": "custom-1", "name": "Test"}}}
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json=response_data)
         )
 
         # Call find_by_id - should build fallback query since CustomType not in query_map
-        result = await CustomType.find_by_id(respx_stash_client, "custom-1")
+        try:
+            result = await CustomType.find_by_id(respx_stash_client, "custom-1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should return the object
         assert result is not None
@@ -300,14 +310,17 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock response missing the operation key
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json={"data": {"wrong_key": {"id": "123"}}}
             )
         )
 
-        with pytest.raises(ValueError, match="Missing 'tagCreate' in response"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Missing 'tagCreate' in response"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_raises_when_operation_result_is_none(
@@ -318,12 +331,15 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock response with None result
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json={"data": {"tagCreate": None}})
         )
 
-        with pytest.raises(ValueError, match="Create operation returned None"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Create operation returned None"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_wraps_exceptions(
@@ -334,12 +350,15 @@ class TestSaveMethod:
         tag = Tag.new(name="Test")
 
         # Mock to raise exception
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=Exception("Network error")
         )
 
-        with pytest.raises(ValueError, match="Failed to save Tag"):
-            await tag.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="Failed to save Tag"):
+                await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     async def test_save_new_object_updates_id_and_marks_clean(
@@ -352,7 +371,7 @@ class TestSaveMethod:
         assert tag.is_new()
 
         # Mock successful create response
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -367,7 +386,10 @@ class TestSaveMethod:
         )
 
         # Save should update ID and mark clean
-        await tag.save(respx_stash_client)
+        try:
+            await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was updated from UUID to server ID
         assert tag.id == "server-assigned-123"
@@ -392,7 +414,7 @@ class TestSaveMethod:
         assert not tag.is_new()
 
         # Mock successful update response
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200,
                 json={
@@ -407,7 +429,10 @@ class TestSaveMethod:
         )
 
         # Save should NOT update ID (already has server ID) but should mark clean
-        await tag.save(respx_stash_client)
+        try:
+            await tag.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was NOT changed
         assert tag.id == "existing-123"
@@ -637,20 +662,20 @@ class TestProcessFields:
         # Create a tag with a field converter that raises
         tag = Tag.new(name="Test")
 
-        # Add a field that will be converted
-        tag.rating100 = 50
+        # Add a field that will be converted (scene_count is a real Tag field)
+        tag.scene_count = 50
 
         # Create a converter that raises ValueError
         def bad_converter(value):
             raise ValueError("Test error")
 
         # Patch the field conversions dict to add our bad converter
-        with patch.dict(Tag.__field_conversions__, {"rating100": bad_converter}):
+        with patch.dict(Tag.__field_conversions__, {"scene_count": bad_converter}):
             # Call _process_fields - should catch the exception
-            result = await tag._process_fields({"rating100"})
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result due to exception
-            assert "rating100" not in result
+            # scene_count should not be in result due to exception
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_field_missing_on_object(
@@ -673,14 +698,14 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter is None - covers line 967->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Set converter to None
-        with patch.dict(Tag.__field_conversions__, {"rating100": None}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": None}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter is None)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter is None)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_converter_not_callable(
@@ -688,14 +713,14 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter is not callable - covers line 967->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Set converter to a non-callable value
-        with patch.dict(Tag.__field_conversions__, {"rating100": "not callable"}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": "not callable"}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter is not callable)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter is not callable)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_when_converter_returns_none(
@@ -703,17 +728,17 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() when converter returns None - covers line 969->950."""
         tag = Tag.new(name="Test")
-        tag.rating100 = 50
+        tag.scene_count = 50
 
         # Converter that returns None
         def none_converter(value):
             return None
 
-        with patch.dict(Tag.__field_conversions__, {"rating100": none_converter}):
-            result = await tag._process_fields({"rating100"})
+        with patch.dict(Tag.__field_conversions__, {"scene_count": none_converter}):
+            result = await tag._process_fields({"scene_count"})
 
-            # rating100 should not be in result (converter returned None)
-            assert "rating100" not in result
+            # scene_count should not be in result (converter returned None)
+            assert "scene_count" not in result
 
     @pytest.mark.asyncio
     async def test_process_fields_skips_field_without_conversion(
@@ -778,8 +803,6 @@ class TestCircularReferenceProtection:
             id="perf-1",
             name="Test Performer",
             tags=[],
-            parents=[],
-            children=[],
             scenes=[],
         )
 

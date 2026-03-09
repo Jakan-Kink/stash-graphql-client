@@ -38,6 +38,7 @@ from stash_graphql_client.types import (
 from stash_graphql_client.types.enums import SortDirectionEnum
 from stash_graphql_client.types.scene import Scene, SceneHashInput
 from stash_graphql_client.types.unset import UNSET
+from tests.fixtures import dump_graphql_calls
 
 
 @pytest.mark.asyncio
@@ -125,7 +126,10 @@ async def test_host_0_0_0_0_converted_to_127_0_0_1(
             side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
-        client = await context.get_client()
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify URLs were converted
         assert client.url == "http://127.0.0.1:9999/graphql"
@@ -647,7 +651,6 @@ async def test_parse_result_to_type_handles_unexpected_response_structure(
         "files": [],
         "tags": [],
         "performers": [],
-        "studios": [],
         "galleries": [],
         "groups": [],
         "created_at": "2024-01-01T00:00:00Z",
@@ -685,7 +688,10 @@ async def test_get_configuration_defaults_uses_fallback_when_no_defaults(
             side_effect=[httpx.Response(200, json=response_data)]
         )
 
-        defaults = await stash_client.get_configuration_defaults()
+        try:
+            defaults = await stash_client.get_configuration_defaults()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify route was called with correct query
         assert len(route.calls) == 1
@@ -717,8 +723,11 @@ async def test_get_configuration_defaults_handles_exception(stash_client) -> Non
         )
 
         # Connection errors get wrapped in StashConnectionError
-        with pytest.raises(StashConnectionError, match="Failed to connect"):
-            await stash_client.get_configuration_defaults()
+        try:
+            with pytest.raises(StashConnectionError, match="Failed to connect"):
+                await stash_client.get_configuration_defaults()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify route was called (even though it failed)
         assert len(route.calls) == 1
@@ -746,9 +755,12 @@ async def test_metadata_generate_basic_call(stash_client) -> None:
         options = GenerateMetadataOptions()
         input_data = GenerateMetadataInput()
 
-        job_id = await stash_client.metadata_generate(
-            options=options, input_data=input_data
-        )
+        try:
+            job_id = await stash_client.metadata_generate(
+                options=options, input_data=input_data
+            )
+        finally:
+            dump_graphql_calls(route.calls)
 
         assert job_id == "123"
 
@@ -776,10 +788,13 @@ async def test_check_system_ready_raises_when_status_none(stash_client) -> None:
             side_effect=[httpx.Response(200, json=response_data)]
         )
 
-        with pytest.raises(
-            RuntimeError, match="Unable to determine Stash system status"
-        ):
-            await stash_client.check_system_ready()
+        try:
+            with pytest.raises(
+                RuntimeError, match="Unable to determine Stash system status"
+            ):
+                await stash_client.check_system_ready()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify route was called with systemStatus query
         assert len(route.calls) == 1
@@ -813,8 +828,11 @@ async def test_check_system_ready_raises_on_needs_migration(stash_client) -> Non
             side_effect=[httpx.Response(200, json=response_data)]
         )
 
-        with pytest.raises(StashSystemNotReadyError, match="requires migration"):
-            await stash_client.check_system_ready()
+        try:
+            with pytest.raises(StashSystemNotReadyError, match="requires migration"):
+                await stash_client.check_system_ready()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify route was called with systemStatus query
         assert len(route.calls) == 1
@@ -848,8 +866,13 @@ async def test_check_system_ready_raises_on_setup_required(stash_client) -> None
             side_effect=[httpx.Response(200, json=response_data)]
         )
 
-        with pytest.raises(StashSystemNotReadyError, match="requires initial setup"):
-            await stash_client.check_system_ready()
+        try:
+            with pytest.raises(
+                StashSystemNotReadyError, match="requires initial setup"
+            ):
+                await stash_client.check_system_ready()
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify route was called with systemStatus query
         assert len(route.calls) == 1
@@ -1060,11 +1083,14 @@ async def test_execute_with_list_type_but_non_list_data(respx_stash_client) -> N
 
     # Call execute with list[Studio] but data is not a list
     # This triggers the fallback at line 426: return field_data
-    result = await respx_stash_client.execute(
-        "query { someQuery }",
-        {},
-        result_type=list[Studio],  # Expects list but data is a string
-    )
+    try:
+        result = await respx_stash_client.execute(
+            "query { someQuery }",
+            {},
+            result_type=list[Studio],  # Expects list but data is a string
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return field_data as-is when it's not a list
     assert result == "not-a-list-string"
@@ -1079,15 +1105,20 @@ async def test_execute_with_bare_list_result_type_raises_error(
     """Test execute with bare list type raises error when hitting model_validate - covers line 432."""
 
     # Mock GraphQL response
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[httpx.Response(200, json={"data": {"someQuery": "string-value"}})]
     )
 
     # Bare list doesn't have model_validate, so this will hit line 432 and raise
-    with pytest.raises(
-        StashError, match="type object 'list' has no attribute 'model_validate'"
-    ):
-        await respx_stash_client.execute("query { someQuery }", {}, result_type=list)
+    try:
+        with pytest.raises(
+            StashError, match="type object 'list' has no attribute 'model_validate'"
+        ):
+            await respx_stash_client.execute(
+                "query { someQuery }", {}, result_type=list
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
 
 @pytest.mark.asyncio
@@ -1097,7 +1128,7 @@ async def test_execute_with_unexpected_response_structure_raises_error(
 ) -> None:
     """Test execute with unexpected response structure triggers fallback and fails - hits lines 441-444."""
     # Mock GraphQL response with unexpected structure (multiple root keys)
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200, json={"data": {"query1": {"id": "1"}, "query2": {"id": "2"}}}
@@ -1107,10 +1138,13 @@ async def test_execute_with_unexpected_response_structure_raises_error(
 
     # The fallback path tries to iterate over result_dict items as if they're Studios
     # This will fail because the dict keys are strings, not Studio data
-    with pytest.raises(StashError, match="Unexpected error"):
-        await respx_stash_client.execute(
-            "query { query1 { id } query2 { id } }", {}, result_type=list[Studio]
-        )
+    try:
+        with pytest.raises(StashError, match="Unexpected error"):
+            await respx_stash_client.execute(
+                "query { query1 { id } query2 { id } }", {}, result_type=list[Studio]
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
 
 @pytest.mark.asyncio
@@ -1119,7 +1153,7 @@ async def test_execute_fallback_with_typing_list_no_params(respx_stash_client) -
     """Test fallback with typing.List (no type params) - hits branch 442->452."""
 
     # Mock response with unexpected multi-key structure to trigger fallback
-    respx.post("http://localhost:9999/graphql").mock(
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(200, json={"data": {"key1": "val1", "key2": "val2"}})
         ]
@@ -1127,12 +1161,15 @@ async def test_execute_fallback_with_typing_list_no_params(respx_stash_client) -
 
     # typing.List without params: origin is list but args is empty
     # Hits true at 440, false at 442, skips to 452
-    with pytest.raises(StashError, match="type object 'list' has no attribute"):
-        await respx_stash_client.execute(
-            "query { key1 key2 }",
-            {},
-            result_type=list,  # typing.List without type parameter
-        )
+    try:
+        with pytest.raises(StashError, match="type object 'list' has no attribute"):
+            await respx_stash_client.execute(
+                "query { key1 key2 }",
+                {},
+                result_type=list,  # typing.List without type parameter
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
 
 @pytest.mark.asyncio
@@ -1574,20 +1611,36 @@ async def test_stash_client_verify_ssl_string_conversion(respx_mock) -> None:
     This test covers the string-to-bool conversion in StashClient.initialize() (base.py:130-131).
     The conversion happens during initialize(), not __init__.
     """
+    # Mock the GraphQL endpoint (capability detection happens during initialize)
+    graphql_route = respx_mock.post("http://localhost:9999/graphql").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": {
+                    "version": {"version": "v0.30.0"},
+                    "systemStatus": {"appSchema": 75, "status": "OK"},
+                    "_dup": None,
+                }
+            },
+        )
+    )
+
     # Test "false" string - ensures the False branch of line 131 is covered
     client_false = StashClient(
         conn={"Host": "localhost", "Port": 9999},
         verify_ssl="false",  # type: ignore[arg-type]
     )
-    await client_false.initialize()  # This is where the conversion happens
+    try:
+        await client_false.initialize()  # This is where the conversion happens
+        # Test "true" string - ensures the True branch is also covered
+        client_true = StashClient(
+            conn={"Host": "localhost", "Port": 9999},
+            verify_ssl="true",  # type: ignore[arg-type]
+        )
+        await client_true.initialize()  # This is where the conversion happens
+    finally:
+        dump_graphql_calls(graphql_route.calls)
     assert client_false._initialized  # Verify initialization completed
-
-    # Test "true" string - ensures the True branch is also covered
-    client_true = StashClient(
-        conn={"Host": "localhost", "Port": 9999},
-        verify_ssl="true",  # type: ignore[arg-type]
-    )
-    await client_true.initialize()  # This is where the conversion happens
     assert client_true._initialized  # Verify initialization completed
 
 
@@ -1615,3 +1668,78 @@ async def test_port_negative_raises_valueerror() -> None:
 
     with pytest.raises(ValueError, match="Port must be 0-65535"):
         await context.get_client()
+
+
+# =============================================================================
+# initialize() idempotency and _raw_execute() guard tests
+# =============================================================================
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_base_initialize_is_idempotent(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """Calling StashClientBase.initialize() twice is a no-op the second time (covers base.py L124).
+
+    StashClient overrides initialize() with its own early-return guard,
+    so we call through the base class explicitly to hit L124 in base.py.
+    """
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl=False,
+    )
+    client = await context.get_client()
+    try:
+        assert client._initialized
+
+        # Call the *base class* initialize() directly — should early-return at L124
+        await StashClientBase.initialize(client)
+
+        # Still initialized, no error
+        assert client._initialized
+    finally:
+        await client.close()
+        await context.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_raw_execute_no_session_raises() -> None:
+    """_raw_execute() raises RuntimeError when session is not connected (covers L285).
+
+    _session is set to None during initialize() at L217 and only becomes
+    truthy after connect_async succeeds at L255.  We simulate the "session
+    not yet connected" state by setting the attribute directly.
+    """
+    client = StashClient({"Host": "localhost", "Port": 9999}, verify_ssl=False)
+    # Simulate the state after L217 but before L255 (session created but not connected)
+    client._session = None
+
+    with pytest.raises(RuntimeError, match="GQL session not available"):
+        await client._raw_execute("{ version { version } }")
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_raw_execute_with_variables(
+    mock_ws_transport, mock_gql_ws_connect
+) -> None:
+    """_raw_execute() sets operation.variable_values when variables are provided (covers L291)."""
+    context = StashContext(
+        conn={"Host": "localhost", "Port": 9999},
+        verify_ssl=False,
+    )
+    client = await context.get_client()
+    try:
+        variables = {"id": "123"}
+        result = await client._raw_execute(
+            "query FindScene($id: ID!) { findScene(id: $id) { id } }",
+            variables=variables,
+        )
+        # The mock session returns the capability response for any execute call,
+        # but the important thing is that it didn't raise
+        assert isinstance(result, dict)
+    finally:
+        await client.close()
+        await context.close()

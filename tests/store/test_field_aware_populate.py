@@ -24,6 +24,7 @@ import respx
 from stash_graphql_client import (
     Scene,
 )
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import (
     SceneFactory,
 )
@@ -72,7 +73,7 @@ class TestPopulateWithFieldsParameter:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": initial_data}),
                 httpx.Response(200, json={"data": populate_data}),
@@ -80,18 +81,21 @@ class TestPopulateWithFieldsParameter:
         )
 
         # Initial get - only has id, title
-        scene = await store.get(Scene, "s1")
-        assert scene is not None
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene is not None
 
-        # Verify initial _received_fields
-        received: set[str] = getattr(scene, "_received_fields", set())
-        assert "id" in received
-        assert "title" in received
-        assert "studio" not in received
-        assert "performers" not in received
+            # Verify initial _received_fields
+            received: set[str] = getattr(scene, "_received_fields", set())
+            assert "id" in received
+            assert "title" in received
+            assert "studio" not in received
+            assert "performers" not in received
 
-        # Populate with additional fields
-        scene = await store.populate(scene, fields=["studio", "performers"])
+            # Populate with additional fields
+            scene = await store.populate(scene, fields=["studio", "performers"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify studio and performers are now present
         assert scene.studio is not None
@@ -137,11 +141,14 @@ class TestPopulateWithFieldsParameter:
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert scene is not None
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene is not None
 
-        # Try to populate with field that's already received
-        scene_after = await store.populate(scene, fields=["studio"])
+            # Try to populate with field that's already received
+            scene_after = await store.populate(scene, fields=["studio"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Debug: Print all GraphQL calls made
         print(f"\n=== GraphQL Calls Made: {len(graphql_route.calls)} ===")
@@ -174,14 +181,17 @@ class TestPopulateWithFieldsParameter:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
 
-        # Populate with empty fields
-        scene_after = await store.populate(scene, fields=[])
+            # Populate with empty fields
+            scene_after = await store.populate(scene, fields=[])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should return the same object
         assert scene_after is scene
@@ -203,14 +213,17 @@ class TestPopulateWithFieldsParameter:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
 
-        # Populate with fields=None (default)
-        scene_after = await store.populate(scene, fields=None)
+            # Populate with fields=None (default)
+            scene_after = await store.populate(scene, fields=None)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should handle gracefully (behavior depends on implementation)
         assert scene_after is not None
@@ -251,18 +264,23 @@ class TestFieldMergingOnRefetch:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": initial_data}),
                 httpx.Response(200, json={"data": populate_data}),
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        initial_received: set[str] = getattr(scene, "_received_fields", set()).copy()
+        try:
+            scene = await store.get(Scene, "s1")
+            initial_received: set[str] = getattr(
+                scene, "_received_fields", set()
+            ).copy()
 
-        # Populate with new fields
-        scene = await store.populate(scene, fields=["studio", "rating100"])
+            # Populate with new fields
+            scene = await store.populate(scene, fields=["studio", "rating100"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify fields are merged (union)
         final_received: set[str] = getattr(scene, "_received_fields", set())
@@ -310,18 +328,21 @@ class TestFieldMergingOnRefetch:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": initial_data}),
                 httpx.Response(200, json={"data": populate_data}),
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert "studio" in getattr(scene, "_received_fields", set())
+        try:
+            scene = await store.get(Scene, "s1")
+            assert "studio" in getattr(scene, "_received_fields", set())
 
-        # Populate with performers
-        scene = await store.populate(scene, fields=["performers"])
+            # Populate with performers
+            scene = await store.populate(scene, fields=["performers"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify studio is still in _received_fields (not lost)
         final_received: set[str] = getattr(scene, "_received_fields", set())
@@ -366,20 +387,23 @@ class TestForceRefetchParameter:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": initial_data}),
                 httpx.Response(200, json={"data": refetch_data}),
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert scene.title == "Original Title"
-        assert scene.studio is not None
-        assert scene.studio.name == "Original Studio"
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene.title == "Original Title"
+            assert scene.studio is not None
+            assert scene.studio.name == "Original Studio"
 
-        # Force refetch - should get updated data even though fields are already received
-        scene = await store.populate(scene, fields=["studio"], force_refetch=True)
+            # Force refetch - should get updated data even though fields are already received
+            scene = await store.populate(scene, fields=["studio"], force_refetch=True)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should have updated data from server
         assert scene.studio is not None
@@ -406,15 +430,18 @@ class TestForceRefetchParameter:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": initial_data})]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert scene.title == "Original"
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene.title == "Original"
 
-        # Force refetch with empty fields
-        scene_after = await store.populate(scene, fields=[], force_refetch=True)
+            # Force refetch with empty fields
+            scene_after = await store.populate(scene, fields=[], force_refetch=True)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should handle gracefully (behavior depends on implementation)
         assert scene_after is not None
@@ -447,10 +474,13 @@ class TestForceRefetchParameter:
             ]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
 
-        # Populate with already-received field and force_refetch=False
-        await store.populate(scene, fields=["studio"], force_refetch=False)
+            # Populate with already-received field and force_refetch=False
+            await store.populate(scene, fields=["studio"], force_refetch=False)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should have made only 1 call (the initial get), populate should make 0 additional calls
         assert len(graphql_route.calls) == 1
@@ -478,11 +508,14 @@ class TestHasFieldsHelper:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check fields that are present
         assert store.has_fields(scene, "id", "title", "studio")
@@ -505,11 +538,14 @@ class TestHasFieldsHelper:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check mix of present and missing fields
         assert not store.has_fields(scene, "title", "studio")  # studio missing
@@ -549,11 +585,14 @@ class TestMissingFieldsHelper:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check fields that are all present
         missing = store.missing_fields(scene, "id", "title", "studio")
@@ -576,11 +615,14 @@ class TestMissingFieldsHelper:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check mix of present and missing fields
         missing = store.missing_fields(scene, "title", "studio", "performers")
@@ -643,20 +685,23 @@ class TestPopulateIntegrationWithPhase2:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene_data}),
                 httpx.Response(200, json={"data": studio_data}),
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert scene.studio is not None
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene.studio is not None
 
-        # Populate the nested studio directly
-        populated_studio = await store.populate(
-            scene.studio, fields=["urls", "details"]
-        )
+            # Populate the nested studio directly
+            populated_studio = await store.populate(
+                scene.studio, fields=["urls", "details"]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify studio now has additional fields
         assert populated_studio.urls == ["http://test.com"]
@@ -702,21 +747,24 @@ class TestPopulateIntegrationWithPhase2:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene_data}),
                 httpx.Response(200, json={"data": performer_data}),
             ]
         )
 
-        scene = await store.get(Scene, "s1")
-        assert len(scene.performers) >= 1
+        try:
+            scene = await store.get(Scene, "s1")
+            assert len(scene.performers) >= 1
 
-        # Populate the first performer
-        performer = scene.performers[0]
-        populated_performer = await store.populate(
-            performer, fields=["birthdate", "country"]
-        )
+            # Populate the first performer
+            performer = scene.performers[0]
+            populated_performer = await store.populate(
+                performer, fields=["birthdate", "country"]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify performer now has additional fields
         assert populated_performer.birthdate == "1990-01-01"
@@ -764,7 +812,7 @@ class TestPopulateIntegrationWithPhase2:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene1_data}),
                 httpx.Response(200, json={"data": scene2_data}),
@@ -772,12 +820,16 @@ class TestPopulateIntegrationWithPhase2:
             ]
         )
 
-        scene1 = await store.get(Scene, "s1")
-        scene2 = await store.get(Scene, "s2")
+        try:
+            scene1 = await store.get(Scene, "s1")
+            scene2 = await store.get(Scene, "s2")
 
-        # Populate studio through scene1
-        assert scene1.studio is not None
-        populated_studio = await store.populate(scene1.studio, fields=["urls"])
+            # Populate studio through scene1
+            assert scene1.studio is not None
+            populated_studio = await store.populate(scene1.studio, fields=["urls"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
         assert populated_studio.urls == ["http://shared.com"]
 
         # Scene2's studio should also have the URLs (same reference)
@@ -811,11 +863,14 @@ class TestSelectiveFieldLoading:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json={"data": scene_data})
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check what's missing before populating
         required_fields = ["studio", "performers", "rating100"]
@@ -872,7 +927,7 @@ class TestSelectiveFieldLoading:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": minimal_data}),
                 httpx.Response(200, json={"data": expensive_data}),
@@ -880,13 +935,19 @@ class TestSelectiveFieldLoading:
         )
 
         # Fast initial fetch
-        scene = await store.get(Scene, "s1")
-        assert scene.title == "Test Scene"
-        assert scene.rating100 == 85
+        try:
+            scene = await store.get(Scene, "s1")
+            assert scene.title == "Test Scene"
+            assert scene.rating100 == 85
 
-        # Only load relationships when actually needed
-        if_need_relationships = True
-        if if_need_relationships:
-            scene = await store.populate(scene, fields=["performers", "tags", "studio"])
-            assert len(scene.performers) >= 2
-            assert len(scene.tags) >= 2
+            # Only load relationships when actually needed
+            if_need_relationships = True
+            if if_need_relationships:
+                scene = await store.populate(
+                    scene, fields=["performers", "tags", "studio"]
+                )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert len(scene.performers) >= 2
+        assert len(scene.tags) >= 2

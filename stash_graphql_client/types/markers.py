@@ -74,6 +74,7 @@ class SceneMarker(StashObject):
     """Scene marker type from schema/types/scene-marker.graphql."""
 
     __type_name__ = "SceneMarker"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = SceneMarkerUpdateInput
     __create_input_type__ = SceneMarkerCreateInput
 

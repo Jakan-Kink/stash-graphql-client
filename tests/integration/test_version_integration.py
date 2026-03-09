@@ -11,7 +11,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import LatestVersion, Version
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -24,7 +24,10 @@ async def test_version_returns_current_version(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        version = await stash_client.version()
+        try:
+            version = await stash_client.version()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for version"
@@ -78,7 +81,10 @@ async def test_latestversion_returns_github_version(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        latest = await stash_client.latestversion()
+        try:
+            latest = await stash_client.latestversion()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for latestversion"
@@ -120,7 +126,10 @@ async def test_version_and_latestversion_compatibility(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Get real version from Stash
-        current = await stash_client.version()
+        try:
+            current = await stash_client.version()
+        finally:
+            dump_graphql_calls(calls, "version")
 
         # Mock the latestversion response to avoid external GitHub API calls
         mock_latest_response = {
@@ -138,7 +147,10 @@ async def test_version_and_latestversion_compatibility(
             respx.post("http://localhost:9999/graphql").mock(
                 return_value=httpx.Response(200, json=mock_latest_response)
             )
-            latest = await stash_client.latestversion()
+            try:
+                latest = await stash_client.latestversion()
+            finally:
+                dump_graphql_calls(calls, "latestversion")
 
         # Verify GraphQL calls (2 calls total)
         assert len(calls) == 2, "Expected 2 GraphQL calls (version + latestversion)"

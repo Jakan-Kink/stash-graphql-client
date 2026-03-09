@@ -273,7 +273,7 @@ from stash_graphql_client.types import Performer
 async def main():
     async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
         # Create store with 5-minute cache TTL
-        store = StashEntityStore(client, ttl_seconds=300)
+        store = StashEntityStore(client, default_ttl=300)
 
         # Read-through caching (fetches if not cached)
         performer1 = await store.get(Performer, "123")
@@ -408,13 +408,15 @@ async def main():
         scene = await client.find_scene("123")
         performer = await client.find_performer("789")
 
-        # Add to many-to-many relationship
+        # Add to many-to-many relationship (local change)
         await scene.add_performer(performer)
+        await scene.save(client)  # persist to server
 
         print(f"Added {performer.name} to scene")
 
-        # Remove from relationship
+        # Remove from relationship (local change)
         await scene.remove_performer(performer)
+        await scene.save(client)  # persist to server
 
 asyncio.run(main())
 ```
@@ -604,6 +606,7 @@ Now that you've completed the getting started guide, explore these topics:
 **Problem:** `ConnectError: Cannot connect to server`
 
 **Solution:**
+
 - Verify Stash is running
 - Check host and port in connection config
 - Try accessing Stash web interface manually
@@ -613,6 +616,7 @@ Now that you've completed the getting started guide, explore these topics:
 **Problem:** `ModuleNotFoundError: No module named 'stash_graphql_client'`
 
 **Solution:**
+
 ```bash
 pip install stash-graphql-client
 # or
@@ -624,6 +628,7 @@ poetry add stash-graphql-client
 **Problem:** IDE shows type errors for entity fields
 
 **Solution:**
+
 - Ensure Python 3.12+ is being used
 - Check that Pydantic v2 is installed
 - May need to restart IDE/language server

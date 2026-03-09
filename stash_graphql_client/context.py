@@ -7,6 +7,7 @@ from typing import Any
 
 from multidict import CIMultiDict
 
+from .capabilities import ServerCapabilities
 from .client import StashClient
 from .logging import client_logger as logger
 from .store import StashEntityStore
@@ -201,6 +202,20 @@ class StashContext:
             logger.error("Store not initialized - use get_client() first")
             raise RuntimeError("Store not initialized - use get_client() first")
         return self._store
+
+    @property
+    def capabilities(self) -> ServerCapabilities:
+        """Get detected server capabilities.
+
+        Returns:
+            ServerCapabilities instance with feature flags for the connected server
+
+        Raises:
+            RuntimeError: If client is not initialized
+        """
+        if self._client is None or self._client._capabilities is None:
+            raise RuntimeError("Capabilities not available - use get_client() first")
+        return self._client._capabilities
 
     @property
     def ref_count(self) -> int:

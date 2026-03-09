@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -17,7 +17,8 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput, VideoFile
-from .scalars import Time
+from .metadata import CustomFieldsInput
+from .scalars import Map, Time
 from .unset import UNSET, UnsetType
 
 
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from .tag import Tag
 
 
-class BulkUpdateIdMode(str, Enum):
+class BulkUpdateIdMode(StrEnum):
     """Bulk update ID mode from schema/types/scene.graphql."""
 
     SET = "SET"
@@ -133,6 +134,37 @@ class SceneUpdateInput(StashInput):
     resume_time: float | None | UnsetType = UNSET  # Float (snake_case in schema)
     play_duration: float | None | UnsetType = UNSET  # Float (snake_case in schema)
     primary_file_id: str | None | UnsetType = UNSET  # ID (snake_case in schema)
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
+    )
+
+
+class SceneDestroyInput(StashInput):
+    """Input for destroying a scene from schema/types/scene.graphql."""
+
+    id: str  # ID!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
+
+
+class ScenesDestroyInput(StashInput):
+    """Input for destroying multiple scenes from schema/types/scene.graphql."""
+
+    ids: list[str] | UnsetType = UNSET  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
+
+
+class SceneMergeInput(StashInput):
+    """Input for merging scenes from schema/types/scene.graphql."""
+
+    source: list[str] | UnsetType = UNSET  # [ID!]!
+    destination: str | UnsetType = UNSET  # ID!
+    values: SceneUpdateInput | None | UnsetType = UNSET  # SceneUpdateInput
+    play_history: bool | None | UnsetType = UNSET  # Boolean
+    o_history: bool | None | UnsetType = UNSET  # Boolean
 
 
 class Scene(StashObject):
@@ -143,7 +175,11 @@ class Scene(StashObject):
     functionality like find_by_id, save, and to_input methods."""
 
     __type_name__ = "Scene"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = SceneUpdateInput
+    __destroy_input_type__ = SceneDestroyInput
+    __bulk_destroy_input_type__ = ScenesDestroyInput
+    __merge_input_type__ = SceneMergeInput
     # No __create_input_type__ - scenes can only be updated, they are created by the server during scanning
 
     # Fields to track for changes - only fields that can be written via input types
@@ -177,28 +213,14 @@ class Scene(StashObject):
     )  # Int, not used in this client
     studio: Studio | None | UnsetType = UNSET  # Studio
     interactive: bool | None | UnsetType = UNSET  # Boolean
-    interactive_speed: int | None | UnsetType = Field(
-        default=UNSET, alias="interactiveSpeed"
-    )  # Int
+    interactive_speed: int | None | UnsetType = UNSET  # Int
     # created_at and updated_at inherited from StashObject
-    last_played_at: Time | None | UnsetType = Field(
-        default=UNSET, alias="lastPlayedAt"
-    )  # Time
-    resume_time: float | None | UnsetType = Field(
-        default=UNSET, alias="resumeTime"
-    )  # Float
-    play_duration: float | None | UnsetType = Field(
-        default=UNSET, alias="playDuration"
-    )  # Float
-    play_count: int | None | UnsetType = Field(
-        default=UNSET, ge=0, alias="playCount"
-    )  # Int
-    play_history: list[Time] | None | UnsetType = Field(
-        default=UNSET, alias="playHistory"
-    )  # [Time!]
-    o_history: list[Time] | None | UnsetType = Field(
-        default=UNSET, alias="oHistory"
-    )  # [Time!]
+    last_played_at: Time | None | UnsetType = UNSET  # Time
+    resume_time: float | None | UnsetType = UNSET  # Float
+    play_duration: float | None | UnsetType = UNSET  # Float
+    play_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
+    play_history: list[Time] | None | UnsetType = UNSET  # [Time!]
+    o_history: list[Time] | None | UnsetType = UNSET  # [Time!]
 
     # Required fields
     urls: list[str] | UnsetType = UNSET  # [String!]!
@@ -219,6 +241,9 @@ class Scene(StashObject):
     captions: list[VideoCaption] | None | UnsetType = (
         UNSET  # [VideoCaption!] - nullable list
     )
+
+    # Capability-gated fields (appSchema >= 79)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 79)
 
     # Relationship definitions with their mappings
     __relationships__ = {
@@ -404,6 +429,9 @@ class SceneCreateInput(StashInput):
     cover_image: str | None | UnsetType = UNSET  # String (URL or base64)
     stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
     file_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
+    )
 
 
 class BulkSceneUpdateInput(StashInput):
@@ -437,6 +465,9 @@ class BulkSceneUpdateInput(StashInput):
     group_ids: BulkUpdateIds | None | UnsetType = (
         UNSET  # BulkUpdateIds (snake_case in schema)
     )
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 79)
+    )
 
 
 class SceneParserResultType(BaseModel):
@@ -453,14 +484,6 @@ class AssignSceneFileInput(StashInput):
     file_id: str | UnsetType = UNSET  # ID!
 
 
-class SceneDestroyInput(StashInput):
-    """Input for destroying a scene from schema/types/scene.graphql."""
-
-    id: str  # ID!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
-
-
 class SceneHashInput(StashInput):
     """Input for scene hash from schema/types/scene.graphql."""
 
@@ -468,29 +491,11 @@ class SceneHashInput(StashInput):
     oshash: str | None | UnsetType = UNSET  # String
 
 
-class SceneMergeInput(StashInput):
-    """Input for merging scenes from schema/types/scene.graphql."""
-
-    source: list[str] | UnsetType = UNSET  # [ID!]!
-    destination: str | UnsetType = UNSET  # ID!
-    values: SceneUpdateInput | None | UnsetType = UNSET  # SceneUpdateInput
-    play_history: bool | None | UnsetType = UNSET  # Boolean
-    o_history: bool | None | UnsetType = UNSET  # Boolean
-
-
 class SceneMovieInput(StashInput):
     """Input for scene movie from schema/types/scene.graphql."""
 
     movie_id: str | UnsetType = UNSET  # ID!
     scene_index: int | None | UnsetType = UNSET  # Int
-
-
-class ScenesDestroyInput(StashInput):
-    """Input for destroying multiple scenes from schema/types/scene.graphql."""
-
-    ids: list[str] | UnsetType = UNSET  # [ID!]!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
 
 
 class HistoryMutationResult(BaseModel):

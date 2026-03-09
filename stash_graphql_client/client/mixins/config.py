@@ -395,7 +395,7 @@ class ConfigClientMixin(StashClientProtocol):
                 return self._decode_result(SavedFilter, result["findSavedFilter"])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find saved filter {id}: {e}")
+            self.log.exception(f"Failed to find saved filter {id}: {e}")
             return None
 
     async def find_saved_filters(
@@ -418,7 +418,7 @@ class ConfigClientMixin(StashClientProtocol):
             filters_data = result.get("findSavedFilters") or []
             return [self._decode_result(SavedFilter, f) for f in filters_data]
         except Exception as e:
-            self.log.error(f"Failed to find saved filters: {e}")
+            self.log.exception(f"Failed to find saved filters: {e}")
             return []
 
     async def configure_scraping(

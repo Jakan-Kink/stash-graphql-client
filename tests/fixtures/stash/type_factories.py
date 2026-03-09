@@ -387,15 +387,11 @@ class ImageFileFactory(Factory):
     __typename = "ImageFile"
     path = Sequence(lambda n: f"/test/images/image_{n}.jpg")
     basename = Sequence(lambda n: f"image_{n}.jpg")
-    parent_folder_id = "folder_1"
     mod_time = LazyFunction(lambda: datetime.now(UTC))
     size = 1024000  # 1 MB default
 
     # Required fields - fingerprints list
     fingerprints = LazyFunction(list[Fingerprint])
-
-    # Optional BaseFile fields
-    zip_file_id = None
 
     # ImageFile specific required fields
     width = 1920
@@ -432,15 +428,11 @@ class VideoFileFactory(Factory):
     __typename = "VideoFile"
     path = Sequence(lambda n: f"/test/videos/video_{n}.mp4")
     basename = Sequence(lambda n: f"video_{n}.mp4")
-    parent_folder_id = "folder_1"
     mod_time = LazyFunction(lambda: datetime.now(UTC))
     size = 10240000  # 10 MB default
 
     # Required fields - fingerprints list
     fingerprints = LazyFunction(list[Fingerprint])
-
-    # Optional BaseFile fields
-    zip_file_id = None
 
     # VideoFile specific required fields
     format = "mp4"

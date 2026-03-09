@@ -110,7 +110,7 @@ Located in `stash_graphql_client/store.py`, provides SQLAlchemy/ActiveRecord-sty
 from stash_graphql_client import StashEntityStore
 from stash_graphql_client.types import Scene, Performer
 
-store = StashEntityStore(client, ttl_seconds=300)
+store = StashEntityStore(client, default_ttl=300)
 
 # Read-through caching
 performer = await store.get(Performer, "123")

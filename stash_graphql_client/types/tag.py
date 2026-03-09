@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import Field
 
-from stash_graphql_client import fragments
+from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.logging import processing_logger as logger
 
 from .base import (
@@ -18,6 +18,8 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType, is_set
 
 
@@ -46,6 +48,7 @@ class TagCreateInput(StashInput):
     stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
     parent_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     child_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 77)
 
 
 class TagUpdateInput(StashInput):
@@ -65,14 +68,36 @@ class TagUpdateInput(StashInput):
     stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
     parent_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     child_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 77)
+    )
+
+
+class TagDestroyInput(StashInput):
+    """Input for destroying a tag from schema/types/tag.graphql."""
+
+    id: str  # ID!
+
+
+class TagsMergeInput(StashInput):
+    """Input for merging tags from schema/types/tag.graphql."""
+
+    source: list[str]  # [ID!]!
+    destination: str  # ID!
+    values: TagUpdateInput | None | UnsetType = (
+        UNSET  # TagUpdateInput (appSchema >= 84)
+    )
 
 
 class Tag(StashObject):
     """Tag type from schema/types/tag.graphql."""
 
     __type_name__ = "Tag"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = TagUpdateInput
     __create_input_type__ = TagCreateInput
+    __destroy_input_type__ = TagDestroyInput
+    __merge_input_type__ = TagsMergeInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -121,6 +146,9 @@ class Tag(StashObject):
     children: list[Tag] | None | UnsetType = UNSET  # [Tag!]!
     parent_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
     child_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
+
+    # Capability-gated fields (appSchema >= 77)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 77)
 
     # Field definitions with their conversion functions
     __field_conversions__ = {
@@ -243,7 +271,7 @@ class Tag(StashObject):
         """
         # Build query using proper TAG_FIELDS fragment
         query = f"""
-            {fragments.FIND_TAGS_QUERY}
+            {fragment_store.FIND_TAGS_QUERY}
         """
         try:
             # Try exact match first (EQUALS modifier)
@@ -284,19 +312,6 @@ class Tag(StashObject):
         except Exception as e:
             logger.error(f"Error searching for tag '{name}': {e}")
             return None
-
-
-class TagDestroyInput(StashInput):
-    """Input for destroying a tag from schema/types/tag.graphql."""
-
-    id: str  # ID!
-
-
-class TagsMergeInput(StashInput):
-    """Input for merging tags from schema/types/tag.graphql."""
-
-    source: list[str]  # [ID!]!
-    destination: str  # ID!
 
 
 class BulkTagUpdateInput(StashInput):

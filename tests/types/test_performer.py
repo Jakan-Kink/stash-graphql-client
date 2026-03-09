@@ -20,7 +20,11 @@ from pydantic import ValidationError
 
 from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.unset import UNSET, UnsetType
-from tests.fixtures import create_find_performers_result, create_performer_dict
+from tests.fixtures import (
+    create_find_performers_result,
+    create_performer_dict,
+    dump_graphql_calls,
+)
 
 
 @pytest.mark.unit
@@ -50,7 +54,10 @@ async def test_performer_update_avatar_success(respx_stash_client) -> None:
             )
 
             # Call update_avatar with real client
-            result = await performer.update_avatar(respx_stash_client, tmp_path)
+            try:
+                result = await performer.update_avatar(respx_stash_client, tmp_path)
+            finally:
+                dump_graphql_calls(route.calls)
 
             # Verify GraphQL call was made
             assert len(route.calls) == 1
@@ -121,7 +128,10 @@ async def test_performer_update_avatar_with_png(respx_stash_client) -> None:
             )
 
             # Call update_avatar
-            await performer.update_avatar(respx_stash_client, tmp_path)
+            try:
+                await performer.update_avatar(respx_stash_client, tmp_path)
+            finally:
+                dump_graphql_calls(route.calls)
 
             # Verify MIME type is image/png
             assert len(route.calls) == 1
@@ -182,8 +192,11 @@ async def test_performer_update_avatar_client_error(respx_stash_client) -> None:
             )
 
             # Call should re-raise as ValueError
-            with pytest.raises(ValueError, match="Failed to update avatar"):
-                await performer.update_avatar(respx_stash_client, tmp_path)
+            try:
+                with pytest.raises(ValueError, match="Failed to update avatar"):
+                    await performer.update_avatar(respx_stash_client, tmp_path)
+            finally:
+                dump_graphql_calls(route.calls)
 
             # Verify GraphQL call was attempted
             assert len(route.calls) == 1
@@ -212,7 +225,10 @@ async def test_performer_find_by_name_found(respx_stash_client) -> None:
         )
 
         # Call find_by_name with real client
-        result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+        try:
+            result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify GraphQL call was made
         assert len(route.calls) == 1
@@ -247,7 +263,10 @@ async def test_performer_find_by_name_not_found(respx_stash_client) -> None:
         )
 
         # Call find_by_name
-        result = await Performer.find_by_name(respx_stash_client, "Unknown Person")
+        try:
+            result = await Performer.find_by_name(respx_stash_client, "Unknown Person")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify GraphQL call was made
         assert len(route.calls) == 1
@@ -270,7 +289,10 @@ async def test_performer_find_by_name_exception(respx_stash_client) -> None:
         )
 
         # Call find_by_name
-        result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+        try:
+            result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+        finally:
+            dump_graphql_calls(route.calls)
 
         # Verify GraphQL call was attempted
         assert len(route.calls) == 1

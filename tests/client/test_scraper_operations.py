@@ -25,7 +25,7 @@ from stash_graphql_client.types import (
     ScrapeSingleTagInput,
 )
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -167,7 +167,10 @@ async def test_scrape_single_scene_by_query(respx_stash_client: StashClient) -> 
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleSceneInput(query="Test Scene")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 1
     assert scenes[0].title == "Test Scene"
@@ -197,7 +200,10 @@ async def test_scrape_single_scene_by_id(respx_stash_client: StashClient) -> Non
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleSceneInput(scene_id="scene-456")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 1
     assert scenes[0].title == "Scene by ID"
@@ -224,7 +230,10 @@ async def test_scrape_single_scene_from_stashbox(
     source = ScraperSourceInput(stash_box_endpoint="https://stashdb.org")
     input_data = ScrapeSingleSceneInput(query="StashBox Scene")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 1
     assert scenes[0].title == "StashBox Scene"
@@ -255,7 +264,10 @@ async def test_scrape_single_scene_multiple_results(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleSceneInput(query="ambiguous")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 3
     assert scenes[0].title == "Match 1"
@@ -280,7 +292,10 @@ async def test_scrape_single_scene_empty_result(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleSceneInput(query="nonexistent")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 0
     assert len(graphql_route.calls) == 1
@@ -301,7 +316,10 @@ async def test_scrape_single_scene_error_returns_empty(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleSceneInput(query="error")
 
-    scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    try:
+        scenes = await respx_stash_client.scrape_single_scene(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(scenes) == 0
     assert len(graphql_route.calls) == 1
@@ -336,7 +354,10 @@ async def test_scrape_multi_scenes(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeMultiScenesInput(scene_ids=["1", "2", "3"])
 
-    results = await respx_stash_client.scrape_multi_scenes(source, input_data)
+    try:
+        results = await respx_stash_client.scrape_multi_scenes(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(results) == 3
     assert len(results[0]) == 2
@@ -366,7 +387,10 @@ async def test_scrape_multi_scenes_empty_result(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeMultiScenesInput(scene_ids=["nonexistent"])
 
-    results = await respx_stash_client.scrape_multi_scenes(source, input_data)
+    try:
+        results = await respx_stash_client.scrape_multi_scenes(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(results) == 0
     assert len(graphql_route.calls) == 1
@@ -397,7 +421,10 @@ async def test_scrape_single_studio(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleStudioInput(query="Test Studio")
 
-    studios = await respx_stash_client.scrape_single_studio(source, input_data)
+    try:
+        studios = await respx_stash_client.scrape_single_studio(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studios) == 1
     assert studios[0].name == "Test Studio"
@@ -432,7 +459,10 @@ async def test_scrape_single_studio_multiple_results(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleStudioInput(query="Studio")
 
-    studios = await respx_stash_client.scrape_single_studio(source, input_data)
+    try:
+        studios = await respx_stash_client.scrape_single_studio(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(studios) == 2
     assert studios[0].name == "Studio A"
@@ -469,7 +499,12 @@ async def test_scrape_single_performer_by_query(
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSinglePerformerInput(query="Jane Doe")
 
-    performers = await respx_stash_client.scrape_single_performer(source, input_data)
+    try:
+        performers = await respx_stash_client.scrape_single_performer(
+            source, input_data
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(performers) == 1
     assert performers[0].name == "Jane Doe"
@@ -498,7 +533,12 @@ async def test_scrape_single_performer_by_id(respx_stash_client: StashClient) ->
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSinglePerformerInput(performer_id="123")
 
-    performers = await respx_stash_client.scrape_single_performer(source, input_data)
+    try:
+        performers = await respx_stash_client.scrape_single_performer(
+            source, input_data
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(performers) == 1
     assert performers[0].name == "Performer by ID"
@@ -534,7 +574,10 @@ async def test_scrape_multi_performers(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeMultiPerformersInput(performer_ids=["1", "2"])
 
-    results = await respx_stash_client.scrape_multi_performers(source, input_data)
+    try:
+        results = await respx_stash_client.scrape_multi_performers(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(results) == 2
     assert len(results[0]) == 2
@@ -573,7 +616,10 @@ async def test_scrape_single_gallery(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleGalleryInput(query="Test Gallery")
 
-    galleries = await respx_stash_client.scrape_single_gallery(source, input_data)
+    try:
+        galleries = await respx_stash_client.scrape_single_gallery(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(galleries) == 1
     assert galleries[0].title == "Test Gallery"
@@ -601,7 +647,10 @@ async def test_scrape_single_gallery_by_id(respx_stash_client: StashClient) -> N
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleGalleryInput(gallery_id="456")
 
-    galleries = await respx_stash_client.scrape_single_gallery(source, input_data)
+    try:
+        galleries = await respx_stash_client.scrape_single_gallery(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(galleries) == 1
     assert galleries[0].title == "Gallery by ID"
@@ -634,7 +683,10 @@ async def test_scrape_single_movie(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleMovieInput(query="Test Movie")
 
-    movies = await respx_stash_client.scrape_single_movie(source, input_data)
+    try:
+        movies = await respx_stash_client.scrape_single_movie(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(movies) == 1
     assert movies[0].name == "Test Movie"
@@ -670,7 +722,10 @@ async def test_scrape_single_group(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleGroupInput(query="Test Group")
 
-    groups = await respx_stash_client.scrape_single_group(source, input_data)
+    try:
+        groups = await respx_stash_client.scrape_single_group(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(groups) == 1
     assert groups[0].name == "Test Group"
@@ -698,7 +753,10 @@ async def test_scrape_single_group_by_id(respx_stash_client: StashClient) -> Non
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleGroupInput(group_id="789")
 
-    groups = await respx_stash_client.scrape_single_group(source, input_data)
+    try:
+        groups = await respx_stash_client.scrape_single_group(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(groups) == 1
     assert groups[0].name == "Group by ID"
@@ -731,7 +789,10 @@ async def test_scrape_single_image(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleImageInput(query="Test Image")
 
-    images = await respx_stash_client.scrape_single_image(source, input_data)
+    try:
+        images = await respx_stash_client.scrape_single_image(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(images) == 1
     assert images[0].title == "Test Image"
@@ -759,7 +820,10 @@ async def test_scrape_single_image_by_id(respx_stash_client: StashClient) -> Non
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleImageInput(image_id="101")
 
-    images = await respx_stash_client.scrape_single_image(source, input_data)
+    try:
+        images = await respx_stash_client.scrape_single_image(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(images) == 1
     assert images[0].title == "Image by ID"
@@ -782,7 +846,10 @@ async def test_reload_scrapers_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.reload_scrapers()
+    try:
+        result = await respx_stash_client.reload_scrapers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -801,7 +868,10 @@ async def test_reload_scrapers_failure(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.reload_scrapers()
+    try:
+        result = await respx_stash_client.reload_scrapers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
     assert len(graphql_route.calls) == 1
@@ -819,7 +889,10 @@ async def test_reload_scrapers_error_returns_false(
         ]
     )
 
-    result = await respx_stash_client.reload_scrapers()
+    try:
+        result = await respx_stash_client.reload_scrapers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
     assert len(graphql_route.calls) == 1
@@ -844,7 +917,10 @@ async def test_scrape_single_tag(respx_stash_client: StashClient) -> None:
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleTagInput(query="Test Tag")
 
-    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    try:
+        tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tags) == 1
     assert tags[0].name == "Test Tag"
@@ -869,7 +945,10 @@ async def test_scrape_single_tag_empty_result(respx_stash_client: StashClient) -
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleTagInput(query="Nonexistent Tag")
 
-    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    try:
+        tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tags) == 0
     assert len(graphql_route.calls) == 1
@@ -886,7 +965,10 @@ async def test_scrape_single_tag_exception(respx_stash_client: StashClient) -> N
     source = ScraperSourceInput(scraper_id="scraper-123")
     input_data = ScrapeSingleTagInput(query="Test Tag")
 
-    tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    try:
+        tags = await respx_stash_client.scrape_single_tag(source, input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(tags) == 0
     assert len(graphql_route.calls) == 1

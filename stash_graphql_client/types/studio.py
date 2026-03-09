@@ -15,6 +15,8 @@ from .base import (
     StashResult,
 )
 from .files import StashID, StashIDInput
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -39,6 +41,8 @@ class StudioCreateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 76)
 
 
 class StudioUpdateInput(StashInput):
@@ -59,14 +63,26 @@ class StudioUpdateInput(StashInput):
     aliases: list[str] | None | UnsetType = UNSET  # [String!]
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 76)
+    )
+
+
+class StudioDestroyInput(StashInput):
+    """Input for destroying a studio from schema/types/studio.graphql."""
+
+    id: str  # ID!
 
 
 class Studio(StashObject):
     """Studio type from schema/types/studio.graphql."""
 
     __type_name__ = "Studio"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = StudioUpdateInput
     __create_input_type__ = StudioCreateInput
+    __destroy_input_type__ = StudioDestroyInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -80,6 +96,7 @@ class Studio(StashObject):
         "rating100",  # StudioCreateInput/StudioUpdateInput
         "favorite",  # StudioCreateInput/StudioUpdateInput
         "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
+        "organized",  # StudioUpdateInput (appSchema >= 80)
     }
 
     # All fields are optional in client (fragment-based loading)
@@ -117,11 +134,16 @@ class Studio(StashObject):
     )
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
 
+    # Capability-gated fields
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 76)
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 80)
+
     @model_validator(mode="before")
     @classmethod
     def handle_deprecated_url(cls, data: Any) -> Any:
         """Convert deprecated 'url' field to 'urls' list for backward compatibility."""
-        # Pydantic always passes dict to before validators
+        if not isinstance(data, dict):
+            return data
         # Handle deprecated single url field
         if data.get("url"):
             if "urls" not in data or not data["urls"]:
@@ -143,6 +165,10 @@ class Studio(StashObject):
         "urls": list,
         "aliases": list,
         "details": str,
+        "rating100": int,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
+        "organized": bool,
     }
 
     __relationships__ = {
@@ -211,12 +237,7 @@ class BulkStudioUpdateInput(StashInput):
     details: str | None | UnsetType = UNSET  # String
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
-
-
-class StudioDestroyInput(StashInput):
-    """Input for destroying a studio from schema/types/studio.graphql."""
-
-    id: str  # ID!
+    organized: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class FindStudiosResultType(StashResult):

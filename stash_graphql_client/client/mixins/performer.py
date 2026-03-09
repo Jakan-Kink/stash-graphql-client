@@ -4,6 +4,7 @@ from typing import Any
 
 from ... import fragments
 from ...errors import StashGraphQLError
+from ...fragments import fragment_store
 from ...types import (
     BulkPerformerUpdateInput,
     FindPerformersResultType,
@@ -110,7 +111,7 @@ class PerformerClientMixin(StashClientProtocol):
             else:
                 # If it's an ID, use direct lookup
                 raw_result = await self.execute(
-                    fragments.FIND_PERFORMER_QUERY,
+                    fragment_store.FIND_PERFORMER_QUERY,
                     {"id": str(parsed_input)},
                 )
                 if raw_result and raw_result.get("findPerformer"):
@@ -118,7 +119,7 @@ class PerformerClientMixin(StashClientProtocol):
                 return None
             return None
         except Exception as e:
-            self.log.error(f"Failed to find performer {performer}: {e}")
+            self.log.exception(f"Failed to find performer {performer}: {e}")
             return None
 
     async def find_performers(
@@ -221,12 +222,12 @@ class PerformerClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_PERFORMERS_QUERY,
+                fragment_store.FIND_PERFORMERS_QUERY,
                 {"filter": filter_, "performer_filter": performer_filter},
             )
             return FindPerformersResultType(**result["findPerformers"])
         except Exception as e:
-            self.log.error(f"Failed to find performers: {e}")
+            self.log.exception(f"Failed to find performers: {e}")
             return FindPerformersResultType(count=0, performers=[])
 
     async def create_performer(self, performer: Performer) -> Performer:
@@ -292,7 +293,7 @@ class PerformerClientMixin(StashClientProtocol):
         try:
             input_data = await performer.to_input()
             result = await self.execute(
-                fragments.CREATE_PERFORMER_MUTATION,
+                fragment_store.CREATE_PERFORMER_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Performer, result["performerCreate"])
@@ -387,7 +388,7 @@ class PerformerClientMixin(StashClientProtocol):
         try:
             input_data = await performer.to_input()
             result = await self.execute(
-                fragments.UPDATE_PERFORMER_MUTATION,
+                fragment_store.UPDATE_PERFORMER_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Performer, result["performerUpdate"])
@@ -434,7 +435,7 @@ class PerformerClientMixin(StashClientProtocol):
             input_data = {"id": performer.id, "image": image_url}
 
             result = await self.execute(
-                fragments.UPDATE_PERFORMER_MUTATION,
+                fragment_store.UPDATE_PERFORMER_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Performer, result["performerUpdate"])
@@ -531,7 +532,7 @@ class PerformerClientMixin(StashClientProtocol):
     async def all_performers(self) -> list[Performer]:
         """Get all performers."""
         try:
-            result = await self.execute(fragments.ALL_PERFORMERS_QUERY, {})
+            result = await self.execute(fragment_store.ALL_PERFORMERS_QUERY, {})
             performers_data = result.get("allPerformers") or []
             return [self._decode_result(Performer, p) for p in performers_data]
         except Exception as e:
@@ -586,7 +587,7 @@ class PerformerClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.BULK_PERFORMER_UPDATE_MUTATION,
+                fragment_store.BULK_PERFORMER_UPDATE_MUTATION,
                 {"input": input_dict},
             )
 
@@ -660,7 +661,7 @@ class PerformerClientMixin(StashClientProtocol):
 
         try:
             return await self.execute(
-                fragments.PERFORMER_MERGE_MUTATION,
+                fragment_store.PERFORMER_MERGE_MUTATION,
                 {"input": input_dict},
                 result_type=Performer,
             )

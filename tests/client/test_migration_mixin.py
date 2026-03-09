@@ -20,7 +20,7 @@ from stash_graphql_client.types import (
     MigrateInput,
     MigrateSceneScreenshotsInput,
 )
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -40,7 +40,12 @@ async def test_migrate_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.migrate({"backupPath": "/path/to/backup.sqlite3"})
+    try:
+        job_id = await respx_stash_client.migrate(
+            {"backupPath": "/path/to/backup.sqlite3"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "migrate-job-123"
     assert len(graphql_route.calls) == 1
@@ -62,7 +67,10 @@ async def test_migrate_with_model(respx_stash_client: StashClient) -> None:
     )
 
     input_data = MigrateInput(backupPath="/backup/path/db.sqlite3")
-    job_id = await respx_stash_client.migrate(input_data)
+    try:
+        job_id = await respx_stash_client.migrate(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "migrate-job-456"
     assert len(graphql_route.calls) == 1
@@ -101,7 +109,10 @@ async def test_migrate_hash_naming_success(respx_stash_client: StashClient) -> N
         ]
     )
 
-    job_id = await respx_stash_client.migrate_hash_naming()
+    try:
+        job_id = await respx_stash_client.migrate_hash_naming()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "hash-job-789"
     assert len(graphql_route.calls) == 1
@@ -145,9 +156,12 @@ async def test_migrate_scene_screenshots_with_dict(
         ]
     )
 
-    job_id = await respx_stash_client.migrate_scene_screenshots(
-        {"deleteFiles": True, "overwriteExisting": False}
-    )
+    try:
+        job_id = await respx_stash_client.migrate_scene_screenshots(
+            {"deleteFiles": True, "overwriteExisting": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "ss-job-123"
     assert len(graphql_route.calls) == 1
@@ -173,7 +187,10 @@ async def test_migrate_scene_screenshots_with_model(
     )
 
     input_data = MigrateSceneScreenshotsInput(deleteFiles=False, overwriteExisting=True)
-    job_id = await respx_stash_client.migrate_scene_screenshots(input_data)
+    try:
+        job_id = await respx_stash_client.migrate_scene_screenshots(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "ss-job-456"
     assert len(graphql_route.calls) == 1
@@ -215,7 +232,10 @@ async def test_migrate_blobs_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.migrate_blobs({"deleteOld": True})
+    try:
+        job_id = await respx_stash_client.migrate_blobs({"deleteOld": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "blob-job-123"
     assert len(graphql_route.calls) == 1
@@ -237,7 +257,10 @@ async def test_migrate_blobs_with_model(respx_stash_client: StashClient) -> None
     )
 
     input_data = MigrateBlobsInput(deleteOld=False)
-    job_id = await respx_stash_client.migrate_blobs(input_data)
+    try:
+        job_id = await respx_stash_client.migrate_blobs(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "blob-job-456"
     assert len(graphql_route.calls) == 1

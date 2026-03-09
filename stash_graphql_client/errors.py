@@ -110,6 +110,35 @@ class StashCleanupWarning(UserWarning):
     """Warning emitted when Stash cleanup tracker encounters errors during cleanup."""
 
 
+class StashUnmappedFieldWarning(UserWarning):
+    """Warning emitted when a StashObject receives fields not declared in the model.
+
+    This can happen when:
+    - The Stash server is *newer* than the Python client and returned fields
+      that haven't been mapped yet.
+    - The Stash server is *older* and still sends deprecated fields that the
+      Python client no longer declares.
+    - A schema rename occurred between server versions.
+
+    The extra data is preserved in __pydantic_extra__ and is safe to ignore —
+    it just isn't accessible as typed attributes.
+
+    Unlike StashInput's DeprecationWarning (which signals upcoming enforcement
+    of extra="forbid"), this warning is purely informational.
+    """
+
+
+class StashVersionError(StashError):
+    """Raised when the Stash server version is too old to be supported.
+
+    This occurs when the server's appSchema is below the minimum required
+    by this client version (MIN_SUPPORTED_APP_SCHEMA = 75, i.e. Stash v0.30.0).
+    """
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+
+
 __all__ = [
     "StashCleanupWarning",
     "StashConfigurationError",
@@ -119,4 +148,6 @@ __all__ = [
     "StashIntegrationError",
     "StashServerError",
     "StashSystemNotReadyError",
+    "StashUnmappedFieldWarning",
+    "StashVersionError",
 ]

@@ -15,6 +15,7 @@ import respx
 
 from stash_graphql_client.errors import StashGraphQLError, StashServerError
 from stash_graphql_client.types import LatestVersion, Version
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import create_graphql_response
 
 
@@ -39,7 +40,10 @@ async def test_version(respx_stash_client, respx_mock: respx.MockRouter) -> None
     )
 
     # Use the fixture client and call version()
-    result = await respx_stash_client.version()
+    try:
+        result = await respx_stash_client.version()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was made
     assert len(graphql_route.calls) == 1
@@ -77,7 +81,10 @@ async def test_version_with_null_version_field(
     )
 
     # Use the fixture client and call version()
-    result = await respx_stash_client.version()
+    try:
+        result = await respx_stash_client.version()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request
     assert len(graphql_route.calls) == 1
@@ -113,7 +120,10 @@ async def test_latestversion(respx_stash_client, respx_mock: respx.MockRouter) -
     )
 
     # Use the fixture client and call latestversion()
-    result = await respx_stash_client.latestversion()
+    try:
+        result = await respx_stash_client.latestversion()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was made
     assert len(graphql_route.calls) == 1
@@ -165,8 +175,11 @@ async def test_version_and_latestversion_together(
     )
 
     # Use the fixture client and call both methods
-    current = await respx_stash_client.version()
-    latest = await respx_stash_client.latestversion()
+    try:
+        current = await respx_stash_client.version()
+        latest = await respx_stash_client.latestversion()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify both GraphQL requests were made
     assert len(graphql_route.calls) == 2
@@ -251,8 +264,11 @@ async def test_version_graphql_error(
 
     # Use the fixture client and call version()
     # Should raise exception when GraphQL returns errors
-    with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
-        await respx_stash_client.version()
+    try:
+        with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
+            await respx_stash_client.version()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was attempted
     assert len(graphql_route.calls) == 1
@@ -281,8 +297,11 @@ async def test_latestversion_graphql_error(
 
     # Use the fixture client and call latestversion()
     # Should raise exception when GraphQL returns errors
-    with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
-        await respx_stash_client.latestversion()
+    try:
+        with pytest.raises(StashGraphQLError):  # Will raise KeyError or similar
+            await respx_stash_client.latestversion()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was attempted
     assert len(graphql_route.calls) == 1
@@ -301,8 +320,11 @@ async def test_version_http_error(
 
     # Use the fixture client and call version()
     # Should raise exception on HTTP error
-    with pytest.raises(StashServerError):
-        await respx_stash_client.version()
+    try:
+        with pytest.raises(StashServerError):
+            await respx_stash_client.version()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was attempted
     assert len(graphql_route.calls) >= 1  # May retry depending on client config
@@ -321,8 +343,11 @@ async def test_latestversion_http_error(
 
     # Use the fixture client and call latestversion()
     # Should raise exception on HTTP error
-    with pytest.raises(StashServerError):
-        await respx_stash_client.latestversion()
+    try:
+        with pytest.raises(StashServerError):
+            await respx_stash_client.latestversion()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify GraphQL request was attempted
     assert len(graphql_route.calls) >= 1  # May retry depending on client config

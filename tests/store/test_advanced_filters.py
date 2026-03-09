@@ -27,6 +27,7 @@ from stash_graphql_client import Performer, StashEntityStore
 from stash_graphql_client.logging import client_logger
 from stash_graphql_client.types.base import StashObject
 from stash_graphql_client.types.unset import UNSET
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import (
     PerformerFactory,
     SceneFactory,
@@ -221,7 +222,7 @@ class TestFilterAndPopulateSecondPassEdgeCases:
 
         # Mock GraphQL response for the populate call
         p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p1_complete)
             )
@@ -236,11 +237,14 @@ class TestFilterAndPopulateSecondPassEdgeCases:
             return result
 
         with patch.object(store, "populate", side_effect=populate_and_invalidate):
-            results = await store.filter_and_populate(
-                Performer,
-                required_fields=["rating100"],
-                predicate=lambda p: True,
-            )
+            try:
+                results = await store.filter_and_populate(
+                    Performer,
+                    required_fields=["rating100"],
+                    predicate=lambda p: True,
+                )
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         # Second pass finds empty type index, returns empty
         assert results == []
@@ -259,7 +263,7 @@ class TestFilterAndPopulateSecondPassEdgeCases:
 
         # Mock GraphQL response for the populate call
         p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p1_complete)
             )
@@ -273,11 +277,14 @@ class TestFilterAndPopulateSecondPassEdgeCases:
             return result
 
         with patch.object(store, "populate", side_effect=populate_and_invalidate):
-            results, stats = await store.filter_and_populate_with_stats(
-                Performer,
-                required_fields=["rating100"],
-                predicate=lambda p: True,
-            )
+            try:
+                results, stats = await store.filter_and_populate_with_stats(
+                    Performer,
+                    required_fields=["rating100"],
+                    predicate=lambda p: True,
+                )
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
         assert results == []
         assert stats["matches"] == 0
@@ -312,11 +319,14 @@ class TestFilterAndPopulate:
         )
 
         # Filter - no population needed
-        results = await store.filter_and_populate(
-            Performer,
-            required_fields=["rating100", "favorite"],
-            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
-        )
+        try:
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100", "favorite"],
+                predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify NO GraphQL calls were made
         assert len(graphql_route.calls) == 0
@@ -367,11 +377,14 @@ class TestFilterAndPopulate:
         )
 
         # Filter with auto-population
-        results = await store.filter_and_populate(
-            Performer,
-            required_fields=["rating100", "favorite"],
-            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
-        )
+        try:
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100", "favorite"],
+                predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify only 1 GraphQL call (for p2)
         assert len(graphql_route.calls) == 1
@@ -418,14 +431,19 @@ class TestFilterAndPopulate:
                 200, json=create_graphql_response("findPerformer", p2_complete)
             )
 
-        respx.post("http://localhost:9999/graphql").mock(side_effect=mock_response)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=mock_response
+        )
 
         # Filter with population
-        results = await store.filter_and_populate(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
-        )
+        try:
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify both were fetched
         assert call_count == 2
@@ -522,7 +540,7 @@ class TestFilterAndPopulate:
         p1_incomplete = create_performer_dict(id="1", name="Alice")
         # Intentionally omit rating100 from response
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p1_incomplete)
             )
@@ -534,11 +552,14 @@ class TestFilterAndPopulate:
         handler.setLevel(logging.WARNING)
         client_logger.addHandler(handler)
 
-        results = await store.filter_and_populate(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
-        )
+        try:
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         client_logger.removeHandler(handler)
         log_output = log_capture.getvalue()
@@ -625,12 +646,15 @@ class TestFilterAndPopulate:
         )
 
         # Filter with small batch size
-        results = await store.filter_and_populate(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
-            batch_size=2,  # Process 2 at a time
-        )
+        try:
+            results = await store.filter_and_populate(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
+                batch_size=2,  # Process 2 at a time
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # All 5 should have been fetched
         assert len(graphql_route.calls) == 5
@@ -671,18 +695,21 @@ class TestFilterAndPopulateWithStats:
 
         # Mock response for p2
         p2_complete = create_performer_dict(id="2", name="Bob", rating100=85)
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p2_complete)
             )
         )
 
         # Filter with stats
-        results, stats = await store.filter_and_populate_with_stats(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
-        )
+        try:
+            results, stats = await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify results
         assert len(results) == 2  # p1 and p3
@@ -809,7 +836,7 @@ class TestFilterAndPopulateWithStats:
         # Mock incomplete response
         p1_incomplete = create_performer_dict(id="1", name="Alice")
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p1_incomplete)
             )
@@ -821,11 +848,14 @@ class TestFilterAndPopulateWithStats:
         handler.setLevel(logging.WARNING)
         client_logger.addHandler(handler)
 
-        _results, stats = await store.filter_and_populate_with_stats(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
-        )
+        try:
+            _results, stats = await store.filter_and_populate_with_stats(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         client_logger.removeHandler(handler)
         log_output = log_capture.getvalue()
@@ -927,17 +957,22 @@ class TestPopulatedFilterIter:
                 ),
             )
 
-        respx.post("http://localhost:9999/graphql").mock(side_effect=mock_response)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=mock_response
+        )
 
         # Iterate and collect
         results = []
-        async for performer in store.populated_filter_iter(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
-            yield_batch=1,  # Process one at a time
-        ):
-            results.append(performer)
+        try:
+            async for performer in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+                yield_batch=1,  # Process one at a time
+            ):
+                results.append(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should get p1 and p2 (rating >= 80)
         assert len(results) == 2
@@ -977,19 +1012,24 @@ class TestPopulatedFilterIter:
                 )
             return httpx.Response(500, text="Unknown")
 
-        respx.post("http://localhost:9999/graphql").mock(side_effect=mock_response)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=mock_response
+        )
 
         # Break after first result
         count = 0
-        async for _performer in store.populated_filter_iter(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
-            yield_batch=10,  # Process 10 at a time
-        ):
-            count += 1
-            if count >= 1:
-                break
+        try:
+            async for _performer in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
+                yield_batch=10,  # Process 10 at a time
+            ):
+                count += 1
+                if count >= 1:
+                    break
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should have only fetched first batch (10), not all 100
         assert call_count <= 10
@@ -1042,18 +1082,23 @@ class TestPopulatedFilterIter:
                 )
             return httpx.Response(500)
 
-        respx.post("http://localhost:9999/graphql").mock(side_effect=mock_response)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=mock_response
+        )
 
         # Process with specific batch sizes
         results = []
-        async for performer in store.populated_filter_iter(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
-            populate_batch=2,  # Populate 2 at a time
-            yield_batch=3,  # Yield after processing 3
-        ):
-            results.append(performer)
+        try:
+            async for performer in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 83,  # type: ignore[operator]
+                populate_batch=2,  # Populate 2 at a time
+                yield_batch=3,  # Yield after processing 3
+            ):
+                results.append(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # P3, P4, P5, P6 match (rating 83, 84, 85, 86)
         assert len(results) == 4
@@ -1075,7 +1120,7 @@ class TestPopulatedFilterIter:
         # Mock incomplete response (no rating100)
         p1_incomplete = create_performer_dict(id="1", name="Alice")
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(
                 200, json=create_graphql_response("findPerformer", p1_incomplete)
             )
@@ -1088,12 +1133,15 @@ class TestPopulatedFilterIter:
         client_logger.addHandler(handler)
 
         results = []
-        async for performer in store.populated_filter_iter(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
-        ):
-            results.append(performer)
+        try:
+            async for performer in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 80,  # type: ignore[operator]
+            ):
+                results.append(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         client_logger.removeHandler(handler)
         log_output = log_capture.getvalue()
@@ -1123,12 +1171,15 @@ class TestPopulatedFilterIter:
 
         # Iterate - should not trigger any fetches
         results = []
-        async for performer in store.populated_filter_iter(
-            Performer,
-            required_fields=["rating100"],
-            predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
-        ):
-            results.append(performer)
+        try:
+            async for performer in store.populated_filter_iter(
+                Performer,
+                required_fields=["rating100"],
+                predicate=lambda p: p.rating100 >= 90,  # type: ignore[operator]
+            ):
+                results.append(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify no GraphQL calls
         assert len(graphql_route.calls) == 0

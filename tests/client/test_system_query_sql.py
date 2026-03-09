@@ -8,6 +8,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash.graphql_responses import create_graphql_response
 
 
@@ -32,9 +33,12 @@ async def test_sql_query_basic(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_query(
-        "SELECT id, title, rating100 FROM scenes WHERE rating100 > ?", args=[80]
-    )
+    try:
+        result = await respx_stash_client.sql_query(
+            "SELECT id, title, rating100 FROM scenes WHERE rating100 > ?", args=[80]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.columns == ["id", "title", "rating100"]
@@ -79,9 +83,12 @@ async def test_sql_query_no_args(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_query(
-        "SELECT gender, COUNT(*) as count FROM performers GROUP BY gender"
-    )
+    try:
+        result = await respx_stash_client.sql_query(
+            "SELECT gender, COUNT(*) as count FROM performers GROUP BY gender"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.columns == ["gender", "count"]
@@ -122,9 +129,12 @@ async def test_sql_query_empty_result(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_query(
-        "SELECT id, name FROM tags WHERE name LIKE ?", args=["%nonexistent%"]
-    )
+    try:
+        result = await respx_stash_client.sql_query(
+            "SELECT id, name FROM tags WHERE name LIKE ?", args=["%nonexistent%"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.columns == ["id", "name"]
@@ -159,10 +169,13 @@ async def test_sql_query_multiple_args(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_query(
-        "SELECT id, title, rating100, date FROM scenes WHERE rating100 > ? AND date > ? ORDER BY rating100 DESC",
-        args=[85, "2024-01-01"],
-    )
+    try:
+        result = await respx_stash_client.sql_query(
+            "SELECT id, title, rating100, date FROM scenes WHERE rating100 > ? AND date > ? ORDER BY rating100 DESC",
+            args=[85, "2024-01-01"],
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.columns == ["id", "title", "rating100", "date"]
@@ -197,10 +210,13 @@ async def test_sql_exec_update(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_exec(
-        "UPDATE scenes SET rating100 = ? WHERE id IN (?, ?, ?, ?, ?)",
-        args=[100, "1", "2", "3", "4", "5"],
-    )
+    try:
+        result = await respx_stash_client.sql_exec(
+            "UPDATE scenes SET rating100 = ? WHERE id IN (?, ?, ?, ?, ?)",
+            args=[100, "1", "2", "3", "4", "5"],
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.rows_affected == 5
@@ -236,9 +252,12 @@ async def test_sql_exec_delete(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.sql_exec(
-        "DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM scene_tags)"
-    )
+    try:
+        result = await respx_stash_client.sql_exec(
+            "DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM scene_tags)"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.rows_affected == 3
@@ -272,10 +291,13 @@ async def test_sql_exec_insert_with_last_insert_id(
         ]
     )
 
-    result = await respx_stash_client.sql_exec(
-        "INSERT INTO custom_metadata (entity_id, key, value) VALUES (?, ?, ?)",
-        args=["scene-123", "custom_field", "custom_value"],
-    )
+    try:
+        result = await respx_stash_client.sql_exec(
+            "INSERT INTO custom_metadata (entity_id, key, value) VALUES (?, ?, ?)",
+            args=["scene-123", "custom_field", "custom_value"],
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.rows_affected == 1
@@ -307,9 +329,13 @@ async def test_sql_exec_no_rows_affected(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.sql_exec(
-        "UPDATE performers SET rating100 = ? WHERE id = ?", args=[100, "nonexistent-id"]
-    )
+    try:
+        result = await respx_stash_client.sql_exec(
+            "UPDATE performers SET rating100 = ? WHERE id = ?",
+            args=[100, "nonexistent-id"],
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data
     assert result.rows_affected == 0
@@ -346,8 +372,11 @@ async def test_sql_query_error_handling(respx_stash_client: StashClient) -> None
     )
 
     # Should raise exception on SQL error
-    with pytest.raises(Exception):  # noqa: B017, PT011
-        await respx_stash_client.sql_query("SLECT * FROM scenes")
+    try:
+        with pytest.raises(Exception):  # noqa: B017, PT011
+            await respx_stash_client.sql_query("SLECT * FROM scenes")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify call was made
     assert len(graphql_route.calls) == 1
@@ -376,10 +405,13 @@ async def test_sql_exec_error_handling(respx_stash_client: StashClient) -> None:
     )
 
     # Should raise exception on SQL error
-    with pytest.raises(Exception):  # noqa: B017, PT011
-        await respx_stash_client.sql_exec(
-            "DELETE FROM studios WHERE id = ?", args=["1"]
-        )
+    try:
+        with pytest.raises(Exception):  # noqa: B017, PT011
+            await respx_stash_client.sql_exec(
+                "DELETE FROM studios WHERE id = ?", args=["1"]
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify call was made
     assert len(graphql_route.calls) == 1
@@ -406,9 +438,12 @@ async def test_sql_query_complex_data_types(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.sql_query(
-        "SELECT id, title, rating, duration, date, organized FROM scenes"
-    )
+    try:
+        result = await respx_stash_client.sql_query(
+            "SELECT id, title, rating, duration, date, organized FROM scenes"
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify response data with various types
     assert is_set(result.rows)

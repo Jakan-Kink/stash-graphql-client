@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -10,7 +10,7 @@ from .scalars import Time
 from .unset import UNSET, UnsetType
 
 
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Log level enum from schema/types/logging.graphql."""
 
     TRACE = "Trace"

@@ -17,7 +17,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Group
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -35,7 +35,10 @@ async def test_find_groups_returns_results(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_groups()
+        try:
+            result = await stash_client.find_groups()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_groups"
@@ -59,7 +62,10 @@ async def test_find_groups_with_pagination(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_groups(filter_={"per_page": 10, "page": 1})
+        try:
+            result = await stash_client.find_groups(filter_={"per_page": 10, "page": 1})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_groups"
@@ -83,7 +89,10 @@ async def test_find_nonexistent_group_returns_none(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        group = await stash_client.find_group("99999999")
+        try:
+            group = await stash_client.find_group("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"
@@ -104,7 +113,10 @@ async def test_find_groups_with_q_parameter(
         stash_cleanup_tracker(stash_client),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_groups(q="test")
+        try:
+            result = await stash_client.find_groups(q="test")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_groups"
@@ -129,11 +141,14 @@ async def test_find_groups_with_filter(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Search for a group that likely doesn't exist
-        result = await stash_client.find_groups(
-            group_filter={
-                "name": {"value": "NonexistentGroup12345", "modifier": "EQUALS"}
-            }
-        )
+        try:
+            result = await stash_client.find_groups(
+                group_filter={
+                    "name": {"value": "NonexistentGroup12345", "modifier": "EQUALS"}
+                }
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_groups"
@@ -168,7 +183,10 @@ async def test_create_and_find_group(
             director="Test Director",
             synopsis="A test group for integration testing",
         )
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(created_group.id)  # Manual cleanup registration
 
         # Verify creation call
@@ -185,7 +203,10 @@ async def test_create_and_find_group(
 
         # Find the group by ID
         calls.clear()
-        found_group = await stash_client.find_group(created_group.id)
+        try:
+            found_group = await stash_client.find_group(created_group.id)
+        finally:
+            dump_graphql_calls(calls, "find_group")
 
         # Verify find call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"
@@ -214,7 +235,10 @@ async def test_create_and_update_group(
             name="Group To Update",
             director="Original Director",
         )
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(created_group.id)  # Manual cleanup registration
 
         # Verify creation call
@@ -229,7 +253,10 @@ async def test_create_and_update_group(
         calls.clear()
         created_group.director = "Updated Director"
         created_group.synopsis = "Added synopsis"
-        updated_group = await stash_client.update_group(created_group)
+        try:
+            updated_group = await stash_client.update_group(created_group)
+        finally:
+            dump_graphql_calls(calls, "update_group")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for update_group"
@@ -255,7 +282,10 @@ async def test_create_and_destroy_group(
         # Does not require cleanup as we are destroying the group immediately after creation
         # Create a new group
         group = Group.new(name="Group To Destroy")
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
 
         # Verify creation call
         assert len(calls) == 1, "Expected 1 GraphQL call for create_group"
@@ -267,7 +297,10 @@ async def test_create_and_destroy_group(
 
         # Destroy the group
         calls.clear()
-        result = await stash_client.group_destroy({"id": created_group.id})
+        try:
+            result = await stash_client.group_destroy({"id": created_group.id})
+        finally:
+            dump_graphql_calls(calls, "group_destroy")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for group_destroy"
@@ -279,7 +312,10 @@ async def test_create_and_destroy_group(
 
         # Verify it's gone
         calls.clear()
-        found_group = await stash_client.find_group(created_group.id)
+        try:
+            found_group = await stash_client.find_group(created_group.id)
+        finally:
+            dump_graphql_calls(calls, "find_group")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"
         assert "findGroup" in calls[0]["query"]
@@ -300,9 +336,24 @@ async def test_create_multiple_and_destroy_groups(
     ):
         # Does not require cleanup as we are destroying the groups immediately after creation
         # Create multiple groups
-        group1 = await stash_client.create_group(Group.new(name="Bulk Destroy Group 1"))
-        group2 = await stash_client.create_group(Group.new(name="Bulk Destroy Group 2"))
-        group3 = await stash_client.create_group(Group.new(name="Bulk Destroy Group 3"))
+        try:
+            group1 = await stash_client.create_group(
+                Group.new(name="Bulk Destroy Group 1")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group[1]")
+        try:
+            group2 = await stash_client.create_group(
+                Group.new(name="Bulk Destroy Group 2")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group[2]")
+        try:
+            group3 = await stash_client.create_group(
+                Group.new(name="Bulk Destroy Group 3")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group[3]")
 
         # Verify 3 creation calls
         assert len(calls) == 3, "Expected 3 GraphQL calls for creating groups"
@@ -315,7 +366,10 @@ async def test_create_multiple_and_destroy_groups(
 
         # Destroy all groups at once
         calls.clear()
-        result = await stash_client.groups_destroy(group_ids)
+        try:
+            result = await stash_client.groups_destroy(group_ids)
+        finally:
+            dump_graphql_calls(calls, "groups_destroy")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for groups_destroy"
@@ -327,7 +381,10 @@ async def test_create_multiple_and_destroy_groups(
         # Verify they're all gone
         calls.clear()
         for group_id in group_ids:
-            found = await stash_client.find_group(group_id)
+            try:
+                found = await stash_client.find_group(group_id)
+            finally:
+                dump_graphql_calls(calls, "find_group")
             assert found is None
 
         # Verify find calls
@@ -353,7 +410,10 @@ async def test_create_group_with_duration_and_date(
             date="2024-01-15",
             rating100=85,
         )
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(created_group.id)  # Manual cleanup registration
 
         # Verify GraphQL call
@@ -381,7 +441,10 @@ async def test_create_group_with_urls(
             name="Group With URLs",
             urls=["https://example.com/group1", "https://example.com/group2"],
         )
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(created_group.id)  # Manual cleanup registration
 
         # Verify GraphQL call
@@ -413,9 +476,12 @@ async def test_bulk_group_update(
         # Create multiple groups
         created_groups = []
         for i in range(3):
-            group = await stash_client.create_group(
-                Group.new(name=f"Bulk Update Group {i}")
-            )
+            try:
+                group = await stash_client.create_group(
+                    Group.new(name=f"Bulk Update Group {i}")
+                )
+            finally:
+                dump_graphql_calls(calls, "create_group")
             created_groups.append(group)
             cleanup["groups"].append(group.id)  # Manual cleanup registration
 
@@ -430,9 +496,12 @@ async def test_bulk_group_update(
 
         # Bulk update all groups
         calls.clear()
-        updated = await stash_client.bulk_group_update(
-            {"ids": group_ids, "rating100": 75}
-        )
+        try:
+            updated = await stash_client.bulk_group_update(
+                {"ids": group_ids, "rating100": 75}
+            )
+        finally:
+            dump_graphql_calls(calls, "bulk_group_update")
 
         # Verify bulk update call
         assert len(calls) == 1, "Expected 1 GraphQL call for bulk_group_update"
@@ -461,13 +530,28 @@ async def test_add_and_remove_sub_groups(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create parent and child groups
-        parent_group = await stash_client.create_group(Group.new(name="Parent Group"))
+        try:
+            parent_group = await stash_client.create_group(
+                Group.new(name="Parent Group")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(parent_group.id)  # Manual cleanup registration
 
-        child_group1 = await stash_client.create_group(Group.new(name="Child Group 1"))
+        try:
+            child_group1 = await stash_client.create_group(
+                Group.new(name="Child Group 1")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(child_group1.id)  # Manual cleanup registration
 
-        child_group2 = await stash_client.create_group(Group.new(name="Child Group 2"))
+        try:
+            child_group2 = await stash_client.create_group(
+                Group.new(name="Child Group 2")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(child_group2.id)  # Manual cleanup registration
 
         # Verify creation calls
@@ -479,15 +563,18 @@ async def test_add_and_remove_sub_groups(
 
         # Add sub-groups
         calls.clear()
-        result = await stash_client.add_group_sub_groups(
-            {
-                "containing_group_id": parent_group.id,
-                "sub_groups": [
-                    {"group_id": child_group1.id},
-                    {"group_id": child_group2.id},
-                ],
-            }
-        )
+        try:
+            result = await stash_client.add_group_sub_groups(
+                {
+                    "containing_group_id": parent_group.id,
+                    "sub_groups": [
+                        {"group_id": child_group1.id},
+                        {"group_id": child_group2.id},
+                    ],
+                }
+            )
+        finally:
+            dump_graphql_calls(calls, "add_group_sub_groups")
 
         # Verify add call
         assert len(calls) == 1, "Expected 1 GraphQL call for add_group_sub_groups"
@@ -498,7 +585,10 @@ async def test_add_and_remove_sub_groups(
 
         # Verify sub-groups were added
         calls.clear()
-        updated_parent = await stash_client.find_group(parent_group.id)
+        try:
+            updated_parent = await stash_client.find_group(parent_group.id)
+        finally:
+            dump_graphql_calls(calls, "find_group")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"
         assert "findGroup" in calls[0]["query"]
@@ -511,12 +601,15 @@ async def test_add_and_remove_sub_groups(
 
         # Remove one sub-group
         calls.clear()
-        result = await stash_client.remove_group_sub_groups(
-            {
-                "containing_group_id": parent_group.id,
-                "sub_group_ids": [child_group1.id],
-            }
-        )
+        try:
+            result = await stash_client.remove_group_sub_groups(
+                {
+                    "containing_group_id": parent_group.id,
+                    "sub_group_ids": [child_group1.id],
+                }
+            )
+        finally:
+            dump_graphql_calls(calls, "remove_group_sub_groups")
 
         # Verify remove call
         assert len(calls) == 1, "Expected 1 GraphQL call for remove_group_sub_groups"
@@ -527,7 +620,10 @@ async def test_add_and_remove_sub_groups(
 
         # Verify sub-group was removed
         calls.clear()
-        updated_parent = await stash_client.find_group(parent_group.id)
+        try:
+            updated_parent = await stash_client.find_group(parent_group.id)
+        finally:
+            dump_graphql_calls(calls, "find_group")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"
         assert "findGroup" in calls[0]["query"]
@@ -550,16 +646,22 @@ async def test_reorder_sub_groups(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create parent and multiple child groups
-        parent_group = await stash_client.create_group(
-            Group.new(name="Parent For Reorder")
-        )
+        try:
+            parent_group = await stash_client.create_group(
+                Group.new(name="Parent For Reorder")
+            )
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(parent_group.id)  # Manual cleanup registration
 
         child_groups = []
         for i in range(3):
-            child = await stash_client.create_group(
-                Group.new(name=f"Reorder Child {i}")
-            )
+            try:
+                child = await stash_client.create_group(
+                    Group.new(name=f"Reorder Child {i}")
+                )
+            finally:
+                dump_graphql_calls(calls, "create_group")
             child_groups.append(child)
             cleanup["groups"].append(child.id)  # Manual cleanup registration
 
@@ -572,12 +674,15 @@ async def test_reorder_sub_groups(
 
         # Add all sub-groups
         calls.clear()
-        await stash_client.add_group_sub_groups(
-            {
-                "containing_group_id": parent_group.id,
-                "sub_groups": [{"group_id": c.id} for c in child_groups],
-            }
-        )
+        try:
+            await stash_client.add_group_sub_groups(
+                {
+                    "containing_group_id": parent_group.id,
+                    "sub_groups": [{"group_id": c.id} for c in child_groups],
+                }
+            )
+        finally:
+            dump_graphql_calls(calls, "add_group_sub_groups")
 
         # Verify add call
         assert len(calls) == 1, "Expected 1 GraphQL call for add_group_sub_groups"
@@ -586,14 +691,17 @@ async def test_reorder_sub_groups(
 
         # Reorder: move first child to after second
         calls.clear()
-        result = await stash_client.reorder_sub_groups(
-            {
-                "group_id": parent_group.id,
-                "sub_group_ids": [child_groups[0].id],
-                "insert_at_id": child_groups[1].id,
-                "insert_after": True,
-            }
-        )
+        try:
+            result = await stash_client.reorder_sub_groups(
+                {
+                    "group_id": parent_group.id,
+                    "sub_group_ids": [child_groups[0].id],
+                    "insert_at_id": child_groups[1].id,
+                    "insert_after": True,
+                }
+            )
+        finally:
+            dump_graphql_calls(calls, "reorder_sub_groups")
 
         # Verify reorder call
         assert len(calls) == 1, "Expected 1 GraphQL call for reorder_sub_groups"
@@ -629,7 +737,10 @@ async def test_find_group_by_id_returns_complete_data(
             synopsis="A complete test group with all fields",
             urls=["https://example.com/complete"],
         )
-        created_group = await stash_client.create_group(group)
+        try:
+            created_group = await stash_client.create_group(group)
+        finally:
+            dump_graphql_calls(calls, "create_group")
         cleanup["groups"].append(created_group.id)  # Manual cleanup registration
 
         # Verify creation call
@@ -640,7 +751,10 @@ async def test_find_group_by_id_returns_complete_data(
 
         # Find the group and verify all fields
         calls.clear()
-        found = await stash_client.find_group(created_group.id)
+        try:
+            found = await stash_client.find_group(created_group.id)
+        finally:
+            dump_graphql_calls(calls, "find_group")
 
         # Verify find call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_group"

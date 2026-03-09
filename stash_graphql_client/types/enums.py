@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 # Core enums
-class GenderEnum(str, Enum):
+class GenderEnum(StrEnum):
     """Gender enum from schema."""
 
     MALE = "MALE"
@@ -17,14 +17,14 @@ class GenderEnum(str, Enum):
     NON_BINARY = "NON_BINARY"
 
 
-class CircumisedEnum(str, Enum):
+class CircumisedEnum(StrEnum):
     """Circumcision enum from schema."""
 
     CUT = "CUT"
     UNCUT = "UNCUT"
 
 
-class BulkUpdateIdMode(str, Enum):
+class BulkUpdateIdMode(StrEnum):
     """Bulk update mode enum from schema."""
 
     SET = "SET"
@@ -33,14 +33,14 @@ class BulkUpdateIdMode(str, Enum):
 
 
 # Filter enums
-class SortDirectionEnum(str, Enum):
+class SortDirectionEnum(StrEnum):
     """Sort direction enum from schema."""
 
     ASC = "ASC"
     DESC = "DESC"
 
 
-class ResolutionEnum(str, Enum):
+class ResolutionEnum(StrEnum):
     """Resolution enum from schema."""
 
     VERY_LOW = "VERY_LOW"  # 144p
@@ -59,7 +59,7 @@ class ResolutionEnum(str, Enum):
     HUGE = "HUGE"  # 8K+
 
 
-class OrientationEnum(str, Enum):
+class OrientationEnum(StrEnum):
     """Orientation enum from schema."""
 
     LANDSCAPE = "LANDSCAPE"
@@ -67,7 +67,7 @@ class OrientationEnum(str, Enum):
     SQUARE = "SQUARE"
 
 
-class CriterionModifier(str, Enum):
+class CriterionModifier(StrEnum):
     """Criterion modifier enum from schema."""
 
     EQUALS = "EQUALS"  # =
@@ -85,7 +85,7 @@ class CriterionModifier(str, Enum):
     NOT_BETWEEN = "NOT_BETWEEN"  # < OR >
 
 
-class FilterMode(str, Enum):
+class FilterMode(StrEnum):
     """Filter mode enum from schema."""
 
     SCENES = "SCENES"
@@ -100,7 +100,7 @@ class FilterMode(str, Enum):
 
 
 # Config enums
-class StreamingResolutionEnum(str, Enum):
+class StreamingResolutionEnum(StrEnum):
     """Streaming resolution enum from schema."""
 
     LOW = "LOW"  # 240p
@@ -111,7 +111,7 @@ class StreamingResolutionEnum(str, Enum):
     ORIGINAL = "ORIGINAL"  # Original
 
 
-class PreviewPreset(str, Enum):
+class PreviewPreset(StrEnum):
     """Preview preset enum from schema."""
 
     ULTRAFAST = "ultrafast"  # X264_ULTRAFAST
@@ -123,21 +123,21 @@ class PreviewPreset(str, Enum):
     VERYSLOW = "veryslow"  # X264_VERYSLOW
 
 
-class HashAlgorithm(str, Enum):
+class HashAlgorithm(StrEnum):
     """Hash algorithm enum from schema."""
 
     MD5 = "MD5"
     OSHASH = "OSHASH"  # oshash
 
 
-class BlobsStorageType(str, Enum):
+class BlobsStorageType(StrEnum):
     """Blobs storage type enum from schema."""
 
     DATABASE = "DATABASE"  # Database
     FILESYSTEM = "FILESYSTEM"  # Filesystem
 
 
-class ImageLightboxDisplayMode(str, Enum):
+class ImageLightboxDisplayMode(StrEnum):
     """Image lightbox display mode enum from schema."""
 
     ORIGINAL = "ORIGINAL"
@@ -145,7 +145,7 @@ class ImageLightboxDisplayMode(str, Enum):
     FIT_X = "FIT_X"
 
 
-class ImageLightboxScrollMode(str, Enum):
+class ImageLightboxScrollMode(StrEnum):
     """Image lightbox scroll mode enum from schema."""
 
     ZOOM = "ZOOM"
@@ -153,7 +153,7 @@ class ImageLightboxScrollMode(str, Enum):
 
 
 # Metadata enums
-class IdentifyFieldStrategy(str, Enum):
+class IdentifyFieldStrategy(StrEnum):
     """Strategy for identifying fields from schema/types/metadata.graphql."""
 
     IGNORE = "IGNORE"  # Never sets the field value
@@ -161,7 +161,7 @@ class IdentifyFieldStrategy(str, Enum):
     OVERWRITE = "OVERWRITE"  # Always replaces the value if a value is found
 
 
-class ImportDuplicateEnum(str, Enum):
+class ImportDuplicateEnum(StrEnum):
     """Import duplicate behavior from schema/types/metadata.graphql."""
 
     IGNORE = "IGNORE"
@@ -169,7 +169,7 @@ class ImportDuplicateEnum(str, Enum):
     FAIL = "FAIL"
 
 
-class ImportMissingRefEnum(str, Enum):
+class ImportMissingRefEnum(StrEnum):
     """Import missing reference behavior from schema/types/metadata.graphql."""
 
     IGNORE = "IGNORE"
@@ -177,7 +177,7 @@ class ImportMissingRefEnum(str, Enum):
     CREATE = "CREATE"
 
 
-class SystemStatusEnum(str, Enum):
+class SystemStatusEnum(StrEnum):
     """System status enum from schema/types/metadata.graphql."""
 
     SETUP = "SETUP"
@@ -186,7 +186,7 @@ class SystemStatusEnum(str, Enum):
 
 
 # Job enums
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Job status enum from schema/types/job.graphql."""
 
     READY = "READY"
@@ -197,7 +197,7 @@ class JobStatus(str, Enum):
     FAILED = "FAILED"
 
 
-class JobStatusUpdateType(str, Enum):
+class JobStatusUpdateType(StrEnum):
     """Job status update type enum from schema/types/job.graphql."""
 
     ADD = "ADD"
@@ -206,7 +206,7 @@ class JobStatusUpdateType(str, Enum):
 
 
 # Logging enums
-class LogLevel(str, Enum):
+class LogLevel(StrEnum):
     """Log level enum from schema/types/logging.graphql."""
 
     TRACE = "Trace"
@@ -218,7 +218,7 @@ class LogLevel(str, Enum):
 
 
 # Plugin enums
-class PluginSettingTypeEnum(str, Enum):
+class PluginSettingTypeEnum(StrEnum):
     """Plugin setting type enum from schema/types/plugin.graphql."""
 
     STRING = "STRING"
@@ -227,7 +227,7 @@ class PluginSettingTypeEnum(str, Enum):
 
 
 # Scraper enums
-class ScrapeContentType(str, Enum):
+class ScrapeContentType(StrEnum):
     """Scrape content type enum from schema/types/scraper.graphql."""
 
     GALLERY = "GALLERY"
@@ -238,7 +238,7 @@ class ScrapeContentType(str, Enum):
     SCENE = "SCENE"
 
 
-class ScrapeType(str, Enum):
+class ScrapeType(StrEnum):
     """Scrape type enum from schema/types/scraper.graphql."""
 
     NAME = "NAME"
@@ -247,7 +247,7 @@ class ScrapeType(str, Enum):
 
 
 # Package enums
-class PackageType(str, Enum):
+class PackageType(StrEnum):
     """Package type enum from schema."""
 
     SCRAPER = "Scraper"

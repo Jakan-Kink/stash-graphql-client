@@ -12,7 +12,7 @@ import respx
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -30,7 +30,10 @@ async def test_set_plugins_enabled_single(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.set_plugins_enabled({"plugin-123": True})
+    try:
+        result = await respx_stash_client.set_plugins_enabled({"plugin-123": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -56,7 +59,10 @@ async def test_set_plugins_enabled_multiple(respx_stash_client: StashClient) -> 
         "plugin-3": True,
     }
 
-    result = await respx_stash_client.set_plugins_enabled(enabled_map)
+    try:
+        result = await respx_stash_client.set_plugins_enabled(enabled_map)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -77,7 +83,10 @@ async def test_set_plugins_enabled_error_returns_false(
         ]
     )
 
-    result = await respx_stash_client.set_plugins_enabled({"plugin-123": True})
+    try:
+        result = await respx_stash_client.set_plugins_enabled({"plugin-123": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
     assert len(graphql_route.calls) == 1
@@ -100,7 +109,10 @@ async def test_run_plugin_task_minimal(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    job_id = await respx_stash_client.run_plugin_task(plugin_id="my-plugin")
+    try:
+        job_id = await respx_stash_client.run_plugin_task(plugin_id="my-plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-123"
 
@@ -124,12 +136,15 @@ async def test_run_plugin_task_all_parameters(respx_stash_client: StashClient) -
 
     args = {"option1": "value1", "option2": 42}
 
-    job_id = await respx_stash_client.run_plugin_task(
-        plugin_id="my-plugin",
-        task_name="process",
-        description="Processing files",
-        args_map=args,
-    )
+    try:
+        job_id = await respx_stash_client.run_plugin_task(
+            plugin_id="my-plugin",
+            task_name="process",
+            description="Processing files",
+            args_map=args,
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-999"
 
@@ -153,8 +168,11 @@ async def test_run_plugin_task_no_job_id_raises(
         ]
     )
 
-    with pytest.raises(ValueError, match="No job ID returned from runPluginTask"):
-        await respx_stash_client.run_plugin_task(plugin_id="my-plugin")
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from runPluginTask"):
+            await respx_stash_client.run_plugin_task(plugin_id="my-plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -181,7 +199,10 @@ async def test_run_plugin_operation_without_args(
         ]
     )
 
-    result = await respx_stash_client.run_plugin_operation(plugin_id="my-plugin")
+    try:
+        result = await respx_stash_client.run_plugin_operation(plugin_id="my-plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == {"status": "success", "message": "Complete"}
 
@@ -208,10 +229,13 @@ async def test_run_plugin_operation_with_args(respx_stash_client: StashClient) -
 
     args = {"action": "query", "id": "123", "include_metadata": True}
 
-    result = await respx_stash_client.run_plugin_operation(
-        plugin_id="my-plugin",
-        args=args,
-    )
+    try:
+        result = await respx_stash_client.run_plugin_operation(
+            plugin_id="my-plugin",
+            args=args,
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == {"result": "data processed"}
 
@@ -236,7 +260,10 @@ async def test_reload_plugins_success(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.reload_plugins()
+    try:
+        result = await respx_stash_client.reload_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -257,7 +284,10 @@ async def test_reload_plugins_error_returns_false(
         ]
     )
 
-    result = await respx_stash_client.reload_plugins()
+    try:
+        result = await respx_stash_client.reload_plugins()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is False
     assert len(graphql_route.calls) == 1
@@ -284,10 +314,13 @@ async def test_configure_plugin(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.configure_plugin(
-        plugin_id="my-plugin",
-        config=config,
-    )
+    try:
+        result = await respx_stash_client.configure_plugin(
+            plugin_id="my-plugin",
+            config=config,
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == config
 
@@ -308,11 +341,14 @@ async def test_configure_plugin_error_raises(respx_stash_client: StashClient) ->
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.configure_plugin(
-            plugin_id="my-plugin",
-            config={"setting": "value"},
-        )
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.configure_plugin(
+                plugin_id="my-plugin",
+                config={"setting": "value"},
+            )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -325,8 +361,11 @@ async def test_run_plugin_operation_exception(respx_stash_client: StashClient) -
         side_effect=Exception("Network error")
     )
 
-    with pytest.raises(Exception, match="Network error"):
-        await respx_stash_client.run_plugin_operation(plugin_id="my-plugin")
+    try:
+        with pytest.raises(Exception, match="Network error"):
+            await respx_stash_client.run_plugin_operation(plugin_id="my-plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify route was called
     assert len(graphql_route.calls) == 1

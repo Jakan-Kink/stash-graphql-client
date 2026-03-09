@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -11,7 +11,7 @@ from .scalars import Time
 from .unset import UNSET, UnsetType
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Job status enum from schema/types/job.graphql."""
 
     READY = "READY"
@@ -46,7 +46,7 @@ class FindJobInput(StashInput):
     id: str  # ID!
 
 
-class JobStatusUpdateType(str, Enum):
+class JobStatusUpdateType(StrEnum):
     """Job status update type enum from schema/types/job.graphql."""
 
     ADD = "ADD"

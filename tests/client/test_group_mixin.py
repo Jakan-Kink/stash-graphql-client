@@ -33,6 +33,7 @@ from tests.fixtures import (
     create_graphql_response,
     create_group_dict,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -58,7 +59,10 @@ async def test_find_group_by_id(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    group = await respx_stash_client.find_group("123")
+    try:
+        group = await respx_stash_client.find_group("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert group is not None
     assert group.id == "123"
@@ -82,7 +86,10 @@ async def test_find_group_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    group = await respx_stash_client.find_group("999")
+    try:
+        group = await respx_stash_client.find_group("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert group is None
     assert len(graphql_route.calls) == 1
@@ -98,7 +105,10 @@ async def test_find_group_error_returns_none(respx_stash_client: StashClient) ->
         ]
     )
 
-    group = await respx_stash_client.find_group("error_id")
+    try:
+        group = await respx_stash_client.find_group("error_id")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert group is None
     assert len(graphql_route.calls) == 1
@@ -127,7 +137,10 @@ async def test_find_groups(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_groups()
+    try:
+        result = await respx_stash_client.find_groups()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.groups)
@@ -155,10 +168,13 @@ async def test_find_groups_with_filter(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_groups(
-        filter_={"per_page": 10, "page": 1},
-        group_filter={"name": {"value": "Action", "modifier": "INCLUDES"}},
-    )
+    try:
+        result = await respx_stash_client.find_groups(
+            filter_={"per_page": 10, "page": 1},
+            group_filter={"name": {"value": "Action", "modifier": "INCLUDES"}},
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert len(graphql_route.calls) == 1
@@ -182,7 +198,10 @@ async def test_find_groups_with_query(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_groups(q="Test")
+    try:
+        result = await respx_stash_client.find_groups(q="Test")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert len(graphql_route.calls) == 1
@@ -205,7 +224,10 @@ async def test_find_groups_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_groups()
+    try:
+        result = await respx_stash_client.find_groups()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.groups)
@@ -225,7 +247,10 @@ async def test_find_groups_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_groups()
+    try:
+        result = await respx_stash_client.find_groups()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.groups)
@@ -257,7 +282,10 @@ async def test_create_group(respx_stash_client: StashClient) -> None:
     )
 
     group = Group(id="new", name="New Group", duration=7200, director="Test Director")
-    created = await respx_stash_client.create_group(group)
+    try:
+        created = await respx_stash_client.create_group(group)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert created.id == "123"
     assert created.name == "New Group"
@@ -318,8 +346,11 @@ async def test_create_group_error_raises(respx_stash_client: StashClient) -> Non
 
     group = Group(id="temp", name="New Group")
 
-    with pytest.raises(StashGraphQLError, match="unknown field"):
-        await respx_stash_client.create_group(group)
+    try:
+        with pytest.raises(StashGraphQLError, match="unknown field"):
+            await respx_stash_client.create_group(group)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -346,7 +377,10 @@ async def test_update_group(respx_stash_client: StashClient) -> None:
     )
 
     group = Group(id="123", name="Updated Group", director="New Director")
-    updated = await respx_stash_client.update_group(group)
+    try:
+        updated = await respx_stash_client.update_group(group)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert updated.id == "123"
     assert updated.name == "Updated Group"
@@ -399,7 +433,10 @@ async def test_group_destroy_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.group_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.group_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -418,7 +455,10 @@ async def test_group_destroy_with_input_type(respx_stash_client: StashClient) ->
     )
 
     input_data = GroupDestroyInput(id="123")
-    result = await respx_stash_client.group_destroy(input_data)
+    try:
+        result = await respx_stash_client.group_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -453,7 +493,10 @@ async def test_groups_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.groups_destroy(["123", "456", "789"])
+    try:
+        result = await respx_stash_client.groups_destroy(["123", "456", "789"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -530,7 +573,10 @@ async def test_bulk_group_update_with_input_type(
         ids=["1", "2"],
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
-    result = await respx_stash_client.bulk_group_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_group_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert len(graphql_route.calls) == 1
@@ -567,12 +613,15 @@ async def test_add_group_sub_groups_with_dict(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.add_group_sub_groups(
-        {
-            "containing_group_id": "parent_123",
-            "sub_groups": [{"group_id": "child_456"}],
-        }
-    )
+    try:
+        result = await respx_stash_client.add_group_sub_groups(
+            {
+                "containing_group_id": "parent_123",
+                "sub_groups": [{"group_id": "child_456"}],
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -637,12 +686,15 @@ async def test_remove_group_sub_groups_with_dict(
         ]
     )
 
-    result = await respx_stash_client.remove_group_sub_groups(
-        {
-            "containing_group_id": "parent_123",
-            "sub_group_ids": ["child_456", "child_789"],
-        }
-    )
+    try:
+        result = await respx_stash_client.remove_group_sub_groups(
+            {
+                "containing_group_id": "parent_123",
+                "sub_group_ids": ["child_456", "child_789"],
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1
@@ -704,14 +756,17 @@ async def test_reorder_sub_groups_with_dict(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.reorder_sub_groups(
-        {
-            "group_id": "parent_123",
-            "sub_group_ids": ["child_1", "child_2", "child_3"],
-            "insert_at_id": "child_1",
-            "insert_after": True,
-        }
-    )
+    try:
+        result = await respx_stash_client.reorder_sub_groups(
+            {
+                "group_id": "parent_123",
+                "sub_group_ids": ["child_1", "child_2", "child_3"],
+                "insert_at_id": "child_1",
+                "insert_after": True,
+            }
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
     assert len(graphql_route.calls) == 1

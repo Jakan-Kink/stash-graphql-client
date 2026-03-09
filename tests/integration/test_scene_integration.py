@@ -13,7 +13,7 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import Scene, Studio
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -33,7 +33,10 @@ async def test_find_scene_by_id(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Get a scene from find_scenes first
-        result = await stash_client.find_scenes(filter_={"per_page": 1})
+        try:
+            result = await stash_client.find_scenes(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_scenes")
         assert is_set(result.count), "result.count should be set"
         assert result.count > 0, "No scenes available in test Stash instance"
 
@@ -44,7 +47,10 @@ async def test_find_scene_by_id(
         calls.clear()
 
         # Now test find_scene
-        scene = await stash_client.find_scene(scene_id)
+        try:
+            scene = await stash_client.find_scene(scene_id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scene"
@@ -71,7 +77,10 @@ async def test_find_scenes_with_pagination(
         capture_graphql_calls(stash_client) as calls,
     ):
         # Get first page
-        result = await stash_client.find_scenes(filter_={"page": 1, "per_page": 5})
+        try:
+            result = await stash_client.find_scenes(filter_={"page": 1, "per_page": 5})
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scenes"
@@ -106,7 +115,10 @@ async def test_create_and_find_scene(
             details="Created by integration test",
         )
 
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
 
         # Verify creation call
@@ -125,7 +137,10 @@ async def test_create_and_find_scene(
 
         # Clear calls and verify we can find it
         calls.clear()
-        found_scene = await stash_client.find_scene(created_scene.id)
+        try:
+            found_scene = await stash_client.find_scene(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
 
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scene"
         assert "findScene" in calls[0]["query"]
@@ -149,7 +164,10 @@ async def test_create_and_update_scene(
             details="Original details",
         )
 
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
 
         # Verify creation
@@ -162,7 +180,10 @@ async def test_create_and_update_scene(
         created_scene.details = "Updated details"
         created_scene.rating100 = 80
 
-        updated_scene = await stash_client.update_scene(created_scene)
+        try:
+            updated_scene = await stash_client.update_scene(created_scene)
+        finally:
+            dump_graphql_calls(calls, "update_scene")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for update_scene"
@@ -193,7 +214,10 @@ async def test_create_and_destroy_scene(
     ):
         # Create scene
         new_scene = Scene.new(title="Scene to be destroyed")
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
         scene_id = created_scene.id
 
@@ -202,9 +226,12 @@ async def test_create_and_destroy_scene(
         calls.clear()
 
         # Destroy the scene
-        success = await stash_client.scene_destroy(
-            {"id": scene_id, "delete_file": False}
-        )
+        try:
+            success = await stash_client.scene_destroy(
+                {"id": scene_id, "delete_file": False}
+            )
+        finally:
+            dump_graphql_calls(calls, "scene_destroy")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for scene_destroy"
@@ -219,7 +246,10 @@ async def test_create_and_destroy_scene(
 
         # Verify it's gone
         calls.clear()
-        found_scene = await stash_client.find_scene(scene_id)
+        try:
+            found_scene = await stash_client.find_scene(scene_id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
         assert found_scene is None
 
 
@@ -241,7 +271,10 @@ async def test_create_scene_with_studio(
         # Create a unique test studio
         test_uid = time.monotonic_ns()
         studio_obj = Studio.new(name=f"Studio for scene {test_uid}")
-        created_studio = await stash_client.create_studio(studio_obj)
+        try:
+            created_studio = await stash_client.create_studio(studio_obj)
+        finally:
+            dump_graphql_calls(calls, "create_studio")
         cleanup["studios"].append(created_studio.id)
 
         calls.clear()
@@ -249,10 +282,13 @@ async def test_create_scene_with_studio(
         # Create scene with the test studio
         new_scene = Scene.new(
             title=f"Scene with Studio {test_uid}",
-            studio_id=created_studio.id,
+            studio=created_studio,
         )
 
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
 
         # Verify GraphQL call
@@ -271,7 +307,10 @@ async def test_create_scene_with_studio(
         assert Scene._store is not None, "Scene._store should be initialized"
         Scene._store.invalidate(Scene, created_scene.id)
         calls.clear()
-        found_scene = await stash_client.find_scene(created_scene.id)
+        try:
+            found_scene = await stash_client.find_scene(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
 
         assert len(calls) == 1
         assert "findScene" in calls[0]["query"]
@@ -299,13 +338,19 @@ async def test_scene_add_and_reset_o_counter(
     ):
         # Create a test scene
         new_scene = Scene.new(title="Test O Counter Scene")
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
 
         calls.clear()
 
         # Add O (mark as watched)
-        result_1 = await stash_client.scene_add_o(created_scene.id)
+        try:
+            result_1 = await stash_client.scene_add_o(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "scene_add_o")
 
         assert len(calls) == 1
         assert "SceneAddO" in calls[0]["query"]
@@ -315,13 +360,19 @@ async def test_scene_add_and_reset_o_counter(
         calls.clear()
 
         # Add another O
-        result_2 = await stash_client.scene_add_o(created_scene.id)
+        try:
+            result_2 = await stash_client.scene_add_o(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "scene_add_o")
         assert result_2.count == 2
 
         calls.clear()
 
         # Reset O counter
-        final_result = await stash_client.scene_reset_o(created_scene.id)
+        try:
+            final_result = await stash_client.scene_reset_o(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "scene_reset_o")
 
         assert len(calls) == 1
         assert "sceneResetO" in calls[0]["query"]
@@ -341,13 +392,19 @@ async def test_scene_add_and_reset_play_count(
     ):
         # Create a test scene
         new_scene = Scene.new(title="Test Play Count Scene")
-        created_scene = await stash_client.create_scene(new_scene)
+        try:
+            created_scene = await stash_client.create_scene(new_scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created_scene.id)
 
         calls.clear()
 
         # Add play
-        result_1 = await stash_client.scene_add_play(created_scene.id)
+        try:
+            result_1 = await stash_client.scene_add_play(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "scene_add_play")
 
         assert len(calls) >= 1  # May include additional queries
         # Check if any call contains the play mutation
@@ -357,7 +414,10 @@ async def test_scene_add_and_reset_play_count(
         calls.clear()
 
         # Reset play count
-        final_result = await stash_client.scene_reset_play_count(created_scene.id)
+        try:
+            final_result = await stash_client.scene_reset_play_count(created_scene.id)
+        finally:
+            dump_graphql_calls(calls, "scene_reset_play_count")
 
         assert len(calls) >= 1
         # Check for reset mutation
@@ -386,9 +446,12 @@ async def test_find_scenes_with_filter(
         # Test with rating filter
         filter_data = {"rating100": {"value": 50, "modifier": "GREATER_THAN"}}
 
-        result = await stash_client.find_scenes(
-            filter_={"per_page": 10}, scene_filter=filter_data
-        )
+        try:
+            result = await stash_client.find_scenes(
+                filter_={"per_page": 10}, scene_filter=filter_data
+            )
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call includes filter
         assert len(calls) == 1
@@ -412,7 +475,10 @@ async def test_scene_wall(stash_client: StashClient, stash_cleanup_tracker) -> N
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        scenes = await stash_client.scene_wall()
+        try:
+            scenes = await stash_client.scene_wall()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL call
         assert len(calls) == 1

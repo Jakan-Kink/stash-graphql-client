@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -15,6 +15,8 @@ from .base import (
     StashResult,
 )
 from .enums import BulkUpdateIdMode
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -59,6 +61,7 @@ class GroupCreateInput(StashInput):
         UNSET  # String (URL or base64 encoded data URL)
     )
     back_image: str | None | UnsetType = UNSET  # String (URL or base64)
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 82)
 
 
 class GroupUpdateInput(StashInput):
@@ -92,14 +95,25 @@ class GroupUpdateInput(StashInput):
     back_image: str | None | UnsetType = (
         UNSET  # String (URL or base64 encoded data URL)
     )
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 82)
+    )
+
+
+class GroupDestroyInput(StashInput):
+    """Input for destroying groups."""
+
+    id: str  # ID!
 
 
 class Group(StashObject):
     """Group type from schema."""
 
     __type_name__ = "Group"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = GroupUpdateInput
     __create_input_type__ = GroupCreateInput
+    __destroy_input_type__ = GroupDestroyInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -150,6 +164,9 @@ class Group(StashObject):
         default=UNSET, ge=0
     )  # Int! (Resolver with optional depth)
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
+
+    # Capability-gated fields (appSchema >= 82)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 82)
 
     # Field definitions with their conversion functions
     __field_conversions__ = {
@@ -425,12 +442,9 @@ class BulkGroupUpdateInput(StashInput):
     sub_groups: BulkUpdateGroupDescriptionsInput | None | UnsetType = (
         UNSET  # BulkUpdateGroupDescriptionsInput
     )
-
-
-class GroupDestroyInput(StashInput):
-    """Input for destroying groups."""
-
-    id: str  # ID!
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 82)
+    )
 
 
 class ReorderSubGroupsInput(StashInput):

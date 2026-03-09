@@ -72,6 +72,9 @@ class MetadataClientMixin(StashClientProtocol):
             input_data: Optional GenerateMetadataInput object or dictionary to specify what to process:
                 - sceneIDs: list[str] - List of scene IDs to generate for (default: all)
                 - markerIDs: list[str] - List of marker IDs to generate for (default: all)
+                - imageIDs: list[str] - List of image IDs to generate for (appSchema >= 84)
+                - galleryIDs: list[str] - List of gallery IDs to generate for (appSchema >= 84)
+                - paths: list[str] - Paths to run generate on, in addition to the ID lists
                 - overwrite: bool - Overwrite existing media (default: False)
 
         Returns:
@@ -111,7 +114,9 @@ class MetadataClientMixin(StashClientProtocol):
 
         try:
             # Combine options and input data
-            variables = {"input": {**options_dict, **input_dict}}
+            combined = {**options_dict, **input_dict}
+
+            variables = {"input": combined}
 
             # Execute mutation with combined input
             result = await self.execute(fragments.METADATA_GENERATE_MUTATION, variables)

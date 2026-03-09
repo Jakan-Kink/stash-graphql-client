@@ -23,6 +23,7 @@ from stash_graphql_client import (
     Studio,
 )
 from stash_graphql_client.types.base import StashObject
+from tests.fixtures import dump_graphql_calls
 
 
 # =============================================================================
@@ -61,11 +62,14 @@ class TestNestedSingleObjectExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify scene was created
         assert scene is not None
@@ -102,11 +106,14 @@ class TestNestedSingleObjectExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Scene should exist with None studio
         assert scene is not None
@@ -150,15 +157,18 @@ class TestIdentityMapSingleObjects:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene1_data}),
                 httpx.Response(200, json={"data": scene2_data}),
             ]
         )
 
-        scene1 = await store.get(Scene, "s1")
-        scene2 = await store.get(Scene, "s2")
+        try:
+            scene1 = await store.get(Scene, "s1")
+            scene2 = await store.get(Scene, "s2")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Both scenes should exist
         assert scene1 is not None
@@ -201,15 +211,18 @@ class TestIdentityMapSingleObjects:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene1_data}),
                 httpx.Response(200, json={"data": scene2_data}),
             ]
         )
 
-        scene1 = await store.get(Scene, "s1")
-        scene2 = await store.get(Scene, "s2")
+        try:
+            scene1 = await store.get(Scene, "s1")
+            scene2 = await store.get(Scene, "s2")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Modify studio through scene1
         assert scene1.studio is not None
@@ -241,11 +254,15 @@ class TestIdentityMapSingleObjects:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
         assert scene.studio is not None
 
         # Fetch studio from cache (no GraphQL call needed)
@@ -288,11 +305,14 @@ class TestNestedListObjectExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify scene was created with performers
         assert scene is not None
@@ -329,11 +349,14 @@ class TestNestedListObjectExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Scene should exist with empty performers list
         assert scene is not None
@@ -382,15 +405,18 @@ class TestIdentityMapListObjects:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene1_data}),
                 httpx.Response(200, json={"data": scene2_data}),
             ]
         )
 
-        scene1 = await store.get(Scene, "s1")
-        scene2 = await store.get(Scene, "s2")
+        try:
+            scene1 = await store.get(Scene, "s1")
+            scene2 = await store.get(Scene, "s2")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Find Alice in both scenes
         alice_in_scene1 = next(p for p in scene1.performers if p.id == "p1")
@@ -436,15 +462,18 @@ class TestIdentityMapListObjects:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": scene1_data}),
                 httpx.Response(200, json={"data": scene2_data}),
             ]
         )
 
-        scene1 = await store.get(Scene, "s1")
-        scene2 = await store.get(Scene, "s2")
+        try:
+            scene1 = await store.get(Scene, "s1")
+            scene2 = await store.get(Scene, "s2")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Modify performer through scene1
         scene1.performers[0].name = "Modified Name"
@@ -479,11 +508,14 @@ class TestStoreContextInjection:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # The fact that studio is cached proves context was passed
         assert scene is not None
@@ -550,11 +582,14 @@ class TestDeeplyNestedExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Studio should be cached
         assert store.is_cached(Studio, "st1")
@@ -598,11 +633,14 @@ class TestReceivedFieldsWithNestedExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify _received_fields includes "studio"
         assert scene is not None
@@ -633,11 +671,14 @@ class TestReceivedFieldsWithNestedExtraction:
             }
         }
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
-        scene = await store.get(Scene, "s1")
+        try:
+            scene = await store.get(Scene, "s1")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Verify studio has _received_fields
         assert scene.studio is not None

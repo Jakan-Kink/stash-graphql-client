@@ -1,6 +1,7 @@
 """Test configuration and fixtures for StashClient tests."""
 
 import contextlib
+import json
 import warnings
 from collections.abc import AsyncGenerator, AsyncIterator
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -13,6 +14,7 @@ import respx
 from stash_graphql_client import StashClient, StashEntityStore
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.types.scene import Scene, SceneCreateInput
+from tests.fixtures.stash.graphql_responses import create_capability_response
 
 
 __all__ = [
@@ -24,6 +26,7 @@ __all__ = [
     "mock_entity_store",
     "stash_cleanup_tracker",
     "capture_graphql_calls",
+    "dump_graphql_calls",
     "mock_ws_transport",
     "mock_gql_ws_connect",
 ]
@@ -54,13 +57,30 @@ async def mock_gql_ws_connect():
     """Mock the GQL client's connect_async for websocket connections.
 
     This fixture patches the gql.Client.connect_async method to return
-    a mock session, preventing actual connection attempts.
+    a mock session with an async execute() that returns capability detection
+    data, preventing actual connection attempts.
 
     Yields:
         AsyncMock: The mocked connect_async method
     """
+    # Capability detection response for _raw_execute() during initialize().
+    # v0.30.0 = appSchema 75 (minimum supported).
+    _capability_response = {
+        "version": {"version": "v0.30.0-test"},
+        "systemStatus": {"appSchema": 75, "status": "OK"},
+        "__schema": {
+            "queryType": {"name": "Query", "fields": []},
+            "mutationType": {"name": "Mutation", "fields": []},
+            "subscriptionType": {"name": "Subscription", "fields": []},
+            "types": [],
+        },
+    }
+
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock(return_value=_capability_response)
+
     with patch("gql.Client.connect_async", new_callable=AsyncMock) as mock:
-        mock.return_value = MagicMock()
+        mock.return_value = mock_session
         yield mock
 
 
@@ -175,21 +195,41 @@ async def respx_stash_client(
         ```
     """
     with respx.mock:
-        # Default response for any unmatched GraphQL requests
-        respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {}})
-        )
+        # Default response for GraphQL requests — includes capability detection
+        # response so that StashClient.initialize() succeeds.
+        def _graphql_responder(request: httpx.Request) -> httpx.Response:
+            """Route GraphQL requests: return capability data for detection, empty otherwise."""
+            body = json.loads(request.content)
+            query = body.get("query", "")
+
+            # Capability detection query contains "systemStatus" + "__schema"
+            if "systemStatus" in query and "__schema" in query:
+                return httpx.Response(
+                    200,
+                    json=create_capability_response(
+                        type_names={"DuplicationCriterionInput"},
+                    ),
+                )
+
+            return httpx.Response(200, json={"data": {}})
+
+        respx.post("http://localhost:9999/graphql").mock(side_effect=_graphql_responder)
 
         # Initialize the client (will use mocked HTTP)
         client = await stash_context.get_client()
 
-        yield client
+        # Clear call history from capability detection so tests see a clean slate
+        for route in respx.routes:
+            route.calls.clear()
 
-        # Reset respx to prevent route pollution
-        respx.reset()
+        try:
+            yield client
+        finally:
+            # Reset respx to prevent route pollution
+            respx.reset()
 
-        # Close the client
-        await client.close()
+            # Close the client
+            await client.close()
 
 
 @pytest_asyncio.fixture
@@ -302,8 +342,8 @@ async def mock_entity_store(
                         setattr(obj, field_name, [])
                 # No metadata - check field annotation to determine type
                 # Get field info from model fields
-                elif hasattr(obj, "model_fields") and field_name in obj.model_fields:
-                    field_info = obj.model_fields[field_name]
+                elif field_name in type(obj).model_fields:
+                    field_info = type(obj).model_fields[field_name]
                     # Check if annotation contains list
                     annotation_str = str(field_info.annotation)
                     if "list[" in annotation_str.lower():
@@ -395,8 +435,11 @@ async def stash_cleanup_tracker():
                     return result
 
                 # Fast string check: only inspect if result contains "Create" mutations
+                # or the saveFilter upsert (which has no "Create" in its key)
                 result_keys = result.keys()
-                has_create = any("Create" in key for key in result_keys)
+                has_create = any(
+                    "Create" in key or key == "saveFilter" for key in result_keys
+                )
                 if not has_create:
                     return result
 
@@ -449,6 +492,12 @@ async def stash_cleanup_tracker():
                     and group_id not in created_objects["groups"]
                 ):
                     created_objects["groups"].append(group_id)
+                elif "saveFilter" in result and (
+                    (obj_data := result["saveFilter"])
+                    and (filter_id := obj_data.get("id"))
+                    and filter_id not in created_objects["saved_filters"]
+                ):
+                    created_objects["saved_filters"].append(filter_id)
 
                 return result
 
@@ -689,6 +738,59 @@ def enable_scene_creation():
     """
     with patch.object(Scene, "__create_input_type__", SceneCreateInput):
         yield
+
+
+def dump_graphql_calls(calls, label: str = "GraphQL calls") -> None:
+    """Print request/response details for each GraphQL call.
+
+    Works with both respx route.calls (unit tests) and capture_graphql_calls
+    dicts (integration tests). Use in try/finally blocks when debugging test
+    failures:
+
+        graphql_route = respx.post(...).mock(side_effect=[...])
+        try:
+            await some_function_under_test()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        # assertions go here after the try/finally
+
+    Args:
+        calls: respx route.calls, respx.calls list, or capture_graphql_calls list
+        label: Header label for the output
+    """
+    print(f"\n{'=' * 70}")
+    print(f"  {label} ({len(calls)} total)")
+    print(f"{'=' * 70}")
+    for i, call in enumerate(calls):
+        if isinstance(call, dict):
+            # capture_graphql_calls format: {"query", "variables", "result", "exception"}
+            query_str = call.get("query", "")
+            first_line = query_str.strip().split("\n")[0] if query_str else "<empty>"
+            variables = call.get("variables") or {}
+            data_keys = list(call["result"].keys()) if call.get("result") else []
+            print(f"\n  [{i}] {first_line}")
+            print(f"      variables: {json.dumps(variables, default=str)[:200]}")
+            print(f"      response data keys: {data_keys}")
+            if call.get("exception"):
+                print(f"      EXCEPTION: {call['exception']}")
+        else:
+            # respx call format: call.request / call.response
+            req_body = json.loads(call.request.content) if call.request.content else {}
+            query_str = req_body.get("query", "")
+            first_line = query_str.strip().split("\n")[0] if query_str else "<empty>"
+            variables = req_body.get("variables", {})
+            try:
+                resp_body = call.response.json() if call.response else {}
+            except (ValueError, AttributeError):
+                resp_body = {}
+            data_obj = resp_body.get("data") if resp_body else None
+            data_keys = list(data_obj.keys()) if data_obj else []
+            print(f"\n  [{i}] {first_line}")
+            print(f"      variables: {json.dumps(variables, default=str)[:200]}")
+            print(f"      response data keys: {data_keys}")
+            if resp_body.get("errors"):
+                print(f"      ERRORS: {resp_body['errors']}")
+    print(f"\n{'=' * 70}\n")
 
 
 @contextlib.asynccontextmanager

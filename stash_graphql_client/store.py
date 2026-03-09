@@ -11,11 +11,12 @@ import time
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, TypeVar
+from itertools import batched
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
-from . import fragments
 from .client.utils import sanitize_model_data
 from .errors import StashError, StashIntegrationError
+from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import StashObject
 
@@ -144,6 +145,36 @@ class StashEntityStore:
         # Thread-safety lock (reentrant to allow nested calls)
         self._lock = threading.RLock()
 
+    # ─── Cache-only lookup (sync) ─────────────────────────────
+
+    def get_cached(self, entity_type: type[T], entity_id: str) -> T | None:
+        """Get entity from cache only. No network call (thread-safe).
+
+        Returns the cached entity if present and not expired, None otherwise.
+        This is the sync counterpart to :meth:`get`, following the Django
+        dual sync/async pattern.
+
+        Args:
+            entity_type: The Stash entity type (e.g., Performer, Scene)
+            entity_id: Entity ID
+
+        Returns:
+            Cached entity if found and not expired, None otherwise
+        """
+        type_name = entity_type.__type_name__
+        cache_key = (type_name, entity_id)
+
+        with self._lock:
+            if cache_key in self._cache:
+                entry = self._cache[cache_key]
+                if not entry.is_expired():
+                    log.debug(f"Cache hit: {type_name} {entity_id}")
+                    return entry.entity  # type: ignore[return-value]
+                log.debug(f"Cache expired: {type_name} {entity_id}")
+                del self._cache[cache_key]
+
+        return None
+
     # ─── Read-through by ID ───────────────────────────────────
 
     async def get(
@@ -161,7 +192,6 @@ class StashEntityStore:
             Entity if found, None otherwise
         """
         type_name = entity_type.__type_name__
-        cache_key = (type_name, entity_id)
 
         # If specific fields requested, bypass cache and fetch directly
         if fields is not None:
@@ -171,21 +201,10 @@ class StashEntityStore:
                 self._cache_entity(entity)  # _cache_entity is thread-safe
             return entity
 
-        # Check cache (lock → check → unlock)
-        cache_hit = False
-        with self._lock:
-            if cache_key in self._cache:
-                entry = self._cache[cache_key]
-                if not entry.is_expired():
-                    log.debug(f"Cache hit: {type_name} {entity_id}")
-                    cached_entity = entry.entity
-                    cache_hit = True
-                else:
-                    log.debug(f"Cache expired: {type_name} {entity_id}")
-                    del self._cache[cache_key]
-
-        if cache_hit:
-            return cached_entity  # type: ignore[return-value]
+        # Check cache first (sync, no network)
+        cached = self.get_cached(entity_type, entity_id)
+        if cached is not None:
+            return cached
 
         # Cache miss - fetch from GraphQL (no lock during await!)
         log.debug(f"Cache miss: {type_name} {entity_id}")
@@ -578,8 +597,7 @@ class StashEntityStore:
             # Populate in batches to avoid overwhelming the server
             import asyncio
 
-            for i in range(0, len(to_populate), batch_size):
-                batch = to_populate[i : i + batch_size]
+            for batch in batched(to_populate, batch_size):
                 # Populate concurrently within batch
                 await asyncio.gather(
                     *[
@@ -702,8 +720,7 @@ class StashEntityStore:
 
             import asyncio
 
-            for i in range(0, len(to_populate), batch_size):
-                batch = to_populate[i : i + batch_size]
+            for batch in batched(to_populate, batch_size):
                 await asyncio.gather(
                     *[
                         self.populate(entity, fields=list(fields_set))
@@ -828,8 +845,7 @@ class StashEntityStore:
 
             # Populate if needed (in sub-batches for memory efficiency)
             if to_populate:
-                for j in range(0, len(to_populate), populate_batch):
-                    sub_batch = to_populate[j : j + populate_batch]
+                for sub_batch in batched(to_populate, populate_batch):
                     await asyncio.gather(
                         *[
                             self.populate(entity, fields=list(fields_set))
@@ -1297,6 +1313,12 @@ class StashEntityStore:
         # Restore received fields after nested processing (setattr might have changed them)
         obj._received_fields = final_received
 
+        # Selectively update snapshot for fields that were fetched from the server.
+        # This prevents phantom dirty state from populate() while preserving
+        # dirty state on fields the user modified independently.
+        if fields_to_fetch:
+            obj._update_snapshot_for_fields(set(fields_to_fetch))
+
         return obj
 
     async def _populate_single(
@@ -1408,22 +1430,45 @@ class StashEntityStore:
 
     # ─── Cache control ────────────────────────────────────────
 
-    def invalidate(self, entity_type: type[T], entity_id: str) -> None:
+    @overload
+    def invalidate(self, entity_type_or_obj: type[T], entity_id: str) -> None: ...
+
+    @overload
+    def invalidate(self, entity_type_or_obj: StashObject) -> None: ...
+
+    def invalidate(
+        self,
+        entity_type_or_obj: type[T] | StashObject,
+        entity_id: str | None = None,
+    ) -> None:
         """Remove specific object from cache (thread-safe).
 
+        Can be called with either a type + ID pair, or a StashObject instance directly.
+
         Args:
-            entity_type: The Stash entity type
-            entity_id: Entity ID to invalidate
+            entity_type_or_obj: The Stash entity type, or a StashObject instance
+            entity_id: Entity ID to invalidate (required when passing a type)
+
+        Examples:
+            >>> store.invalidate(Scene, "123")
+            >>> store.invalidate(scene)  # extracts type and id from instance
         """
-        type_name = entity_type.__type_name__
-        cache_key = (type_name, entity_id)
+        if isinstance(entity_type_or_obj, StashObject):
+            entity = entity_type_or_obj
+            type_name = entity.__type_name__
+            eid = entity.id
+        else:
+            type_name = entity_type_or_obj.__type_name__
+            eid = entity_id  # type: ignore[assignment]
+
+        cache_key = (type_name, eid)
         with self._lock:
             if cache_key in self._cache:
                 del self._cache[cache_key]
                 type_ids = self._type_index.get(type_name)
                 if type_ids is not None:
-                    type_ids.discard(entity_id)
-                log.debug(f"Invalidated: {type_name} {entity_id}")
+                    type_ids.discard(eid)
+                log.debug(f"Invalidated: {type_name} {eid}")
 
     def invalidate_type(self, entity_type: type[T]) -> None:
         """Remove all objects of a type from cache (thread-safe).
@@ -1663,6 +1708,34 @@ class StashEntityStore:
             return True
         except ValueError:
             return False
+
+    # ─── Delete ────────────────────────────────────────────────
+
+    async def delete(self, obj: StashObject, **kwargs: Any) -> bool:
+        """Delete object from Stash and remove from cache.
+
+        Delegates to ``obj.delete(client)`` then invalidates the cache entry.
+
+        Args:
+            obj: Entity to delete
+            **kwargs: Additional destroy input fields (e.g., delete_file=True)
+
+        Returns:
+            True if successfully deleted
+
+        Raises:
+            NotImplementedError: If the entity type doesn't support delete
+            ValueError: If the entity has no server ID or delete fails
+
+        Examples:
+            >>> await store.delete(scene)
+            >>> await store.delete(scene, delete_file=True)
+        """
+        result = await obj.delete(self._client, **kwargs)
+        # obj.delete() already calls self.invalidate(obj) if _store is set,
+        # but invalidate is idempotent so this is safe as a belt-and-suspenders
+        self.invalidate(obj)
+        return result
 
     # ─── Get-or-Create ────────────────────────────────────────
 
@@ -2105,32 +2178,32 @@ class StashEntityStore:
         # Map type names to their query info
         query_map: dict[str, tuple[str, str, str]] = {
             "Scene": (
-                fragments.FIND_SCENES_QUERY,
+                fragment_store.FIND_SCENES_QUERY,
                 "findScenes",
                 "scene_filter",
             ),
             "Performer": (
-                fragments.FIND_PERFORMERS_QUERY,
+                fragment_store.FIND_PERFORMERS_QUERY,
                 "findPerformers",
                 "performer_filter",
             ),
             "Studio": (
-                fragments.FIND_STUDIOS_QUERY,
+                fragment_store.FIND_STUDIOS_QUERY,
                 "findStudios",
                 "studio_filter",
             ),
             "Tag": (
-                fragments.FIND_TAGS_QUERY,
+                fragment_store.FIND_TAGS_QUERY,
                 "findTags",
                 "tag_filter",
             ),
             "Gallery": (
-                fragments.FIND_GALLERIES_QUERY,
+                fragment_store.FIND_GALLERIES_QUERY,
                 "findGalleries",
                 "gallery_filter",
             ),
             "Image": (
-                fragments.FIND_IMAGES_QUERY,
+                fragment_store.FIND_IMAGES_QUERY,
                 "findImages",
                 "image_filter",
             ),

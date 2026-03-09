@@ -3,6 +3,14 @@
 These fragments match the ones defined in schema/fragments.graphql.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from .capabilities import ServerCapabilities
+
 # Configuration fragments
 SCAN_METADATA_OPTIONS = """
     rescan
@@ -292,7 +300,7 @@ GALLERY_FILE_FIELDS = """fragment GalleryFileFields on GalleryFile {
 }"""
 
 # Scene fragments
-SCENE_FIELDS = """
+_BASE_SCENE_FIELDS = """
     __typename
     id
     created_at
@@ -335,9 +343,10 @@ SCENE_FIELDS = """
         label
     }
 """
+SCENE_FIELDS = _BASE_SCENE_FIELDS
 
 # Performer fragments
-PERFORMER_FIELDS = """
+_BASE_PERFORMER_FIELDS = """
     __typename
     id
     created_at
@@ -377,10 +386,15 @@ PERFORMER_FIELDS = """
         __typename
         id
     }
+    custom_fields
 """
+# NOTE: custom_fields is a base field (no capability gate needed).
+# It was added in Stash migration 71 — below the library's MIN_SUPPORTED_APP_SCHEMA of 75,
+# so it is present on every server this library supports.
+PERFORMER_FIELDS = _BASE_PERFORMER_FIELDS
 
 # Studio fragments
-STUDIO_FIELDS = """
+_BASE_STUDIO_FIELDS = """
     __typename
     id
     created_at
@@ -390,6 +404,13 @@ STUDIO_FIELDS = """
     image_path
     aliases
     details
+    rating100
+    favorite
+    stash_ids {
+        __typename
+        endpoint
+        stash_id
+    }
     tags {
         __typename
         id
@@ -399,9 +420,10 @@ STUDIO_FIELDS = """
         id
     }
 """
+STUDIO_FIELDS = _BASE_STUDIO_FIELDS
 
 # Tag fragments
-TAG_FIELDS = """
+_BASE_TAG_FIELDS = """
     __typename
     id
     created_at
@@ -424,6 +446,7 @@ TAG_FIELDS = """
         id
     }
 """
+TAG_FIELDS = _BASE_TAG_FIELDS
 
 # Scene query templates
 SCENE_QUERY_FRAGMENTS = f"""
@@ -641,7 +664,7 @@ mutation UpdateTag($input: TagUpdateInput!) {{
 """
 
 # Gallery fragments
-GALLERY_FIELDS = """
+_BASE_GALLERY_FIELDS = """
     __typename
     id
     created_at
@@ -675,6 +698,7 @@ GALLERY_FIELDS = """
         ...GalleryFileFields
     }
 """
+GALLERY_FIELDS = _BASE_GALLERY_FIELDS
 
 # Gallery query templates
 GALLERY_QUERY_FRAGMENTS = f"""
@@ -800,7 +824,7 @@ mutation AddGalleryImages($input: GalleryAddInput!) {
 # Image fragments
 # NOTE: visual_files is a union type (VisualFile = VideoFile | ImageFile)
 # GIF images are returned as VideoFile since they contain animation/video data
-IMAGE_FIELDS = """
+_BASE_IMAGE_FIELDS = """
     __typename
     id
     created_at
@@ -839,6 +863,7 @@ IMAGE_FIELDS = """
         }
     }
 """
+IMAGE_FIELDS = _BASE_IMAGE_FIELDS
 
 # Image query templates
 # NOTE: Must include VIDEO_FILE_FIELDS because visual_files can contain VideoFile (for GIFs)
@@ -1415,16 +1440,25 @@ mutation BulkSceneMarkerUpdate($input: BulkSceneMarkerUpdateInput!) {{
 """
 
 # Folder fragments and queries
-FOLDER_FIELDS = """fragment FolderFields on Folder {
+_BASE_FOLDER_FIELDS = """fragment FolderFields on Folder {
     __typename
     id
     path
-    parent_folder_id
-    zip_file_id
+    parent_folder {
+        __typename
+        id
+        path
+    }
+    zip_file {
+        __typename
+        id
+        path
+    }
     mod_time
     created_at
     updated_at
 }"""
+FOLDER_FIELDS = _BASE_FOLDER_FIELDS
 
 FIND_FOLDER_QUERY = f"""
 {FOLDER_FIELDS}
@@ -1448,7 +1482,7 @@ query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $id
 """
 
 # Group fragments
-GROUP_FIELDS = """fragment GroupFields on Group {
+_BASE_GROUP_FIELDS = """fragment GroupFields on Group {
     __typename
     id
     created_at
@@ -1492,6 +1526,7 @@ GROUP_FIELDS = """fragment GroupFields on Group {
         description
     }
 }"""
+GROUP_FIELDS = _BASE_GROUP_FIELDS
 
 FIND_GROUP_QUERY = f"""
 {GROUP_FIELDS}
@@ -1853,6 +1888,30 @@ mutation StashBoxBatchStudioTag($input: StashBoxBatchTagInput!) {
 }
 """
 
+STASHBOX_BATCH_TAG_TAG_MUTATION = """
+mutation StashBoxBatchTagTag($input: StashBoxBatchTagInput!) {
+    stashBoxBatchTagTag(input: $input)
+}
+"""
+
+DESTROY_FILES_MUTATION = """
+mutation DestroyFiles($ids: [ID!]!) {
+    destroyFiles(ids: $ids)
+}
+"""
+
+REVEAL_FILE_IN_FILE_MANAGER_MUTATION = """
+mutation RevealFileInFileManager($id: ID!) {
+    revealFileInFileManager(id: $id)
+}
+"""
+
+REVEAL_FOLDER_IN_FILE_MANAGER_MUTATION = """
+mutation RevealFolderInFileManager($id: ID!) {
+    revealFolderInFileManager(id: $id)
+}
+"""
+
 # =============================================================================
 # DLNA Operations
 # =============================================================================
@@ -1956,3 +2015,655 @@ mutation ExecSQL($sql: String!, $args: [Any]) {
     }
 }
 """
+
+
+# =============================================================================
+# FragmentStore — capability-aware fragment and query builder
+# =============================================================================
+
+
+def _inject_named_fragment_fields(base: str, extra_fields: str) -> str:
+    """Insert extra fields into a named GraphQL fragment before the closing brace.
+
+    Named fragments have the form ``fragment Xxx on Yyy { ... }``.
+    This helper finds the *last* ``}`` and inserts the extra fields before it.
+    """
+    idx = base.rfind("}")
+    if idx == -1:
+        return base + extra_fields
+    return base[:idx] + extra_fields + "\n" + base[idx:]
+
+
+class FragmentStore:
+    """Capability-aware store for GraphQL field fragments and query strings.
+
+    On construction (or when ``rebuild()`` is called) the store assembles the
+    correct field-strings for the connected Stash server and rebuilds every
+    query / mutation that embeds those fields.
+
+    Attributes set on the instance mirror the module-level constants but may
+    contain additional fields gated behind ``ServerCapabilities`` checks.
+    """
+
+    def __init__(self) -> None:
+        self._capabilities: ServerCapabilities | None = None
+        self._build_base()
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def rebuild(self, capabilities: ServerCapabilities) -> None:
+        """Rebuild all fields and queries for the given server capabilities."""
+        self._capabilities = capabilities
+        self._build_fields()
+        self._build_queries()
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _build_base(self) -> None:
+        """Initialise with the base (minimum-version) field strings."""
+        self.SCENE_FIELDS = _BASE_SCENE_FIELDS
+        self.PERFORMER_FIELDS = _BASE_PERFORMER_FIELDS
+        self.STUDIO_FIELDS = _BASE_STUDIO_FIELDS
+        self.TAG_FIELDS = _BASE_TAG_FIELDS
+        self.GALLERY_FIELDS = _BASE_GALLERY_FIELDS
+        self.IMAGE_FIELDS = _BASE_IMAGE_FIELDS
+        self.GROUP_FIELDS = _BASE_GROUP_FIELDS
+        self.FOLDER_FIELDS = _BASE_FOLDER_FIELDS
+        self._build_queries()
+
+    def _build_fields(self) -> None:
+        """Build capability-aware field strings from base constants."""
+        caps = self._capabilities
+        if caps is None:
+            self._build_base()
+            return
+
+        # -- Scene --
+        scene = _BASE_SCENE_FIELDS
+        if caps.has_scene_custom_fields:
+            scene += "    custom_fields\n"
+        self.SCENE_FIELDS = scene
+
+        # -- Performer --
+        performer = _BASE_PERFORMER_FIELDS
+        if caps.has_performer_career_start_end:
+            performer += "    career_start\n    career_end\n"
+        self.PERFORMER_FIELDS = performer
+
+        # -- Studio --
+        studio = _BASE_STUDIO_FIELDS
+        extras = ""
+        if caps.has_studio_custom_fields:
+            extras += "    custom_fields\n"
+        if caps.has_studio_organized:
+            extras += "    organized\n"
+        self.STUDIO_FIELDS = studio + extras
+
+        # -- Tag --
+        tag = _BASE_TAG_FIELDS
+        if caps.has_tag_custom_fields:
+            tag += "    custom_fields\n"
+        self.TAG_FIELDS = tag
+
+        # -- Gallery --
+        gallery = _BASE_GALLERY_FIELDS
+        if caps.has_gallery_custom_fields:
+            gallery += "    custom_fields\n"
+        self.GALLERY_FIELDS = gallery
+
+        # -- Image --
+        image = _BASE_IMAGE_FIELDS
+        if caps.has_image_custom_fields:
+            image += "    custom_fields\n"
+        self.IMAGE_FIELDS = image
+
+        # -- Group (named fragment — inject before closing brace) --
+        group = _BASE_GROUP_FIELDS
+        if caps.has_group_custom_fields:
+            group = _inject_named_fragment_fields(group, "    custom_fields")
+        self.GROUP_FIELDS = group
+
+        # -- Folder (named fragment — inject before closing brace) --
+        folder = _BASE_FOLDER_FIELDS
+        if caps.has_folder_basename:
+            folder = _inject_named_fragment_fields(folder, "    basename")
+            folder = _inject_named_fragment_fields(
+                folder,
+                "    parent_folders {\n        __typename\n        id\n        path\n    }",
+            )
+        self.FOLDER_FIELDS = folder
+
+    def _build_queries(self) -> None:
+        """Rebuild all query strings from the current field strings.
+
+        This mirrors the module-level f-string constants but uses
+        ``self.<FIELD>`` so the queries pick up capability-gated fields.
+        """
+        # ---- Scene queries ----
+        self.SCENE_QUERY_FRAGMENTS = f"""
+{FILE_FIELDS}
+{VIDEO_FILE_FIELDS}
+fragment SceneFragment on Scene {{
+    {self.SCENE_FIELDS}
+}}
+"""
+
+        self.FIND_SCENE_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query FindScene($id: ID!) {{
+    findScene(id: $id) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.FIND_SCENES_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query FindScenes($filter: FindFilterType, $scene_filter: SceneFilterType) {{
+    findScenes(filter: $filter, scene_filter: $scene_filter) {{
+        count
+        duration
+        filesize
+        scenes {{
+            ...SceneFragment
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_SCENE_MUTATION = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+mutation CreateScene($input: SceneCreateInput!) {{
+    sceneCreate(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.UPDATE_SCENE_MUTATION = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+mutation UpdateScene($input: SceneUpdateInput!) {{
+    sceneUpdate(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.FIND_DUPLICATE_SCENES_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query FindDuplicateScenes($distance: Int, $duration_diff: Float) {{
+    findDuplicateScenes(distance: $distance, duration_diff: $duration_diff) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.SCENE_WALL_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query SceneWall($q: String) {{
+    sceneWall(q: $q) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.BULK_SCENE_UPDATE_MUTATION = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+mutation BulkSceneUpdate($input: BulkSceneUpdateInput!) {{
+    bulkSceneUpdate(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.SCENES_UPDATE_MUTATION = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+mutation ScenesUpdate($input: [SceneUpdateInput!]!) {{
+    scenesUpdate(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.SCENE_MERGE_MUTATION = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+mutation SceneMerge($input: SceneMergeInput!) {{
+    sceneMerge(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.FIND_SCENE_BY_HASH_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query FindSceneByHash($input: SceneHashInput!) {{
+    findSceneByHash(input: $input) {{
+        ...SceneFragment
+    }}
+}}
+"""
+
+        self.FIND_SCENES_BY_PATH_REGEX_QUERY = f"""
+{self.SCENE_QUERY_FRAGMENTS}
+query FindScenesByPathRegex($filter: FindFilterType) {{
+    findScenesByPathRegex(filter: $filter) {{
+        count
+        duration
+        filesize
+        scenes {{
+            ...SceneFragment
+        }}
+    }}
+}}
+"""
+
+        # ---- Performer queries ----
+        self.FIND_PERFORMER_QUERY = f"""
+query FindPerformer($id: ID!) {{
+    findPerformer(id: $id) {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        self.FIND_PERFORMERS_QUERY = f"""
+query FindPerformers($filter: FindFilterType, $performer_filter: PerformerFilterType) {{
+    findPerformers(filter: $filter, performer_filter: $performer_filter) {{
+        count
+        performers {{
+            {self.PERFORMER_FIELDS}
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_PERFORMER_MUTATION = f"""
+mutation CreatePerformer($input: PerformerCreateInput!) {{
+    performerCreate(input: $input) {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        self.UPDATE_PERFORMER_MUTATION = f"""
+mutation UpdatePerformer($input: PerformerUpdateInput!) {{
+    performerUpdate(input: $input) {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        self.BULK_PERFORMER_UPDATE_MUTATION = f"""
+mutation BulkPerformerUpdate($input: BulkPerformerUpdateInput!) {{
+    bulkPerformerUpdate(input: $input) {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        self.PERFORMER_MERGE_MUTATION = f"""
+mutation PerformerMerge($input: PerformerMergeInput!) {{
+    performerMerge(input: $input) {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        self.ALL_PERFORMERS_QUERY = f"""
+query AllPerformers {{
+    allPerformers {{
+        {self.PERFORMER_FIELDS}
+    }}
+}}
+"""
+
+        # ---- Studio queries ----
+        self.FIND_STUDIO_QUERY = f"""
+query FindStudio($id: ID!) {{
+    findStudio(id: $id) {{
+        {self.STUDIO_FIELDS}
+    }}
+}}
+"""
+
+        self.FIND_STUDIOS_QUERY = f"""
+query FindStudios($filter: FindFilterType, $studio_filter: StudioFilterType) {{
+    findStudios(filter: $filter, studio_filter: $studio_filter) {{
+        count
+        studios {{
+            {self.STUDIO_FIELDS}
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_STUDIO_MUTATION = f"""
+mutation CreateStudio($input: StudioCreateInput!) {{
+    studioCreate(input: $input) {{
+        {self.STUDIO_FIELDS}
+    }}
+}}
+"""
+
+        self.UPDATE_STUDIO_MUTATION = f"""
+mutation UpdateStudio($input: StudioUpdateInput!) {{
+    studioUpdate(input: $input) {{
+        {self.STUDIO_FIELDS}
+    }}
+}}
+"""
+
+        self.BULK_STUDIO_UPDATE_MUTATION = f"""
+mutation BulkStudioUpdate($input: BulkStudioUpdateInput!) {{
+    bulkStudioUpdate(input: $input) {{
+        {self.STUDIO_FIELDS}
+    }}
+}}
+"""
+
+        # ---- Tag queries ----
+        self.FIND_TAG_QUERY = f"""
+query FindTag($id: ID!) {{
+    findTag(id: $id) {{
+        {self.TAG_FIELDS}
+    }}
+}}
+"""
+
+        self.FIND_TAGS_QUERY = f"""
+query FindTags($filter: FindFilterType, $tag_filter: TagFilterType) {{
+    findTags(filter: $filter, tag_filter: $tag_filter) {{
+        count
+        tags {{
+            {self.TAG_FIELDS}
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_TAG_MUTATION = f"""
+mutation CreateTag($input: TagCreateInput!) {{
+    tagCreate(input: $input) {{
+        {self.TAG_FIELDS}
+    }}
+}}
+"""
+
+        self.UPDATE_TAG_MUTATION = f"""
+mutation UpdateTag($input: TagUpdateInput!) {{
+    tagUpdate(input: $input) {{
+        {self.TAG_FIELDS}
+    }}
+}}
+"""
+
+        self.TAGS_MERGE_MUTATION = f"""
+mutation TagsMerge($input: TagsMergeInput!) {{
+    tagsMerge(input: $input) {{
+        {self.TAG_FIELDS}
+    }}
+}}
+"""
+
+        self.BULK_TAG_UPDATE_MUTATION = f"""
+mutation BulkTagUpdate($input: BulkTagUpdateInput!) {{
+    bulkTagUpdate(input: $input) {{
+        {self.TAG_FIELDS}
+    }}
+}}
+"""
+
+        self.SCENE_MARKER_TAG_QUERY = f"""
+query FindSceneMarkerTags($scene_id: ID!) {{
+    sceneMarkerTags(scene_id: $scene_id) {{
+        tag {{
+            {self.TAG_FIELDS}
+        }}
+        scene_markers {{
+            {MARKER_FIELDS}
+        }}
+    }}
+}}
+"""
+
+        # ---- Gallery queries ----
+        self.GALLERY_QUERY_FRAGMENTS = f"""
+{FILE_FIELDS}
+{GALLERY_FILE_FIELDS}
+fragment GalleryFragment on Gallery {{
+    {self.GALLERY_FIELDS}
+}}
+"""
+
+        self.FIND_GALLERY_QUERY = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+query FindGallery($id: ID!) {{
+    findGallery(id: $id) {{
+        ...GalleryFragment
+    }}
+}}
+"""
+
+        self.FIND_GALLERIES_QUERY = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+query FindGalleries($filter: FindFilterType, $gallery_filter: GalleryFilterType) {{
+    findGalleries(filter: $filter, gallery_filter: $gallery_filter) {{
+        count
+        galleries {{
+            ...GalleryFragment
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_GALLERY_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation CreateGallery($input: GalleryCreateInput!) {{
+    galleryCreate(input: $input) {{
+        ...GalleryFragment
+    }}
+}}
+"""
+
+        self.UPDATE_GALLERY_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation UpdateGallery($input: GalleryUpdateInput!) {{
+    galleryUpdate(input: $input) {{
+        ...GalleryFragment
+    }}
+}}
+"""
+
+        self.GALLERIES_UPDATE_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation GalleriesUpdate($input: [GalleryUpdateInput!]!) {{
+    galleriesUpdate(input: $input) {{
+        ...GalleryFragment
+    }}
+}}
+"""
+
+        self.GALLERY_CHAPTER_CREATE_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation GalleryChapterCreate($input: GalleryChapterCreateInput!) {{
+    galleryChapterCreate(input: $input) {{
+        id
+        title
+        image_index
+        gallery {{
+            ...GalleryFragment
+        }}
+    }}
+}}
+"""
+
+        self.GALLERY_CHAPTER_UPDATE_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation GalleryChapterUpdate($input: GalleryChapterUpdateInput!) {{
+    galleryChapterUpdate(input: $input) {{
+        id
+        title
+        image_index
+        gallery {{
+            ...GalleryFragment
+        }}
+    }}
+}}
+"""
+
+        self.BULK_GALLERY_UPDATE_MUTATION = f"""
+{self.GALLERY_QUERY_FRAGMENTS}
+mutation BulkGalleryUpdate($input: BulkGalleryUpdateInput!) {{
+    bulkGalleryUpdate(input: $input) {{
+        ...GalleryFragment
+    }}
+}}
+"""
+
+        # ---- Image queries ----
+        self.IMAGE_QUERY_FRAGMENTS = f"""
+{FILE_FIELDS}
+{IMAGE_FILE_FIELDS}
+{VIDEO_FILE_FIELDS}
+fragment ImageFragment on Image {{
+    {self.IMAGE_FIELDS}
+}}
+"""
+
+        self.FIND_IMAGE_QUERY = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+query FindImage($id: ID!) {{
+    findImage(id: $id) {{
+        ...ImageFragment
+    }}
+}}
+"""
+
+        self.FIND_IMAGES_QUERY = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+query FindImages($filter: FindFilterType, $image_filter: ImageFilterType) {{
+    findImages(filter: $filter, image_filter: $image_filter) {{
+        count
+        megapixels
+        filesize
+        images {{
+            ...ImageFragment
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_IMAGE_MUTATION = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+mutation CreateImage($input: ImageCreateInput!) {{
+    imageCreate(input: $input) {{
+        ...ImageFragment
+    }}
+}}
+"""
+
+        self.UPDATE_IMAGE_MUTATION = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+mutation UpdateImage($input: ImageUpdateInput!) {{
+    imageUpdate(input: $input) {{
+        ...ImageFragment
+    }}
+}}
+"""
+
+        self.BULK_IMAGE_UPDATE_MUTATION = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+mutation BulkImageUpdate($input: BulkImageUpdateInput!) {{
+    bulkImageUpdate(input: $input) {{
+        ...ImageFragment
+    }}
+}}
+"""
+
+        self.IMAGES_UPDATE_MUTATION = f"""
+{self.IMAGE_QUERY_FRAGMENTS}
+mutation ImagesUpdate($input: [ImageUpdateInput!]!) {{
+    imagesUpdate(input: $input) {{
+        ...ImageFragment
+    }}
+}}
+"""
+
+        # ---- Group queries ----
+        self.FIND_GROUP_QUERY = f"""
+{self.GROUP_FIELDS}
+query FindGroup($id: ID!) {{
+    findGroup(id: $id) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+        self.FIND_GROUPS_QUERY = f"""
+{self.GROUP_FIELDS}
+query FindGroups($filter: FindFilterType, $group_filter: GroupFilterType, $ids: [ID!]) {{
+    findGroups(filter: $filter, group_filter: $group_filter, ids: $ids) {{
+        count
+        groups {{
+            ...GroupFields
+        }}
+    }}
+}}
+"""
+
+        self.CREATE_GROUP_MUTATION = f"""
+{self.GROUP_FIELDS}
+mutation CreateGroup($input: GroupCreateInput!) {{
+    groupCreate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+        self.UPDATE_GROUP_MUTATION = f"""
+{self.GROUP_FIELDS}
+mutation UpdateGroup($input: GroupUpdateInput!) {{
+    groupUpdate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+        self.BULK_GROUP_UPDATE_MUTATION = f"""
+{self.GROUP_FIELDS}
+mutation BulkGroupUpdate($input: BulkGroupUpdateInput!) {{
+    bulkGroupUpdate(input: $input) {{
+        ...GroupFields
+    }}
+}}
+"""
+
+        # ---- Folder queries ----
+        self.FIND_FOLDER_QUERY = f"""
+{self.FOLDER_FIELDS}
+query FindFolder($id: ID, $path: String) {{
+    findFolder(id: $id, path: $path) {{
+        ...FolderFields
+    }}
+}}
+"""
+
+        self.FIND_FOLDERS_QUERY = f"""
+{self.FOLDER_FIELDS}
+query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $ids: [ID!]) {{
+    findFolders(folder_filter: $folder_filter, filter: $filter, ids: $ids) {{
+        count
+        folders {{
+            ...FolderFields
+        }}
+    }}
+}}
+"""
+
+
+# Module-level singleton — used by all client mixins
+fragment_store = FragmentStore()

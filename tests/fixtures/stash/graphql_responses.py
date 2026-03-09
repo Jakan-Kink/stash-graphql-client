@@ -38,6 +38,8 @@ Usage:
 
 from typing import Any
 
+from stash_graphql_client.capabilities import ServerCapabilities
+
 
 def create_graphql_response(operation: str, data: Any = None) -> dict[str, Any]:
     """Create a GraphQL response envelope.
@@ -420,7 +422,6 @@ def create_gallery_dict(
     performers: list[dict] | None = None,
     tags: list[dict] | None = None,
     scenes: list[dict] | None = None,
-    images: list[dict] | None = None,
     **kwargs,
 ) -> dict[str, Any]:
     """Create a Gallery dict matching the Gallery type schema.
@@ -434,7 +435,6 @@ def create_gallery_dict(
         performers: List of performer dicts
         tags: List of tag dicts
         scenes: List of scene dicts
-        images: List of image dicts
         **kwargs: Additional gallery fields
 
     Returns:
@@ -450,7 +450,6 @@ def create_gallery_dict(
         "performers": performers or [],
         "tags": tags or [],
         "scenes": scenes or [],
-        "images": images or [],
         "files": [],
         "organized": False,
     }
@@ -1055,7 +1054,205 @@ def create_group_description_dict(
     }
 
 
+# Registry of type names that tests may need to include in __schema responses.
+# Keyed by the semantic name used in test kwargs.
+_TYPE_EXISTENCE_REGISTRY: dict[str, str] = {
+    "DuplicationCriterionInput": "DuplicationCriterionInput",
+    "PerformerMergeInput": "PerformerMergeInput",
+}
+
+# Registry of input types -> their known fields.  Used by
+# create_capability_response() to populate __schema.types[].inputFields.
+_INPUT_FIELD_REGISTRY: dict[str, list[str]] = {
+    "GenerateMetadataInput": [
+        "covers",
+        "sprites",
+        "previews",
+        "imagePreviews",
+        "previewOptions",
+        "markers",
+        "markerImagePreviews",
+        "markerScreenshots",
+        "transcodes",
+        "forceTranscodes",
+        "phashes",
+        "interactiveHeatmapsSpeeds",
+        "imageThumbnails",
+        "clipPreviews",
+        "sceneIDs",
+        "markerIDs",
+        "overwrite",
+        # Fields gated behind newer schema versions:
+        "paths",
+        "imageIDs",
+        "galleryIDs",
+        "imagePhashes",
+    ],
+}
+
+# Registry mapping mutation names tracked by tests.
+_MUTATION_REGISTRY: dict[str, str] = {
+    "has_bulk_scene_marker_update": "bulkSceneMarkerUpdate",
+    "has_bulk_studio_update": "bulkStudioUpdate",
+    "has_destroy_files": "destroyFiles",
+    "has_reveal_file_in_file_manager": "revealFileInFileManager",
+    "has_reveal_folder_in_file_manager": "revealFolderInFileManager",
+    "has_stashbox_batch_tag_tag": "stashBoxBatchTagTag",
+    "has_stashbox_batch_performer_tag": "stashBoxBatchPerformerTag",
+    "has_stashbox_batch_studio_tag": "stashBoxBatchStudioTag",
+}
+
+# Registry mapping query names tracked by tests.
+_QUERY_REGISTRY: dict[str, str] = {
+    "has_scrape_single_tag": "scrapeSingleTag",
+}
+
+# Registry mapping subscription names tracked by tests.
+_SUBSCRIPTION_REGISTRY: dict[str, str] = {
+    "has_jobs_subscribe": "jobsSubscribe",
+    "has_logging_subscribe": "loggingSubscribe",
+    "has_scan_complete_subscribe": "scanCompleteSubscribe",
+}
+
+
+def create_capability_response(
+    app_schema: int = 75,
+    version: str = "v0.30.0-test",
+    status: str = "OK",
+    type_names: set[str] | None = None,
+    mutation_names: set[str] | None = None,
+    query_names: set[str] | None = None,
+    subscription_names: set[str] | None = None,
+    input_fields: dict[str, list[str]] | None = None,
+) -> dict[str, Any]:
+    """Create a capability detection GraphQL response for respx mocking.
+
+    This returns the full ``{"data": {...}}`` envelope matching the response
+    from ``CAPABILITY_DETECTION_QUERY`` (which uses ``__schema`` introspection).
+
+    Args:
+        app_schema: The server's appSchema version (75 = v0.30.0 minimum).
+        version: Server version string (e.g. "v0.30.0", "v0.30.1-98-gc874bd56").
+        status: System status string (typically "OK").
+        type_names: Set of type names to include in __schema.types.
+        mutation_names: Set of mutation field names.
+        query_names: Set of query field names.
+        subscription_names: Set of subscription field names.
+        input_fields: Mapping of INPUT_OBJECT type name -> list of inputField names.
+            These types are automatically added to type_names.
+
+    Returns:
+        Complete GraphQL response dict with capability detection data.
+    """
+    _type_names = set(type_names or set())
+    _mutation_names = set(mutation_names or set())
+    _query_names = set(query_names or set())
+    _subscription_names = set(subscription_names or set())
+    _input_fields = dict(input_fields or {})
+
+    # Build __schema.types array
+    types_list: list[dict[str, Any]] = []
+
+    # Add input types with their fields
+    for input_type, fields in _input_fields.items():
+        _type_names.add(input_type)
+        types_list.append(
+            {
+                "name": input_type,
+                "kind": "INPUT_OBJECT",
+                "fields": None,
+                "inputFields": [{"name": f} for f in fields],
+            }
+        )
+
+    # Add remaining type_names as OBJECT stubs (no fields needed for existence checks)
+    for tn in _type_names:
+        # Skip types already added as INPUT_OBJECT
+        if tn not in _input_fields:
+            types_list.append(
+                {
+                    "name": tn,
+                    "kind": "OBJECT",
+                    "fields": [],
+                    "inputFields": None,
+                }
+            )
+
+    data: dict[str, Any] = {
+        "version": {"version": version},
+        "systemStatus": {"appSchema": app_schema, "status": status},
+        "__schema": {
+            "queryType": {
+                "name": "Query",
+                "fields": [{"name": n} for n in sorted(_query_names)],
+            },
+            "mutationType": {
+                "name": "Mutation",
+                "fields": [{"name": n} for n in sorted(_mutation_names)],
+            },
+            "subscriptionType": {
+                "name": "Subscription",
+                "fields": [{"name": n} for n in sorted(_subscription_names)],
+            },
+            "types": types_list,
+        },
+    }
+    return {"data": data}
+
+
+def make_server_capabilities(
+    app_schema: int = 75,
+    version: str = "v0.30.0-test",
+    type_names: set[str] | None = None,
+    mutation_names: set[str] | None = None,
+    query_names: set[str] | None = None,
+    subscription_names: set[str] | None = None,
+    type_fields: dict[str, frozenset[str]] | None = None,
+) -> ServerCapabilities:
+    """Build a ServerCapabilities instance for testing.
+
+    Args:
+        app_schema: The server's appSchema version (75 = v0.30.0 minimum).
+        version: Server version string.
+        type_names: Set of type names to include in the schema.
+        mutation_names: Set of mutation field names.
+        query_names: Set of query field names.
+        subscription_names: Set of subscription field names.
+        type_fields: Mapping of type name -> frozenset of field names.
+            Types in this mapping are automatically added to type_names.
+
+    Returns:
+        Frozen ServerCapabilities dataclass instance.
+    """
+    from types import MappingProxyType
+
+    _type_names = set(type_names or set())
+    _type_fields = dict(type_fields or {})
+
+    # Auto-add types from type_fields to type_names
+    _type_names.update(_type_fields.keys())
+
+    return ServerCapabilities(
+        app_schema=app_schema,
+        version_string=version,
+        type_names=frozenset(_type_names),
+        mutation_names=frozenset(mutation_names or set()),
+        query_names=frozenset(query_names or set()),
+        subscription_names=frozenset(subscription_names or set()),
+        type_fields=MappingProxyType(
+            {k: frozenset(v) for k, v in _type_fields.items()}
+        ),
+    )
+
+
 __all__ = [
+    # Capability fixtures
+    "create_capability_response",
+    "make_server_capabilities",
+    "_INPUT_FIELD_REGISTRY",
+    "_MUTATION_REGISTRY",
+    "_QUERY_REGISTRY",
+    "_TYPE_EXISTENCE_REGISTRY",
     # Config fixtures
     "create_config_defaults_result",
     "create_config_dlna_result",

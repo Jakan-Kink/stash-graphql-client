@@ -14,7 +14,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 @pytest.mark.integration
@@ -28,7 +28,10 @@ async def test_find_scenes_returns_expected_count(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_scenes()
+        try:
+            result = await stash_client.find_scenes()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scenes"
@@ -55,7 +58,10 @@ async def test_find_scenes_with_pagination(
         capture_graphql_calls(stash_client) as calls,
     ):
         # First query without pagination to get total count
-        full_result = await stash_client.find_scenes()
+        try:
+            full_result = await stash_client.find_scenes()
+        finally:
+            dump_graphql_calls(calls, "find_scenes (full)")
         assert is_set(full_result.count)
         total_count = full_result.count
 
@@ -68,9 +74,12 @@ async def test_find_scenes_with_pagination(
         calls.clear()
 
         # Now test pagination
-        paginated_result = await stash_client.find_scenes(
-            filter_={"per_page": 10, "page": 1}
-        )
+        try:
+            paginated_result = await stash_client.find_scenes(
+                filter_={"per_page": 10, "page": 1}
+            )
+        finally:
+            dump_graphql_calls(calls, "find_scenes (paginated)")
 
         # Verify paginated call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scenes (paginated)"
@@ -104,7 +113,10 @@ async def test_find_scene_by_id(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_scenes(filter_={"per_page": 1})
+        try:
+            result = await stash_client.find_scenes(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_scenes")
         assert is_set(result.scenes)
         assert len(result.scenes) > 0
 
@@ -118,7 +130,10 @@ async def test_find_scene_by_id(
 
         calls.clear()
 
-        scene = await stash_client.find_scene(scene_id)
+        try:
+            scene = await stash_client.find_scene(scene_id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
 
         # Verify find_scene call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scene"
@@ -134,6 +149,7 @@ async def test_find_scene_by_id(
 @pytest.mark.integration
 @pytest.mark.requires_images
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_images_returns_expected_count(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
@@ -142,7 +158,10 @@ async def test_find_images_returns_expected_count(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_images()
+        try:
+            result = await stash_client.find_images()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_images"
@@ -160,6 +179,7 @@ async def test_find_images_returns_expected_count(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_images_with_pagination(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
@@ -169,7 +189,10 @@ async def test_find_images_with_pagination(
         capture_graphql_calls(stash_client) as calls,
     ):
         # First query without pagination to get total count
-        full_result = await stash_client.find_images()
+        try:
+            full_result = await stash_client.find_images()
+        finally:
+            dump_graphql_calls(calls, "find_images (full)")
         assert is_set(full_result.count)
         total_count = full_result.count
 
@@ -182,9 +205,12 @@ async def test_find_images_with_pagination(
         calls.clear()
 
         # Now test pagination
-        paginated_result = await stash_client.find_images(
-            filter_={"per_page": 50, "page": 1}
-        )
+        try:
+            paginated_result = await stash_client.find_images(
+                filter_={"per_page": 50, "page": 1}
+            )
+        finally:
+            dump_graphql_calls(calls, "find_images (paginated)")
 
         # Verify paginated call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_images (paginated)"
@@ -205,6 +231,7 @@ async def test_find_images_with_pagination(
 @pytest.mark.integration
 @pytest.mark.requires_images
 @pytest.mark.asyncio
+@pytest.mark.xdist_group(name="gallery_image")
 async def test_find_image_by_id(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
@@ -213,7 +240,10 @@ async def test_find_image_by_id(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_images(filter_={"per_page": 1})
+        try:
+            result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "find_images")
         assert is_set(result.images)
         assert len(result.images) > 0
 
@@ -227,7 +257,10 @@ async def test_find_image_by_id(
 
         calls.clear()
 
-        image = await stash_client.find_image(image_id)
+        try:
+            image = await stash_client.find_image(image_id)
+        finally:
+            dump_graphql_calls(calls, "find_image")
 
         # Verify find_image call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_image"
@@ -251,7 +284,10 @@ async def test_find_galleries_returns_expected_count(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries()
+        try:
+            result = await stash_client.find_galleries()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_galleries"
@@ -278,7 +314,10 @@ async def test_find_gallery_by_id(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries()
+        try:
+            result = await stash_client.find_galleries()
+        finally:
+            dump_graphql_calls(calls, "find_galleries")
         assert len(result.galleries) > 0
 
         gallery_id = result.galleries[0].id
@@ -291,7 +330,10 @@ async def test_find_gallery_by_id(
 
         calls.clear()
 
-        gallery = await stash_client.find_gallery(gallery_id)
+        try:
+            gallery = await stash_client.find_gallery(gallery_id)
+        finally:
+            dump_graphql_calls(calls, "find_gallery")
 
         # Verify find_gallery call
         assert len(calls) == 1, "Expected 1 GraphQL call for find_gallery"
@@ -315,7 +357,10 @@ async def test_gallery_is_organized(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        result = await stash_client.find_galleries()
+        try:
+            result = await stash_client.find_galleries()
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_galleries"
@@ -340,7 +385,10 @@ async def test_find_nonexistent_scene_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        scene = await stash_client.find_scene("99999999")
+        try:
+            scene = await stash_client.find_scene("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_scene"
@@ -362,7 +410,10 @@ async def test_find_nonexistent_image_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        image = await stash_client.find_image("99999999")
+        try:
+            image = await stash_client.find_image("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_image"
@@ -384,7 +435,10 @@ async def test_find_nonexistent_gallery_returns_none(
         stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
-        gallery = await stash_client.find_gallery("99999999")
+        try:
+            gallery = await stash_client.find_gallery("99999999")
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify GraphQL calls
         assert len(calls) == 1, "Expected 1 GraphQL call for find_gallery"

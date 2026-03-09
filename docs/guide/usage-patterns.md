@@ -106,13 +106,13 @@ async with StashContext(conn={...}) as client:
     await scene.delete(client)
 
     # Or use client method directly
-    await client.destroy_scene("456")
+    await client.scene_destroy({"id": "456"})
 ```
 
 **Key points**:
 
-- `.delete(client)` method available on all entity types
-- Client also has `destroy_X(id)` methods
+- `.delete(client)` available on entity types with `__destroy_input_type__`
+- Client also has `X_destroy({"id": ...})` methods
 - Deletion is permanent - no undo
 
 ## Pattern 2: Working with Relationships
@@ -213,7 +213,7 @@ from stash_graphql_client import StashContext, StashEntityStore
 from stash_graphql_client.types import Scene, Performer
 
 async with StashContext(conn={...}) as client:
-    store = StashEntityStore(client, ttl_seconds=300)
+    store = StashEntityStore(client, default_ttl=300)
 
     # Read-through caching (fetches if not cached)
     scene = await store.get(Scene, "123")
@@ -496,9 +496,10 @@ async with StashContext(conn={...}) as client:
 
     print(f"Started job {job_id}")
 
-    # Wait for completion (blocking)
-    result = await client.wait_for_job(job_id, timeout=300)  # 5 min timeout
-    print(f"Job finished with status: {result.status}")
+    # Wait for completion (returns bool | None)
+    success = await client.wait_for_job(job_id, timeout=300)  # 5 min timeout
+    if success:
+        print("Job completed successfully")
 ```
 
 ### Polling Job Status
@@ -533,13 +534,13 @@ from stash_graphql_client import StashContext
 
 async with StashContext(conn={...}) as client:
     # Subscribe to job updates
-    async for update in client.subscribe_job_updates():
-        job = update.job
-        print(f"Job {job.id}: {job.status} - {job.progress}%")
+    async with client.subscribe_to_jobs() as subscription:
+        async for update in subscription:
+            print(f"Job {update.job.id}: {update.status} ({update.progress}%)")
 
-        if job.status == "FINISHED":
-            print(f"Job {job.id} completed!")
-            break
+            if update.status == "FINISHED":
+                print(f"Job {update.job.id} completed!")
+                break
 ```
 
 **Key points**:
@@ -608,7 +609,7 @@ async with StashContext(conn={...}) as client:
 
 ```python
 from stash_graphql_client import StashContext
-from stash_graphql_client.errors import GraphQLError
+from stash_graphql_client.errors import StashGraphQLError
 from gql.transport.exceptions import TransportQueryError
 
 async with StashContext(conn={...}) as client:

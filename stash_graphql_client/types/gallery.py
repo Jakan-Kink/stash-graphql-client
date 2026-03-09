@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,8 @@ from .base import (
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -63,6 +65,7 @@ class GalleryChapter(StashObject):
     fields in the schema, matching the common pattern."""
 
     __type_name__ = "GalleryChapter"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = GalleryChapterUpdateInput
     __create_input_type__ = GalleryChapterCreateInput
 
@@ -122,6 +125,7 @@ class GalleryCreateInput(StashInput):
     studio_id: str | None | UnsetType = UNSET  # ID
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     performer_ids: list[str] | None | UnsetType = UNSET  # [ID!]
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 81)
 
 
 class GalleryUpdateInput(StashInput):
@@ -147,14 +151,32 @@ class GalleryUpdateInput(StashInput):
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     performer_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     primary_file_id: str | None | UnsetType = UNSET  # ID
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 81)
+    )
+
+
+class GalleryDestroyInput(StashInput):
+    """Input for destroying galleries.
+
+    If delete_file is true, then the zip file will be deleted if the gallery is zip-file-based.
+    If gallery is folder-based, then any files not associated with other galleries will be
+    deleted, along with the folder, if it is not empty."""
+
+    ids: list[str]  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class Gallery(StashObject):
     """Gallery type from schema/types/gallery.graphql."""
 
     __type_name__ = "Gallery"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = GalleryUpdateInput
     __create_input_type__ = GalleryCreateInput
+    __destroy_input_type__ = GalleryDestroyInput
 
     # Fields to track for changes
     __tracked_fields__: ClassVar[set[str]] = {
@@ -196,6 +218,9 @@ class Gallery(StashObject):
     performers: list[Performer] | UnsetType = UNSET
     paths: GalleryPathsType | UnsetType = UNSET
 
+    # Capability-gated fields (appSchema >= 81)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 81)
+
     async def image(self, index: int) -> Image:
         """Get image at index from this gallery.
 
@@ -224,7 +249,7 @@ class Gallery(StashObject):
                 last_image = await gallery.image(gallery.image_count - 1)
             ```
         """
-        from stash_graphql_client import fragments
+        from stash_graphql_client.fragments import fragment_store
         from stash_graphql_client.types.unset import is_set
 
         # Validate gallery has ID
@@ -240,7 +265,7 @@ class Gallery(StashObject):
 
         # Query the gallery.image(index) resolver via store's client
         query = f"""
-        {fragments.IMAGE_QUERY_FRAGMENTS}
+        {fragment_store.IMAGE_QUERY_FRAGMENTS}
         query GalleryImage($galleryId: ID!, $index: Int!) {{
             findGallery(id: $galleryId) {{
                 image(index: $index) {{
@@ -393,18 +418,6 @@ class GalleryResetCoverInput(StashInput):
     gallery_id: str  # ID!
 
 
-class GalleryDestroyInput(StashInput):
-    """Input for destroying galleries.
-
-    If delete_file is true, then the zip file will be deleted if the gallery is zip-file-based.
-    If gallery is folder-based, then any files not associated with other galleries will be
-    deleted, along with the folder, if it is not empty."""
-
-    ids: list[str]  # [ID!]!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
-
-
 class BulkGalleryUpdateInput(StashInput):
     """Input for bulk updating galleries."""
 
@@ -428,6 +441,9 @@ class BulkGalleryUpdateInput(StashInput):
     studio_id: str | None | UnsetType = UNSET  # ID
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     performer_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 81)
+    )
 
 
 class FindGalleriesResultType(StashResult):

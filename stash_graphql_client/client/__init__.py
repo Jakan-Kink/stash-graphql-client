@@ -1,8 +1,9 @@
 """Stash client module."""
 
-from typing import Any
+from __future__ import annotations
 
-from .. import fragments
+from typing import TYPE_CHECKING, Any
+
 from ..logging import client_logger
 from .base import StashClientBase
 from .mixins.config import ConfigClientMixin
@@ -26,6 +27,10 @@ from .mixins.system_query import SystemQueryClientMixin
 from .mixins.tag import TagClientMixin
 from .mixins.version import VersionClientMixin
 from .utils import sanitize_model_data
+
+
+if TYPE_CHECKING:
+    from ..capabilities import ServerCapabilities
 
 
 class StashClient(
@@ -53,8 +58,7 @@ class StashClient(
 ):
     """Full Stash client combining all functionality."""
 
-    # Add fragments to satisfy the protocol
-    fragments: Any
+    _capabilities: ServerCapabilities | None
 
     def __init__(
         self,
@@ -75,12 +79,10 @@ class StashClient(
         # Set initial state
         self._initialized = False
         self._init_args = (conn, verify_ssl)
+        self._capabilities = None
 
         # Set up logging early
         self.log = conn.get("Logger", client_logger) if conn else client_logger
-
-        # Initialize fragments module
-        self.fragments = fragments
 
         # Set up URL components
         conn = conn or {}
@@ -130,7 +132,29 @@ class StashClient(
         ScraperClientMixin.__init__(self)
         StudioClientMixin.__init__(self)
         SubscriptionClientMixin.__init__(self)
+        SystemQueryClientMixin.__init__(self)
         TagClientMixin.__init__(self)
+        VersionClientMixin.__init__(self)
+
+    async def initialize(self) -> None:
+        """Initialize the client and detect server capabilities.
+
+        Calls base class initialize() to set up transport/session,
+        then runs capability detection and rebuilds the fragment store
+        with version-appropriate fields.
+        """
+        if self._initialized:
+            return
+
+        # Set up transport, session, etc.
+        await super().initialize()
+
+        # Detect server capabilities and rebuild fragment store
+        from ..capabilities import detect_capabilities
+        from ..fragments import fragment_store
+
+        self._capabilities = await detect_capabilities(self._raw_execute, self.log)
+        fragment_store.rebuild(self._capabilities)
 
 
 __all__ = ["StashClient", "sanitize_model_data"]

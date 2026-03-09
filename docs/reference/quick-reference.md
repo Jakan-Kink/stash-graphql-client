@@ -84,9 +84,8 @@ def build_input(**fields):
 
 # Set field conditionally
 if some_condition:
-    scene.rating = 85
-else:
-    scene.rating = UNSET  # Don't touch this field
+    scene.rating100 = 85
+# If not set, rating100 stays UNSET (no data to send)
 ```
 
 ---
@@ -226,14 +225,14 @@ await scene.save(client)
 ### Test UNSET
 
 ```python
-def test_unset_excluded():
+async def test_unset_excluded():
     scene = Scene(id="123", title="Test")
-    scene.rating = UNSET
+    # rating100 is UNSET by default (no data for this field)
 
     input_dict = await scene.to_input()
 
     assert "title" in input_dict
-    assert "rating" not in input_dict  # UNSET excluded
+    assert "rating100" not in input_dict  # UNSET = no data to send
 ```
 
 ### Test UUID4
@@ -246,7 +245,7 @@ def test_new_object_gets_uuid():
     assert len(scene.id) == 32
     assert scene.is_new() is True
 
-def test_save_updates_id(respx_mock, client):
+async def test_save_updates_id(client):
     scene = Scene(title="Test")
     original_id = scene.id
 
@@ -361,14 +360,14 @@ def process_field(value: str | None | UnsetType) -> Any:
 
 ## Summary
 
-| Pattern          | Use When                    | Example                       |
-| ---------------- | --------------------------- | ----------------------------- |
-| **Set to value** | Field has a value           | `scene.title = "Test"`        |
-| **Set to null**  | Want to clear server value  | `scene.rating = None`         |
-| **UNSET**        | Don't touch server value    | `scene.details = UNSET`       |
-| **Auto UUID**    | Creating new object         | `scene = Scene(title="Test")` |
-| **is_new()**     | Check if saved              | `if scene.is_new(): ...`      |
-| **update_id()**  | After create (auto in save) | `scene.update_id("123")`      |
+| Pattern          | Use When                    | Example                           |
+| ---------------- | --------------------------- | --------------------------------- |
+| **Set to value** | Field has a value           | `scene.title = "Test"`            |
+| **Set to null**  | Want to clear server value  | `scene.rating100 = None`          |
+| **UNSET**        | No data for this field      | Default state for unloaded fields |
+| **Auto UUID**    | Creating new object         | `scene = Scene(title="Test")`     |
+| **is_new()**     | Check if saved              | `if scene.is_new(): ...`          |
+| **update_id()**  | After create (auto in save) | `scene.update_id("123")`          |
 
 ---
 

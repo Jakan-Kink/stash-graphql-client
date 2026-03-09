@@ -263,6 +263,35 @@ class StashClientBase:
 
         self._initialized = True
 
+    async def _raw_execute(
+        self, query: str, variables: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Execute a raw GraphQL query bypassing _ensure_initialized().
+
+        Used during initialization (e.g. capability detection) when the session
+        is already connected but _initialized has not yet been set to True.
+
+        Args:
+            query: GraphQL query string
+            variables: Optional variables dict
+
+        Returns:
+            Query result as dictionary
+
+        Raises:
+            RuntimeError: If session is not available
+        """
+        if not self._session:
+            raise RuntimeError(
+                "GQL session not available — _raw_execute() can only be called "
+                "after the session is connected in initialize()"
+            )
+        operation = gql(query)
+        if variables:
+            operation.variable_values = variables
+        result = await self._session.execute(operation)
+        return dict(result)
+
     @overload
     def _decode_result(self, type_: type[T], data: dict[str, Any]) -> T:
         """Decode GraphQL result dict to typed object (non-None data)."""

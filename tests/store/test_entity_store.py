@@ -28,6 +28,7 @@ from stash_graphql_client import (
 from stash_graphql_client.errors import StashError, StashIntegrationError
 from stash_graphql_client.store import CacheEntry
 from stash_graphql_client.types.base import StashObject
+from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash import (
     PerformerFactory,
     SceneFactory,
@@ -623,7 +624,10 @@ class TestGetOperations:
             ]
         )
 
-        result = await store.get(Performer, "123")
+        try:
+            result = await store.get(Performer, "123")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is not None
         assert result.id == "123"
@@ -646,7 +650,10 @@ class TestGetOperations:
             side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
-        result = await store.get(Performer, "123")
+        try:
+            result = await store.get(Performer, "123")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is not None
         assert result.id == "123"
@@ -679,7 +686,10 @@ class TestGetOperations:
                 ]
             )
 
-            result = await store.get(Performer, "123")
+            try:
+                result = await store.get(Performer, "123")
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
             assert result is not None
             assert result.name == "New Name"  # Got fresh data
@@ -700,7 +710,10 @@ class TestGetOperations:
             ]
         )
 
-        result = await store.get(Performer, "nonexistent")
+        try:
+            result = await store.get(Performer, "nonexistent")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is None
         assert len(graphql_route.calls) == 1
@@ -726,7 +739,10 @@ class TestGetOperations:
             ]
         )
 
-        results = await store.get_many(Performer, ["1", "2"])
+        try:
+            results = await store.get_many(Performer, ["1", "2"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 2
         names = {p.name for p in results}
@@ -758,7 +774,7 @@ class TestFindOperations:
         )
 
         # Mock both calls - first for count check, second for actual fetch
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", performers_data)
@@ -769,7 +785,10 @@ class TestFindOperations:
             ]
         )
 
-        results = await store.find(Performer, name__contains="test")
+        try:
+            results = await store.find(Performer, name__contains="test")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 2
         # Both should now be cached
@@ -785,7 +804,7 @@ class TestFindOperations:
         # Mock response with count > FIND_LIMIT
         large_result = create_find_performers_result(count=1500, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", large_result)
@@ -793,8 +812,11 @@ class TestFindOperations:
             ]
         )
 
-        with pytest.raises(StashError, match="exceeding limit of 1000"):
-            await store.find(Performer, name__contains="test")
+        try:
+            with pytest.raises(StashError, match="exceeding limit of 1000"):
+                await store.find(Performer, name__contains="test")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -807,7 +829,7 @@ class TestFindOperations:
             performers=[create_performer_dict(id="1", name="First Match")],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", performers_data)
@@ -815,7 +837,10 @@ class TestFindOperations:
             ]
         )
 
-        result = await store.find_one(Performer, name="First Match")
+        try:
+            result = await store.find_one(Performer, name="First Match")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is not None
         assert result.id == "1"
@@ -829,7 +854,7 @@ class TestFindOperations:
 
         empty_result = create_find_performers_result(count=0, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", empty_result)
@@ -837,7 +862,10 @@ class TestFindOperations:
             ]
         )
 
-        result = await store.find_one(Performer, name="Nonexistent")
+        try:
+            result = await store.find_one(Performer, name="Nonexistent")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result is None
 
@@ -865,7 +893,7 @@ class TestFindIterOperations:
             ],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", performers_data)
@@ -873,9 +901,13 @@ class TestFindIterOperations:
             ]
         )
 
-        results = [
-            performer async for performer in store.find_iter(Performer, query_batch=10)
-        ]
+        try:
+            results = [
+                performer
+                async for performer in store.find_iter(Performer, query_batch=10)
+            ]
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 3
         names = [p.name for p in results]
@@ -907,10 +939,13 @@ class TestFindIterOperations:
         )
 
         count = 0
-        async for _ in store.find_iter(Performer, query_batch=2):
-            count += 1
-            if count >= 1:
-                break
+        try:
+            async for _ in store.find_iter(Performer, query_batch=2):
+                count += 1
+                if count >= 1:
+                    break
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should only have fetched first page
         assert len(graphql_route.calls) == 1
@@ -929,7 +964,7 @@ class TestFindIterOperations:
             ],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", performers_data)
@@ -937,8 +972,11 @@ class TestFindIterOperations:
             ]
         )
 
-        async for _ in store.find_iter(Performer, query_batch=10):
-            pass
+        try:
+            async for _ in store.find_iter(Performer, query_batch=10):
+                pass
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Both should be cached
         assert store.is_cached(Performer, "1")
@@ -1000,7 +1038,7 @@ class TestGetManyEdgeCases:
 
             # Mock fetch for expired entry
             fetched_data = create_performer_dict(id="1", name="Refreshed")
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -1009,7 +1047,10 @@ class TestGetManyEdgeCases:
                 ]
             )
 
-            results = await store.get_many(Performer, ["1"])
+            try:
+                results = await store.get_many(Performer, ["1"])
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
             assert len(results) == 1
             assert results[0].name == "Refreshed"
@@ -1030,7 +1071,10 @@ class TestGetManyEdgeCases:
             side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
-        results = await store.get_many(Performer, ["1", "2"])
+        try:
+            results = await store.get_many(Performer, ["1", "2"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 2
         assert len(graphql_route.calls) == 0  # No fetch needed
@@ -1047,7 +1091,7 @@ class TestFindEdgeCases:
 
         empty_result = create_find_performers_result(count=0, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", empty_result)
@@ -1055,7 +1099,10 @@ class TestFindEdgeCases:
             ]
         )
 
-        results = await store.find(Performer, name="nonexistent")
+        try:
+            results = await store.find(Performer, name="nonexistent")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert results == []
 
@@ -1069,7 +1116,7 @@ class TestFindEdgeCases:
 
         large_result = create_find_performers_result(count=1500, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", large_result)
@@ -1077,8 +1124,11 @@ class TestFindEdgeCases:
             ]
         )
 
-        with pytest.raises(StashError):
-            await store.find(Performer, name__contains="test")
+        try:
+            with pytest.raises(StashError):
+                await store.find(Performer, name__contains="test")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
 
 class TestFindIterEdgeCases:
@@ -1129,9 +1179,13 @@ class TestFindIterEdgeCases:
             ]
         )
 
-        results = [
-            performer async for performer in store.find_iter(Performer, query_batch=3)
-        ]
+        try:
+            results = [
+                performer
+                async for performer in store.find_iter(Performer, query_batch=3)
+            ]
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 5
         assert len(graphql_route.calls) == 2  # Two pages fetched
@@ -1215,7 +1269,7 @@ class TestPopulateFunction:
 
             # Mock performer fetches - use side_effect with enough responses for all calls
             # populate() may fetch each performer to complete the data
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -1245,7 +1299,10 @@ class TestPopulateFunction:
                 ]
             )
 
-            result = await store.populate(scene, fields=["performers"])
+            try:
+                result = await store.populate(scene, fields=["performers"])
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
             # The stubs in the scene should have been updated in-place
             assert len(result.performers) == 2
@@ -1273,7 +1330,7 @@ class TestPopulateFunction:
 
             # Mock studio fetch - use side_effect with enough responses for all calls
             # populate() may fetch the studio to complete the data
-            respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[
                     httpx.Response(
                         200,
@@ -1292,7 +1349,10 @@ class TestPopulateFunction:
                 ]
             )
 
-            result = await store.populate(scene, fields=["studio"])
+            try:
+                result = await store.populate(scene, fields=["studio"])
+            finally:
+                dump_graphql_calls(graphql_route.calls)
 
             # The stub in the scene should have been updated in-place
             assert result.studio is not None
@@ -1373,7 +1433,7 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1", studio=stub_studio)
 
         # Mock studio fetch returns None (not found)
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -1382,7 +1442,10 @@ class TestPopulateFunction:
             ]
         )
 
-        result = await store.populate(scene, fields=["studio"])
+        try:
+            result = await store.populate(scene, fields=["studio"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Studio should remain the stub since populated_single is None
         assert result.studio is not None
@@ -1404,14 +1467,17 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1", studio=full_studio)
 
         # Mock for potential GraphQL calls - populate() may still check
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json={"data": {}}),
                 httpx.Response(200, json={"data": {}}),
             ]
         )
 
-        result = await store.populate(scene, fields=["studio"])
+        try:
+            result = await store.populate(scene, fields=["studio"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Studio should remain unchanged (it's not a stub)
         assert result.studio is not None
@@ -1434,11 +1500,14 @@ class TestPopulateFunction:
 
         # No mock needed for get_many since stub_ids will be empty
         # But _populate_list still calls get() for each item at the end
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
-        result = await store.populate(scene, fields=["performers"])
+        try:
+            result = await store.populate(scene, fields=["performers"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Performers should remain unchanged
         assert len(result.performers) == 2
@@ -1460,7 +1529,7 @@ class TestPopulateFunction:
         scene = SceneFactory.build(id="s1", studio=stub_studio)
 
         # Mock studio fetch
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -1480,7 +1549,10 @@ class TestPopulateFunction:
         )
 
         # Pass fields as a set instead of list (covers line 417: fields_set = fields)
-        result = await store.populate(scene, fields={"studio"})
+        try:
+            result = await store.populate(scene, fields={"studio"})
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result.studio is not None
         assert result.studio.name == "Big Studio"
@@ -1628,13 +1700,16 @@ class TestExecuteFindByIdsEdgeCases:
         store = respx_entity_store
 
         # Mock returns None for this performer
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json=create_graphql_response("findPerformer", None))
             ]
         )
 
-        results = await store._execute_find_by_ids(Performer, ["nonexistent"])
+        try:
+            results = await store._execute_find_by_ids(Performer, ["nonexistent"])
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert results == []
 
@@ -1725,7 +1800,7 @@ class TestExecuteFindQueryEntityTypes:
             galleries=[create_gallery_dict(id="g1", title="Test Gallery")],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findGalleries", galleries_data)
@@ -1736,7 +1811,10 @@ class TestExecuteFindQueryEntityTypes:
             ]
         )
 
-        results = await store.find(Gallery, title__contains="test")
+        try:
+            results = await store.find(Gallery, title__contains="test")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 1
         assert results[0].id == "g1"
@@ -1752,7 +1830,7 @@ class TestExecuteFindQueryEntityTypes:
             images=[create_image_dict(id="i1", title="Test Image")],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findImages", images_data)
@@ -1763,7 +1841,10 @@ class TestExecuteFindQueryEntityTypes:
             ]
         )
 
-        results = await store.find(Image, title__contains="test")
+        try:
+            results = await store.find(Image, title__contains="test")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 1
         assert results[0].id == "i1"
@@ -1995,15 +2076,18 @@ class TestSaveMethod:
             "performerUpdate", create_performer_dict(id="2", name="Test Performer")
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json=tag_response),  # Save tag
                 httpx.Response(200, json=performer_response),  # Save performer
             ]
         )
 
-        with caplog.at_level("WARNING"):
-            await store.save(performer)
+        try:
+            with caplog.at_level("WARNING"):
+                await store.save(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check warning was logged
         assert any("Cascading save" in record.message for record in caplog.records)
@@ -2039,15 +2123,18 @@ class TestSaveMethod:
             "performerUpdate", create_performer_dict(id="2", name="Test Performer")
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 *[httpx.Response(200, json=r) for r in tag_responses],
                 httpx.Response(200, json=performer_response),
             ]
         )
 
-        with caplog.at_level("WARNING"):
-            await store.save(performer)
+        try:
+            with caplog.at_level("WARNING"):
+                await store.save(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Check warning includes "and N more" when >3 unsaved objects
         warning_messages = [
@@ -2076,11 +2163,14 @@ class TestSaveMethod:
             "performerCreate", create_performer_dict(id="123", name="New Performer")
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json=performer_response)]
         )
 
-        await store.save(performer)
+        try:
+            await store.save(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Old UUID key removed, new ID key added
         assert ("Performer", old_uuid) not in store._cache
@@ -2104,11 +2194,14 @@ class TestSaveMethod:
             "performerCreate", create_performer_dict(id="123", name="New Performer")
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json=performer_response)]
         )
 
-        await store.save(performer)
+        try:
+            await store.save(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Should be cached with new ID
         assert ("Performer", "123") in store._cache
@@ -2141,17 +2234,20 @@ class TestSaveMethod:
             "studioCreate", create_studio_dict(id="200", name="Test Studio")
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(200, json=parent_response),  # Parent save (keeps UUID)
                 httpx.Response(200, json=studio_response),  # Studio save
             ]
         )
 
-        with pytest.raises(
-            StashIntegrationError, match="related objects still have UUIDs"
-        ):
-            await store.save(studio)
+        try:
+            with pytest.raises(
+                StashIntegrationError, match="related objects still have UUIDs"
+            ):
+                await store.save(studio)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
 
 class TestSaveTypeIndexEdgeCases:
@@ -2178,11 +2274,14 @@ class TestSaveTypeIndexEdgeCases:
         performer_response = create_graphql_response(
             "performerCreate", create_performer_dict(id="456", name="New Performer")
         )
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[httpx.Response(200, json=performer_response)]
         )
 
-        await store.save(performer)
+        try:
+            await store.save(performer)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Old UUID key removed, new ID key added
         assert ("Performer", old_uuid) not in store._cache
@@ -2204,7 +2303,7 @@ class TestGetOrCreateMethod:
             performers=[create_performer_dict(id="1", name="Alice")],
         )
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", performer_data)
@@ -2212,7 +2311,10 @@ class TestGetOrCreateMethod:
             ]
         )
 
-        result = await store.get_or_create(Performer, name="Alice")
+        try:
+            result = await store.get_or_create(Performer, name="Alice")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result.id == "1"
         assert result.name == "Alice"
@@ -2227,7 +2329,7 @@ class TestGetOrCreateMethod:
         # Mock find_one to return None
         empty_result = create_find_performers_result(count=0, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", empty_result)
@@ -2235,7 +2337,10 @@ class TestGetOrCreateMethod:
             ]
         )
 
-        result = await store.get_or_create(Performer, name="Bob")
+        try:
+            result = await store.get_or_create(Performer, name="Bob")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result.name == "Bob"
         assert result._is_new is True
@@ -2253,7 +2358,7 @@ class TestGetOrCreateMethod:
         # Mock find_one to return None
         empty_result = create_find_performers_result(count=0, performers=[])
 
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200, json=create_graphql_response("findPerformers", empty_result)
@@ -2261,10 +2366,13 @@ class TestGetOrCreateMethod:
             ]
         )
 
-        with pytest.raises(StashIntegrationError, match="not found with criteria"):
-            await store.get_or_create(
-                Performer, create_if_missing=False, name="Charlie"
-            )
+        try:
+            with pytest.raises(StashIntegrationError, match="not found with criteria"):
+                await store.get_or_create(
+                    Performer, create_if_missing=False, name="Charlie"
+                )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -2275,11 +2383,14 @@ class TestGetOrCreateMethod:
         store = respx_entity_store
 
         # Mock find_one to raise exception
-        respx.post("http://localhost:9999/graphql").mock(
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=httpx.HTTPError("Network error")
         )
 
-        result = await store.get_or_create(Performer, name="Dave")
+        try:
+            result = await store.get_or_create(Performer, name="Dave")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         assert result.name == "Dave"
         assert result._is_new is True

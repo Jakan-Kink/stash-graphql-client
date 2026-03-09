@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     BulkGalleryUpdateInput,
     FindGalleriesResultType,
@@ -26,14 +27,14 @@ class GalleryClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.FIND_GALLERY_QUERY,
+                fragment_store.FIND_GALLERY_QUERY,
                 {"id": id},
             )
             if result and result.get("findGallery"):
                 return self._decode_result(Gallery, result["findGallery"])
             return None
         except Exception as e:
-            self.log.error(f"Failed to find gallery {id}: {e}")
+            self.log.exception(f"Failed to find gallery {id}: {e}")
             return None
 
     async def find_galleries(
@@ -69,12 +70,12 @@ class GalleryClientMixin(StashClientProtocol):
 
         try:
             result = await self.execute(
-                fragments.FIND_GALLERIES_QUERY,
+                fragment_store.FIND_GALLERIES_QUERY,
                 {"filter": filter_, "gallery_filter": gallery_filter},
             )
             return self._decode_result(FindGalleriesResultType, result["findGalleries"])
         except Exception as e:
-            self.log.error(f"Failed to find galleries: {e}")
+            self.log.exception(f"Failed to find galleries: {e}")
             return FindGalleriesResultType(count=0, galleries=[])
 
     async def create_gallery(self, gallery: Gallery) -> Gallery:
@@ -94,7 +95,7 @@ class GalleryClientMixin(StashClientProtocol):
         try:
             input_data = await gallery.to_input()
             result = await self.execute(
-                fragments.CREATE_GALLERY_MUTATION,
+                fragment_store.CREATE_GALLERY_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Gallery, result["galleryCreate"])
@@ -121,7 +122,7 @@ class GalleryClientMixin(StashClientProtocol):
         try:
             input_data = await gallery.to_input()
             result = await self.execute(
-                fragments.UPDATE_GALLERY_MUTATION,
+                fragment_store.UPDATE_GALLERY_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(Gallery, result["galleryUpdate"])
@@ -140,7 +141,7 @@ class GalleryClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(
-                fragments.GALLERIES_UPDATE_MUTATION,
+                fragment_store.GALLERIES_UPDATE_MUTATION,
                 {"input": [await gallery.to_input() for gallery in galleries]},
             )
             return [
@@ -270,7 +271,7 @@ class GalleryClientMixin(StashClientProtocol):
             raise ValueError(f"image_index must be non-negative, got {image_index}")
         try:
             result = await self.execute(
-                fragments.GALLERY_CHAPTER_CREATE_MUTATION,
+                fragment_store.GALLERY_CHAPTER_CREATE_MUTATION,
                 {
                     "input": {
                         "gallery_id": gallery_id,
@@ -316,7 +317,7 @@ class GalleryClientMixin(StashClientProtocol):
                 input_data["image_index"] = str(image_index)
 
             result = await self.execute(
-                fragments.GALLERY_CHAPTER_UPDATE_MUTATION,
+                fragment_store.GALLERY_CHAPTER_UPDATE_MUTATION,
                 {"input": input_data},
             )
             return self._decode_result(GalleryChapter, result["galleryChapterUpdate"])
@@ -468,7 +469,7 @@ class GalleryClientMixin(StashClientProtocol):
                 input_dict = validated.to_graphql()
 
             result = await self.execute(
-                fragments.BULK_GALLERY_UPDATE_MUTATION,
+                fragment_store.BULK_GALLERY_UPDATE_MUTATION,
                 {"input": input_dict},
             )
 

@@ -16,6 +16,8 @@ from .base import (
     StashResult,
 )
 from .files import ImageFile, VideoFile
+from .metadata import CustomFieldsInput
+from .scalars import Map
 from .unset import UNSET, UnsetType
 
 
@@ -69,13 +71,37 @@ class ImageUpdateInput(StashInput):
     tag_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     gallery_ids: list[str] | None | UnsetType = UNSET  # [ID!]
     primary_file_id: str | None | UnsetType = UNSET  # ID
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 83)
+    )
+
+
+class ImageDestroyInput(StashInput):
+    """Input for destroying images from schema/types/image.graphql."""
+
+    id: str  # ID!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
+
+
+class ImagesDestroyInput(StashInput):
+    """Input for destroying multiple images from schema/types/image.graphql."""
+
+    ids: list[str] | UnsetType = UNSET  # [ID!]!
+    delete_file: bool | None | UnsetType = UNSET  # Boolean
+    delete_generated: bool | None | UnsetType = UNSET  # Boolean
+    destroy_file_entry: bool | None | UnsetType = UNSET  # Boolean (appSchema >= 84)
 
 
 class Image(StashObject):
     """Image type from schema."""
 
     __type_name__ = "Image"
+    __short_repr_fields__ = ("title",)
     __update_input_type__ = ImageUpdateInput
+    __destroy_input_type__ = ImageDestroyInput
+    __bulk_destroy_input_type__ = ImagesDestroyInput
     # No __create_input_type__ - images can only be updated
 
     # Fields to track for changes - only fields that can be written via input types
@@ -117,6 +143,9 @@ class Image(StashObject):
     galleries: list[Gallery] | UnsetType = Field(default=UNSET)  # [Gallery!]!
     tags: list[Tag] | UnsetType = Field(default=UNSET)  # [Tag!]!
     performers: list[Performer] | UnsetType = Field(default=UNSET)  # [Performer!]!
+
+    # Capability-gated fields (appSchema >= 83)
+    custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 83)
 
     # Relationship definitions with their mappings
     __relationships__ = {
@@ -239,22 +268,6 @@ class Image(StashObject):
         return result
 
 
-class ImageDestroyInput(StashInput):
-    """Input for destroying images from schema/types/image.graphql."""
-
-    id: str  # ID!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
-
-
-class ImagesDestroyInput(StashInput):
-    """Input for destroying multiple images from schema/types/image.graphql."""
-
-    ids: list[str] | UnsetType = UNSET  # [ID!]!
-    delete_file: bool | None | UnsetType = UNSET  # Boolean
-    delete_generated: bool | None | UnsetType = UNSET  # Boolean
-
-
 class BulkImageUpdateInput(StashInput):
     """Input for bulk updating images."""
 
@@ -277,6 +290,9 @@ class BulkImageUpdateInput(StashInput):
     performer_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     tag_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
     gallery_ids: BulkUpdateIds | None | UnsetType = UNSET  # BulkUpdateIds
+    custom_fields: CustomFieldsInput | None | UnsetType = (
+        UNSET  # CustomFieldsInput (appSchema >= 83)
+    )
 
 
 class FindImagesResultType(StashResult):

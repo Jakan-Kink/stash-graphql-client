@@ -39,6 +39,7 @@ from __future__ import annotations
 import inspect
 import types
 import uuid
+import warnings
 from typing import TYPE_CHECKING, Any, ClassVar, Self, TypeVar, get_args, get_origin
 
 from pydantic import (
@@ -51,10 +52,11 @@ from pydantic import (
 )
 
 from stash_graphql_client import fragments
-from stash_graphql_client.errors import StashIntegrationError
+from stash_graphql_client.errors import StashIntegrationError, StashUnmappedFieldWarning
+from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
-from stash_graphql_client.types.unset import UNSET, UnsetType
+from stash_graphql_client.types.unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
@@ -321,11 +323,19 @@ class StashInput(BaseModel):
     """Base class for all Stash GraphQL input types.
 
     Configures Pydantic to accept both Python snake_case field names
-    and GraphQL camelCase aliases during construction, while serializing
-    to camelCase for GraphQL using Field aliases and by_alias=True.
+    and GraphQL aliases during construction, while serializing
+    to GraphQL field names using Field aliases and by_alias=True.
 
     This allows tests and Python code to use Pythonic naming conventions
     while ensuring GraphQL compatibility.
+
+    Capability Gating (``__safe_to_eat__``):
+        Subclasses may declare a ``__safe_to_eat__`` class variable containing
+        GraphQL field names (as they appear in the schema) that are known to be
+        absent on older server versions.
+        When ``to_graphql()`` detects that the server schema lacks one of these
+        fields, it silently strips it (with a warning) instead of raising.
+        Unsupported fields **not** in ``__safe_to_eat__`` raise ``ValueError``.
 
     Example:
         ```python
@@ -341,11 +351,55 @@ class StashInput(BaseModel):
         ```
     """
 
+    # GraphQL field names safe to silently strip when the server doesn't support them.
+    __safe_to_eat__: ClassVar[frozenset[str]] = frozenset()
+
     model_config = ConfigDict(
         populate_by_name=True,
         # Custom serializer to skip UNSET values during JSON serialization
         ser_json_inf_nan="constants",  # Not related, but good practice
+        extra="allow",  # Allow extra fields but warn about them (see validator below)
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_extra_fields(cls, data: Any) -> Any:
+        """Emit deprecation warning for unknown fields.
+
+        In v0.11.0, we emit warnings for unknown fields to help users identify typos.
+        In v0.12.0+, unknown fields will be rejected with ValidationError (extra="forbid").
+
+        This gives users at least one full release cycle to fix field name typos
+        before they become hard errors.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Get known field names (both Python snake_case and GraphQL camelCase aliases)
+        known_fields = set()
+        for field_name, field_info in cls.model_fields.items():
+            known_fields.add(field_name)  # Python name (e.g., "tag_ids")
+            if field_info.alias:
+                known_fields.add(field_info.alias)  # GraphQL alias (e.g., "tagIds")
+
+        # Find extra fields that aren't recognized, excluding internal fields
+        # (e.g., __typename from GraphQL introspection) — mirrors sanitize_model_data()
+        extra_fields = {
+            k for k in set(data.keys()) - known_fields if not k.startswith("_")
+        }
+
+        if extra_fields:
+            warnings.warn(
+                f"{cls.__name__}: Unknown fields will be rejected in v0.12.0: "
+                f"{', '.join(sorted(extra_fields))}. "
+                f"Please check for typos or outdated field names. "
+                f"Common mistakes: 'tag_id' should be 'tag_ids' (plural), "
+                f"'performer_id' should be 'performer_ids' (plural).",
+                DeprecationWarning,
+                stacklevel=4,  # Points to user's code, not this validator
+            )
+
+        return data
 
     def to_graphql(self) -> dict[str, Any]:
         """Convert to GraphQL-compatible dictionary.
@@ -356,8 +410,15 @@ class StashInput(BaseModel):
         - None fields to explicitly clear/null values in GraphQL
         - Regular values to be sent normally
 
+        After building the dict, applies capability gating: if the
+        ``fragment_store`` has detected server capabilities, every key
+        is checked against the server schema.  Fields listed in
+        ``__safe_to_eat__`` are silently stripped (with a warning) when
+        the server doesn't support them; other unsupported fields raise
+        ``ValueError``.
+
         Returns:
-            Dictionary ready to send to GraphQL API with camelCase field names
+            Dictionary ready to send to GraphQL API with GraphQL field names
 
         Example:
             ```python
@@ -382,7 +443,35 @@ class StashInput(BaseModel):
 
         # Dump with JSON serialization, excluding UNSET fields
         # Pydantic will handle the alias conversion and exclude the right fields
-        return self.model_dump(by_alias=True, mode="json", exclude=exclude_fields)
+        result = self.model_dump(by_alias=True, mode="json", exclude=exclude_fields)
+
+        # Apply capability gating if server capabilities are available
+        caps = fragment_store._capabilities
+        if caps is not None:
+            self._apply_capability_gating(result, caps)
+
+        return result
+
+    def _apply_capability_gating(self, result: dict[str, Any], caps: Any) -> None:
+        """Check all fields against server schema and gate unsupported ones.
+
+        Fields in ``__safe_to_eat__`` are silently stripped (with warning).
+        Other unsupported fields raise ``ValueError``.
+        If the type itself is not in the schema, gating is skipped entirely.
+        """
+        type_name = type(self).__name__
+        if not caps.has_type(type_name):
+            return  # Type not in schema — skip gating
+
+        for key in list(result.keys()):
+            if not caps.input_has_field(type_name, key):
+                if key in self.__safe_to_eat__:
+                    msg = f"Server lacks '{key}' on {type_name}; stripping from request"
+                    log.warning(msg)
+                    warnings.warn(msg, stacklevel=3)
+                    del result[key]
+                else:
+                    raise ValueError(f"Server does not support '{key}' on {type_name}")
 
 
 class BulkUpdateStrings(StashInput):
@@ -453,6 +542,18 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Optional - if not set, the type doesn't support creation
     __create_input_type__: ClassVar[type[BaseModel] | None] = None
 
+    # Input type for deletion (e.g., SceneDestroyInput, TagDestroyInput)
+    # Optional - if not set, delete() is not supported for this type
+    __destroy_input_type__: ClassVar[type[BaseModel] | None] = None
+
+    # Input type for bulk deletion (e.g., ScenesDestroyInput, ImagesDestroyInput)
+    # Optional - if not set, bulk_destroy() falls back to bare ids mutation
+    __bulk_destroy_input_type__: ClassVar[type[BaseModel] | None] = None
+
+    # Input type for merging (e.g., SceneMergeInput, PerformerMergeInput)
+    # Optional - if not set, merge() is not supported for this type
+    __merge_input_type__: ClassVar[type[BaseModel] | None] = None
+
     # Fields to include in queries
     __field_names__: ClassVar[set[str]]
 
@@ -469,6 +570,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
     # Field conversion functions
     __field_conversions__: ClassVar[dict[str, Callable[[Any], Any]]] = {}
+
+    # Fields to try for compact repr (first set+non-None field wins)
+    __short_repr_fields__: ClassVar[tuple[str, ...]] = ()
+
+    # Max items to show in list-of-StashObject repr before truncating
+    _SHORT_REPR_LIST_LIMIT: ClassVar[int] = 2
 
     # Pydantic configuration
     model_config = ConfigDict(
@@ -714,40 +821,38 @@ class StashObject(FromGraphQLMixin, BaseModel):
         elif current_value is related_obj:
             setattr(self, field_name, None)
 
-    def __init__(self, **data: Any) -> None:
-        """Initialize StashObject with UUID4 auto-generation for new objects.
+    @model_validator(mode="before")
+    @classmethod
+    def _inject_uuid(cls, data: Any) -> Any:
+        """Auto-generate UUID4 for new objects without an ID.
 
-        If no 'id' is provided, automatically generates a UUID4 hex string (32 chars)
-        and sets the _is_new flag to True. This temporary ID is replaced with the
-        server-assigned ID after save operations.
-
-        Args:
-            **data: Field values for the object
+        If no 'id' is provided (or it is None/empty), generates a UUID4 hex
+        string (32 chars) before Pydantic validates fields. This temporary ID
+        is replaced with the server-assigned ID after save operations.
         """
-        # Save original state before modifying data
-        is_new_object = (
-            "id" not in data or data.get("id") is None or data.get("id") == ""
-        )
+        if not isinstance(data, dict):
+            return data
+        if not data.get("id"):
+            new_id = uuid.uuid4().hex
+            data = {**data, "id": new_id}
+            log.debug(f"Auto-generated UUID4 for new {cls.__name__}: {new_id}")
+        return data
 
-        # Auto-generate UUID4 for new objects without an ID
-        if is_new_object:
-            data["id"] = uuid.uuid4().hex
-            log.debug(
-                f"Auto-generated UUID4 for new {self.__class__.__name__}: {data['id']}"
-            )
+    @model_validator(mode="after")
+    def _set_is_new(self) -> Self:
+        """Set _is_new flag: True when the id looks like an auto-generated UUID4.
 
-        super().__init__(**data)
+        A 32-char non-digit hex string is either a UUID4 we injected above or a
+        UUID4 passed in explicitly by the caller — both mean the object hasn't
+        been saved to the server yet.
 
-        # _received_fields is auto-initialized to set() by PrivateAttr default_factory
-        # _is_new is auto-initialized to False by PrivateAttr default
-
-        # Set _is_new flag based on ID logic
-        if is_new_object:
-            self._is_new = True
-        else:
-            self._is_new = (
-                len(self.id) == 32 and not self.id.isdigit()
-            ) or self.id == "new"
+        Guards against non-string id values (e.g., UNSET) that can arrive when
+        a model_construct()-built instance is later re-validated as a field value.
+        """
+        obj_id = getattr(self, "id", None)
+        if isinstance(obj_id, str):
+            self._is_new = len(obj_id) == 32 and not obj_id.isdigit()
+        return self
 
     @classmethod
     def new(cls: type[T], **data: Any) -> T:
@@ -807,6 +912,46 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Mark as no longer new
         self._is_new = False
         log.debug(f"Updated {self.__class__.__name__} ID: {old_id} -> {server_id}")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _warn_extra_fields(cls, data: Any) -> Any:
+        """Emit warning for unmapped fields in GraphQL response data.
+
+        Unlike StashInput._warn_extra_fields (which uses DeprecationWarning for
+        user typos heading toward extra="forbid"), this uses StashUnmappedFieldWarning
+        because the extra fields come from the Stash server — not user error.
+        The server may be newer (fields not yet mapped), older (deprecated fields
+        no longer declared), or a schema rename occurred between versions.
+
+        Internal fields (_-prefixed like __typename) are silently ignored.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Get known field names (both Python snake_case and GraphQL camelCase aliases)
+        known_fields = set()
+        for field_name, field_info in cls.model_fields.items():
+            known_fields.add(field_name)  # Python name
+            if field_info.alias:
+                known_fields.add(field_info.alias)  # GraphQL alias
+
+        # Find extra fields, excluding _-prefixed internal fields
+        extra_fields = {
+            k for k in set(data.keys()) - known_fields if not k.startswith("_")
+        }
+
+        if extra_fields:
+            warnings.warn(
+                f"{cls.__name__}: Unmapped fields from server: "
+                f"{', '.join(sorted(extra_fields))}. "
+                f"The Stash server may be newer (fields not yet mapped) "
+                f"or older (deprecated fields no longer supported).",
+                StashUnmappedFieldWarning,
+                stacklevel=4,
+            )
+
+        return data
 
     @model_validator(mode="wrap")
     @classmethod
@@ -868,6 +1013,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     # Merge received fields
                     merged_received = old_received | new_fields
                     cached_obj._received_fields = merged_received
+
+                    # Selectively update snapshot for merged fields only.
+                    # Fields the user modified locally that weren't in this merge
+                    # remain dirty and will still be saved.
+                    cached_obj._update_snapshot_for_fields(set(processed_data.keys()))
+
                     log.debug(
                         f"Identity map: merged {len(new_fields)} new fields into cached "
                         f"{cls.__type_name__} {data['id']}"
@@ -1077,6 +1228,21 @@ class StashObject(FromGraphQLMixin, BaseModel):
             for field in self.__tracked_fields__
         }
 
+    def _update_snapshot_for_fields(
+        self, field_names: set[str] | frozenset[str]
+    ) -> None:
+        """Update snapshot for specific fields only.
+
+        Used after identity map merge or populate() to mark server-provided
+        fields as clean without disturbing dirty state on locally-modified fields.
+
+        Args:
+            field_names: Field names to update in the snapshot. Only fields
+                         that are in __tracked_fields__ will be updated.
+        """
+        for field in field_names & self.__tracked_fields__:
+            self._snapshot[field] = self._snapshot_value(getattr(self, field, UNSET))
+
     def mark_dirty(self) -> None:
         """Mark object as having unsaved changes.
 
@@ -1124,12 +1290,12 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         # Map type names to their corresponding find queries
         query_map = {
-            "Scene": fragments.FIND_SCENE_QUERY,
-            "Performer": fragments.FIND_PERFORMER_QUERY,
-            "Studio": fragments.FIND_STUDIO_QUERY,
-            "Tag": fragments.FIND_TAG_QUERY,
-            "Gallery": fragments.FIND_GALLERY_QUERY,
-            "Image": fragments.FIND_IMAGE_QUERY,
+            "Scene": fragment_store.FIND_SCENE_QUERY,
+            "Performer": fragment_store.FIND_PERFORMER_QUERY,
+            "Studio": fragment_store.FIND_STUDIO_QUERY,
+            "Tag": fragment_store.FIND_TAG_QUERY,
+            "Gallery": fragment_store.FIND_GALLERY_QUERY,
+            "Image": fragment_store.FIND_IMAGE_QUERY,
             "SceneMarker": fragments.FIND_MARKER_QUERY,
         }
 
@@ -1220,6 +1386,201 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
         except Exception as e:
             raise ValueError(f"Failed to save {self.__type_name__}: {e}") from e
+
+    async def delete(self, client: StashClient, **kwargs: Any) -> bool:
+        """Delete this object from Stash and invalidate from cache.
+
+        Builds a destroy input from ``__destroy_input_type__`` and executes
+        the corresponding GraphQL destroy mutation. Extra keyword arguments
+        are merged into the destroy input (e.g., ``delete_file=True``).
+
+        Args:
+            client: StashClient instance
+            **kwargs: Additional destroy input fields (e.g., delete_file, delete_generated)
+
+        Returns:
+            True if the object was successfully deleted
+
+        Raises:
+            NotImplementedError: If the type has no __destroy_input_type__
+            ValueError: If the object has no server ID or delete fails
+
+        Examples:
+            >>> await scene.delete(client)
+            >>> await scene.delete(client, delete_file=True)
+        """
+        if not self.__destroy_input_type__:
+            raise NotImplementedError(
+                f"{self.__type_name__} does not support delete "
+                f"(no __destroy_input_type__ defined)"
+            )
+
+        if self.is_new():
+            raise ValueError(
+                f"Cannot delete unsaved {self.__type_name__} (no server ID)"
+            )
+
+        type_name = self.__type_name__
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}Destroy"
+
+        # Build the destroy input using the declared type.
+        # Most types use `id`, but some (Gallery) use `ids` (list).
+        destroy_fields = self.__destroy_input_type__.model_fields
+        if "ids" in destroy_fields:
+            destroy_input = self.__destroy_input_type__(ids=[self.id], **kwargs)
+        else:
+            destroy_input = self.__destroy_input_type__(id=self.id, **kwargs)
+        input_data = destroy_input.to_graphql()  # type: ignore[attr-defined]
+
+        mutation = f"""
+            mutation Destroy{type_name}($input: {type_name}DestroyInput!) {{
+                {operation_key}(input: $input)
+            }}
+        """
+
+        result = await client.execute(mutation, {"input": input_data})
+
+        success = result.get(operation_key, False)
+        if not success:
+            raise ValueError(f"Failed to delete {type_name} {self.id}: {result}")
+
+        # Invalidate from cache
+        if self._store is not None:
+            self._store.invalidate(self)
+
+        return True
+
+    @classmethod
+    async def bulk_destroy(
+        cls, client: StashClient, ids: list[str], **kwargs: Any
+    ) -> bool:
+        """Delete multiple objects of this type from Stash.
+
+        Uses the bulk destroy mutation (e.g., ``scenesDestroy``, ``tagsDestroy``).
+        Types with ``__bulk_destroy_input_type__`` use an input object; others
+        use the bare ``ids`` parameter pattern.
+
+        Args:
+            client: StashClient instance
+            ids: List of entity IDs to delete
+            **kwargs: Additional destroy input fields (e.g., delete_file)
+
+        Returns:
+            True if successfully deleted
+
+        Raises:
+            ValueError: If delete fails
+
+        Examples:
+            >>> await Scene.bulk_destroy(client, ["1", "2", "3"])
+            >>> await Scene.bulk_destroy(client, ["1", "2"], delete_file=True)
+        """
+        type_name = cls.__type_name__
+        # Plural operation key: scenesDestroy, tagsDestroy, etc.
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}sDestroy"
+
+        if cls.__bulk_destroy_input_type__ is not None:
+            # Types with a dedicated input type (Scene, Image)
+            destroy_input = cls.__bulk_destroy_input_type__(ids=ids, **kwargs)
+            input_data = destroy_input.to_graphql()  # type: ignore[attr-defined]
+            input_type_name = cls.__bulk_destroy_input_type__.__name__
+
+            mutation = f"""
+                mutation Destroy{type_name}s($input: {input_type_name}!) {{
+                    {operation_key}(input: $input)
+                }}
+            """
+            result = await client.execute(mutation, {"input": input_data})
+        else:
+            # Types with bare ids param (Tag, Performer, Studio, Group)
+            mutation = f"""
+                mutation Destroy{type_name}s($ids: [ID!]!) {{
+                    {operation_key}(ids: $ids)
+                }}
+            """
+            result = await client.execute(mutation, {"ids": ids})
+
+        success = result.get(operation_key, False)
+        if not success:
+            raise ValueError(f"Failed to bulk delete {type_name}s {ids}: {result}")
+
+        # Invalidate all from cache
+        if cls._store is not None:
+            for eid in ids:
+                cls._store.invalidate(cls, eid)
+
+        return True
+
+    @classmethod
+    async def merge(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        **kwargs: Any,
+    ) -> Self | None:
+        """Merge source entities into a destination entity.
+
+        Combines multiple entities of this type into one, transferring
+        relationships and optionally overriding field values.
+
+        Args:
+            client: StashClient instance
+            source_ids: IDs of entities to merge from (these will be deleted)
+            destination_id: ID of the entity to merge into (this will be kept)
+            **kwargs: Additional merge input fields (e.g., values, play_history)
+
+        Returns:
+            The merged destination entity, or None
+
+        Raises:
+            NotImplementedError: If the type doesn't support merge
+            ValueError: If merge fails
+
+        Examples:
+            >>> merged = await Tag.merge(client, ["1", "2"], "3")
+            >>> merged = await Scene.merge(client, ["1"], "2", play_history=True)
+        """
+        if not cls.__merge_input_type__:
+            raise NotImplementedError(
+                f"{cls.__type_name__} does not support merge "
+                f"(no __merge_input_type__ defined)"
+            )
+
+        type_name = cls.__type_name__
+        merge_input = cls.__merge_input_type__(
+            source=source_ids, destination=destination_id, **kwargs
+        )
+        input_data = merge_input.to_graphql()  # type: ignore[attr-defined]
+        input_type_name = cls.__merge_input_type__.__name__
+
+        # Schema uses tagsMerge (plural) vs sceneMerge/performerMerge (singular)
+        operation_key = f"{type_name[0].lower()}{type_name[1:]}Merge"
+        if type_name == "Tag":
+            operation_key = "tagsMerge"
+
+        # Merge returns the merged entity with its fields
+        fields = " ".join(cls._get_field_names())
+        mutation = f"""
+            mutation Merge{type_name}($input: {input_type_name}!) {{
+                {operation_key}(input: $input) {{
+                    {fields}
+                }}
+            }}
+        """
+
+        result = await client.execute(mutation, {"input": input_data})
+        entity_data = result.get(operation_key)
+
+        # Invalidate source entities from cache
+        if cls._store is not None:
+            for sid in source_ids:
+                cls._store.invalidate(cls, sid)
+
+        if entity_data is None:
+            return None
+
+        return cls.from_dict(entity_data)
 
     @staticmethod
     async def _get_id(obj: Any) -> str | None:
@@ -1408,10 +1769,11 @@ class StashObject(FromGraphQLMixin, BaseModel):
             else await self._to_input_dirty()
         )
 
-        # Serialize to dict - single point of serialization
-        result_dict: dict[str, Any] = input_obj.model_dump(
-            exclude_none=True, exclude={"client_mutation_id"}
-        )
+        # Serialize to dict - exclude UNSET fields, keep None (to clear values)
+        # StashInput.to_graphql() builds an explicit exclude set for UNSET fields.
+        # model_dump(exclude_none=True) would only exclude None, leaving UNSET
+        # objects in the dict that cannot be JSON-serialized by the gql transport.
+        result_dict: dict[str, Any] = input_obj.to_graphql()  # type: ignore[attr-defined]
         log.debug(f"Converted {self.__type_name__} to input: {result_dict}")
         return result_dict
 
@@ -1513,3 +1875,40 @@ class StashObject(FromGraphQLMixin, BaseModel):
         if not isinstance(other, StashObject):
             return NotImplemented
         return (self.__type_name__, self.id) == (other.__type_name__, other.id)
+
+    def _short_repr(self) -> str:
+        """Compact repr for nested display inside another object's repr."""
+        parts: list[str] = []
+        for field in self.__short_repr_fields__:
+            val = getattr(self, field, UNSET)
+            if is_set(val) and val is not None:
+                parts.append(f"{field}={val!r}")
+        if not parts:
+            return f"{self.__type_name__}(id={self.id!r})"
+        return f"{self.__type_name__}({', '.join(parts)})"
+
+    def __repr__(self) -> str:
+        """Shallow repr that avoids recursive expansion of relationship fields."""
+        parts: list[str] = [f"id={self.id!r}"]
+
+        for field_name in sorted(self.__class__.model_fields):
+            if field_name == "id":
+                continue
+            val = getattr(self, field_name, UNSET)
+            if not is_set(val):
+                continue
+
+            if isinstance(val, StashObject):
+                parts.append(f"{field_name}={val._short_repr()}")
+            elif isinstance(val, list) and val and isinstance(val[0], StashObject):
+                limit = self._SHORT_REPR_LIST_LIMIT
+                items = [item._short_repr() for item in val[:limit]]
+                suffix = f", ..{len(val) - limit} more" if len(val) > limit else ""
+                parts.append(f"{field_name}=[{', '.join(items)}{suffix}]")
+            else:
+                r = repr(val)
+                if len(r) > 200:
+                    r = r[:197] + "..."
+                parts.append(f"{field_name}={r}")
+
+        return f"{self.__type_name__}({', '.join(parts)})"

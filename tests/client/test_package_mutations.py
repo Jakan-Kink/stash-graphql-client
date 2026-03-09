@@ -13,7 +13,7 @@ import respx
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashGraphQLError
 from stash_graphql_client.types import PackageSpecInput, PackageType
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -53,7 +53,12 @@ async def test_install_packages_scraper_enum_dict(
 
     packages = [{"id": "scraper-1", "sourceURL": "https://example.com/scraper1.yml"}]
 
-    job_id = await respx_stash_client.install_packages(PackageType.SCRAPER, packages)
+    try:
+        job_id = await respx_stash_client.install_packages(
+            PackageType.SCRAPER, packages
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-123"
 
@@ -83,7 +88,10 @@ async def test_install_packages_plugin_string_input_objects(
         PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
-    job_id = await respx_stash_client.install_packages("Plugin", packages)
+    try:
+        job_id = await respx_stash_client.install_packages("Plugin", packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-456"
 
@@ -117,7 +125,12 @@ async def test_install_packages_multiple(respx_stash_client: StashClient) -> Non
         {"id": "pkg-3", "sourceURL": "https://example.com/pkg3.yml"},
     ]
 
-    job_id = await respx_stash_client.install_packages(PackageType.SCRAPER, packages)
+    try:
+        job_id = await respx_stash_client.install_packages(
+            PackageType.SCRAPER, packages
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-789"
 
@@ -140,8 +153,11 @@ async def test_install_packages_no_job_id_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.install_packages(PackageType.PLUGIN, packages)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.install_packages(PackageType.PLUGIN, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -158,8 +174,11 @@ async def test_install_packages_invalid_response_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.install_packages(PackageType.SCRAPER, packages)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.install_packages(PackageType.SCRAPER, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -178,8 +197,11 @@ async def test_install_packages_server_error_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(StashGraphQLError, match="GraphQL query error"):
-        await respx_stash_client.install_packages(PackageType.PLUGIN, packages)
+    try:
+        with pytest.raises(StashGraphQLError, match="GraphQL query error"):
+            await respx_stash_client.install_packages(PackageType.PLUGIN, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify route was called with correct mutation
     assert len(graphql_route.calls) == 1
@@ -204,7 +226,10 @@ async def test_update_packages_all_scrapers(respx_stash_client: StashClient) -> 
         ]
     )
 
-    job_id = await respx_stash_client.update_packages(PackageType.SCRAPER)
+    try:
+        job_id = await respx_stash_client.update_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-update-1"
 
@@ -229,7 +254,10 @@ async def test_update_packages_all_plugins_string(
         ]
     )
 
-    job_id = await respx_stash_client.update_packages("Plugin")
+    try:
+        job_id = await respx_stash_client.update_packages("Plugin")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-update-2"
 
@@ -253,7 +281,10 @@ async def test_update_packages_specific_dict(respx_stash_client: StashClient) ->
 
     packages = [{"id": "scraper-1", "sourceURL": "https://example.com/scraper1.yml"}]
 
-    job_id = await respx_stash_client.update_packages(PackageType.SCRAPER, packages)
+    try:
+        job_id = await respx_stash_client.update_packages(PackageType.SCRAPER, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-update-3"
 
@@ -281,7 +312,10 @@ async def test_update_packages_specific_input_objects(
         PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
-    job_id = await respx_stash_client.update_packages(PackageType.PLUGIN, packages)
+    try:
+        job_id = await respx_stash_client.update_packages(PackageType.PLUGIN, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-update-4"
 
@@ -306,8 +340,11 @@ async def test_update_packages_no_job_id_raises(
         ]
     )
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.update_packages(PackageType.SCRAPER)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.update_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -322,8 +359,11 @@ async def test_update_packages_invalid_response_raises(
         side_effect=[httpx.Response(200, json={"data": {"updatePackages": None}})]
     )
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.update_packages(PackageType.PLUGIN)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.update_packages(PackageType.PLUGIN)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -340,8 +380,11 @@ async def test_update_packages_server_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="GraphQL query error"):
-        await respx_stash_client.update_packages(PackageType.SCRAPER)
+    try:
+        with pytest.raises(StashGraphQLError, match="GraphQL query error"):
+            await respx_stash_client.update_packages(PackageType.SCRAPER)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify route was called with correct mutation
     assert len(graphql_route.calls) == 1
@@ -371,7 +414,12 @@ async def test_uninstall_packages_scraper_enum_dict(
 
     packages = [{"id": "scraper-1", "sourceURL": "https://example.com/scraper1.yml"}]
 
-    job_id = await respx_stash_client.uninstall_packages(PackageType.SCRAPER, packages)
+    try:
+        job_id = await respx_stash_client.uninstall_packages(
+            PackageType.SCRAPER, packages
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-uninstall-1"
 
@@ -402,7 +450,10 @@ async def test_uninstall_packages_plugin_string_input_objects(
         PackageSpecInput(id="plugin-2", sourceURL="https://example.com/plugin2.yml"),
     ]
 
-    job_id = await respx_stash_client.uninstall_packages("Plugin", packages)
+    try:
+        job_id = await respx_stash_client.uninstall_packages("Plugin", packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-uninstall-2"
 
@@ -437,7 +488,12 @@ async def test_uninstall_packages_multiple(respx_stash_client: StashClient) -> N
         {"id": "pkg-3", "sourceURL": "https://example.com/pkg3.yml"},
     ]
 
-    job_id = await respx_stash_client.uninstall_packages(PackageType.SCRAPER, packages)
+    try:
+        job_id = await respx_stash_client.uninstall_packages(
+            PackageType.SCRAPER, packages
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert job_id == "job-uninstall-3"
 
@@ -460,8 +516,11 @@ async def test_uninstall_packages_no_job_id_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.uninstall_packages(PackageType.PLUGIN, packages)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.uninstall_packages(PackageType.PLUGIN, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -478,8 +537,11 @@ async def test_uninstall_packages_invalid_response_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(ValueError, match="No job ID returned from server"):
-        await respx_stash_client.uninstall_packages(PackageType.SCRAPER, packages)
+    try:
+        with pytest.raises(ValueError, match="No job ID returned from server"):
+            await respx_stash_client.uninstall_packages(PackageType.SCRAPER, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -498,8 +560,11 @@ async def test_uninstall_packages_server_error_raises(
 
     packages = [{"id": "pkg-1", "sourceURL": "https://example.com/pkg1.yml"}]
 
-    with pytest.raises(StashGraphQLError, match="GraphQL query error"):
-        await respx_stash_client.uninstall_packages(PackageType.PLUGIN, packages)
+    try:
+        with pytest.raises(StashGraphQLError, match="GraphQL query error"):
+            await respx_stash_client.uninstall_packages(PackageType.PLUGIN, packages)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify route was called with correct mutation
     assert len(graphql_route.calls) == 1

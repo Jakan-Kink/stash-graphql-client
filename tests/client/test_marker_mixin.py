@@ -27,6 +27,7 @@ from tests.fixtures import (
     create_marker_dict,
     create_scene_dict,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -56,7 +57,10 @@ async def test_find_marker(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    marker = await respx_stash_client.find_marker("123")
+    try:
+        marker = await respx_stash_client.find_marker("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert marker is not None
@@ -87,7 +91,10 @@ async def test_find_marker_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    marker = await respx_stash_client.find_marker("999")
+    try:
+        marker = await respx_stash_client.find_marker("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is None
 
@@ -118,7 +125,10 @@ async def test_find_marker_empty_result(respx_stash_client: StashClient) -> None
         ]
     )
 
-    marker = await respx_stash_client.find_marker("999")
+    try:
+        marker = await respx_stash_client.find_marker("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is None
 
@@ -134,7 +144,10 @@ async def test_find_marker_error_returns_none(respx_stash_client: StashClient) -
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    marker = await respx_stash_client.find_marker("error_marker")
+    try:
+        marker = await respx_stash_client.find_marker("error_marker")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is None
 
@@ -163,7 +176,10 @@ async def test_find_markers(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_markers()
+    try:
+        result = await respx_stash_client.find_markers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert result.count == 1
@@ -195,7 +211,10 @@ async def test_find_markers_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_markers()
+    try:
+        result = await respx_stash_client.find_markers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.scene_markers)
@@ -224,7 +243,12 @@ async def test_find_markers_with_filter(respx_stash_client: StashClient) -> None
         ]
     )
 
-    result = await respx_stash_client.find_markers(filter_={"per_page": 10, "page": 1})
+    try:
+        result = await respx_stash_client.find_markers(
+            filter_={"per_page": 10, "page": 1}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.scene_markers)
@@ -256,7 +280,10 @@ async def test_find_markers_with_query(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_markers(q="Search Result")
+    try:
+        result = await respx_stash_client.find_markers(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.scene_markers)
@@ -287,9 +314,12 @@ async def test_find_markers_with_marker_filter(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.find_markers(
-        marker_filter={"tags": {"value": ["tag_123"], "modifier": "INCLUDES"}}
-    )
+    try:
+        result = await respx_stash_client.find_markers(
+            marker_filter={"tags": {"value": ["tag_123"], "modifier": "INCLUDES"}}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
 
@@ -311,7 +341,10 @@ async def test_find_markers_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_markers()
+    try:
+        result = await respx_stash_client.find_markers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.scene_markers)
@@ -349,7 +382,10 @@ async def test_find_marker_with_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    marker = await respx_stash_client.find_marker("123")
+    try:
+        marker = await respx_stash_client.find_marker("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is not None
     assert is_set(marker.primary_tag)
@@ -387,7 +423,10 @@ async def test_scene_marker_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_marker_tags("scene_123")
+    try:
+        result = await respx_stash_client.scene_marker_tags("scene_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -413,7 +452,10 @@ async def test_scene_marker_tags_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.scene_marker_tags("scene_123")
+    try:
+        result = await respx_stash_client.scene_marker_tags("scene_123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -432,7 +474,10 @@ async def test_scene_marker_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_marker_destroy("123")
+    try:
+        result = await respx_stash_client.scene_marker_destroy("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -455,7 +500,10 @@ async def test_scene_markers_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_markers_destroy(["123", "456", "789"])
+    try:
+        result = await respx_stash_client.scene_markers_destroy(["123", "456", "789"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -481,8 +529,11 @@ async def test_scene_marker_destroy_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.scene_marker_destroy("123")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.scene_marker_destroy("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -502,8 +553,11 @@ async def test_scene_markers_destroy_error_raises(
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.scene_markers_destroy(["123", "456"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.scene_markers_destroy(["123", "456"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -542,7 +596,10 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
         screenshot="/screenshot/marker.jpg",
     )
 
-    result = await respx_stash_client.create_marker(marker)
+    try:
+        result = await respx_stash_client.create_marker(marker)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is not None
@@ -554,8 +611,15 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneMarkerCreate" in req["query"]
-    assert req["variables"]["input"]["title"] == "New Chapter"
-    assert req["variables"]["input"]["seconds"] == 45.0
+    inp = req["variables"]["input"]
+    assert inp["title"] == "New Chapter"
+    assert inp["seconds"] == 45.0
+    # These required fields must be serialized — not silently dropped as UNSET
+    assert inp["scene_id"] == "scene_123"
+    assert inp["primary_tag_id"] == "tag_123"
+    # Optional UNSET fields must NOT appear in the payload
+    assert "end_seconds" not in inp
+    assert "tag_ids" not in inp
 
 
 @pytest.mark.asyncio
@@ -582,8 +646,11 @@ async def test_create_marker_error_raises(respx_stash_client: StashClient) -> No
         screenshot="/screenshot/marker.jpg",
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.create_marker(marker)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.create_marker(marker)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -627,7 +694,10 @@ async def test_update_marker(respx_stash_client: StashClient) -> None:
     marker.title = "Updated Chapter"
     marker.seconds = 60.0
 
-    result = await respx_stash_client.update_marker(marker)
+    try:
+        result = await respx_stash_client.update_marker(marker)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert result is not None
@@ -666,8 +736,11 @@ async def test_update_marker_error_raises(respx_stash_client: StashClient) -> No
     )
     marker.title = "Updated Title"
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.update_marker(marker)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.update_marker(marker)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -704,7 +777,10 @@ async def test_bulk_scene_marker_update_with_dict(
         "title": "Updated Marker",
     }
 
-    result = await respx_stash_client.bulk_scene_marker_update(input_dict)
+    try:
+        result = await respx_stash_client.bulk_scene_marker_update(input_dict)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 3
@@ -751,7 +827,10 @@ async def test_bulk_scene_marker_update_with_input_type(
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
-    result = await respx_stash_client.bulk_scene_marker_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_scene_marker_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -790,8 +869,11 @@ async def test_bulk_scene_marker_update_error_raises(
         title="Will Fail",
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.bulk_scene_marker_update(input_data)
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.bulk_scene_marker_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -809,7 +891,10 @@ async def test_marker_wall(respx_stash_client: StashClient) -> None:
         side_effect=[httpx.Response(200, json={"data": {"markerWall": marker_data}})]
     )
 
-    markers = await respx_stash_client.marker_wall(q="test")
+    try:
+        markers = await respx_stash_client.marker_wall(q="test")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(markers) == 2
     assert markers[0].id == "m1"
@@ -847,7 +932,10 @@ async def test_marker_strings(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    strings = await respx_stash_client.marker_strings(q="test", sort="count")
+    try:
+        strings = await respx_stash_client.marker_strings(q="test", sort="count")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(strings) == 2
     assert strings[0].id == "bj"
@@ -893,7 +981,10 @@ async def test_find_markers_none_result_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_markers()
+    try:
+        result = await respx_stash_client.find_markers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert result.scene_markers == []
@@ -921,7 +1012,10 @@ async def test_find_marker_null_find_scene_markers_returns_none(
         ]
     )
 
-    marker = await respx_stash_client.find_marker("123")
+    try:
+        marker = await respx_stash_client.find_marker("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is None
     assert len(graphql_route.calls) == 1
@@ -945,7 +1039,10 @@ async def test_find_marker_null_result_returns_none(
         ]
     )
 
-    marker = await respx_stash_client.find_marker("123")
+    try:
+        marker = await respx_stash_client.find_marker("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert marker is None
     assert len(graphql_route.calls) == 1
@@ -969,7 +1066,10 @@ async def test_find_markers_null_result_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_markers()
+    try:
+        result = await respx_stash_client.find_markers()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert result.scene_markers == []

@@ -25,7 +25,7 @@ from pydantic import ValidationError
 from stash_graphql_client import StashClient
 from stash_graphql_client.errors import StashIntegrationError
 from stash_graphql_client.types.unset import is_set
-from tests.fixtures import create_graphql_response
+from tests.fixtures import create_graphql_response, dump_graphql_calls
 
 
 # =============================================================================
@@ -48,7 +48,10 @@ async def test_scene_add_o_with_current_time(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.scene_add_o("123")
+    try:
+        result = await respx_stash_client.scene_add_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 1
@@ -89,7 +92,10 @@ async def test_scene_add_o_with_specific_times(respx_stash_client: StashClient) 
         datetime.fromisoformat("2024-01-15T10:30:00+00:00"),
         datetime.fromisoformat("2024-01-16T14:20:00+00:00"),
     ]
-    result = await respx_stash_client.scene_add_o("123", times=times)
+    try:
+        result = await respx_stash_client.scene_add_o("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 3
@@ -121,7 +127,10 @@ async def test_scene_add_o_with_datetime_times(respx_stash_client: StashClient) 
     )
 
     times = [datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)]
-    await respx_stash_client.scene_add_o("123", times=times)
+    try:
+        await respx_stash_client.scene_add_o("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -138,8 +147,11 @@ async def test_scene_add_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to add O-count"):
-        await respx_stash_client.scene_add_o("123")
+    try:
+        with pytest.raises(Exception, match="Failed to add O-count"):
+            await respx_stash_client.scene_add_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -183,7 +195,10 @@ async def test_scene_delete_o_removes_last_entry(
         ]
     )
 
-    result = await respx_stash_client.scene_delete_o("123")
+    try:
+        result = await respx_stash_client.scene_delete_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 1
@@ -218,7 +233,10 @@ async def test_scene_delete_o_with_specific_timestamp(
     )
 
     times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
-    result = await respx_stash_client.scene_delete_o("123", times=times)
+    try:
+        result = await respx_stash_client.scene_delete_o("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 1
@@ -254,7 +272,10 @@ async def test_scene_delete_o_with_datetime_times(
     )
 
     times = [datetime(2024, 1, 15, 10, 30, 0, tzinfo=UTC)]
-    await respx_stash_client.scene_delete_o("123", times=times)
+    try:
+        await respx_stash_client.scene_delete_o("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -273,8 +294,11 @@ async def test_scene_delete_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete O-count"):
-        await respx_stash_client.scene_delete_o("123")
+    try:
+        with pytest.raises(Exception, match="Failed to delete O-count"):
+            await respx_stash_client.scene_delete_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -309,7 +333,10 @@ async def test_scene_reset_o(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_reset_o("123")
+    try:
+        result = await respx_stash_client.scene_reset_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result == 0
@@ -333,8 +360,11 @@ async def test_scene_reset_o_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to reset O-count"):
-        await respx_stash_client.scene_reset_o("123")
+    try:
+        with pytest.raises(Exception, match="Failed to reset O-count"):
+            await respx_stash_client.scene_reset_o("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -356,7 +386,10 @@ async def test_scene_save_activity_resume_time(
         ]
     )
 
-    result = await respx_stash_client.scene_save_activity("123", resume_time=120.5)
+    try:
+        result = await respx_stash_client.scene_save_activity("123", resume_time=120.5)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -382,7 +415,12 @@ async def test_scene_save_activity_play_duration(
         ]
     )
 
-    result = await respx_stash_client.scene_save_activity("123", play_duration=300.0)
+    try:
+        result = await respx_stash_client.scene_save_activity(
+            "123", play_duration=300.0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -408,9 +446,12 @@ async def test_scene_save_activity_both_params(
         ]
     )
 
-    result = await respx_stash_client.scene_save_activity(
-        "123", resume_time=120.5, play_duration=300.0
-    )
+    try:
+        result = await respx_stash_client.scene_save_activity(
+            "123", resume_time=120.5, play_duration=300.0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -436,8 +477,11 @@ async def test_scene_save_activity_error(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to save activity"):
-        await respx_stash_client.scene_save_activity("123", resume_time=120.5)
+    try:
+        with pytest.raises(Exception, match="Failed to save activity"):
+            await respx_stash_client.scene_save_activity("123", resume_time=120.5)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -456,7 +500,10 @@ async def test_scene_reset_activity_resume_only(
         ]
     )
 
-    result = await respx_stash_client.scene_reset_activity("123", reset_resume=True)
+    try:
+        result = await respx_stash_client.scene_reset_activity("123", reset_resume=True)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -484,7 +531,12 @@ async def test_scene_reset_activity_duration_only(
         ]
     )
 
-    result = await respx_stash_client.scene_reset_activity("123", reset_duration=True)
+    try:
+        result = await respx_stash_client.scene_reset_activity(
+            "123", reset_duration=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -510,9 +562,12 @@ async def test_scene_reset_activity_both(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.scene_reset_activity(
-        "123", reset_resume=True, reset_duration=True
-    )
+    try:
+        result = await respx_stash_client.scene_reset_activity(
+            "123", reset_resume=True, reset_duration=True
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result is True
@@ -538,8 +593,11 @@ async def test_scene_reset_activity_error(respx_stash_client: StashClient) -> No
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to reset activity"):
-        await respx_stash_client.scene_reset_activity("123", reset_resume=True)
+    try:
+        with pytest.raises(Exception, match="Failed to reset activity"):
+            await respx_stash_client.scene_reset_activity("123", reset_resume=True)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -568,7 +626,10 @@ async def test_scene_add_play_with_current_time(
         ]
     )
 
-    result = await respx_stash_client.scene_add_play("123")
+    try:
+        result = await respx_stash_client.scene_add_play("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 1
@@ -606,7 +667,10 @@ async def test_scene_add_play_with_specific_times(
     )
 
     times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
-    result = await respx_stash_client.scene_add_play("123", times=times)
+    try:
+        result = await respx_stash_client.scene_add_play("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 2
@@ -634,8 +698,11 @@ async def test_scene_add_play_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to add play count"):
-        await respx_stash_client.scene_add_play("123")
+    try:
+        with pytest.raises(Exception, match="Failed to add play count"):
+            await respx_stash_client.scene_add_play("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -659,7 +726,10 @@ async def test_scene_delete_play_removes_last_entry(
         ]
     )
 
-    result = await respx_stash_client.scene_delete_play("123")
+    try:
+        result = await respx_stash_client.scene_delete_play("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 1
@@ -694,7 +764,10 @@ async def test_scene_delete_play_with_specific_timestamp(
     )
 
     times = [datetime.fromisoformat("2024-01-15T10:30:00+00:00")]
-    result = await respx_stash_client.scene_delete_play("123", times=times)
+    try:
+        result = await respx_stash_client.scene_delete_play("123", times=times)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result.count == 0
@@ -722,8 +795,11 @@ async def test_scene_delete_play_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete play count"):
-        await respx_stash_client.scene_delete_play("123")
+    try:
+        with pytest.raises(Exception, match="Failed to delete play count"):
+            await respx_stash_client.scene_delete_play("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -738,7 +814,10 @@ async def test_scene_reset_play_count(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_reset_play_count("123")
+    try:
+        result = await respx_stash_client.scene_reset_play_count("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify result
     assert result == 0
@@ -762,7 +841,10 @@ async def test_scene_reset_play_count_error(respx_stash_client: StashClient) -> 
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to reset play count"):
-        await respx_stash_client.scene_reset_play_count("123")
+    try:
+        with pytest.raises(Exception, match="Failed to reset play count"):
+            await respx_stash_client.scene_reset_play_count("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1

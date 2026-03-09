@@ -417,6 +417,9 @@ def test_image_visual_files_handles_empty_list():
 
 
 @pytest.mark.unit
+@pytest.mark.filterwarnings(
+    "ignore:BaseFile.*Unmapped fields:stash_graphql_client.errors.StashUnmappedFieldWarning"
+)
 def test_typename_in_file_fields_enables_discrimination():
     """Test that __typename field is essential for discrimination."""
     # Without __typename, discrimination cannot occur

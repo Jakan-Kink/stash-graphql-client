@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import Field
 
-from stash_graphql_client.fragments import FIND_PERFORMERS_QUERY
+from stash_graphql_client.fragments import fragment_store
 
 from .base import (
     BulkUpdateIds,
@@ -79,6 +79,8 @@ class PerformerCreateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class PerformerUpdateInput(StashInput):
@@ -116,6 +118,8 @@ class PerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class BulkPerformerUpdateInput(StashInput):
@@ -150,6 +154,8 @@ class BulkPerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
 
 class PerformerDestroyInput(StashInput):
@@ -170,8 +176,11 @@ class Performer(StashObject):
     """Performer type from schema/types/performer.graphql."""
 
     __type_name__ = "Performer"
+    __short_repr_fields__ = ("name",)
     __update_input_type__ = PerformerUpdateInput
     __create_input_type__ = PerformerCreateInput
+    __destroy_input_type__ = PerformerDestroyInput
+    __merge_input_type__ = PerformerMergeInput
 
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
@@ -197,6 +206,11 @@ class Performer(StashObject):
         "death_date",  # PerformerCreateInput/PerformerUpdateInput
         "hair_color",  # PerformerCreateInput/PerformerUpdateInput
         "weight",  # PerformerCreateInput/PerformerUpdateInput
+        "rating100",  # PerformerCreateInput/PerformerUpdateInput
+        "favorite",  # PerformerCreateInput/PerformerUpdateInput
+        "ignore_auto_tag",  # PerformerCreateInput/PerformerUpdateInput
+        "career_start",  # PerformerUpdateInput (appSchema >= 78)
+        "career_end",  # PerformerUpdateInput (appSchema >= 78)
     }
 
     # Required fields from schema
@@ -241,6 +255,10 @@ class Performer(StashObject):
     hair_color: str | None | UnsetType = UNSET  # String
     weight: int | None | UnsetType = UNSET  # Int
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
+
+    # Capability-gated fields (appSchema >= 78)
+    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
 
     async def update_avatar(
         self, client: StashClient, image_path: str | Path
@@ -312,6 +330,11 @@ class Performer(StashObject):
         "death_date": str,
         "hair_color": str,
         "weight": int,
+        "rating100": int,
+        "favorite": bool,
+        "ignore_auto_tag": bool,
+        "career_start": int,
+        "career_end": int,
     }
 
     __relationships__ = {
@@ -320,9 +343,9 @@ class Performer(StashObject):
             is_list=True,
             query_field="tags",
             inverse_type="Tag",
-            inverse_query_field="performers",
+            inverse_query_field=None,  # Tag has no performers field, only performer_count resolver
             query_strategy="direct_field",
-            notes="Backend auto-syncs performer.tags and tag.performers",
+            notes="One-directional: performer.tags queryable, tag→performer only via performer_count or filter query",
         ),
         "stash_ids": RelationshipMetadata(
             target_field="stash_ids",
@@ -350,7 +373,7 @@ class Performer(StashObject):
         """
         try:
             result = await client.execute(
-                FIND_PERFORMERS_QUERY,
+                fragment_store.FIND_PERFORMERS_QUERY,
                 {
                     "filter": None,
                     "performer_filter": {"name": {"value": name, "modifier": "EQUALS"}},

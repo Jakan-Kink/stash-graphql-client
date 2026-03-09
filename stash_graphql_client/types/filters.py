@@ -50,18 +50,48 @@ class OrientationCriterionInput(StashInput):
     value: list[OrientationEnum]  # [OrientationEnum!]!
 
 
-class PHashDuplicationCriterionInput(StashInput):
-    """Input for phash duplication criterion."""
+class DuplicationCriterionInput(StashInput):
+    """Input for duplication criterion (appSchema >= 84).
 
-    duplicated: bool | None | UnsetType = UNSET  # Boolean
-    distance: int | None | UnsetType = UNSET  # Int
+    Used by SceneFilterType. Supports phash, URL, stash_id, and title deduplication.
+    """
+
+    duplicated: bool | None | UnsetType = UNSET  # Boolean (deprecated, use phash)
+    distance: int | None | UnsetType = UNSET  # Int (currently unimplemented)
+    phash: bool | None | UnsetType = UNSET  # Boolean - filter by phash duplication
+    url: bool | None | UnsetType = UNSET  # Boolean - filter by URL duplication
+    stash_id: bool | None | UnsetType = UNSET  # Boolean - filter by StashID duplication
+    title: bool | None | UnsetType = UNSET  # Boolean - filter by title duplication
+
+
+# Backward-compat alias for older code using the old name.
+PHashDuplicationCriterionInput = DuplicationCriterionInput
+
+
+class FileDuplicationCriterionInput(StashInput):
+    """Input for file duplication criterion (appSchema >= 84).
+
+    Used by FileFilterType. Only phash duplication applies to files.
+    """
+
+    duplicated: bool | None | UnsetType = UNSET  # Boolean (deprecated, use phash)
+    distance: int | None | UnsetType = UNSET  # Int (currently unimplemented)
+    phash: bool | None | UnsetType = UNSET  # Boolean - filter by phash duplication
 
 
 class StashIDCriterionInput(StashInput):
-    """Input for StashID criterion."""
+    """Input for single StashID criterion."""
 
     endpoint: str | None | UnsetType = UNSET  # String
     stash_id: str | None | UnsetType = UNSET  # String
+    modifier: CriterionModifier  # CriterionModifier!
+
+
+class StashIDsCriterionInput(StashInput):
+    """Input for multiple StashIDs criterion (appSchema >= 84)."""
+
+    endpoint: str | None | UnsetType = UNSET  # String
+    stash_ids: list[str] | None | UnsetType = UNSET  # [String]
     modifier: CriterionModifier  # CriterionModifier!
 
 
@@ -212,7 +242,9 @@ class PerformerFilterType(StashInput):
     fake_tits: StringCriterionInput | None | UnsetType = UNSET
     penis_length: FloatCriterionInput | None | UnsetType = UNSET
     circumcised: CircumcisionCriterionInput | None | UnsetType = UNSET
-    career_length: StringCriterionInput | None | UnsetType = UNSET
+    career_length: StringCriterionInput | None | UnsetType = UNSET  # deprecated
+    career_start: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
+    career_end: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
     tattoos: StringCriterionInput | None | UnsetType = UNSET
     piercings: StringCriterionInput | None | UnsetType = UNSET
     aliases: StringCriterionInput | None | UnsetType = UNSET
@@ -225,7 +257,10 @@ class PerformerFilterType(StashInput):
     gallery_count: IntCriterionInput | None | UnsetType = UNSET
     play_count: IntCriterionInput | None | UnsetType = UNSET
     o_counter: IntCriterionInput | None | UnsetType = UNSET
-    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET
+    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET  # deprecated
+    stash_ids_endpoint: StashIDsCriterionInput | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
     rating100: IntCriterionInput | None | UnsetType = UNSET
     url: StringCriterionInput | None | UnsetType = UNSET
     hair_color: StringCriterionInput | None | UnsetType = UNSET
@@ -241,8 +276,10 @@ class PerformerFilterType(StashInput):
     images_filter: ImageFilterType | None | UnsetType = UNSET
     galleries_filter: GalleryFilterType | None | UnsetType = UNSET
     tags_filter: TagFilterType | None | UnsetType = UNSET
+    markers_filter: SceneMarkerFilterType | None | UnsetType = UNSET
     created_at: TimestampCriterionInput | None | UnsetType = UNSET
     updated_at: TimestampCriterionInput | None | UnsetType = UNSET
+    marker_count: IntCriterionInput | None | UnsetType = UNSET
     custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = UNSET
 
 
@@ -281,7 +318,7 @@ class SceneFilterType(StashInput):
     rating100: IntCriterionInput | None | UnsetType = UNSET
     organized: bool | None | UnsetType = UNSET
     o_counter: IntCriterionInput | None | UnsetType = UNSET
-    duplicated: PHashDuplicationCriterionInput | None | UnsetType = UNSET
+    duplicated: DuplicationCriterionInput | None | UnsetType = UNSET
     resolution: ResolutionCriterionInput | None | UnsetType = UNSET
     orientation: OrientationCriterionInput | None | UnsetType = UNSET
     framerate: IntCriterionInput | None | UnsetType = UNSET
@@ -301,7 +338,11 @@ class SceneFilterType(StashInput):
     performer_age: IntCriterionInput | None | UnsetType = UNSET
     performers: MultiCriterionInput | None | UnsetType = UNSET
     performer_count: IntCriterionInput | None | UnsetType = UNSET
-    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET
+    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET  # deprecated
+    stash_ids_endpoint: StashIDsCriterionInput | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
+    stash_id_count: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 84
     url: StringCriterionInput | None | UnsetType = UNSET
     interactive: bool | None | UnsetType = UNSET
     interactive_speed: IntCriterionInput | None | UnsetType = UNSET
@@ -320,6 +361,9 @@ class SceneFilterType(StashInput):
     groups_filter: GroupFilterType | None | UnsetType = UNSET
     markers_filter: SceneMarkerFilterType | None | UnsetType = UNSET
     files_filter: FileFilterType | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
 
 
 class GroupFilterType(StashInput):
@@ -347,8 +391,12 @@ class GroupFilterType(StashInput):
     sub_groups: HierarchicalMultiCriterionInput | None | UnsetType = UNSET
     containing_group_count: IntCriterionInput | None | UnsetType = UNSET
     sub_group_count: IntCriterionInput | None | UnsetType = UNSET
+    scene_count: IntCriterionInput | None | UnsetType = UNSET
     scenes_filter: SceneFilterType | None | UnsetType = UNSET
     studios_filter: StudioFilterType | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 82
+    )
 
 
 class StudioFilterType(StashInput):
@@ -360,7 +408,10 @@ class StudioFilterType(StashInput):
     name: StringCriterionInput | None | UnsetType = UNSET
     details: StringCriterionInput | None | UnsetType = UNSET
     parents: MultiCriterionInput | None | UnsetType = UNSET
-    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET
+    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET  # deprecated
+    stash_ids_endpoint: StashIDsCriterionInput | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
     tags: HierarchicalMultiCriterionInput | None | UnsetType = UNSET
     is_missing: str | None | UnsetType = UNSET
     rating100: IntCriterionInput | None | UnsetType = UNSET
@@ -368,16 +419,22 @@ class StudioFilterType(StashInput):
     scene_count: IntCriterionInput | None | UnsetType = UNSET
     image_count: IntCriterionInput | None | UnsetType = UNSET
     gallery_count: IntCriterionInput | None | UnsetType = UNSET
+    group_count: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 84
     tag_count: IntCriterionInput | None | UnsetType = UNSET
     url: StringCriterionInput | None | UnsetType = UNSET
     aliases: StringCriterionInput | None | UnsetType = UNSET
     child_count: IntCriterionInput | None | UnsetType = UNSET
     ignore_auto_tag: bool | None | UnsetType = UNSET
+    organized: bool | None | UnsetType = UNSET  # appSchema >= 80
     scenes_filter: SceneFilterType | None | UnsetType = UNSET
     images_filter: ImageFilterType | None | UnsetType = UNSET
     galleries_filter: GalleryFilterType | None | UnsetType = UNSET
+    groups_filter: GroupFilterType | None | UnsetType = UNSET  # appSchema >= 84
     created_at: TimestampCriterionInput | None | UnsetType = UNSET
     updated_at: TimestampCriterionInput | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
 
 
 class GalleryFilterType(StashInput):
@@ -421,6 +478,10 @@ class GalleryFilterType(StashInput):
     tags_filter: TagFilterType | None | UnsetType = UNSET
     files_filter: FileFilterType | None | UnsetType = UNSET
     folders_filter: FolderFilterType | None | UnsetType = UNSET
+    parent_folder: HierarchicalMultiCriterionInput | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
 
 
 class TagFilterType(StashInput):
@@ -448,11 +509,22 @@ class TagFilterType(StashInput):
     parent_count: IntCriterionInput | None | UnsetType = UNSET
     child_count: IntCriterionInput | None | UnsetType = UNSET
     ignore_auto_tag: bool | None | UnsetType = UNSET
+    stash_id_endpoint: StashIDCriterionInput | None | UnsetType = UNSET  # deprecated
+    stash_ids_endpoint: StashIDsCriterionInput | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
     scenes_filter: SceneFilterType | None | UnsetType = UNSET
     images_filter: ImageFilterType | None | UnsetType = UNSET
     galleries_filter: GalleryFilterType | None | UnsetType = UNSET
+    groups_filter: GroupFilterType | None | UnsetType = UNSET  # appSchema >= 84
+    performers_filter: PerformerFilterType | None | UnsetType = UNSET  # appSchema >= 84
+    studios_filter: StudioFilterType | None | UnsetType = UNSET  # appSchema >= 84
+    markers_filter: SceneMarkerFilterType | None | UnsetType = UNSET  # appSchema >= 84
     created_at: TimestampCriterionInput | None | UnsetType = UNSET
     updated_at: TimestampCriterionInput | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
 
 
 class ImageFilterType(StashInput):
@@ -493,6 +565,10 @@ class ImageFilterType(StashInput):
     studios_filter: StudioFilterType | None | UnsetType = UNSET
     tags_filter: TagFilterType | None | UnsetType = UNSET
     files_filter: FileFilterType | None | UnsetType = UNSET
+    phash_distance: PhashDistanceCriterionInput | None | UnsetType = UNSET
+    custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
+        UNSET  # appSchema >= 84
+    )
 
 
 class FileFilterType(StashInput):
@@ -507,7 +583,7 @@ class FileFilterType(StashInput):
     parent_folder: HierarchicalMultiCriterionInput | None | UnsetType = UNSET
     zip_file: MultiCriterionInput | None | UnsetType = UNSET
     mod_time: TimestampCriterionInput | None | UnsetType = UNSET
-    duplicated: PHashDuplicationCriterionInput | None | UnsetType = UNSET
+    duplicated: FileDuplicationCriterionInput | None | UnsetType = UNSET
     hashes: list[FingerprintFilterInput] | None | UnsetType = UNSET
     video_file_filter: VideoFileFilterInput | None | UnsetType = UNSET
     image_file_filter: ImageFileFilterInput | None | UnsetType = UNSET
@@ -534,6 +610,7 @@ class FolderFilterType(StashInput):
     gallery_count: IntCriterionInput | None | UnsetType = UNSET
     files_filter: FileFilterType | None | UnsetType = UNSET
     galleries_filter: GalleryFilterType | None | UnsetType = UNSET
+    basename: StringCriterionInput | None | UnsetType = UNSET  # appSchema >= 84
     created_at: TimestampCriterionInput | None | UnsetType = UNSET
     updated_at: TimestampCriterionInput | None | UnsetType = UNSET
 

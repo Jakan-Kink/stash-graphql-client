@@ -44,7 +44,7 @@ class JobsClientMixin(StashClientProtocol):
                 return Job(**job_data)
             return None
         except Exception as e:
-            self.log.error(f"Failed to find job {job_id}: {e}")
+            self.log.exception(f"Failed to find job {job_id}: {e}")
             return None
 
     async def wait_for_job(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .scene import SceneFileType
 
 
-class ScrapeType(str, Enum):
+class ScrapeType(StrEnum):
     """Type of scraping operation from schema/types/scraper.graphql."""
 
     NAME = "NAME"  # From text query
@@ -23,7 +23,7 @@ class ScrapeType(str, Enum):
     URL = "URL"  # From URL
 
 
-class ScrapeContentType(str, Enum):
+class ScrapeContentType(StrEnum):
     """Type of the content a scraper generates from schema/types/scraper.graphql."""
 
     GALLERY = "GALLERY"
@@ -70,21 +70,19 @@ class Scraper(FromGraphQLMixin, BaseModel):
 class ScrapedTag(FromGraphQLMixin, BaseModel):
     """Tag data from scraper from schema/types/scraper.graphql."""
 
-    stored_id: str | None | UnsetType = Field(
-        default=UNSET, alias="storedID"
-    )  # ID - Set if tag matched
+    stored_id: str | None | UnsetType = UNSET  # ID - Set if tag matched
     name: str | None | UnsetType = UNSET  # String!
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String - Remote site ID, if applicable
+    remote_site_id: str | None | UnsetType = (
+        UNSET  # String - Remote site ID, if applicable
+    )
+    description: str | None | UnsetType = UNSET  # String (appSchema >= 84)
+    alias_list: list[str] | None | UnsetType = UNSET  # [String!] (appSchema >= 84)
 
 
 class ScrapedStudio(FromGraphQLMixin, BaseModel):
     """Studio data from scraper from schema/types/scraper.graphql."""
 
-    stored_id: str | None | UnsetType = Field(
-        default=UNSET, alias="storedID"
-    )  # ID - Set if studio matched
+    stored_id: str | None | UnsetType = UNSET  # ID - Set if studio matched
     name: str | None | UnsetType = UNSET  # String!
     urls: list[str] | None | UnsetType = UNSET  # [String!]
     parent: ScrapedStudio | None | UnsetType = UNSET  # ScrapedStudio
@@ -94,17 +92,13 @@ class ScrapedStudio(FromGraphQLMixin, BaseModel):
         UNSET  # String - Aliases must be comma-delimited to be parsed correctly
     )
     tags: list[ScrapedTag] | None | UnsetType = UNSET  # [ScrapedTag!]
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String - Remote site ID
+    remote_site_id: str | None | UnsetType = UNSET  # String - Remote site ID
 
 
 class ScrapedPerformer(FromGraphQLMixin, BaseModel):
     """A performer from a scraping operation from schema/types/scraped-performer.graphql."""
 
-    stored_id: str | None | UnsetType = Field(
-        default=UNSET, alias="storedID"
-    )  # ID - Set if performer matched
+    stored_id: str | None | UnsetType = UNSET  # ID - Set if performer matched
     name: str | None | UnsetType = UNSET  # String
     disambiguation: str | None | UnsetType = UNSET  # String
     gender: str | None | UnsetType = UNSET  # String
@@ -112,17 +106,17 @@ class ScrapedPerformer(FromGraphQLMixin, BaseModel):
     birthdate: str | None | UnsetType = UNSET  # String
     ethnicity: str | None | UnsetType = UNSET  # String
     country: str | None | UnsetType = UNSET  # String
-    eye_color: str | None | UnsetType = Field(default=UNSET, alias="eyeColor")  # String
+    eye_color: str | None | UnsetType = UNSET  # String
     height: str | None | UnsetType = UNSET  # String
     measurements: str | None | UnsetType = UNSET  # String
-    fake_tits: str | None | UnsetType = Field(default=UNSET, alias="fakeTits")  # String
-    penis_length: str | None | UnsetType = Field(
-        default=UNSET, alias="penisLength"
-    )  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: str | None | UnsetType = UNSET  # String
     circumcised: str | None | UnsetType = UNSET  # String
-    career_length: str | None | UnsetType = Field(
-        default=UNSET, alias="careerLength"
-    )  # String
+    career_length: str | None | UnsetType = (
+        UNSET  # String (deprecated, use career_start/end)
+    )
+    career_start: int | None | UnsetType = UNSET  # Int
+    career_end: int | None | UnsetType = UNSET  # Int
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = (
@@ -131,24 +125,16 @@ class ScrapedPerformer(FromGraphQLMixin, BaseModel):
     tags: list[ScrapedTag] | None | UnsetType = UNSET  # [ScrapedTag!]
     images: list[str] | None | UnsetType = UNSET  # [String!]
     details: str | None | UnsetType = UNSET  # String
-    death_date: str | None | UnsetType = Field(
-        default=UNSET, alias="deathDate"
-    )  # String
-    hair_color: str | None | UnsetType = Field(
-        default=UNSET, alias="hairColor"
-    )  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
     weight: str | None | UnsetType = UNSET  # String
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String
+    remote_site_id: str | None | UnsetType = UNSET  # String
 
 
 class ScrapedPerformerInput(StashInput):
     """Input for scraped performer from schema/types/scraped-performer.graphql."""
 
-    stored_id: str | None | UnsetType = Field(
-        default=UNSET, alias="storedID"
-    )  # ID - Set if performer matched
+    stored_id: str | None | UnsetType = UNSET  # ID - Set if performer matched
     name: str | None | UnsetType = UNSET  # String
     disambiguation: str | None | UnsetType = UNSET  # String
     gender: str | None | UnsetType = UNSET  # String
@@ -156,31 +142,25 @@ class ScrapedPerformerInput(StashInput):
     birthdate: str | None | UnsetType = UNSET  # String
     ethnicity: str | None | UnsetType = UNSET  # String
     country: str | None | UnsetType = UNSET  # String
-    eye_color: str | None | UnsetType = Field(default=UNSET, alias="eyeColor")  # String
+    eye_color: str | None | UnsetType = UNSET  # String
     height: str | None | UnsetType = UNSET  # String
     measurements: str | None | UnsetType = UNSET  # String
-    fake_tits: str | None | UnsetType = Field(default=UNSET, alias="fakeTits")  # String
-    penis_length: str | None | UnsetType = Field(
-        default=UNSET, alias="penisLength"
-    )  # String
+    fake_tits: str | None | UnsetType = UNSET  # String
+    penis_length: str | None | UnsetType = UNSET  # String
     circumcised: str | None | UnsetType = UNSET  # String
-    career_length: str | None | UnsetType = Field(
-        default=UNSET, alias="careerLength"
-    )  # String
+    career_length: str | None | UnsetType = (
+        UNSET  # String (deprecated, use career_start/end)
+    )
+    career_start: int | None | UnsetType = UNSET  # Int
+    career_end: int | None | UnsetType = UNSET  # Int
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = UNSET  # String
     details: str | None | UnsetType = UNSET  # String
-    death_date: str | None | UnsetType = Field(
-        default=UNSET, alias="deathDate"
-    )  # String
-    hair_color: str | None | UnsetType = Field(
-        default=UNSET, alias="hairColor"
-    )  # String
+    death_date: str | None | UnsetType = UNSET  # String
+    hair_color: str | None | UnsetType = UNSET  # String
     weight: str | None | UnsetType = UNSET  # String
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String
+    remote_site_id: str | None | UnsetType = UNSET  # String
 
 
 class ScrapedScene(FromGraphQLMixin, BaseModel):
@@ -200,9 +180,7 @@ class ScrapedScene(FromGraphQLMixin, BaseModel):
     tags: list[ScrapedTag] | None | UnsetType = UNSET  # [ScrapedTag!]
     performers: list[ScrapedPerformer] | None | UnsetType = UNSET  # [ScrapedPerformer!]
     groups: list[ScrapedGroup] | None | UnsetType = UNSET  # [ScrapedGroup!]
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String
+    remote_site_id: str | None | UnsetType = UNSET  # String
     duration: int | None | UnsetType = UNSET  # Int
     fingerprints: list[StashBoxFingerprint] | None | UnsetType = (
         UNSET  # [StashBoxFingerprint!]
@@ -218,9 +196,7 @@ class ScrapedSceneInput(StashInput):
     director: str | None | UnsetType = UNSET  # String
     urls: list[str] | None | UnsetType = UNSET  # [String!]
     date: str | None | UnsetType = UNSET  # String
-    remote_site_id: str | None | UnsetType = Field(
-        default=UNSET, alias="remoteSiteID"
-    )  # String
+    remote_site_id: str | None | UnsetType = UNSET  # String
 
 
 class ScrapedGallery(FromGraphQLMixin, BaseModel):
@@ -275,7 +251,7 @@ class ScrapedImageInput(StashInput):
 class ScrapedMovie(FromGraphQLMixin, BaseModel):
     """A movie from a scraping operation from schema/types/scraped-group.graphql."""
 
-    stored_id: str | None | UnsetType = Field(default=UNSET, alias="storedID")  # ID
+    stored_id: str | None | UnsetType = UNSET  # ID
     name: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = UNSET  # String
     duration: str | None | UnsetType = UNSET  # String
@@ -286,12 +262,8 @@ class ScrapedMovie(FromGraphQLMixin, BaseModel):
     synopsis: str | None | UnsetType = UNSET  # String
     studio: ScrapedStudio | None | UnsetType = UNSET  # ScrapedStudio
     tags: list[ScrapedTag] | None | UnsetType = UNSET  # [ScrapedTag!]
-    front_image: str | None | UnsetType = Field(
-        default=UNSET, alias="frontImage"
-    )  # String - This should be a base64 encoded data URL
-    back_image: str | None | UnsetType = Field(
-        default=UNSET, alias="backImage"
-    )  # String - This should be a base64 encoded data URL
+    front_image: str | None | UnsetType = UNSET  # String - base64 encoded data URL
+    back_image: str | None | UnsetType = UNSET  # String - base64 encoded data URL
 
 
 class ScrapedMovieInput(StashInput):
@@ -310,7 +282,7 @@ class ScrapedMovieInput(StashInput):
 class ScrapedGroup(FromGraphQLMixin, BaseModel):
     """A group from a scraping operation from schema/types/scraped-group.graphql."""
 
-    stored_id: str | None | UnsetType = Field(default=UNSET, alias="storedID")  # ID
+    stored_id: str | None | UnsetType = UNSET  # ID
     name: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = UNSET  # String
     duration: str | None | UnsetType = UNSET  # String
@@ -321,12 +293,8 @@ class ScrapedGroup(FromGraphQLMixin, BaseModel):
     synopsis: str | None | UnsetType = UNSET  # String
     studio: ScrapedStudio | None | UnsetType = UNSET  # ScrapedStudio
     tags: list[ScrapedTag] | None | UnsetType = UNSET  # [ScrapedTag!]
-    front_image: str | None | UnsetType = Field(
-        default=UNSET, alias="frontImage"
-    )  # String - This should be a base64 encoded data URL
-    back_image: str | None | UnsetType = Field(
-        default=UNSET, alias="backImage"
-    )  # String - This should be a base64 encoded data URL
+    front_image: str | None | UnsetType = UNSET  # String - base64 encoded data URL
+    back_image: str | None | UnsetType = UNSET  # String - base64 encoded data URL
 
 
 class ScrapedGroupInput(StashInput):
@@ -345,12 +313,8 @@ class ScrapedGroupInput(StashInput):
 class ScraperSource(FromGraphQLMixin, BaseModel):
     """Scraper source from schema/types/scraper.graphql."""
 
-    stash_box_endpoint: str | None | UnsetType = Field(
-        default=UNSET, alias="stashBoxEndpoint"
-    )  # String - Stash-box endpoint
-    scraper_id: str | None | UnsetType = Field(
-        default=UNSET, alias="scraperID"
-    )  # ID - Scraper ID to scrape with
+    stash_box_endpoint: str | None | UnsetType = UNSET  # String - Stash-box endpoint
+    scraper_id: str | None | UnsetType = UNSET  # ID - Scraper ID to scrape with
 
 
 class ScraperSourceInput(StashInput):

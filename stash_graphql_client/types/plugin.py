@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ from .base import FromGraphQLMixin, StashInput
 from .unset import UNSET, UnsetType
 
 
-class PluginSettingTypeEnum(str, Enum):
+class PluginSettingTypeEnum(StrEnum):
     """Plugin setting type enum from schema/types/plugin.graphql."""
 
     STRING = "STRING"
@@ -23,9 +23,7 @@ class PluginSetting(FromGraphQLMixin, BaseModel):
 
     name: str | UnsetType = UNSET  # String!
     type: PluginSettingTypeEnum | UnsetType = UNSET  # PluginSettingTypeEnum!
-    display_name: str | None | UnsetType = Field(
-        default=UNSET, alias="displayName"
-    )  # String
+    display_name: str | None | UnsetType = UNSET  # String
     description: str | None | UnsetType = UNSET  # String
 
 

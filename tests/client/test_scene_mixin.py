@@ -26,6 +26,7 @@ from tests.fixtures import (
     create_scene_dict,
     create_studio_dict,
     create_tag_dict,
+    dump_graphql_calls,
 )
 
 
@@ -48,7 +49,10 @@ async def test_find_scene(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scene = await respx_stash_client.find_scene("123")
+    try:
+        scene = await respx_stash_client.find_scene("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the result
     assert scene is not None
@@ -74,7 +78,10 @@ async def test_find_scene_not_found(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scene = await respx_stash_client.find_scene("999")
+    try:
+        scene = await respx_stash_client.find_scene("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is None
 
@@ -110,7 +117,10 @@ async def test_find_scene_error_returns_none(respx_stash_client: StashClient) ->
         side_effect=[httpx.Response(500, json={"errors": [{"message": "Test error"}]})]
     )
 
-    scene = await respx_stash_client.find_scene("99999")
+    try:
+        scene = await respx_stash_client.find_scene("99999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is None
 
@@ -140,7 +150,10 @@ async def test_find_scenes(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_scenes()
+    try:
+        result = await respx_stash_client.find_scenes()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert result.count == 1
@@ -173,7 +186,10 @@ async def test_find_scenes_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_scenes()
+    try:
+        result = await respx_stash_client.find_scenes()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.scenes)
@@ -201,7 +217,12 @@ async def test_find_scenes_with_filter(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_scenes(filter_={"per_page": 10, "page": 1})
+    try:
+        result = await respx_stash_client.find_scenes(
+            filter_={"per_page": 10, "page": 1}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.scenes)
@@ -232,7 +253,10 @@ async def test_find_scenes_with_query(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_scenes(q="Search Result")
+    try:
+        result = await respx_stash_client.find_scenes(q="Search Result")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.scenes)
@@ -262,7 +286,10 @@ async def test_find_scenes_with_scene_filter(respx_stash_client: StashClient) ->
         ]
     )
 
-    result = await respx_stash_client.find_scenes(scene_filter={"organized": True})
+    try:
+        result = await respx_stash_client.find_scenes(scene_filter={"organized": True})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 1
     assert is_set(result.scenes)
@@ -284,7 +311,10 @@ async def test_find_scenes_error_returns_empty(respx_stash_client: StashClient) 
         ]
     )
 
-    result = await respx_stash_client.find_scenes()
+    try:
+        result = await respx_stash_client.find_scenes()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert is_set(result.scenes)
@@ -312,7 +342,10 @@ async def test_find_scene_with_studio(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scene = await respx_stash_client.find_scene("123")
+    try:
+        scene = await respx_stash_client.find_scene("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is not None
     assert scene.studio is not None
@@ -343,7 +376,10 @@ async def test_find_scene_with_performers(respx_stash_client: StashClient) -> No
         ]
     )
 
-    scene = await respx_stash_client.find_scene("123")
+    try:
+        scene = await respx_stash_client.find_scene("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is not None
     assert is_set(scene.performers)
@@ -374,7 +410,10 @@ async def test_find_scene_with_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    scene = await respx_stash_client.find_scene("123")
+    try:
+        scene = await respx_stash_client.find_scene("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is not None
     assert is_set(scene.tags)
@@ -408,7 +447,10 @@ async def test_find_duplicate_scenes(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes()
+    try:
+        result = await respx_stash_client.find_duplicate_scenes()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results - should be list of lists
     assert len(result) == 2
@@ -441,9 +483,12 @@ async def test_find_duplicate_scenes_with_params(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes(
-        distance=10, duration_diff=5.0
-    )
+    try:
+        result = await respx_stash_client.find_duplicate_scenes(
+            distance=10, duration_diff=5.0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -466,7 +511,10 @@ async def test_find_duplicate_scenes_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes()
+    try:
+        result = await respx_stash_client.find_duplicate_scenes()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -492,7 +540,10 @@ async def test_scene_wall(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_wall()
+    try:
+        result = await respx_stash_client.scene_wall()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 3
@@ -524,7 +575,10 @@ async def test_scene_wall_with_query(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_wall(q="Matching")
+    try:
+        result = await respx_stash_client.scene_wall(q="Matching")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0].title == "Matching Scene"
@@ -545,7 +599,10 @@ async def test_scene_wall_error_returns_empty(respx_stash_client: StashClient) -
         ]
     )
 
-    result = await respx_stash_client.scene_wall()
+    try:
+        result = await respx_stash_client.scene_wall()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -573,7 +630,10 @@ async def test_parse_scene_filenames(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.parse_scene_filenames()
+    try:
+        result = await respx_stash_client.parse_scene_filenames()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert result["count"] == 2
@@ -602,10 +662,13 @@ async def test_parse_scene_filenames_with_config(
         ]
     )
 
-    result = await respx_stash_client.parse_scene_filenames(
-        filter_={"q": "test"},
-        config={"capitalizeTitle": True, "whitespace": False},
-    )
+    try:
+        result = await respx_stash_client.parse_scene_filenames(
+            filter_={"q": "test"},
+            config={"capitalizeTitle": True, "whitespace": False},
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == {"count": 0, "results": []}
 
@@ -629,7 +692,10 @@ async def test_parse_scene_filenames_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.parse_scene_filenames()
+    try:
+        result = await respx_stash_client.parse_scene_filenames()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == {}
 
@@ -651,7 +717,10 @@ async def test_scene_generate_screenshot(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.scene_generate_screenshot("123", at=10.5)
+    try:
+        result = await respx_stash_client.scene_generate_screenshot("123", at=10.5)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "/path/to/screenshot.jpg"
 
@@ -680,7 +749,10 @@ async def test_scene_generate_screenshot_without_timestamp(
         ]
     )
 
-    result = await respx_stash_client.scene_generate_screenshot("123")
+    try:
+        result = await respx_stash_client.scene_generate_screenshot("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == "/path/to/default.jpg"
 
@@ -707,7 +779,12 @@ async def test_find_scene_by_hash(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.find_scene_by_hash({"checksum": "abc123def456"})
+    try:
+        result = await respx_stash_client.find_scene_by_hash(
+            {"checksum": "abc123def456"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -730,7 +807,10 @@ async def test_find_scene_by_hash_not_found(respx_stash_client: StashClient) -> 
         ]
     )
 
-    result = await respx_stash_client.find_scene_by_hash({"oshash": "xyz789"})
+    try:
+        result = await respx_stash_client.find_scene_by_hash({"oshash": "xyz789"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
 
@@ -749,7 +829,10 @@ async def test_find_scene_by_hash_error_returns_none(
         ]
     )
 
-    result = await respx_stash_client.find_scene_by_hash({"checksum": "test"})
+    try:
+        result = await respx_stash_client.find_scene_by_hash({"checksum": "test"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is None
 
@@ -766,7 +849,10 @@ async def test_scene_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_destroy({"id": "123"})
+    try:
+        result = await respx_stash_client.scene_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -787,9 +873,12 @@ async def test_scene_destroy_with_options(respx_stash_client: StashClient) -> No
         ]
     )
 
-    result = await respx_stash_client.scene_destroy(
-        {"id": "123", "delete_file": True, "delete_generated": False}
-    )
+    try:
+        result = await respx_stash_client.scene_destroy(
+            {"id": "123", "delete_file": True, "delete_generated": False}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -810,7 +899,10 @@ async def test_scenes_destroy(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scenes_destroy({"ids": ["123", "456", "789"]})
+    try:
+        result = await respx_stash_client.scenes_destroy({"ids": ["123", "456", "789"]})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -843,7 +935,10 @@ async def test_create_scene(respx_stash_client: StashClient, mock_scene) -> None
         ]
     )
 
-    result = await respx_stash_client.create_scene(mock_scene)
+    try:
+        result = await respx_stash_client.create_scene(mock_scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "new_123"
@@ -873,7 +968,10 @@ async def test_update_scene(respx_stash_client: StashClient, mock_scene) -> None
         ]
     )
 
-    result = await respx_stash_client.update_scene(mock_scene)
+    try:
+        result = await respx_stash_client.update_scene(mock_scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "123"
@@ -903,8 +1001,11 @@ async def test_create_scene_error(respx_stash_client: StashClient, mock_scene) -
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to create scene"):
-        await respx_stash_client.create_scene(mock_scene)
+    try:
+        with pytest.raises(Exception, match="Failed to create scene"):
+            await respx_stash_client.create_scene(mock_scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -921,8 +1022,11 @@ async def test_update_scene_error(respx_stash_client: StashClient, mock_scene) -
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to update scene"):
-        await respx_stash_client.update_scene(mock_scene)
+    try:
+        with pytest.raises(Exception, match="Failed to update scene"):
+            await respx_stash_client.update_scene(mock_scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -942,8 +1046,11 @@ async def test_bulk_scene_update_error(respx_stash_client: StashClient) -> None:
         "tag_ids": {"ids": ["tag1"], "mode": "ADD"},
     }
 
-    with pytest.raises(Exception, match="Failed to bulk update"):
-        await respx_stash_client.bulk_scene_update(input_data)
+    try:
+        with pytest.raises(Exception, match="Failed to bulk update"):
+            await respx_stash_client.bulk_scene_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -962,8 +1069,11 @@ async def test_scenes_update_error(respx_stash_client: StashClient) -> None:
 
     scenes = [Scene(id="1", title="Scene 1"), Scene(id="2", title="Scene 2")]
 
-    with pytest.raises(Exception, match="Failed to update scenes"):
-        await respx_stash_client.scenes_update(scenes)
+    try:
+        with pytest.raises(Exception, match="Failed to update scenes"):
+            await respx_stash_client.scenes_update(scenes)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -980,8 +1090,11 @@ async def test_scene_generate_screenshot_error(respx_stash_client: StashClient) 
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to generate screenshot"):
-        await respx_stash_client.scene_generate_screenshot("123", at=10.5)
+    try:
+        with pytest.raises(Exception, match="Failed to generate screenshot"):
+            await respx_stash_client.scene_generate_screenshot("123", at=10.5)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1004,7 +1117,10 @@ async def test_find_scene_by_hash_with_model_input(
 
     # Test with SceneHashInput model instead of dict
     input_data = SceneHashInput(checksum="abc123")
-    scene = await respx_stash_client.find_scene_by_hash(input_data)
+    try:
+        scene = await respx_stash_client.find_scene_by_hash(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is not None
     assert scene.id == "123"
@@ -1027,8 +1143,11 @@ async def test_scene_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete scene"):
-        await respx_stash_client.scene_destroy({"id": "123"})
+    try:
+        with pytest.raises(Exception, match="Failed to delete scene"):
+            await respx_stash_client.scene_destroy({"id": "123"})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1045,8 +1164,11 @@ async def test_scenes_destroy_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(Exception, match="Failed to delete scenes"):
-        await respx_stash_client.scenes_destroy({"ids": ["123", "456"]})
+    try:
+        with pytest.raises(Exception, match="Failed to delete scenes"):
+            await respx_stash_client.scenes_destroy({"ids": ["123", "456"]})
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1070,7 +1192,10 @@ async def test_scene_merge(respx_stash_client: StashClient) -> None:
         source=["456", "789"],
     )
 
-    scene = await respx_stash_client.scene_merge(input_data)
+    try:
+        scene = await respx_stash_client.scene_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert scene is not None
     assert scene.id == "123"
@@ -1097,8 +1222,11 @@ async def test_scene_merge_error(respx_stash_client: StashClient) -> None:
 
     input_data = SceneMergeInput(destination="123", source=["456"])
 
-    with pytest.raises(Exception, match="Failed to merge scenes"):
-        await respx_stash_client.scene_merge(input_data)
+    try:
+        with pytest.raises(Exception, match="Failed to merge scenes"):
+            await respx_stash_client.scene_merge(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(graphql_route.calls) == 1
 
@@ -1135,7 +1263,10 @@ async def test_bulk_scene_update_success(respx_stash_client: StashClient) -> Non
         "rating100": 80,
     }
 
-    result = await respx_stash_client.bulk_scene_update(input_data)
+    try:
+        result = await respx_stash_client.bulk_scene_update(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
     assert result[0].id == "s1"
@@ -1172,7 +1303,10 @@ async def test_scenes_update_success(respx_stash_client: StashClient) -> None:
         Scene(id="s2", title="Updated Scene 2"),
     ]
 
-    result = await respx_stash_client.scenes_update(scenes)
+    try:
+        result = await respx_stash_client.scenes_update(scenes)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert result[0].id == "s1"
@@ -1196,7 +1330,10 @@ async def test_scene_generate_screenshot_no_result_key(
         side_effect=[httpx.Response(200, json={"data": {"otherField": "value"}})]
     )
 
-    result = await respx_stash_client.scene_generate_screenshot("123")
+    try:
+        result = await respx_stash_client.scene_generate_screenshot("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == ""
     assert len(graphql_route.calls) == 1
@@ -1216,7 +1353,10 @@ async def test_scene_destroy_with_input_type(respx_stash_client: StashClient) ->
     )
 
     input_data = SceneDestroyInput(id="123", delete_file=True, delete_generated=False)
-    result = await respx_stash_client.scene_destroy(input_data)
+    try:
+        result = await respx_stash_client.scene_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1246,7 +1386,10 @@ async def test_scenes_destroy_with_input_type(respx_stash_client: StashClient) -
         delete_file=False,
         delete_generated=True,
     )
-    result = await respx_stash_client.scenes_destroy(input_data)
+    try:
+        result = await respx_stash_client.scenes_destroy(input_data)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is True
 
@@ -1273,9 +1416,12 @@ async def test_scene_merge_with_dict(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_merge(
-        {"source": ["src1", "src2"], "destination": "dest"}
-    )
+    try:
+        result = await respx_stash_client.scene_merge(
+            {"source": ["src1", "src2"], "destination": "dest"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
     assert result.id == "dest"
@@ -1318,9 +1464,12 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    result = await respx_stash_client.find_scenes_by_path_regex(
-        filter_={"path": ".*test.*"}
-    )
+    try:
+        result = await respx_stash_client.find_scenes_by_path_regex(
+            filter_={"path": ".*test.*"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify FindScenesResultType structure
     assert result.count == 2
@@ -1354,9 +1503,12 @@ async def test_find_scenes_by_path_regex_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.find_scenes_by_path_regex(
-        filter_={"path": ".*test.*"}
-    )
+    try:
+        result = await respx_stash_client.find_scenes_by_path_regex(
+            filter_={"path": ".*test.*"}
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result.count == 0
     assert result.duration == 0
@@ -1396,7 +1548,10 @@ async def test_scene_streams(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_streams("123")
+    try:
+        result = await respx_stash_client.scene_streams("123")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -1427,7 +1582,10 @@ async def test_scene_streams_empty(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    result = await respx_stash_client.scene_streams("456")
+    try:
+        result = await respx_stash_client.scene_streams("456")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -1450,7 +1608,10 @@ async def test_scene_streams_error_returns_empty(
         ]
     )
 
-    result = await respx_stash_client.scene_streams("999")
+    try:
+        result = await respx_stash_client.scene_streams("999")
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -1537,7 +1698,10 @@ async def test_merge_scene_markers_single_source(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -1659,9 +1823,12 @@ async def test_merge_scene_markers_multiple_sources(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers(
-        "target", ["source1", "source2"]
-    )
+    try:
+        result = await respx_stash_client.merge_scene_markers(
+            "target", ["source1", "source2"]
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
@@ -1691,7 +1858,10 @@ async def test_merge_scene_markers_no_markers_in_source(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty list
     assert result == []
@@ -1712,7 +1882,10 @@ async def test_merge_scene_markers_error_handling(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty list on error
     assert result == []
@@ -1741,7 +1914,10 @@ async def test_find_duplicate_scenes_wrapper_default_params(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes_wrapper()
+    try:
+        result = await respx_stash_client.find_duplicate_scenes_wrapper()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Verify results
     assert len(result) == 1
@@ -1774,7 +1950,10 @@ async def test_find_duplicate_scenes_wrapper_custom_distance(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes_wrapper(distance=10)
+    try:
+        result = await respx_stash_client.find_duplicate_scenes_wrapper(distance=10)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -1799,7 +1978,12 @@ async def test_find_duplicate_scenes_wrapper_custom_duration_diff(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes_wrapper(duration_diff=5.0)
+    try:
+        result = await respx_stash_client.find_duplicate_scenes_wrapper(
+            duration_diff=5.0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -1833,9 +2017,12 @@ async def test_find_duplicate_scenes_wrapper_both_params(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes_wrapper(
-        distance=15, duration_diff=10.0
-    )
+    try:
+        result = await respx_stash_client.find_duplicate_scenes_wrapper(
+            distance=15, duration_diff=10.0
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
     assert len(result[0]) == 2
@@ -1860,7 +2047,10 @@ async def test_find_duplicate_scenes_wrapper_error_handling(
         ]
     )
 
-    result = await respx_stash_client.find_duplicate_scenes_wrapper()
+    try:
+        result = await respx_stash_client.find_duplicate_scenes_wrapper()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert result == []
 
@@ -1916,7 +2106,10 @@ async def test_merge_scene_markers_with_end_seconds_and_no_tags(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0].end_seconds == 15.0
@@ -1945,7 +2138,10 @@ async def test_merge_scene_markers_null_result(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     # Should return empty list (skipped source due to null result)
     assert result == []
@@ -2007,7 +2203,10 @@ async def test_merge_scene_markers_without_end_seconds(
         ]
     )
 
-    result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    try:
+        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+    finally:
+        dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
     assert result[0].end_seconds is None

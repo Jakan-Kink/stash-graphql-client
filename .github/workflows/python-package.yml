@@ -133,6 +133,101 @@ jobs:
             sleep 2
           done
 
+      - name: Initialize Stash if needed
+        run: |
+          python3 - << 'PYEOF'
+          import urllib.request, json, time, sys
+
+          GRAPHQL_URL = "http://localhost:9999/graphql"
+
+          def graphql(query, variables=None):
+              payload = {"query": query}
+              if variables:
+                  payload["variables"] = variables
+              data = json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  GRAPHQL_URL, data=data,
+                  headers={"Content-Type": "application/json"}
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  return json.loads(resp.read())
+
+          result = graphql("{ systemStatus { status } }")
+          status = result["data"]["systemStatus"]["status"]
+          print(f"Stash system status: {status}")
+
+          if status == "SETUP":
+              print("Running initial Stash setup...")
+              setup = graphql(
+                  "mutation Setup($input: SetupInput!) { setup(input: $input) }",
+                  {"input": {
+                      "configLocation": "",
+                      "stashes": [],
+                      "databaseFile": "",
+                      "generatedLocation": "",
+                      "cacheLocation": "",
+                      "storeBlobsInDatabase": True,
+                      "blobsLocation": "",
+                  }}
+              )
+              print(f"Setup result: {setup}")
+              if setup.get("data", {}).get("setup") is True:
+                  print("Setup completed, waiting for initialization...")
+                  time.sleep(5)
+              else:
+                  print("Setup failed!", file=sys.stderr)
+                  sys.exit(1)
+          else:
+              print(f"Stash already configured (status: {status})")
+          PYEOF
+
+          # Stash probes an external host after setup; if reachable it sets
+          # security_tripwire_accessed_from_public_internet to the detected IP
+          # and blocks all unauthenticated requests. Fix: set
+          # dangerous_allow_public_without_auth: true and blank the tripwire key.
+          # Exit code 1 signals that a restart is needed to re-read the config.
+          python3 - << 'PYEOF'
+          import pathlib, re, sys
+
+          config = pathlib.Path("/tmp/stash-config/config.yml")
+          if not config.exists():
+              sys.exit(0)
+
+          content = config.read_text()
+          patched = content
+
+          if "dangerous_allow_public_without_auth" not in patched:
+              patched += "dangerous_allow_public_without_auth: true\n"
+
+          patched = re.sub(
+              r"^security_tripwire_accessed_from_public_internet:.*$",
+              'security_tripwire_accessed_from_public_internet: ""',
+              patched, flags=re.MULTILINE,
+          )
+
+          if patched != content:
+              config.write_text(patched)
+              print("Patched config: dangerous_allow_public_without_auth + blanked tripwire")
+              sys.exit(1)
+          PYEOF
+          PATCH_EXIT=$?
+
+          if [ $PATCH_EXIT -ne 0 ]; then
+            CONTAINER=$(docker ps -q --filter ancestor=stashapp/stash:development)
+            if [ -n "$CONTAINER" ]; then
+              echo "Restarting Stash to apply config changes..."
+              docker restart "$CONTAINER"
+              for i in {1..30}; do
+                if curl -sf http://localhost:9999/graphql -H "Content-Type: application/json" \
+                    -d '{"query": "{ version { build_time } }"}' > /dev/null 2>&1; then
+                  echo "✓ Stash restarted and ready"
+                  break
+                fi
+                sleep 2
+              done
+            fi
+          fi
+
       - name: Run tests with pytest
         run: |
           poetry run pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy -n auto
@@ -241,6 +336,101 @@ jobs:
             echo "Attempt $i/30: Stash not ready yet, waiting..."
             sleep 2
           done
+
+      - name: Initialize Stash if needed
+        run: |
+          python3 - << 'PYEOF'
+          import urllib.request, json, time, sys
+
+          GRAPHQL_URL = "http://localhost:9999/graphql"
+
+          def graphql(query, variables=None):
+              payload = {"query": query}
+              if variables:
+                  payload["variables"] = variables
+              data = json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  GRAPHQL_URL, data=data,
+                  headers={"Content-Type": "application/json"}
+              )
+              with urllib.request.urlopen(req, timeout=15) as resp:
+                  return json.loads(resp.read())
+
+          result = graphql("{ systemStatus { status } }")
+          status = result["data"]["systemStatus"]["status"]
+          print(f"Stash system status: {status}")
+
+          if status == "SETUP":
+              print("Running initial Stash setup...")
+              setup = graphql(
+                  "mutation Setup($input: SetupInput!) { setup(input: $input) }",
+                  {"input": {
+                      "configLocation": "",
+                      "stashes": [],
+                      "databaseFile": "",
+                      "generatedLocation": "",
+                      "cacheLocation": "",
+                      "storeBlobsInDatabase": True,
+                      "blobsLocation": "",
+                  }}
+              )
+              print(f"Setup result: {setup}")
+              if setup.get("data", {}).get("setup") is True:
+                  print("Setup completed, waiting for initialization...")
+                  time.sleep(5)
+              else:
+                  print("Setup failed!", file=sys.stderr)
+                  sys.exit(1)
+          else:
+              print(f"Stash already configured (status: {status})")
+          PYEOF
+
+          # Stash probes an external host after setup; if reachable it sets
+          # security_tripwire_accessed_from_public_internet to the detected IP
+          # and blocks all unauthenticated requests. Fix: set
+          # dangerous_allow_public_without_auth: true and blank the tripwire key.
+          # Exit code 1 signals that a restart is needed to re-read the config.
+          python3 - << 'PYEOF'
+          import pathlib, re, sys
+
+          config = pathlib.Path("/tmp/stash-config/config.yml")
+          if not config.exists():
+              sys.exit(0)
+
+          content = config.read_text()
+          patched = content
+
+          if "dangerous_allow_public_without_auth" not in patched:
+              patched += "dangerous_allow_public_without_auth: true\n"
+
+          patched = re.sub(
+              r"^security_tripwire_accessed_from_public_internet:.*$",
+              'security_tripwire_accessed_from_public_internet: ""',
+              patched, flags=re.MULTILINE,
+          )
+
+          if patched != content:
+              config.write_text(patched)
+              print("Patched config: dangerous_allow_public_without_auth + blanked tripwire")
+              sys.exit(1)
+          PYEOF
+          PATCH_EXIT=$?
+
+          if [ $PATCH_EXIT -ne 0 ]; then
+            CONTAINER=$(docker ps -q --filter ancestor=stashapp/stash:development)
+            if [ -n "$CONTAINER" ]; then
+              echo "Restarting Stash to apply config changes..."
+              docker restart "$CONTAINER"
+              for i in {1..30}; do
+                if curl -sf http://localhost:9999/graphql -H "Content-Type: application/json" \
+                    -d '{"query": "{ version { build_time } }"}' > /dev/null 2>&1; then
+                  echo "✓ Stash restarted and ready"
+                  break
+                fi
+                sleep 2
+              done
+            fi
+          fi
 
       - name: Run tests with pytest
         run: |

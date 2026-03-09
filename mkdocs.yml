@@ -156,15 +156,17 @@ nav:
   - Architecture:
       - Overview: architecture/overview.md
       - Identity Map: architecture/identity-map.md
+      - Dirty Tracking: architecture/dirty-tracking.md
+      - Pydantic Internals: architecture/pydantic-internals.md
       - Library Comparisons: architecture/comparison.md
       - Bidirectional Relationships: architecture/bidirectional-relationships.md
+      - Capabilities & Fragments: architecture/capabilities-and-fragments.md
       - Diagrams: diagrams.md
   - API Reference:
       - Client: api/client.md
       - Context: api/context.md
       - Entity Store: api/store.md
       - Errors: api/errors.md
-      - GraphQL Fragments: api/fragments.md
       - Schema: api/schema.md
       - Types: api/types.md
       - Client Mixins:
@@ -189,3 +191,6 @@ nav:
           - Version: api/client/mixins/version.md
   - Reference:
       - Quick Reference: reference/quick-reference.md
+  - Archive:
+      - Overview: archive/README.md
+      - Type Validation Issues: archive/TYPE_VALIDATION_ISSUES.md

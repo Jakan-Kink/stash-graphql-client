@@ -13,6 +13,7 @@ Fixture Organization:
 
 from tests.fixtures.client import (
     capture_graphql_calls,
+    dump_graphql_calls,
     mock_entity_store,
     mock_gql_ws_connect,
     mock_ws_transport,
@@ -35,6 +36,8 @@ from tests.fixtures.stash import (
     StudioFactory,
     TagFactory,
     VideoFileFactory,
+    # Capability fixtures
+    create_capability_response,
     # Config response generators
     create_config_defaults_result,
     create_config_dlna_result,
@@ -67,6 +70,7 @@ from tests.fixtures.stash import (
     create_tag_dict,
     create_version_dict,
     enable_scene_creation,
+    make_server_capabilities,
     # Pytest fixtures (real objects, not mocks)
     mock_gallery,
     mock_image,
@@ -80,8 +84,12 @@ from tests.fixtures.stash import (
 
 
 __all__ = [
+    # Capability Fixtures
+    "create_capability_response",
+    "make_server_capabilities",
     # Client Fixtures
     "capture_graphql_calls",
+    "dump_graphql_calls",
     "enable_scene_creation",
     "mock_entity_store",
     "mock_gql_ws_connect",

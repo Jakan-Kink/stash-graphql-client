@@ -19,7 +19,7 @@ from stash_graphql_client.types import (
     SavedFilter,
     SaveFilterInput,
 )
-from tests.fixtures import capture_graphql_calls
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # =============================================================================
@@ -34,7 +34,7 @@ async def test_save_filter_scenes_mode(
 ) -> None:
     """Test saving a new filter for scenes mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -44,7 +44,10 @@ async def test_save_filter_scenes_mode(
             name=unique_name,
         )
 
-        saved_filter = await stash_client.save_filter(input_data)
+        try:
+            saved_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -69,7 +72,7 @@ async def test_save_filter_performers_mode(
 ) -> None:
     """Test saving a new filter for performers mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -79,7 +82,10 @@ async def test_save_filter_performers_mode(
             name=unique_name,
         )
 
-        saved_filter = await stash_client.save_filter(input_data)
+        try:
+            saved_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -104,7 +110,7 @@ async def test_save_filter_galleries_mode(
 ) -> None:
     """Test saving a new filter for galleries mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save a new filter
@@ -114,7 +120,10 @@ async def test_save_filter_galleries_mode(
             name=unique_name,
         )
 
-        saved_filter = await stash_client.save_filter(input_data)
+        try:
+            saved_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -136,7 +145,7 @@ async def test_save_filter_with_dict_input(
 ) -> None:
     """Test saving a filter using dictionary input instead of SaveFilterInput."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter using dict
@@ -146,7 +155,10 @@ async def test_save_filter_with_dict_input(
             "name": unique_name,
         }
 
-        saved_filter = await stash_client.save_filter(input_dict)
+        try:
+            saved_filter = await stash_client.save_filter(input_dict)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -169,7 +181,7 @@ async def test_save_filter_with_find_filter(
 ) -> None:
     """Test saving a filter with find_filter parameters."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter with find_filter options
@@ -180,7 +192,10 @@ async def test_save_filter_with_find_filter(
             find_filter=FindFilterType(per_page=50, page=1),
         )
 
-        saved_filter = await stash_client.save_filter(input_data)
+        try:
+            saved_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -203,7 +218,7 @@ async def test_save_filter_with_object_filter(
 ) -> None:
     """Test saving a filter with object_filter parameters."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filter with object_filter options
@@ -214,7 +229,10 @@ async def test_save_filter_with_object_filter(
             object_filter={"organized": True},
         )
 
-        saved_filter = await stash_client.save_filter(input_data)
+        try:
+            saved_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls)
         cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify GraphQL call
@@ -241,7 +259,7 @@ async def test_save_filter_update_existing(
 ) -> None:
     """Test updating an existing filter by providing an id."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create initial filter
@@ -251,7 +269,10 @@ async def test_save_filter_update_existing(
             name=original_name,
         )
 
-        created_filter = await stash_client.save_filter(input_data)
+        try:
+            created_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
         cleanup["saved_filters"].append(created_filter.id)
         filter_id = created_filter.id
 
@@ -268,7 +289,10 @@ async def test_save_filter_update_existing(
             name=updated_name,
         )
 
-        updated_filter = await stash_client.save_filter(update_data)
+        try:
+            updated_filter = await stash_client.save_filter(update_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for filter update"
@@ -290,7 +314,7 @@ async def test_save_filter_update_with_ui_options(
 ) -> None:
     """Test updating filter ui_options."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create initial filter
@@ -301,7 +325,10 @@ async def test_save_filter_update_with_ui_options(
             ui_options={"display_mode": "grid"},
         )
 
-        created_filter = await stash_client.save_filter(input_data)
+        try:
+            created_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
         cleanup["saved_filters"].append(created_filter.id)
         filter_id = created_filter.id
 
@@ -315,7 +342,10 @@ async def test_save_filter_update_with_ui_options(
             ui_options={"display_mode": "list", "sort_by": "name"},
         )
 
-        updated_filter = await stash_client.save_filter(update_data)
+        try:
+            updated_filter = await stash_client.save_filter(update_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
 
         # Verify update call
         assert len(calls) == 1, "Expected 1 GraphQL call for ui_options update"
@@ -341,7 +371,7 @@ async def test_destroy_saved_filter(
 ) -> None:
     """Test destroying a saved filter."""
     async with (
-        stash_cleanup_tracker(stash_client) as _,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as _,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a filter to destroy
@@ -351,7 +381,10 @@ async def test_destroy_saved_filter(
             name=unique_name,
         )
 
-        created_filter = await stash_client.save_filter(input_data)
+        try:
+            created_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
         filter_id = created_filter.id
 
         # Verify creation
@@ -360,7 +393,10 @@ async def test_destroy_saved_filter(
 
         # Destroy the filter
         destroy_input = DestroyFilterInput(id=filter_id)
-        success = await stash_client.destroy_saved_filter(destroy_input)
+        try:
+            success = await stash_client.destroy_saved_filter(destroy_input)
+        finally:
+            dump_graphql_calls(calls, "destroy_saved_filter")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for destroy_saved_filter"
@@ -380,7 +416,7 @@ async def test_destroy_saved_filter_with_dict(
 ) -> None:
     """Test destroying a filter using dictionary input."""
     async with (
-        stash_cleanup_tracker(stash_client) as _,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as _,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create a filter to destroy
@@ -390,13 +426,19 @@ async def test_destroy_saved_filter_with_dict(
             name=unique_name,
         )
 
-        created_filter = await stash_client.save_filter(input_data)
+        try:
+            created_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
         filter_id = created_filter.id
 
         calls.clear()
 
         # Destroy using dict
-        success = await stash_client.destroy_saved_filter({"id": filter_id})
+        try:
+            success = await stash_client.destroy_saved_filter({"id": filter_id})
+        finally:
+            dump_graphql_calls(calls, "destroy_saved_filter")
 
         # Verify destroy call
         assert len(calls) == 1, "Expected 1 GraphQL call for destroy_saved_filter"
@@ -415,15 +457,18 @@ async def test_destroy_nonexistent_filter_raises_error(
 ) -> None:
     """Test destroying a nonexistent filter raises an error."""
     async with (
-        stash_cleanup_tracker(stash_client),
+        stash_cleanup_tracker(stash_client, auto_capture=False),
         capture_graphql_calls(stash_client) as calls,
     ):
         # Try to destroy a filter that doesn't exist
         destroy_input = DestroyFilterInput(id="99999999")
 
         # Should raise an error since the filter doesn't exist
-        with pytest.raises(StashGraphQLError):
-            await stash_client.destroy_saved_filter(destroy_input)
+        try:
+            with pytest.raises(StashGraphQLError):
+                await stash_client.destroy_saved_filter(destroy_input)
+        finally:
+            dump_graphql_calls(calls)
 
         # Verify destroy call was attempted
         assert len(calls) == 1, "Expected 1 GraphQL call for destroy_saved_filter"
@@ -443,7 +488,7 @@ async def test_save_filters_multiple_modes(
 ) -> None:
     """Test creating filters for multiple different modes."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Save filters for different modes
@@ -456,7 +501,10 @@ async def test_save_filters_multiple_modes(
 
         for mode, name in modes_to_test:
             input_data = SaveFilterInput(mode=mode, name=name)
-            saved_filter = await stash_client.save_filter(input_data)
+            try:
+                saved_filter = await stash_client.save_filter(input_data)
+            finally:
+                dump_graphql_calls(calls, "save_filter")
             cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify all calls were made
@@ -478,7 +526,7 @@ async def test_save_update_destroy_filter_lifecycle(
 ) -> None:
     """Test complete filter lifecycle: save, update, and destroy."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # 1. Create filter
@@ -488,7 +536,10 @@ async def test_save_update_destroy_filter_lifecycle(
             name=original_name,
         )
 
-        created_filter = await stash_client.save_filter(input_data)
+        try:
+            created_filter = await stash_client.save_filter(input_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
         filter_id = created_filter.id
         cleanup["saved_filters"].append(filter_id)
 
@@ -505,7 +556,10 @@ async def test_save_update_destroy_filter_lifecycle(
             name=updated_name,
         )
 
-        updated_filter = await stash_client.save_filter(update_data)
+        try:
+            updated_filter = await stash_client.save_filter(update_data)
+        finally:
+            dump_graphql_calls(calls, "save_filter")
 
         # Verify update
         assert len(calls) == 1
@@ -515,7 +569,10 @@ async def test_save_update_destroy_filter_lifecycle(
 
         # 3. Destroy filter
         destroy_input = DestroyFilterInput(id=filter_id)
-        success = await stash_client.destroy_saved_filter(destroy_input)
+        try:
+            success = await stash_client.destroy_saved_filter(destroy_input)
+        finally:
+            dump_graphql_calls(calls, "destroy_saved_filter")
 
         # Verify destruction
         assert len(calls) == 1
@@ -531,7 +588,7 @@ async def test_save_multiple_filters_same_mode(
 ) -> None:
     """Test creating multiple filters for the same mode."""
     async with (
-        stash_cleanup_tracker(stash_client) as cleanup,
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
         capture_graphql_calls(stash_client) as calls,
     ):
         # Create multiple filters for the same mode
@@ -543,7 +600,10 @@ async def test_save_multiple_filters_same_mode(
 
         for name in filter_names:
             input_data = SaveFilterInput(mode=FilterMode.SCENES, name=name)
-            saved_filter = await stash_client.save_filter(input_data)
+            try:
+                saved_filter = await stash_client.save_filter(input_data)
+            finally:
+                dump_graphql_calls(calls, "save_filter")
             cleanup["saved_filters"].append(saved_filter.id)
 
         # Verify all calls were made

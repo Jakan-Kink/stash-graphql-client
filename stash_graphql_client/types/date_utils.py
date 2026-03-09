@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from stash_graphql_client.errors import StashIntegrationError
 
 
-class DatePrecision(str, Enum):
+class DatePrecision(StrEnum):
     """Date precision levels supported by Stash.
     These correspond to the database precision values:
     - DAY = 0 (YYYY-MM-DD)
