@@ -478,6 +478,7 @@ class GalleryFilterType(StashInput):
     tags_filter: TagFilterType | None | UnsetType = UNSET
     files_filter: FileFilterType | None | UnsetType = UNSET
     folders_filter: FolderFilterType | None | UnsetType = UNSET
+    parent_folder: HierarchicalMultiCriterionInput | None | UnsetType = UNSET
     custom_fields: list[CustomFieldCriterionInput] | None | UnsetType = (
         UNSET  # appSchema >= 84
     )
