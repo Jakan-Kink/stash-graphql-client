@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0b6] - 2026-03-09
+
+### Added
+
+- **`dump_graphql_calls()` debug utility**: Polymorphic helper in `tests/fixtures/client.py` that
+  auto-detects `respx` call objects vs `capture_graphql_calls` dicts and prints full GraphQL
+  request/response details, pytest's captured stdout reveals the full GraphQL call trace — zero noise on
+  passing runs
+- **`GalleryFilterType.parent_folder`**: Added `parent_folder: HierarchicalMultiCriterionInput`
+  filter field to match upstream schema addition for filtering galleries by parent folder
+- **`CustomFieldsInput.remove`**: Added `remove: list[str]` field to support removing individual
+  custom field keys (previously only `full` replace-all and `partial` upsert were available)
+- **`ConfigDisableDropdownCreateInput` / `ConfigDisableDropdownCreate`**: Added `gallery` field to
+  both input and result types to control gallery dropdown creation setting
+- **`ConfigImageLightboxInput` / `ConfigImageLightboxResult`**: Added `disableAnimation` field to
+  both input and result types to control lightbox animation setting
+
 ## [0.11.0b5] - 2026-03-04
 
 ### Added
@@ -895,7 +912,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b4...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b6...HEAD
+[0.11.0b6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b5...v0.11.0b6
+[0.11.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b4...v0.11.0b5
 [0.11.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b3...v0.11.0b4
 [0.11.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b2...v0.11.0b3
 [0.11.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...v0.11.0b2
