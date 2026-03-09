@@ -1430,7 +1430,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
             destroy_input = self.__destroy_input_type__(ids=[self.id], **kwargs)
         else:
             destroy_input = self.__destroy_input_type__(id=self.id, **kwargs)
-        input_data = destroy_input.to_graphql()
+        input_data = destroy_input.to_graphql()  # type: ignore[attr-defined]
 
         mutation = f"""
             mutation Destroy{type_name}($input: {type_name}DestroyInput!) {{
@@ -1482,7 +1482,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         if cls.__bulk_destroy_input_type__ is not None:
             # Types with a dedicated input type (Scene, Image)
             destroy_input = cls.__bulk_destroy_input_type__(ids=ids, **kwargs)
-            input_data = destroy_input.to_graphql()
+            input_data = destroy_input.to_graphql()  # type: ignore[attr-defined]
             input_type_name = cls.__bulk_destroy_input_type__.__name__
 
             mutation = f"""
@@ -1551,7 +1551,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         merge_input = cls.__merge_input_type__(
             source=source_ids, destination=destination_id, **kwargs
         )
-        input_data = merge_input.to_graphql()
+        input_data = merge_input.to_graphql()  # type: ignore[attr-defined]
         input_type_name = cls.__merge_input_type__.__name__
 
         # Schema uses tagsMerge (plural) vs sceneMerge/performerMerge (singular)
@@ -1773,7 +1773,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # StashInput.to_graphql() builds an explicit exclude set for UNSET fields.
         # model_dump(exclude_none=True) would only exclude None, leaving UNSET
         # objects in the dict that cannot be JSON-serialized by the gql transport.
-        result_dict: dict[str, Any] = input_obj.to_graphql()
+        result_dict: dict[str, Any] = input_obj.to_graphql()  # type: ignore[attr-defined]
         log.debug(f"Converted {self.__type_name__} to input: {result_dict}")
         return result_dict
 

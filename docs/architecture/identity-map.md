@@ -413,7 +413,7 @@ def _cache_entity(self, entity: StashObject) -> None:
         self._cache[cache_key] = CacheEntry(
             entity=entity,
             cached_at=time.monotonic(),
-            ttl_seconds=self._ttl_seconds
+            ttl_seconds=self._default_ttl
         )
 
 

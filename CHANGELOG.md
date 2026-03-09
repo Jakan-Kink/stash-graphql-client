@@ -7,246 +7,100 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.11.0b6] - 2026-03-09
+## [0.11.0] - 2026-03-09
 
 ### Added
 
-- **`dump_graphql_calls()` debug utility**: Polymorphic helper in `tests/fixtures/client.py` that
-  auto-detects `respx` call objects vs `capture_graphql_calls` dicts and prints full GraphQL
-  request/response details, pytest's captured stdout reveals the full GraphQL call trace — zero noise on
-  passing runs
-- **`GalleryFilterType.parent_folder`**: Added `parent_folder: HierarchicalMultiCriterionInput`
-  filter field to match upstream schema addition for filtering galleries by parent folder
-- **`CustomFieldsInput.remove`**: Added `remove: list[str]` field to support removing individual
-  custom field keys (previously only `full` replace-all and `partial` upsert were available)
-- **`ConfigDisableDropdownCreateInput` / `ConfigDisableDropdownCreate`**: Added `gallery` field to
-  both input and result types to control gallery dropdown creation setting
-- **`ConfigImageLightboxInput` / `ConfigImageLightboxResult`**: Added `disableAnimation` field to
-  both input and result types to control lightbox animation setting
-
-## [0.11.0b5] - 2026-03-04
-
-### Added
-
-- **`__schema` introspection**: Capability detection replaced individual `__type` probes with a
-  single `__schema` introspection query. `ServerCapabilities` now exposes dynamic lookup methods
-  (`has_query()`, `has_mutation()`, `has_type()`, `type_has_field()`, `input_has_field()`) instead
-  of per-feature boolean fields
-- **`__safe_to_eat__` input gating**: `StashInput` subclasses can declare fields that may be
-  absent on older servers; `to_graphql()` silently strips them when unsupported, raises
-  `ValueError` for unlisted unsupported fields
-- **`GenerateMetadataInput.paths`** with `__safe_to_eat__` gating (also gates `imageIDs`,
-  `galleryIDs`, `imagePhashes`)
-- **`ScrapedPerformer` / `ScrapedPerformerInput`**: added missing `career_start`, `career_end`
+- **Server capability detection** (`capabilities.py`): `ServerCapabilities` frozen dataclass with
+  dynamic lookup methods (`has_query()`, `has_mutation()`, `has_type()`, `type_has_field()`,
+  `input_has_field()`); `detect_capabilities()` issues a single `__schema` introspection query at
+  connect time; raises `StashVersionError` for servers below appSchema 75 (pre-v0.30.0)
+- **Dynamic `FragmentStore`**: rebuilt at connect time via `fragment_store.rebuild(capabilities)` so
+  version-gated fields are included only when supported; all client mixins reference
+  `fragment_store.*` instead of module-level `fragments.*` constants
+- **Entity lifecycle methods on `StashObject`**: `entity.delete(client)`,
+  `EntityType.bulk_destroy(client, ids)`, `EntityType.merge(client, source_ids, destination_id)` —
+  replaces manual mutation calls; auto-invalidates cache on delete
+- **`StashEntityStore` additions**: `get_cached()` (sync cache-only lookup), `delete()` (delete +
+  invalidate), `invalidate(entity)` overload
+- **`__safe_to_eat__` input gating**: `StashInput` subclasses can declare fields that may be absent
+  on older servers; `to_graphql()` silently strips them when unsupported
+- **Selective snapshot update after identity map merge**: `_update_snapshot_for_fields()` prevents
+  phantom dirty state after cache-hit merges or `store.populate()` while preserving user
+  modifications to unrelated fields
+- **Shallow `__repr__`**: Two-tier repr system that prevents exponential recursive expansion with
+  bidirectional relationships; `_short_repr()` for compact nested display
+- **`StashUnmappedFieldWarning`**: Emitted when `StashObject` receives fields not declared in the
+  model (server newer than client); purely informational
+- **`StashError` / `StashVersionError`**: Exported from top-level `stash_graphql_client` package
+- **BaseFile `__typename` discrimination**: Dispatches to correct subclass (`VideoFile`, `ImageFile`,
+  `GalleryFile`, `BasicFile`) based on `__typename`
+- **Schema alignment** (Stash appSchema 71–84):
+  - New client methods: `destroy_files()`, `reveal_file_in_file_manager()`,
+    `reveal_folder_in_file_manager()`, `stashbox_batch_tag_tag()`
+  - Filter additions: `PerformerFilterType` (`marker_count`, `markers_filter`, `career_start`,
+    `career_end`); `GroupFilterType` (`scene_count`, `custom_fields`); `ImageFilterType`
+    (`phash_distance`); `FolderFilterType` (`basename`); `GalleryFilterType` (`parent_folder`)
+  - Input additions: `BulkPerformerUpdateInput` (`career_start`, `career_end`);
+    Scene/Gallery/Image/Group bulk inputs (`custom_fields`); `StudioCreateInput`/`UpdateInput`
+    (`organized`); `TagsMergeInput` (`values`); `CustomFieldsInput` (`remove`);
+    `GenerateMetadataInput` (`paths`, `imagePhashes`, `imageIDs`, `galleryIDs`)
+  - Config: sprite fields on `ConfigGeneralResult`; `disableCustomizations` on
+    `ConfigInterfaceInput`/`Result`; `gallery` on `ConfigDisableDropdownCreate*`;
+    `disableAnimation` on `ConfigImageLightbox*`
+  - Scraped types: `ScrapedPerformer`/`ScrapedPerformerInput` (`career_start`, `career_end`);
+    `ScrapedTag` (`description`, `alias_list`)
+- **Architecture documentation**: `capabilities-and-fragments.md`, `dirty-tracking.md`,
+  `pydantic-internals.md`
+- **`MIGRATION.md`**: Migration guide for 0.10.x → 0.11.0
 
 ### Changed
 
-- **Metadata mixin**: removed manual `paths` capability check — now handled declaratively by
-  `__safe_to_eat__`
-- **Performer dirty tracking**: added missing `__tracked_fields__` / `__field_conversions__`
-  entries for `rating100`, `favorite`, `ignore_auto_tag`, `career_start`, `career_end`
-- **Studio dirty tracking**: added missing entries for `rating100`, `favorite`,
-  `ignore_auto_tag`, `organized`
+- **`StashEntityStore` renames**: `clear_type()` → `invalidate_type()`; `ttl_seconds` → `default_ttl`
+- **StrEnum Migration**: Migrated 33 string enum classes from `(str, Enum)` to `StrEnum`
+- **`itertools.batched()` Migration**: Replaced manual batching (Python 3.12+)
+- `log.error()` → `log.exception()` in all exception handlers (preserves full tracebacks)
+- Subscription teardown: explicit `aclose()` in `finally` blocks prevents C-level crashes on
+  Python 3.14+ under xdist
+- Performer/Studio dirty tracking: added missing `__tracked_fields__` / `__field_conversions__`
+  entries
 
 ### Fixed
 
-- **~30 incorrect Pydantic aliases** verified against live server:
-  - `ScrapedPerformerInput` (8 wrong aliases) and `ScrapedSceneInput` (1) — `to_graphql()`
-    was producing field names the server rejects
-  - `Scene` (7), `ScrapedPerformer`/`ScrapedTag`/`ScrapedStudio`/`ScrapedScene`/`ScrapedMovie`/
-    `ScrapedGroup`/`ScraperSource` (~12), `PluginSetting` (1), `Package`/`PackageSource` (3
-    redundant self-referencing aliases)
+- **~30 incorrect Pydantic aliases** verified against live server across `ScrapedPerformerInput`,
+  `ScrapedSceneInput`, `Scene`, multiple `Scraped*` types, `PluginSetting`, `Package`/`PackageSource`
+- **`StashObject.to_input()` UNSET serialization**: Replaced `model_dump(exclude_none=True)` with
+  `input_obj.to_graphql()` — UNSET sentinels no longer leak into gql transport
+- **`_BASE_STUDIO_FIELDS`**: Added missing `rating100`, `favorite`, `stash_ids`
+- **`Performer.custom_fields`** fragment: moved to base fields (available since appSchema 71)
+- **Pydantic v2 `UserWarning`** in `StashObject`: replaced `__init__` override with
+  `model_validator`s (`_inject_uuid`, `_set_is_new`)
+- **Folder fragment**: Replaced deprecated `parent_folder_id`/`zip_file_id` with object references
+- **Studio `handle_deprecated_url`**: Guard for non-dict data in before validator
+- **Performer relationship metadata**: Corrected Tag `inverse_query_field` to `None`
+- **StashInput `_warn_extra_fields`**: Excludes `_`-prefixed internal fields
+- **`types/__init__.py` `__all__`**: Removed 42 duplicate entries
+- **6 mypy errors**: Fixed overload signatures and `BaseModel`-typed ClassVar attribute access
+
+### Deprecated
+
+- **Extra Fields Behavior**: Unknown fields in dict inputs now emit `DeprecationWarning`.
+  In v0.12.0+, these will be rejected with `ValidationError`.
+
+### Testing
+
+- `dump_graphql_calls()` debug utility across all 64 test files — auto-prints GraphQL
+  request/response details on failure
+- Comprehensive test coverage for capabilities, fragment store, entity lifecycle, dirty tracking,
+  shallow repr, input deprecation warnings, safe-to-eat gating
+- Integration tests for file, folder, marker, performer, studio, tag CRUD and bulk operations
 
 ### CI / Infrastructure
 
 - Stash setup/init step in CI workflow (systemStatus check + setup mutation)
-- Skip `revealFile`/`revealFolder` tests on access denied (headless Docker)
-- Belt-and-suspenders cleanup appends in tag/performer integration tests
-- Skip subscription tests when ffmpeg/ffprobe unavailable
-
-### Testing
-
-- New `test_safe_to_eat_gating.py` (9 tests) and `test_metadata_integration.py`
-- Capability tests rewritten for `__schema`-based detection and lookup methods
-- Updated test fixtures for `__schema`-format capability responses
-
-## [0.11.0b4] - 2026-03-02
-
-### Added
-
-- **`ServerCapabilities` — mutation/query presence detection**: `CAPABILITY_DETECTION_QUERY` now
-  also enumerates all `Mutation` and `Query` field names. Nine new raw boolean fields gate
-  version-added operations: `has_performer_merge_input`, `has_bulk_scene_marker_update`,
-  `has_bulk_studio_update`, `has_destroy_files`, `has_reveal_file_in_file_manager`,
-  `has_reveal_folder_in_file_manager`, `has_stashbox_batch_tag_tag`,
-  `has_stashbox_batch_performer_tag`, `has_stashbox_batch_studio_tag`, `has_scrape_single_tag`
-
-### Fixed
-
-- **`_BASE_STUDIO_FIELDS` missing fields**: `rating100`, `favorite`, and `stash_ids` were absent
-  from the base studio fragment; all three are now included unconditionally (present since before
-  appSchema 75)
-- **`StashObject.to_input()` UNSET serialization**: Replaced `model_dump(exclude_none=True)` with
-  `input_obj.to_graphql()` — `exclude_none=True` only strips `None`, leaving `UNSET` sentinels
-  that fail JSON serialization in the gql transport
-- **`StashObject._set_is_new` validator**: `self.id` → `getattr(self, "id", None)` to guard
-  against `AttributeError` on `model_construct()`-built instances
-
-### CI / Infrastructure
-
-- **Stash initialization step**: Both CI jobs now query `systemStatus { status }` after the
-  readiness wait and run the `setup` mutation when status is `SETUP`. The previous readiness
-  check (`version { build_time }`) responded even in pre-setup mode, causing nil pointer
-  dereferences in virtually every resolver on fresh runners.
-- **Subscription tests — ffmpeg graceful skip**: Three subscription tests now skip instead of
-  failing when `metadata_scan()` raises `ValueError` mentioning ffmpeg/ffprobe (absent from the
-  `stash:development` Docker image)
-
-### Testing
-
-- New integration tests for file, folder, marker, performer, studio, and tag operations covering
-  find/pagination, nonexistent-returns-None, full CRUD lifecycle, and bulk operations
-- `tests/integration/test_capabilities_integration.py`: 11 tests covering mutation fragment
-  spot-checks, capability flag propagation, and appSchema-derived property monotonicity
-
-## [0.11.0b3] - 2026-03-01
-
-### Added
-
-- **Entity lifecycle methods on `StashObject`**: `entity.delete(client)`, `EntityType.bulk_destroy(client, ids)`, `EntityType.merge(client, source_ids, destination_id)` — replaces manual mutation calls; auto-invalidates cache on delete. New `ClassVar` hooks: `__destroy_input_type__`, `__bulk_destroy_input_type__`, `__merge_input_type__`
-- **`StashEntityStore` additions**: `get_cached()` (sync cache-only lookup), `delete()` (delete + invalidate), `invalidate(entity)` overload
-- **Server capability detection** (`capabilities.py`): `ServerCapabilities` frozen dataclass; `detect_capabilities()` issues a single combined introspection query at connect time; raises `StashVersionError` for servers below appSchema 75 (pre-v0.30.0)
-- **Dynamic `FragmentStore`**: rebuilt at connect time via `fragment_store.rebuild(capabilities)` so version-gated fields are included only when supported; `StashClient.initialize()` runs detection then rebuild
-- **`StashVersionError`** exported from `stash_graphql_client`; **`StashContext.capabilities`** property exposes detected capabilities
-- **Schema alignment** (Stash appSchema 71–84):
-  - New client methods: `destroy_files()`, `reveal_file_in_file_manager()`, `reveal_folder_in_file_manager()`, `stashbox_batch_tag_tag()`
-  - Filter additions: `PerformerFilterType` (`marker_count`, `markers_filter`, `career_start`, `career_end`); `GroupFilterType` (`scene_count`, `custom_fields`); `ImageFilterType` (`phash_distance`); `FolderFilterType` (`basename`)
-  - Input additions: `BulkPerformerUpdateInput` (`career_start`, `career_end`); Scene/Gallery/Image/Group bulk inputs (`custom_fields`); `StudioCreateInput`/`UpdateInput` (`organized`); `TagsMergeInput` (`values`)
-  - Config: sprite fields on `ConfigGeneralResult`; `disableCustomizations` on `ConfigInterfaceInput`/`Result`
-  - Metadata: `GenerateMetadataInput` (`imagePhashes`, `imageIDs`, `galleryIDs`); `ScanMetadata*` (`scanGenerateImagePhashes`); `IdentifyMetadataOptions*` (`performerGenders`); `BackupDatabaseInput` (`includeBlobs`)
-  - `ScrapedTag` (`description`, `alias_list`); `TagsMergeInput` (`values`)
-- **Architecture documentation**: `docs/architecture/capabilities-and-fragments.md` replaces the obsolete `docs/api/fragments.md`
-
-### Changed
-
-- All client mixins reference `fragment_store.*` instead of module-level `fragments.*` constants
-- `invalidate()` renamed from `clear_type()` → `invalidate_type()`; `default_ttl` replaces `ttl_seconds` on `StashEntityStore`
-- `log.error()` → `log.exception()` in all exception handlers (preserves full tracebacks)
-- Subscription teardown: explicit `aclose()` in `finally` blocks prevents C-level crashes on Python 3.14+ under xdist
-
-### Fixed
-
-- **Pydantic v2 `UserWarning`** in `StashObject`: replaced `__init__` override with `mode='before'` (`_inject_uuid`) and `mode='after'` (`_set_is_new`) `model_validator`s
-- **`Performer.custom_fields`** fragment: moved to `_BASE_PERFORMER_FIELDS` (available since appSchema 71, below the library minimum of 75); was incorrectly gated at appSchema 78 alongside `career_start`/`career_end`
-- **`Folder` fragment**: `parent_folders` now injected alongside `basename` under `has_folder_basename`
-
-### Testing
-
-- `tests/types/test_delete_merge.py`, `tests/test_capabilities.py`, `tests/test_fragment_store.py`; tests for new file/scraper methods
-- `conftest.py`: `NO_PROXY=*` for xdist stability; gallery/image tests serialized with `xdist_group("gallery_image")`
-- Subscription integration test: `BaseException` wrapper around WebSocket teardown + 120 s timeout override
-
-## [0.11.0b2] - 2026-02-15
-
-### Added
-
-- **Selective snapshot update after identity map merge**: New `_update_snapshot_for_fields()` method on `StashObject` updates the dirty tracking snapshot only for fields provided by the server, preventing phantom dirty state after identity map merge or `store.populate()` while preserving user modifications to unrelated fields
-  - Called in `_identity_map_validator` after merging server data into a cached instance
-  - Called at end of `populate()` after fetching requested fields
-  - Eliminates need for manual `mark_clean()` workarounds in downstream consumers
-  - Location: `stash_graphql_client/types/base.py`, `stash_graphql_client/store.py`
-
-- **Architecture documentation**: New `docs/architecture/dirty-tracking.md` documenting the phantom dirty state problem, why blanket `mark_clean()` fails, the selective snapshot fix, behavior matrix, and downstream impact
-
-### Changed
-
-- **mkdocs nav**: Added Dirty Tracking and Pydantic Internals architecture docs to navigation
-
-### Testing
-
-- Added 6 tests for selective snapshot update covering stub-to-full merge, partial merge preserving user modifications, tracked-field-only updates, server overwrite of user modifications, empty field set no-op, and UNSET-to-value transitions
-  - Location: `tests/types/test_dirty_tracking.py`
-
-## [0.11.0b1] - 2026-02-15
-
-### Added
-
-- **Shallow `__repr__`**: Custom repr system that prevents exponential recursive expansion with bidirectional relationships (e.g., Performer→Scene→Performer)
-  - Two-tier system: `__repr__()` for full display with shallow relationships, `_short_repr()` for compact nested representation
-  - `__short_repr_fields__` ClassVar on each entity type controls the compact label field (e.g., `name` for Performer, `title` for Scene)
-  - Single relationship fields rendered via `_short_repr()` → `studio=Studio(name='Acme')`
-  - List relationships show first 2 items then `..N more` → `tags=[Tag(name='a'), Tag(name='b'), ..3 more]`
-  - Long scalar values truncated at 200 characters
-  - UNSET fields omitted from repr output
-  - Fields sorted alphabetically for deterministic output (id always first)
-  - Configured on all 11 entity subclasses: Scene, Performer, Tag, Studio, Gallery, GalleryChapter, Group, Image, SceneMarker, BaseFile (inherited by VideoFile/ImageFile/GalleryFile/BasicFile), and Folder
-  - Location: `stash_graphql_client/types/base.py`, all entity type files
-
-- **`StashUnmappedFieldWarning`**: New warning class for unmapped fields in GraphQL responses
-  - Emitted when StashObject receives fields not declared in the model (server newer or older than client)
-  - Distinct from StashInput's `DeprecationWarning` (which signals user typos heading toward `extra="forbid"`)
-  - Purely informational — extra data preserved in `__pydantic_extra__`, safe to ignore
-  - Location: `stash_graphql_client/errors.py`, `stash_graphql_client/types/base.py`
-
-- **BaseFile `__typename` discrimination**: Added `model_validator(mode="wrap")` on `BaseFile` that dispatches to the correct subclass (`VideoFile`, `ImageFile`, `GalleryFile`, `BasicFile`) based on `__typename`
-  - Previously, `find_file()` returned a `BaseFile` even when the response was a `VideoFile`, causing unmapped field warnings for subclass-specific fields like `format`, `width`, `height`
-  - Discrimination now works at the model level — both `find_file()` (single) and `FindFilesResultType` (list) correctly produce typed instances
-  - Location: `stash_graphql_client/types/files.py`
-
-- **Architecture documentation**: New `docs/architecture/pydantic-internals.md` documenting Pydantic v2 internal storage model, the PrivateAttr fix, and the recursive repr fix
-
-### Changed
-
-- **StrEnum Migration**: Migrated 33 string enum classes from `(str, Enum)` to `StrEnum`
-  - Modern Python 3.11+ `StrEnum` syntax provides cleaner enum definitions
-  - No functional changes - `StrEnum` is functionally identical to `(str, Enum)`
-  - Updated imports across 7 files: `date_utils`, `enums`, `job`, `logging`, `plugin`, `scene`, `scraped_types`
-  - Enables ruff UP042 check for future enum definitions
-  - Locations:
-    - `stash_graphql_client/types/date_utils.py`: `DatePrecision`
-    - `stash_graphql_client/types/enums.py`: 18 enum classes
-    - `stash_graphql_client/types/job.py`: `JobStatus`, `JobStatusUpdateType`
-    - `stash_graphql_client/types/logging.py`: `LogLevel`
-    - `stash_graphql_client/types/plugin.py`: `PluginSettingTypeEnum`
-    - `stash_graphql_client/types/scene.py`: `BulkUpdateIdMode`
-    - `stash_graphql_client/types/scraped_types.py`: `ScrapeType`, `ScrapeContentType`
-
-- **itertools.batched() Migration**: Replaced manual batching with `itertools.batched()` (Python 3.12+)
-  - Cleaner and more Pythonic batching in entity store operations
-  - Replaced 3 instances of `for i in range(0, len(items), batch_size)` pattern
-  - More efficient (no list slicing overhead) and works with any iterable
-  - Location: `stash_graphql_client/store.py`
-
-### Fixed
-
-- **Folder fragment**: Replaced deprecated `parent_folder_id`/`zip_file_id` scalar fields with `parent_folder { ... }`/`zip_file { ... }` object references in `FOLDER_FIELDS` fragment, matching `FILE_FIELDS` pattern
-  - Location: `stash_graphql_client/fragments.py`
-
-- **StashInput `_warn_extra_fields`**: Now excludes `_`-prefixed internal fields (e.g., `__typename`) from unknown-field detection, matching `sanitize_model_data()` behavior
-  - Location: `stash_graphql_client/types/base.py`
-
-- **Studio `handle_deprecated_url`**: Added guard for non-dict data in before validator to prevent `AttributeError` when receiving pre-constructed objects
-  - Location: `stash_graphql_client/types/studio.py`
-
-- **Performer relationship metadata**: Corrected Tag `inverse_query_field` from `"performers"` to `None` — Tag has no `performers` field, only a `performer_count` resolver
-  - Location: `stash_graphql_client/types/performer.py`
-
-### Deprecated
-
-- **Extra Fields Behavior**: Currently, extra/unknown fields in dict inputs are silently ignored (Pydantic default)
-  - **Future Change**: Passing unknown fields will eventually raise a validation error (`extra="forbid"`)
-  - **Action Required**: Review your code for typos or outdated field names in dict inputs
-  - **Example**: `{"ids": [...], "tag_id": "x"}` instead of `"tag_ids"` will be rejected
-  - **Timeline**:
-    - **v0.11.0**: `DeprecationWarning` will be emitted for unknown fields (behavior still allowed)
-    - **v0.12.0 or later**: Unknown fields will be rejected with `ValidationError` (breaking change)
-
-### Testing
-
-- Added 26 tests for shallow repr system covering short repr (single and multi-field), full repr, file types, bidirectional non-recursion, list truncation, and field sorting
-  - Location: `tests/types/test_repr.py`
-- Added 11 tests for StashInput deprecation warnings covering unknown fields, typo suggestions, and extra field detection
-  - Location: `tests/types/test_input_deprecation_warnings.py`
+- Skip tests gracefully: `revealFile`/`revealFolder` on access denied, subscriptions without ffmpeg
+- `NO_PROXY=*` for xdist stability; gallery/image tests serialized with `xdist_group`
+- Project-level `ResourceWarning` suppression for async transport teardown on Python 3.14
 
 ## [0.10.14] - 2026-02-15
 
@@ -912,13 +766,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b6...HEAD
-[0.11.0b6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b5...v0.11.0b6
-[0.11.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b4...v0.11.0b5
-[0.11.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b3...v0.11.0b4
-[0.11.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b2...v0.11.0b3
-[0.11.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0b1...v0.11.0b2
-[0.11.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0b1
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14
 [0.10.13]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.12...v0.10.13
 [0.10.12]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.10...v0.10.12

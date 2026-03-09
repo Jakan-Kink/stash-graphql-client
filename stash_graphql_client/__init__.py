@@ -23,6 +23,7 @@ from importlib.metadata import PackageNotFoundError, version
 from stash_graphql_client.capabilities import ServerCapabilities
 from stash_graphql_client.client import StashClient
 from stash_graphql_client.context import StashContext
+from stash_graphql_client.errors import StashError, StashVersionError
 from stash_graphql_client.logging import (
     client_logger,
     configure_logging,
@@ -32,15 +33,12 @@ from stash_graphql_client.logging import (
 from stash_graphql_client.store import CacheEntry, StashEntityStore
 
 # Re-export commonly used types
-from stash_graphql_client.types import (
-    # Base types
+from stash_graphql_client.types import (  # Base types; Core types; Metadata types
     BulkUpdateIds,
     BulkUpdateStrings,
-    # Core types
     Gallery,
     GalleryCreateInput,
     GalleryUpdateInput,
-    # Metadata types
     GenerateMetadataInput,
     GenerateMetadataOptions,
     Group,
@@ -81,6 +79,9 @@ __all__ = [
     "StashClient",
     "StashContext",
     "ServerCapabilities",
+    # Errors
+    "StashError",
+    "StashVersionError",
     # Store
     "StashEntityStore",
     "CacheEntry",

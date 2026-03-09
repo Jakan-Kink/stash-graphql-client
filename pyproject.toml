@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.11.0b6"
+version = "0.11.0"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -261,6 +261,9 @@ python_functions = ["test_*"]
 xfail_strict = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::ResourceWarning",
+]
 markers = [
     "unit: marks tests as unit tests",
     "integration: marks tests as integration tests",
