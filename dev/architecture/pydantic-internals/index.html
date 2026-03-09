@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/architecture/overview/">
+        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/architecture/pydantic-internals/">
       
       
-        <link rel="prev" href="../../guide/usage-examples/">
+        <link rel="prev" href="../dirty-tracking/">
       
       
-        <link rel="next" href="../identity-map/">
+        <link rel="next" href="../comparison/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Overview - Stash GraphQL Client</title>
+        <title>Pydantic Internals - Stash GraphQL Client</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture-overview" class="md-skip">
+        <a href="#pydantic-v2-internals-how-stashobject-works-around-basemodel" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Pydantic Internals
             
           </span>
         </div>
@@ -295,7 +295,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../overview/" class="md-tabs__link">
           
   
   
@@ -758,37 +758,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Overview
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -804,148 +777,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#three-layer-architecture-diagram" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Three-Layer Architecture Diagram
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-layers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture Layers
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Layers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#layer-1-stashclient-graphql-transport" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 1: StashClient (GraphQL Transport)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-2-pydantic-types-schemaorm-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 2: Pydantic Types (Schema/ORM Layer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#layer-3-stashentitystore-identity-map-caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Layer 3: StashEntityStore (Identity Map &amp; Caching)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#when-to-use-each-layer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        When to Use Each Layer
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="When to Use Each Layer">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-stashclient-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use StashClient when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-pydantic-types-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use Pydantic Types when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-stashentitystore-when" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use StashEntityStore when:
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Related Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1011,10 +842,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../pydantic-internals/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Pydantic Internals
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1030,6 +888,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background-pydantic-v2s-three-storage-dicts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Background: Pydantic v2's Three Storage Dicts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issue-1-private-attributes-destroyed-by-validate_assignment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue 1: Private Attributes Destroyed by validate_assignment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issue 1: Private Attributes Destroyed by validate_assignment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-manifests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Manifests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minimal-reproduction-pre-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimal Reproduction (Pre-Fix)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fix-pydantic-privateattr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Fix: Pydantic PrivateAttr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-it-only-appeared-on-cache-hits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why It Only Appeared on Cache Hits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-lesson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Lesson
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#issue-2-recursive-__repr__-exponential-blowup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Issue 2: Recursive __repr__ Exponential Blowup
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Issue 2: Recursive __repr__ Exponential Blowup">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-problem_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Problem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-world-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-World Impact
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-fix-two-tier-shallow-repr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Fix: Two-Tier Shallow Repr
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design Decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-common-thread" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Common Thread
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2203,140 +2258,312 @@
   
 
 
-<h1 id="architecture-overview">Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h1>
-<p>This document provides a detailed technical overview of stash-graphql-client's architecture.</p>
-<h2 id="three-layer-architecture-diagram">Three-Layer Architecture Diagram<a class="headerlink" href="#three-layer-architecture-diagram" title="Permanent link">&para;</a></h2>
-<pre class="mermaid"><code>graph TB
-    User[Developer Code] --&gt; Client[Layer 1: StashClient]
-    User --&gt; Types[Layer 2: Pydantic Types]
-    User --&gt; Store[Layer 3: StashEntityStore]
-
-    Client --&gt;|executes| GraphQL[GraphQL API]
-    Client --&gt;|returns| Types
-
-    Types --&gt;|validates| Pydantic[Pydantic v2]
-    Types --&gt;|wrap validator| IdentityMap[Identity Map]
-
-    Store --&gt;|uses| Client
-    Store --&gt;|manages| IdentityMap
-    Store --&gt;|caches| Types
-
-    GraphQL --&gt;|responses| Client
-
-    style Client fill:#2E86AB,color:#fff
-    style Types fill:#F77F00,color:#fff
-    style Store fill:#8338EC,color:#fff
-    style IdentityMap fill:#06A77D,color:#fff</code></pre>
-<h2 id="architecture-layers">Architecture Layers<a class="headerlink" href="#architecture-layers" title="Permanent link">&para;</a></h2>
-<p>This library follows a three-layer architecture:</p>
-<h3 id="layer-1-stashclient-graphql-transport">Layer 1: StashClient (GraphQL Transport)<a class="headerlink" href="#layer-1-stashclient-graphql-transport" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/client/</code>, the client provides direct access to Stash's GraphQL API through typed mixin methods.</p>
-<p><strong>Responsibilities</strong>:</p>
-<ul>
-<li>Execute GraphQL queries and mutations</li>
-<li>Handle HTTP/WebSocket transports</li>
-<li>Manage retries and connection pooling</li>
-<li>Deserialize responses to Pydantic models</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">StashContext</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">StashContext</span><span class="p">(</span><span class="n">conn</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># Direct GraphQL operations</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">scenes</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scenes</span><span class="p">()</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">performer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">create_performer</span><span class="p">(</span><span class="n">Performer</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">))</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">job_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">metadata_scan</span><span class="p">()</span>
+<h1 id="pydantic-v2-internals-how-stashobject-works-around-basemodel">Pydantic v2 Internals: How StashObject Works Around BaseModel<a class="headerlink" href="#pydantic-v2-internals-how-stashobject-works-around-basemodel" title="Permanent link">&para;</a></h1>
+<p>This document explains two significant Pydantic v2 behaviors that required workarounds in <code>StashObject</code>, and the architectural decisions behind each fix. Both stem from the same root: Pydantic v2's internal storage model has behaviors that are safe for typical models but dangerous for StashObject's identity map + bidirectional relationship pattern.</p>
+<p><strong>Relevant versions</strong>: Private attribute fix landed in v0.10.14. Shallow repr landed in v0.11.0b1.</p>
+<hr />
+<h2 id="background-pydantic-v2s-three-storage-dicts">Background: Pydantic v2's Three Storage Dicts<a class="headerlink" href="#background-pydantic-v2s-three-storage-dicts" title="Permanent link">&para;</a></h2>
+<p>Every Pydantic v2 <code>BaseModel</code> instance has three internal dictionaries:</p>
+<table>
+<thead>
+<tr>
+<th>Dict</th>
+<th>Purpose</th>
+<th>Rebuilt by <code>validate_assignment</code>?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__dict__</code></td>
+<td>Declared model fields</td>
+<td><strong>YES</strong> — rebuilt on every field assignment</td>
+</tr>
+<tr>
+<td><code>__pydantic_extra__</code></td>
+<td>Extra fields (when <code>extra="allow"</code>)</td>
+<td>Partially (extra fields may migrate here)</td>
+</tr>
+<tr>
+<td><code>__pydantic_private__</code></td>
+<td><code>PrivateAttr</code> fields</td>
+<td><strong>NO</strong> — stable across all operations</td>
+</tr>
+</tbody>
+</table>
+<p>StashObject uses <code>validate_assignment=True</code> (to run validators on field updates) and <code>extra="allow"</code> (to accept unknown GraphQL fields without crashing). This combination creates the conditions for both issues below.</p>
+<hr />
+<h2 id="issue-1-private-attributes-destroyed-by-validate_assignment">Issue 1: Private Attributes Destroyed by <code>validate_assignment</code><a class="headerlink" href="#issue-1-private-attributes-destroyed-by-validate_assignment" title="Permanent link">&para;</a></h2>
+<p><strong>Fixed in</strong>: v0.10.14
+<strong>Location</strong>: <code>stash_graphql_client/types/base.py</code></p>
+<h3 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h3>
+<p>StashObject maintains three private attributes for internal bookkeeping:</p>
+<table>
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_snapshot</code></td>
+<td>Dirty tracking baseline — stores field values at last clean state</td>
+</tr>
+<tr>
+<td><code>_is_new</code></td>
+<td>Tracks whether object needs <code>create</code> vs <code>update</code> mutation</td>
+</tr>
+<tr>
+<td><code>_received_fields</code></td>
+<td>Tracks which fields came from GraphQL responses</td>
+</tr>
+</tbody>
+</table>
+<p>Originally, these were stored via <code>object.__setattr__()</code>, which writes directly to <code>__dict__</code>. This works in plain Python objects, but in Pydantic v2 with <code>validate_assignment=True</code>, every field assignment <strong>rebuilds the entire <code>__dict__</code></strong> — silently destroying any non-field data stored there.</p>
+<h3 id="how-it-manifests">How It Manifests<a class="headerlink" href="#how-it-manifests" title="Permanent link">&para;</a></h3>
+<p>The bug only appears on identity map cache hits, not on fresh object construction:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>1. Gallery(id=&quot;123&quot;) constructed         → _snapshot stored in __dict__ (all UNSET)
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>2. Identity map cache hit                → fields merged via setattr()
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>   └─ Each setattr triggers validate_assignment → __dict__ rebuilt repeatedly
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>   └─ _snapshot migrates to __pydantic_extra__ (stale copy)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>3. mark_clean() called                   → new _snapshot stored in __dict__ (real values)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>4. gallery.title = &quot;New&quot;                 → validate_assignment rebuilds __dict__
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   └─ New _snapshot LOST
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   └─ getattr falls through to __pydantic_extra__ → finds stale all-UNSET snapshot
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>5. gallery.is_dirty()                    → ALL fields appear dirty (real vs UNSET)
 </span></code></pre></div>
-<p><strong>Mixin architecture</strong>: Client composed of 20+ mixins, one per entity type (SceneClientMixin, PerformerClientMixin, etc.). This provides clear separation of concerns and makes the codebase maintainable.</p>
-<h3 id="layer-2-pydantic-types-schemaorm-layer">Layer 2: Pydantic Types (Schema/ORM Layer)<a class="headerlink" href="#layer-2-pydantic-types-schemaorm-layer" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/types/</code>, all Stash entities are Pydantic v2 models with:</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li><strong>UNSET Pattern</strong> - Three-state fields distinguish "set to value", "set to null", and "never touched"</li>
-<li><strong>UUID4 Auto-generation</strong> - New objects get temporary IDs replaced with server IDs on save</li>
-<li><strong>Bidirectional Relationships</strong> - Automatic sync between related entities</li>
-<li><strong>Tracked Fields</strong> - <code>__tracked_fields__</code> and <code>__field_conversions__</code> for change detection</li>
-<li><strong>Relationship Metadata</strong> - <code>__relationships__</code> documents query strategies and inverse fields</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span><span class="p">,</span> <span class="n">UNSET</span>
+<p>This caused phantom dirty fields — every <code>save()</code> call would send unnecessary GraphQL mutations for fields that hadn't actually changed.</p>
+<h3 id="minimal-reproduction-pre-fix">Minimal Reproduction (Pre-Fix)<a class="headerlink" href="#minimal-reproduction-pre-fix" title="Permanent link">&para;</a></h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types.gallery</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gallery</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Create with partial data - UUID4 auto-generated</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">scene</span> <span class="o">=</span> <span class="n">Scene</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Scene&quot;</span><span class="p">,</span> <span class="n">rating100</span><span class="o">=</span><span class="mi">85</span><span class="p">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;New object ID: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># UUID4 hex string (32 chars)</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Is new: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">is_new</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># True</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Save sends only non-UNSET fields</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Server ID: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>      <span class="c1"># Server-assigned ID</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Is new: </span><span class="si">{</span><span class="n">scene</span><span class="o">.</span><span class="n">is_new</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># False</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1"># Update tracks changes</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="n">scene</span><span class="o">.</span><span class="n">rating100</span> <span class="o">=</span> <span class="mi">90</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="n">changed</span> <span class="o">=</span> <span class="n">scene</span><span class="o">.</span><span class="n">get_changed_fields</span><span class="p">()</span>  <span class="c1"># {&quot;rating100&quot;: 90}</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>  <span class="c1"># Only sends changed fields</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">gallery</span> <span class="o">=</span> <span class="n">Gallery</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;123&quot;</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">setattr</span><span class="p">(</span><span class="n">gallery</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;Real Title&quot;</span><span class="p">)</span>    <span class="c1"># Simulate identity map merge</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">setattr</span><span class="p">(</span><span class="n">gallery</span><span class="p">,</span> <span class="s2">&quot;organized&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">gallery</span><span class="o">.</span><span class="n">mark_clean</span><span class="p">()</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">snap_id</span> <span class="o">=</span> <span class="nb">id</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">gallery</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;New Title&quot;</span>                <span class="c1"># Triggers validate_assignment</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="k">assert</span> <span class="nb">id</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">_snapshot</span><span class="p">)</span> <span class="o">!=</span> <span class="n">snap_id</span>    <span class="c1"># FAILS — snapshot was replaced!</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1"># gallery._snapshot now points to the stale model_post_init snapshot (all UNSET)</span>
 </span></code></pre></div>
-<h3 id="layer-3-stashentitystore-identity-map-caching">Layer 3: StashEntityStore (Identity Map &amp; Caching)<a class="headerlink" href="#layer-3-stashentitystore-identity-map-caching" title="Permanent link">&para;</a></h3>
-<p>Located in <code>stash_graphql_client/store.py</code>, provides SQLAlchemy/ActiveRecord-style data access with:</p>
-<p><strong>Features</strong>:</p>
-<ul>
-<li><strong>Identity Map</strong> - Same entity ID → same object reference</li>
-<li><strong>Read-Through Caching</strong> - Fetch from cache or query on miss</li>
-<li><strong>TTL Support</strong> - Optional cache expiration</li>
-<li><strong>Field-Aware Population</strong> - Load missing fields on demand</li>
-<li><strong>Django-Style Filtering</strong> - <code>field__modifier</code> kwargs</li>
-<li><strong>Lazy Iteration</strong> - Paginate large result sets efficiently</li>
-<li><strong>Thread-Safe</strong> - Uses <code>RLock</code> for concurrent access</li>
-</ul>
-<p><strong>Example usage</strong>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">StashEntityStore</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scene</span><span class="p">,</span> <span class="n">Performer</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">StashEntityStore</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># Read-through caching</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">performer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Performer</span><span class="p">,</span> <span class="s2">&quot;123&quot;</span><span class="p">)</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># Django-style filtering</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">top_rated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__gte</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">unrated</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">Scene</span><span class="p">,</span> <span class="n">rating100__null</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Field-aware population</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">populate</span><span class="p">(</span><span class="n">performer</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span> <span class="s2">&quot;images&quot;</span><span class="p">])</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="c1"># Get-or-create pattern</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">tag</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">get_or_create</span><span class="p">(</span><span class="n">Tag</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Action&quot;</span><span class="p">)</span>
+<h3 id="the-fix-pydantic-privateattr">The Fix: Pydantic <code>PrivateAttr</code><a class="headerlink" href="#the-fix-pydantic-privateattr" title="Permanent link">&para;</a></h3>
+<p>Convert all three attributes from <code>object.__setattr__()</code> storage to Pydantic <code>PrivateAttr</code> declarations:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">PrivateAttr</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">StashObject</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="c1"># Stored in __pydantic_private__ — survives validate_assignment</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">_snapshot</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">PrivateAttr</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">_is_new</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">PrivateAttr</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">_received_fields</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="n">PrivateAttr</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">set</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="when-to-use-each-layer">When to Use Each Layer<a class="headerlink" href="#when-to-use-each-layer" title="Permanent link">&para;</a></h2>
-<h3 id="use-stashclient-when">Use StashClient when:<a class="headerlink" href="#use-stashclient-when" title="Permanent link">&para;</a></h3>
+<p><code>PrivateAttr</code> stores values in <code>__pydantic_private__</code>, which is <strong>never</strong> rebuilt by <code>validate_assignment</code>. All <code>object.__setattr__()</code> calls were replaced with direct assignment (<code>self._attr = value</code>), which Pydantic routes to <code>__pydantic_private__</code> automatically.</p>
+<h3 id="why-it-only-appeared-on-cache-hits">Why It Only Appeared on Cache Hits<a class="headerlink" href="#why-it-only-appeared-on-cache-hits" title="Permanent link">&para;</a></h3>
+<p>Objects constructed with all fields populated don't exhibit this bug because:</p>
+<ol>
+<li><code>model_post_init</code> creates <code>_snapshot</code> with real values (not UNSET)</li>
+<li>Even if <code>__dict__</code> is rebuilt and <code>_snapshot</code> falls through to <code>__pydantic_extra__</code>, the stale copy also has real values</li>
+<li>So <code>current_value == snapshot_value</code> holds true — dirty tracking appears to work</li>
+</ol>
+<p>The bug only manifests when:</p>
+<ol>
+<li>Object is constructed minimally (e.g., nested fragment with just <code>id</code>)</li>
+<li>Fields are populated via <code>setattr()</code> (identity map merge path)</li>
+<li><code>model_post_init</code> snapshot has UNSET for all fields</li>
+<li><code>mark_clean()</code> creates new snapshot with real values</li>
+<li>Next field assignment rebuilds <code>__dict__</code>, losing the snapshot</li>
+<li>Fallback finds the stale all-UNSET snapshot from step 3</li>
+</ol>
+<p>This is the exact sequence that occurs in production when <code>find_scenes()</code> or <code>find_galleries()</code> returns objects already in the identity map cache.</p>
+<h3 id="key-lesson">Key Lesson<a class="headerlink" href="#key-lesson" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Never use <code>object.__setattr__()</code> to store state on Pydantic v2 models with <code>validate_assignment=True</code>.</strong> Use <code>PrivateAttr</code> instead — it uses <code>__pydantic_private__</code>, the only dict that is guaranteed stable across all Pydantic operations.</p>
+</blockquote>
+<hr />
+<h2 id="issue-2-recursive-__repr__-exponential-blowup">Issue 2: Recursive <code>__repr__</code> Exponential Blowup<a class="headerlink" href="#issue-2-recursive-__repr__-exponential-blowup" title="Permanent link">&para;</a></h2>
+<p><strong>Fixed in</strong>: v0.11.0b1
+<strong>Location</strong>: <code>stash_graphql_client/types/base.py</code>, all entity type files</p>
+<h3 id="the-problem_1">The Problem<a class="headerlink" href="#the-problem_1" title="Permanent link">&para;</a></h3>
+<p>Pydantic v2's default <code>BaseModel.__repr__()</code> recursively renders <strong>every field</strong> of every nested model. With StashObject's bidirectional relationships, this walks the entire object graph:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>Gallery.performers → [Performer] → .scenes → [Scene] → .performers → [Performer] ...
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>                                  → .groups → [Group] → ...
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>Gallery.scenes     → [Scene]     → .galleries → [Gallery] → ...
+</span></code></pre></div>
+<p>Pydantic's cycle detection prevents infinite recursion, but the traversal fans out exponentially across non-cyclic paths.</p>
+<h3 id="real-world-impact">Real-World Impact<a class="headerlink" href="#real-world-impact" title="Permanent link">&para;</a></h3>
+<p>A downstream consumer called <code>repr()</code> on changed field values before saving. On a dataset with ~3,000 posts (~1,200 scenes, ~1,800 galleries):</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Per-gallery <code>repr()</code> cost</td>
+<td>~2.2 seconds (for <code>performers</code> field alone)</td>
+</tr>
+<tr>
+<td>Cost growth</td>
+<td>Worsens as identity map accumulates entities</td>
+</tr>
+<tr>
+<td>Total overhead</td>
+<td><strong>~110 minutes</strong> of CPU time generating strings immediately truncated to 80 chars</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>Multi-MB transient string allocations per call, contributing to OOM kills</td>
+</tr>
+</tbody>
+</table>
+<p>Any consumer calling <code>repr()</code> — logging, debugging, REPL, pytest assertion output — hits the same problem.</p>
+<h3 id="the-fix-two-tier-shallow-repr">The Fix: Two-Tier Shallow Repr<a class="headerlink" href="#the-fix-two-tier-shallow-repr" title="Permanent link">&para;</a></h3>
+<p>StashObject now has two repr methods:</p>
+<h4 id="_short_repr-compact-nested-representation"><code>_short_repr()</code> — Compact Nested Representation<a class="headerlink" href="#_short_repr-compact-nested-representation" title="Permanent link">&para;</a></h4>
+<p>Used when an object appears <em>inside</em> another object's repr. Collects all set+non-None fields from the <code>__short_repr_fields__</code> tuple:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_short_repr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__short_repr_fields__</span><span class="p">:</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>        <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">UNSET</span><span class="p">)</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="k">if</span> <span class="n">is_set</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">val</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">parts</span><span class="p">:</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__type_name__</span><span class="si">}</span><span class="s2">(id=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__type_name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span></code></pre></div>
+<p>If no fields match, falls back to <code>TypeName(id='...')</code>. Multi-field tuples show all matching fields — e.g., <code>__short_repr_fields__ = ("id", "name")</code> produces <code>Performer(id='123', name='Jane')</code>.</p>
+<p>Each entity subclass declares which fields to include:</p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th><code>__short_repr_fields__</code></th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Performer</td>
+<td><code>("name",)</code></td>
+<td><code>Performer(name='Jane')</code></td>
+</tr>
+<tr>
+<td>Scene</td>
+<td><code>("title",)</code></td>
+<td><code>Scene(title='Test Scene')</code></td>
+</tr>
+<tr>
+<td>Tag</td>
+<td><code>("name",)</code></td>
+<td><code>Tag(name='tag 1')</code></td>
+</tr>
+<tr>
+<td>Studio</td>
+<td><code>("name",)</code></td>
+<td><code>Studio(name='Acme')</code></td>
+</tr>
+<tr>
+<td>Gallery</td>
+<td><code>("title",)</code></td>
+<td><code>Gallery(title='2024 Post')</code></td>
+</tr>
+<tr>
+<td>Group</td>
+<td><code>("name",)</code></td>
+<td><code>Group(name='Series 1')</code></td>
+</tr>
+<tr>
+<td>Image</td>
+<td><code>("title",)</code></td>
+<td><code>Image(title='Photo')</code></td>
+</tr>
+<tr>
+<td>VideoFile</td>
+<td><code>("basename",)</code></td>
+<td><code>VideoFile(basename='clip.mp4')</code></td>
+</tr>
+<tr>
+<td>Folder</td>
+<td><code>("path",)</code></td>
+<td><code>Folder(path='/media/videos')</code></td>
+</tr>
+</tbody>
+</table>
+<p>Fallback: if label field is UNSET or None, falls back to <code>TypeName(id='123')</code>.</p>
+<h4 id="__repr__-full-representation"><code>__repr__()</code> — Full Representation<a class="headerlink" href="#__repr__-full-representation" title="Permanent link">&para;</a></h4>
+<p>Shows <strong>all non-UNSET model fields</strong> (not just tracked fields), with relationship fields rendered shallowly:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">parts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;id=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">]</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_fields</span><span class="p">):</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="k">if</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="k">continue</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>        <span class="n">val</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">UNSET</span><span class="p">)</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_set</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>            <span class="k">continue</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">StashObject</span><span class="p">):</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">val</span><span class="o">.</span><span class="n">_short_repr</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">val</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">StashObject</span><span class="p">):</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>            <span class="n">limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_SHORT_REPR_LIST_LIMIT</span>  <span class="c1"># default: 2</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>            <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">_short_repr</span><span class="p">()</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">val</span><span class="p">[:</span><span class="n">limit</span><span class="p">]]</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>            <span class="n">suffix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;, ..</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">limit</span><span class="si">}</span><span class="s2"> more&quot;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">=[</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">items</span><span class="p">)</span><span class="si">}{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>            <span class="n">r</span> <span class="o">=</span> <span class="nb">repr</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">200</span><span class="p">:</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>                <span class="n">r</span> <span class="o">=</span> <span class="n">r</span><span class="p">[:</span><span class="mi">197</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;...&quot;</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">r</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">__type_name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span>
+</span></code></pre></div>
+<h3 id="example-output">Example Output<a class="headerlink" href="#example-output" title="Permanent link">&para;</a></h3>
+<p><strong>Before</strong> (Pydantic default — truncated, actual output is megabytes):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Performer(id=&#39;abc123&#39;, name=&#39;Jane&#39;, alias_list=[&#39;JD&#39;], tags=[Tag(id=&#39;t1&#39;, name=&#39;blonde&#39;,
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>parents=[Tag(id=&#39;t2&#39;, name=&#39;hair&#39;, parents=[...], children=[Tag(id=&#39;t1&#39;, ...)])],
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>children=[...])], scenes=[Scene(id=&#39;s1&#39;, title=&#39;...&#39;, performers=[Performer(id=&#39;abc123&#39;,
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>name=&#39;Jane&#39;, alias_list=[&#39;JD&#39;], tags=[...], scenes=[Scene(id=&#39;s2&#39;, ...
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>... (continues for megabytes)
+</span></code></pre></div>
+<p><strong>After</strong> (shallow repr):</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Performer(id=&#39;abc123&#39;, alias_list=[&#39;JD&#39;], favorite=False, name=&#39;Jane&#39;,
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  scenes=[Scene(title=&#39;S1&#39;), Scene(title=&#39;S2&#39;), ..1198 more],
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>  tags=[Tag(name=&#39;blonde&#39;), Tag(name=&#39;brunette&#39;), ..3 more])
+</span></code></pre></div>
+<h3 id="design-decisions">Design Decisions<a class="headerlink" href="#design-decisions" title="Permanent link">&para;</a></h3>
+<p><strong>Why show all model fields, not just tracked fields?</strong></p>
+<p>The initial proposal showed only <code>__tracked_fields__</code>, but the final implementation shows all non-UNSET model fields. This provides more complete debugging information — fields like <code>rating100</code>, <code>scene_count</code>, and <code>date</code> are useful in repr output even though they aren't tracked for dirty checking.</p>
+<p><strong>Why <code>sorted()</code> on field names?</strong></p>
+<p>Deterministic output across runs. Without sorting, dict iteration order could vary, making log diffs and test assertions unreliable.</p>
+<p><strong>Why <code>self.__class__.model_fields</code> instead of <code>self.model_fields</code>?</strong></p>
+<p>Pydantic v2.11 deprecated instance-level <code>model_fields</code> access. Using the class-level accessor avoids deprecation warnings.</p>
+<p><strong>Why no dirty indicator (<code>*</code> suffix)?</strong></p>
+<p>The original proposal included <code>"*"</code> when <code>is_dirty()</code> returns True. This was removed because <code>is_dirty()</code> does field-by-field comparison including list traversal — too much work for a <code>__repr__</code> method that might be called frequently in logging or debugging contexts. A repr should be fast and side-effect-free.</p>
+<p><strong>Why not use <code>__repr_args__</code> (Pydantic's hook)?</strong></p>
+<p>Pydantic v2's <code>__repr_args__</code> returns <code>(field_name, value)</code> tuples that Pydantic then <code>repr()</code>s recursively. There's no way to control relationship rendering at that level — the only solution is to override <code>__repr__</code> entirely.</p>
+<p><strong>Why truncate scalars at 200 characters (not 60)?</strong></p>
+<p>Fields like <code>details</code> can contain multi-paragraph text. The initial proposal used 60 chars, but this was too aggressive — URLs, file paths, and aliases are commonly 80-150 chars. 200 chars provides a better balance.</p>
+<p><strong>Why first 2 items in list repr (not count-only)?</strong></p>
+<p>Showing <code>tags=[5 Tag]</code> is compact but loses information. Showing <code>tags=[Tag(name='blonde'), Tag(name='brunette'), ..3 more]</code> gives immediate identification of the first two items, which is usually enough to understand the relationship contents without expanding the full list.</p>
+<p><strong>What about <code>__str__</code>?</strong></p>
+<p>Left as Pydantic's default (which delegates to <code>__repr__</code>). This means <code>str(obj)</code>, <code>f"{obj}"</code>, and <code>print(obj)</code> all use the shallow repr — there's no use case where a consumer wants the multi-MB recursive output.</p>
+<hr />
+<h2 id="the-common-thread">The Common Thread<a class="headerlink" href="#the-common-thread" title="Permanent link">&para;</a></h2>
+<p>Both issues stem from Pydantic v2's <code>BaseModel</code> being designed for simple data containers, not for objects with:</p>
 <ul>
-<li>✅ Making one-off queries</li>
-<li>✅ Need direct control over GraphQL queries</li>
-<li>✅ Working with entity types that don't need caching</li>
-<li>✅ Executing mutations that return complex results</li>
+<li><strong>Identity map caching</strong> — objects are mutated after construction via <code>setattr()</code></li>
+<li><strong>Bidirectional relationships</strong> — objects reference each other (Scene→Performer→Scene)</li>
+<li><strong>Internal bookkeeping state</strong> — private attributes that must survive field mutations</li>
 </ul>
-<h3 id="use-pydantic-types-when">Use Pydantic Types when:<a class="headerlink" href="#use-pydantic-types-when" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ Creating new entities with validation</li>
-<li>✅ Need ORM-like <code>.save()</code> / <code>.delete()</code> methods</li>
-<li>✅ Working with entity relationships</li>
-<li>✅ Need change tracking for partial updates</li>
-</ul>
-<h3 id="use-stashentitystore-when">Use StashEntityStore when:<a class="headerlink" href="#use-stashentitystore-when" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ Need object identity across queries</li>
-<li>✅ Making repeated queries for same entities</li>
-<li>✅ Using Django-style filtering</li>
-<li>✅ Need field-aware population</li>
-<li>✅ Processing large result sets with pagination</li>
-</ul>
-<h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="../identity-map/">Identity Map Architecture</a></strong> - Deep dive on wrap validators and caching</li>
-<li><strong><a href="../comparison/">Library Comparisons</a></strong> - How this compares to alternatives</li>
-<li><strong><a href="../bidirectional-relationships/">Bidirectional Relationships</a></strong> - Relationship sync implementation</li>
-<li><strong><a href="../../guide/overview/">Overview Guide</a></strong> - General overview and design philosophy</li>
-</ul>
+<p>StashObject works within Pydantic v2's constraints by:</p>
+<ol>
+<li>Using <code>__pydantic_private__</code> (via <code>PrivateAttr</code>) for internal state that must be stable</li>
+<li>Overriding <code>__repr__</code> to prevent recursive traversal of the relationship graph</li>
+<li>Using <code>__class__.model_fields</code> for introspection to avoid deprecated instance access</li>
+<li>Keeping <code>validate_assignment=True</code> for field validation while protecting private state from its dict-rebuilding side effect</li>
+</ol>
 
 
 
@@ -2374,7 +2601,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../guide/usage-examples/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Usage Examples">
+          <a href="../dirty-tracking/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Dirty Tracking">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2384,20 +2611,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Usage Examples
+                Dirty Tracking
               </div>
             </div>
           </a>
         
         
           
-          <a href="../identity-map/" class="md-footer__link md-footer__link--next" aria-label="Next: Identity Map">
+          <a href="../comparison/" class="md-footer__link md-footer__link--next" aria-label="Next: Library Comparisons">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Identity Map
+                Library Comparisons
               </div>
             </div>
             <div class="md-footer__button md-icon">
