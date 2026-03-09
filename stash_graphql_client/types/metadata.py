@@ -431,6 +431,9 @@ class CustomFieldsInput(StashInput):
     partial: dict[str, Any] | None | UnsetType = (
         UNSET  # Map (If populated, only the keys in this map will be updated)
     )
+    remove: list[str] | None | UnsetType = (
+        UNSET  # [String!] (If populated, these keys will be removed from the custom fields)
+    )
 
 
 class IdentifySourceInput(StashInput):

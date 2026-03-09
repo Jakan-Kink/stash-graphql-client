@@ -419,6 +419,7 @@ class ConfigDisableDropdownCreateInput(StashInput):
     tag: bool | None | UnsetType = UNSET  # Boolean
     studio: bool | None | UnsetType = UNSET  # Boolean
     movie: bool | None | UnsetType = UNSET  # Boolean
+    gallery: bool | None | UnsetType = UNSET  # Boolean
 
 
 class ConfigImageLightboxInput(StashInput):
@@ -440,6 +441,9 @@ class ConfigImageLightboxInput(StashInput):
     scroll_attempts_before_change: int | None | UnsetType = Field(
         default=UNSET, alias="scrollAttemptsBeforeChange"
     )  # Int
+    disable_animation: bool | None | UnsetType = Field(
+        default=UNSET, alias="disableAnimation"
+    )  # Boolean
 
 
 class ConfigImageLightboxResult(FromGraphQLMixin, BaseModel):
@@ -461,6 +465,9 @@ class ConfigImageLightboxResult(FromGraphQLMixin, BaseModel):
     scroll_attempts_before_change: int | UnsetType = Field(
         default=UNSET, alias="scrollAttemptsBeforeChange"
     )  # Int!
+    disable_animation: bool | None | UnsetType = Field(
+        default=UNSET, alias="disableAnimation"
+    )  # Boolean
 
 
 class ConfigInterfaceInput(StashInput):
@@ -545,6 +552,7 @@ class ConfigDisableDropdownCreate(FromGraphQLMixin, BaseModel):
     tag: bool | UnsetType = UNSET  # Boolean!
     studio: bool | UnsetType = UNSET  # Boolean!
     movie: bool | UnsetType = UNSET  # Boolean!
+    gallery: bool | UnsetType = UNSET  # Boolean!
 
 
 class ConfigInterfaceResult(FromGraphQLMixin, BaseModel):
