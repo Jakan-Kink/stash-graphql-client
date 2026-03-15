@@ -432,6 +432,8 @@ class BulkGroupUpdateInput(StashInput):
     )  # String
     ids: list[str] | UnsetType = UNSET  # [ID!]
     rating100: int | None | UnsetType = Field(default=UNSET, ge=0, le=100)  # Int
+    date: str | None | UnsetType = UNSET  # String
+    synopsis: str | None | UnsetType = UNSET  # String
     studio_id: str | None | UnsetType = UNSET  # ID
     director: str | None | UnsetType = UNSET  # String
     urls: BulkUpdateStrings | None | UnsetType = UNSET  # BulkUpdateStrings
