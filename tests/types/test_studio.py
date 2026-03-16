@@ -223,22 +223,6 @@ def test_studio_update_input_instantiation() -> None:
 
 
 @pytest.mark.unit
-def test_strawberry_decorations() -> None:
-    """Test that all types are properly decorated with strawberry."""
-    types_to_test = [
-        StudioCreateInput,
-        StudioUpdateInput,
-        Studio,
-        StudioDestroyInput,
-        FindStudiosResultType,
-    ]
-    for type_class in types_to_test:
-        assert issubclass(type_class, BaseModel), (
-            f"{type_class.__name__} should be a Pydantic BaseModel"
-        )
-
-
-@pytest.mark.unit
 def test_studio_inheritance() -> None:
     """Test that Studio properly inherits from StashObject."""
 

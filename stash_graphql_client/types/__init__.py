@@ -1,4 +1,4 @@
-"""Strawberry GraphQL types for Stash."""
+"""GraphQL types converted to Pydantic."""
 
 from __future__ import annotations
 

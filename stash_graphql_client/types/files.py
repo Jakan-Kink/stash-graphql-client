@@ -16,7 +16,7 @@ def fingerprint_resolver(parent: BaseFile, type: str) -> str:
     """Resolver for fingerprint field.
 
     Args:
-        parent: The BaseFile instance (automatically passed by strawberry)
+        parent: The BaseFile instance
         type: The fingerprint type to look for
 
     Returns:
