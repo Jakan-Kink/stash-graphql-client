@@ -69,6 +69,7 @@ jobs:
           STASH_METADATA: /metadata/
           STASH_CACHE: /cache/
           STASH_PORT: 9999
+          STASH_DANGEROUS_ALLOW_PUBLIC_WITHOUT_AUTH: "true"
         volumes:
           - /etc/localtime:/etc/localtime:ro
           - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config:/root/.stash
@@ -186,53 +187,6 @@ jobs:
               print(f"Stash already configured (status: {status})")
           PYEOF
 
-          # Stash probes an external host after setup; if reachable it sets
-          # security_tripwire_accessed_from_public_internet to the detected IP
-          # and blocks all unauthenticated requests. Fix: set
-          # dangerous_allow_public_without_auth: true and blank the tripwire key.
-          # Exit code 1 signals that a restart is needed to re-read the config.
-          python3 - << 'PYEOF'
-          import pathlib, re, sys
-
-          config = pathlib.Path("/tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config/config.yml")
-          if not config.exists():
-              sys.exit(0)
-
-          content = config.read_text()
-          patched = content
-
-          if "dangerous_allow_public_without_auth" not in patched:
-              patched += "dangerous_allow_public_without_auth: true\n"
-
-          patched = re.sub(
-              r"^security_tripwire_accessed_from_public_internet:.*$",
-              'security_tripwire_accessed_from_public_internet: ""',
-              patched, flags=re.MULTILINE,
-          )
-
-          if patched != content:
-              config.write_text(patched)
-              print("Patched config: dangerous_allow_public_without_auth + blanked tripwire")
-              sys.exit(1)
-          PYEOF
-          PATCH_EXIT=$?
-
-          if [ $PATCH_EXIT -ne 0 ]; then
-            CONTAINER=$(docker ps -q --filter ancestor=stashapp/stash:development)
-            if [ -n "$CONTAINER" ]; then
-              echo "Restarting Stash to apply config changes..."
-              docker restart "$CONTAINER"
-              for i in {1..30}; do
-                if curl -sf http://localhost:9999/graphql -H "Content-Type: application/json" \
-                    -d '{"query": "{ version { build_time } }"}' > /dev/null 2>&1; then
-                  echo "✓ Stash restarted and ready"
-                  break
-                fi
-                sleep 2
-              done
-            fi
-          fi
-
       - name: Run tests with pytest
         run: |
           poetry run pytest --cov=. --cov-report=xml --cov-report=term-missing --junitxml=junit.xml -o junit_family=legacy -n auto
@@ -283,6 +237,7 @@ jobs:
           STASH_METADATA: /metadata/
           STASH_CACHE: /cache/
           STASH_PORT: 9999
+          STASH_DANGEROUS_ALLOW_PUBLIC_WITHOUT_AUTH: "true"
         volumes:
           - /etc/localtime:/etc/localtime:ro
           - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config:/root/.stash
@@ -395,53 +350,6 @@ jobs:
           else:
               print(f"Stash already configured (status: {status})")
           PYEOF
-
-          # Stash probes an external host after setup; if reachable it sets
-          # security_tripwire_accessed_from_public_internet to the detected IP
-          # and blocks all unauthenticated requests. Fix: set
-          # dangerous_allow_public_without_auth: true and blank the tripwire key.
-          # Exit code 1 signals that a restart is needed to re-read the config.
-          python3 - << 'PYEOF'
-          import pathlib, re, sys
-
-          config = pathlib.Path("/tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config/config.yml")
-          if not config.exists():
-              sys.exit(0)
-
-          content = config.read_text()
-          patched = content
-
-          if "dangerous_allow_public_without_auth" not in patched:
-              patched += "dangerous_allow_public_without_auth: true\n"
-
-          patched = re.sub(
-              r"^security_tripwire_accessed_from_public_internet:.*$",
-              'security_tripwire_accessed_from_public_internet: ""',
-              patched, flags=re.MULTILINE,
-          )
-
-          if patched != content:
-              config.write_text(patched)
-              print("Patched config: dangerous_allow_public_without_auth + blanked tripwire")
-              sys.exit(1)
-          PYEOF
-          PATCH_EXIT=$?
-
-          if [ $PATCH_EXIT -ne 0 ]; then
-            CONTAINER=$(docker ps -q --filter ancestor=stashapp/stash:development)
-            if [ -n "$CONTAINER" ]; then
-              echo "Restarting Stash to apply config changes..."
-              docker restart "$CONTAINER"
-              for i in {1..30}; do
-                if curl -sf http://localhost:9999/graphql -H "Content-Type: application/json" \
-                    -d '{"query": "{ version { build_time } }"}' > /dev/null 2>&1; then
-                  echo "✓ Stash restarted and ready"
-                  break
-                fi
-                sleep 2
-              done
-            fi
-          fi
 
       - name: Run tests with pytest
         run: |
