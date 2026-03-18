@@ -41,7 +41,6 @@ jobs:
             venv-${{ runner.os }}-${{ runner.arch }}-py3.12-
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --with dev
 
       - name: Lint with Ruff
@@ -72,10 +71,17 @@ jobs:
           STASH_PORT: 9999
         volumes:
           - /etc/localtime:/etc/localtime:ro
-          - /tmp/stash-config:/root/.stash
-          - /tmp/stash-data:/data
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config:/root/.stash
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/data:/data
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/generated:/generated
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/metadata:/metadata
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/cache:/cache
 
     steps:
+      - name: Cleanup stale Stash temp dirs from previous runs
+        run: |
+          sudo find /tmp -maxdepth 1 -name 'stash-*' -not -name 'stash-${{ github.run_id }}-*' -mmin +60 -exec rm -rf {} + 2>/dev/null || true
+
       - uses: actions/checkout@v6
 
       - name: Clean up leftover Python installations
@@ -118,7 +124,6 @@ jobs:
             venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --with dev
 
       - name: Wait for Stash to be ready
@@ -189,7 +194,7 @@ jobs:
           python3 - << 'PYEOF'
           import pathlib, re, sys
 
-          config = pathlib.Path("/tmp/stash-config/config.yml")
+          config = pathlib.Path("/tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config/config.yml")
           if not config.exists():
               sys.exit(0)
 
@@ -253,6 +258,10 @@ jobs:
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Cleanup Stash temp dirs
+        if: always()
+        run: sudo rm -rf /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}
 
   test-fallback:
     runs-on: ubuntu-latest
@@ -276,8 +285,11 @@ jobs:
           STASH_PORT: 9999
         volumes:
           - /etc/localtime:/etc/localtime:ro
-          - /tmp/stash-config:/root/.stash
-          - /tmp/stash-data:/data
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config:/root/.stash
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/data:/data
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/generated:/generated
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/metadata:/metadata
+          - /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/cache:/cache
 
     steps:
       - uses: actions/checkout@v6
@@ -322,7 +334,6 @@ jobs:
             venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --with dev
 
       - name: Wait for Stash to be ready
@@ -393,7 +404,7 @@ jobs:
           python3 - << 'PYEOF'
           import pathlib, re, sys
 
-          config = pathlib.Path("/tmp/stash-config/config.yml")
+          config = pathlib.Path("/tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}/config/config.yml")
           if not config.exists():
               sys.exit(0)
 
@@ -457,3 +468,7 @@ jobs:
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Cleanup Stash temp dirs
+        if: always()
+        run: sudo rm -rf /tmp/stash-${{ github.run_id }}-py${{ matrix.python-version }}
