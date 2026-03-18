@@ -3,6 +3,7 @@
 from typing import Any
 
 from ... import fragments
+from ...fragments import fragment_store
 from ...types import (
     ScrapeContentType,
     ScrapedGallery,
@@ -73,37 +74,9 @@ class ScraperClientMixin(StashClientProtocol):
                     print(f"URLs: {scraper.scene.urls}")
             ```
         """
-        query = """
-            query ListScrapers($types: [ScrapeContentType!]!) {
-                listScrapers(types: $types) {
-                    id
-                    name
-                    performer {
-                        urls
-                        supported_scrapes
-                    }
-                    scene {
-                        urls
-                        supported_scrapes
-                    }
-                    gallery {
-                        urls
-                        supported_scrapes
-                    }
-                    image {
-                        urls
-                        supported_scrapes
-                    }
-                    group {
-                        urls
-                        supported_scrapes
-                    }
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragments.LIST_SCRAPERS_QUERY,
                 {
                     "types": [
                         t.value if isinstance(t, ScrapeContentType) else t
@@ -157,43 +130,9 @@ class ScraperClientMixin(StashClientProtocol):
             scenes = await client.scrape_single_scene(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleScene($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!) {
-                scrapeSingleScene(source: $source, input: $input) {
-                    title
-                    code
-                    details
-                    director
-                    urls
-                    date
-                    image
-                    studio {
-                        stored_id
-                        name
-                        urls
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                        gender
-                        urls
-                    }
-                    groups {
-                        stored_id
-                        name
-                    }
-                    remote_site_id
-                    duration
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_SCENE_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -237,36 +176,9 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Scene {i+1}: {len(scenes)} matches found")
             ```
         """
-        query = """
-            query ScrapeMultiScenes($source: ScraperSourceInput!, $input: ScrapeMultiScenesInput!) {
-                scrapeMultiScenes(source: $source, input: $input) {
-                    title
-                    code
-                    details
-                    director
-                    urls
-                    date
-                    image
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                    remote_site_id
-                    duration
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_MULTI_SCENES_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -311,30 +223,9 @@ class ScraperClientMixin(StashClientProtocol):
             studios = await client.scrape_single_studio(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleStudio($source: ScraperSourceInput!, $input: ScrapeSingleStudioInput!) {
-                scrapeSingleStudio(source: $source, input: $input) {
-                    stored_id
-                    name
-                    urls
-                    parent {
-                        stored_id
-                        name
-                    }
-                    image
-                    details
-                    aliases
-                    tags {
-                        stored_id
-                        name
-                    }
-                    remote_site_id
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_STUDIO_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -383,18 +274,9 @@ class ScraperClientMixin(StashClientProtocol):
             tags = await client.scrape_single_tag(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleTag($source: ScraperSourceInput!, $input: ScrapeSingleTagInput!) {
-                scrapeSingleTag(source: $source, input: $input) {
-                    stored_id
-                    name
-                    remote_site_id
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_TAG_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -443,43 +325,9 @@ class ScraperClientMixin(StashClientProtocol):
             performers = await client.scrape_single_performer(source, input)
             ```
         """
-        query = """
-            query ScrapeSinglePerformer($source: ScraperSourceInput!, $input: ScrapeSinglePerformerInput!) {
-                scrapeSinglePerformer(source: $source, input: $input) {
-                    stored_id
-                    name
-                    disambiguation
-                    gender
-                    urls
-                    birthdate
-                    ethnicity
-                    country
-                    eye_color
-                    height
-                    measurements
-                    fake_tits
-                    penis_length
-                    circumcised
-                    career_length
-                    tattoos
-                    piercings
-                    aliases
-                    tags {
-                        stored_id
-                        name
-                    }
-                    images
-                    details
-                    death_date
-                    hair_color
-                    weight
-                    remote_site_id
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_PERFORMER_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -523,41 +371,9 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Performer {i+1}: {len(performers)} matches found")
             ```
         """
-        query = """
-            query ScrapeMultiPerformers($source: ScraperSourceInput!, $input: ScrapeMultiPerformersInput!) {
-                scrapeMultiPerformers(source: $source, input: $input) {
-                    stored_id
-                    name
-                    disambiguation
-                    gender
-                    urls
-                    birthdate
-                    ethnicity
-                    country
-                    eye_color
-                    height
-                    measurements
-                    fake_tits
-                    career_length
-                    tattoos
-                    piercings
-                    aliases
-                    tags {
-                        stored_id
-                        name
-                    }
-                    images
-                    details
-                    death_date
-                    hair_color
-                    weight
-                    remote_site_id
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_MULTI_PERFORMERS_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -609,33 +425,9 @@ class ScraperClientMixin(StashClientProtocol):
             galleries = await client.scrape_single_gallery(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleGallery($source: ScraperSourceInput!, $input: ScrapeSingleGalleryInput!) {
-                scrapeSingleGallery(source: $source, input: $input) {
-                    title
-                    code
-                    details
-                    photographer
-                    urls
-                    date
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_GALLERY_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -680,34 +472,9 @@ class ScraperClientMixin(StashClientProtocol):
             movies = await client.scrape_single_movie(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleMovie($source: ScraperSourceInput!, $input: ScrapeSingleMovieInput!) {
-                scrapeSingleMovie(source: $source, input: $input) {
-                    stored_id
-                    name
-                    aliases
-                    duration
-                    date
-                    rating
-                    director
-                    urls
-                    synopsis
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    front_image
-                    back_image
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_MOVIE_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -756,34 +523,9 @@ class ScraperClientMixin(StashClientProtocol):
             groups = await client.scrape_single_group(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleGroup($source: ScraperSourceInput!, $input: ScrapeSingleGroupInput!) {
-                scrapeSingleGroup(source: $source, input: $input) {
-                    stored_id
-                    name
-                    aliases
-                    duration
-                    date
-                    rating
-                    director
-                    urls
-                    synopsis
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    front_image
-                    back_image
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_GROUP_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -832,33 +574,9 @@ class ScraperClientMixin(StashClientProtocol):
             images = await client.scrape_single_image(source, input)
             ```
         """
-        query = """
-            query ScrapeSingleImage($source: ScraperSourceInput!, $input: ScrapeSingleImageInput!) {
-                scrapeSingleImage(source: $source, input: $input) {
-                    title
-                    code
-                    details
-                    photographer
-                    urls
-                    date
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_SINGLE_IMAGE_QUERY,
                 {
                     "source": source.to_graphql()
                     if hasattr(source, "to_graphql")
@@ -919,66 +637,9 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Scraped performer: {content.name}")
             ```
         """
-        query = """
-            query ScrapeURL($url: String!, $ty: ScrapeContentType!) {
-                scrapeURL(url: $url, ty: $ty) {
-                    __typename
-                    ... on ScrapedStudio {
-                        stored_id
-                        name
-                        urls
-                    }
-                    ... on ScrapedTag {
-                        stored_id
-                        name
-                    }
-                    ... on ScrapedScene {
-                        title
-                        code
-                        details
-                        urls
-                        date
-                    }
-                    ... on ScrapedGallery {
-                        title
-                        code
-                        details
-                        urls
-                        date
-                    }
-                    ... on ScrapedImage {
-                        title
-                        code
-                        details
-                        urls
-                        date
-                    }
-                    ... on ScrapedMovie {
-                        stored_id
-                        name
-                        aliases
-                        duration
-                        date
-                    }
-                    ... on ScrapedGroup {
-                        stored_id
-                        name
-                        aliases
-                        duration
-                        date
-                    }
-                    ... on ScrapedPerformer {
-                        stored_id
-                        name
-                        gender
-                        urls
-                    }
-                }
-            }
-        """
         try:
             result = await self.execute(
-                query,
+                fragment_store.SCRAPE_URL_QUERY,
                 {
                     "url": url,
                     "ty": ty.value if isinstance(ty, ScrapeContentType) else ty,
@@ -1030,42 +691,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Gender: {performer.gender}")
             ```
         """
-        query = """
-            query ScrapePerformerURL($url: String!) {
-                scrapePerformerURL(url: $url) {
-                    stored_id
-                    name
-                    disambiguation
-                    gender
-                    urls
-                    birthdate
-                    ethnicity
-                    country
-                    eye_color
-                    height
-                    measurements
-                    fake_tits
-                    penis_length
-                    circumcised
-                    career_length
-                    tattoos
-                    piercings
-                    aliases
-                    tags {
-                        stored_id
-                        name
-                    }
-                    images
-                    details
-                    death_date
-                    hair_color
-                    weight
-                    remote_site_id
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_PERFORMER_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapePerformerURL"):
                 return self._decode_result(
                     ScrapedPerformer, result["scrapePerformerURL"]
@@ -1097,40 +726,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Studio: {scene.studio.name if scene.studio else 'Unknown'}")
             ```
         """
-        query = """
-            query ScrapeSceneURL($url: String!) {
-                scrapeSceneURL(url: $url) {
-                    title
-                    code
-                    details
-                    director
-                    urls
-                    date
-                    image
-                    studio {
-                        stored_id
-                        name
-                        urls
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                    groups {
-                        stored_id
-                        name
-                    }
-                    remote_site_id
-                    duration
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_SCENE_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapeSceneURL"):
                 return self._decode_result(ScrapedScene, result["scrapeSceneURL"])
             return None
@@ -1160,32 +759,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Performers: {len(gallery.performers or [])}")
             ```
         """
-        query = """
-            query ScrapeGalleryURL($url: String!) {
-                scrapeGalleryURL(url: $url) {
-                    title
-                    code
-                    details
-                    photographer
-                    urls
-                    date
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_GALLERY_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapeGalleryURL"):
                 return self._decode_result(ScrapedGallery, result["scrapeGalleryURL"])
             return None
@@ -1215,32 +792,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Tags: {len(image.tags or [])}")
             ```
         """
-        query = """
-            query ScrapeImageURL($url: String!) {
-                scrapeImageURL(url: $url) {
-                    title
-                    code
-                    details
-                    photographer
-                    urls
-                    date
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    performers {
-                        stored_id
-                        name
-                    }
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_IMAGE_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapeImageURL"):
                 return self._decode_result(ScrapedImage, result["scrapeImageURL"])
             return None
@@ -1273,33 +828,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Duration: {movie.duration}")
             ```
         """
-        query = """
-            query ScrapeMovieURL($url: String!) {
-                scrapeMovieURL(url: $url) {
-                    stored_id
-                    name
-                    aliases
-                    duration
-                    date
-                    rating
-                    director
-                    urls
-                    synopsis
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    front_image
-                    back_image
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_MOVIE_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapeMovieURL"):
                 return self._decode_result(ScrapedMovie, result["scrapeMovieURL"])
             return None
@@ -1329,33 +861,10 @@ class ScraperClientMixin(StashClientProtocol):
                 print(f"Synopsis: {group.synopsis}")
             ```
         """
-        query = """
-            query ScrapeGroupURL($url: String!) {
-                scrapeGroupURL(url: $url) {
-                    stored_id
-                    name
-                    aliases
-                    duration
-                    date
-                    rating
-                    director
-                    urls
-                    synopsis
-                    studio {
-                        stored_id
-                        name
-                    }
-                    tags {
-                        stored_id
-                        name
-                    }
-                    front_image
-                    back_image
-                }
-            }
-        """
         try:
-            result = await self.execute(query, {"url": url})
+            result = await self.execute(
+                fragment_store.SCRAPE_GROUP_URL_QUERY, {"url": url}
+            )
             if result and result.get("scrapeGroupURL"):
                 return self._decode_result(ScrapedGroup, result["scrapeGroupURL"])
             return None

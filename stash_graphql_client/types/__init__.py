@@ -54,7 +54,7 @@ from .dlna import (
 from .enums import (
     BlobsStorageType,
     BulkUpdateIdMode,
-    CircumisedEnum,
+    CircumcisedEnum,
     CriterionModifier,
     FilterMode,
     GenderEnum,
@@ -349,8 +349,8 @@ __all__: list[str] = [
     "BulkUpdateIdMode",
     "BulkUpdateIds",
     "BulkUpdateStrings",
+    "CircumcisedEnum",
     "CircumcisionCriterionInput",
-    "CircumisedEnum",
     "CleanGeneratedInput",
     "CleanMetadataInput",
     "ConfigDLNAInput",

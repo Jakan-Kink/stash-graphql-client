@@ -2018,6 +2018,236 @@ mutation ExecSQL($sql: String!, $args: [Any]) {
 
 
 # =============================================================================
+# Scraped type field constants (for scraper queries)
+# =============================================================================
+
+# -- Nested fields (minimal, used when embedded in a parent scraped type) --
+
+_BASE_SCRAPED_TAG_NESTED_FIELDS = """
+    stored_id
+    name
+"""
+
+_BASE_SCRAPED_STUDIO_NESTED_FIELDS = """
+    stored_id
+    name
+    urls
+"""
+
+_BASE_SCRAPED_PERFORMER_NESTED_FIELDS = """
+    stored_id
+    name
+    gender
+    urls
+"""
+
+_BASE_SCRAPED_GROUP_NESTED_FIELDS = """
+    stored_id
+    name
+"""
+
+# -- Full fields (used when a scraped type is the top-level return) --
+
+_BASE_SCRAPED_TAG_FIELDS = """
+    stored_id
+    name
+    remote_site_id
+    description
+    alias_list
+"""
+
+_BASE_SCRAPED_STUDIO_FIELDS = """
+    stored_id
+    name
+    urls
+    parent {
+        stored_id
+        name
+        urls
+    }
+    image
+    details
+    aliases
+    tags {
+        stored_id
+        name
+    }
+    remote_site_id
+"""
+
+_BASE_SCRAPED_PERFORMER_FIELDS = """
+    stored_id
+    name
+    disambiguation
+    gender
+    urls
+    birthdate
+    ethnicity
+    country
+    eye_color
+    height
+    measurements
+    fake_tits
+    penis_length
+    circumcised
+    career_length
+    tattoos
+    piercings
+    aliases
+    tags {
+        stored_id
+        name
+    }
+    images
+    details
+    death_date
+    hair_color
+    weight
+    remote_site_id
+"""
+
+_BASE_SCRAPED_SCENE_FIELDS = """
+    title
+    code
+    details
+    director
+    urls
+    date
+    image
+    studio {
+        stored_id
+        name
+        urls
+    }
+    tags {
+        stored_id
+        name
+    }
+    performers {
+        stored_id
+        name
+        gender
+        urls
+    }
+    groups {
+        stored_id
+        name
+    }
+    remote_site_id
+    duration
+    fingerprints {
+        algorithm
+        hash
+        duration
+    }
+"""
+
+_BASE_SCRAPED_GALLERY_FIELDS = """
+    title
+    code
+    details
+    photographer
+    urls
+    date
+    studio {
+        stored_id
+        name
+        urls
+    }
+    tags {
+        stored_id
+        name
+    }
+    performers {
+        stored_id
+        name
+        gender
+        urls
+    }
+"""
+
+_BASE_SCRAPED_IMAGE_FIELDS = """
+    title
+    code
+    details
+    photographer
+    urls
+    date
+    studio {
+        stored_id
+        name
+        urls
+    }
+    tags {
+        stored_id
+        name
+    }
+    performers {
+        stored_id
+        name
+        gender
+        urls
+    }
+"""
+
+_BASE_SCRAPED_GROUP_FIELDS = """
+    stored_id
+    name
+    aliases
+    duration
+    date
+    rating
+    director
+    urls
+    synopsis
+    studio {
+        stored_id
+        name
+        urls
+    }
+    tags {
+        stored_id
+        name
+    }
+    front_image
+    back_image
+"""
+
+_BASE_SCRAPED_MOVIE_FIELDS = _BASE_SCRAPED_GROUP_FIELDS
+
+# -- Module-level scraper query constant (no capability gating needed) --
+
+LIST_SCRAPERS_QUERY = """
+query ListScrapers($types: [ScrapeContentType!]!) {
+    listScrapers(types: $types) {
+        id
+        name
+        performer {
+            urls
+            supported_scrapes
+        }
+        scene {
+            urls
+            supported_scrapes
+        }
+        gallery {
+            urls
+            supported_scrapes
+        }
+        image {
+            urls
+            supported_scrapes
+        }
+        group {
+            urls
+            supported_scrapes
+        }
+    }
+}
+"""
+
+
+# =============================================================================
 # FragmentStore — capability-aware fragment and query builder
 # =============================================================================
 
@@ -2073,6 +2303,19 @@ class FragmentStore:
         self.IMAGE_FIELDS = _BASE_IMAGE_FIELDS
         self.GROUP_FIELDS = _BASE_GROUP_FIELDS
         self.FOLDER_FIELDS = _BASE_FOLDER_FIELDS
+        # Scraped type fields
+        self.SCRAPED_TAG_NESTED_FIELDS = _BASE_SCRAPED_TAG_NESTED_FIELDS
+        self.SCRAPED_STUDIO_NESTED_FIELDS = _BASE_SCRAPED_STUDIO_NESTED_FIELDS
+        self.SCRAPED_PERFORMER_NESTED_FIELDS = _BASE_SCRAPED_PERFORMER_NESTED_FIELDS
+        self.SCRAPED_GROUP_NESTED_FIELDS = _BASE_SCRAPED_GROUP_NESTED_FIELDS
+        self.SCRAPED_TAG_FIELDS = _BASE_SCRAPED_TAG_FIELDS
+        self.SCRAPED_STUDIO_FIELDS = _BASE_SCRAPED_STUDIO_FIELDS
+        self.SCRAPED_PERFORMER_FIELDS = _BASE_SCRAPED_PERFORMER_FIELDS
+        self.SCRAPED_SCENE_FIELDS = _BASE_SCRAPED_SCENE_FIELDS
+        self.SCRAPED_GALLERY_FIELDS = _BASE_SCRAPED_GALLERY_FIELDS
+        self.SCRAPED_IMAGE_FIELDS = _BASE_SCRAPED_IMAGE_FIELDS
+        self.SCRAPED_GROUP_FIELDS = _BASE_SCRAPED_GROUP_FIELDS
+        self.SCRAPED_MOVIE_FIELDS = _BASE_SCRAPED_MOVIE_FIELDS
         self._build_queries()
 
     def _build_fields(self) -> None:
@@ -2136,6 +2379,12 @@ class FragmentStore:
                 "    parent_folders {\n        __typename\n        id\n        path\n    }",
             )
         self.FOLDER_FIELDS = folder
+
+        # -- Scraped Performer (career_start/career_end gated at appSchema >= 78) --
+        scraped_performer = _BASE_SCRAPED_PERFORMER_FIELDS
+        if caps.has_performer_career_start_end:
+            scraped_performer += "    career_start\n    career_end\n"
+        self.SCRAPED_PERFORMER_FIELDS = scraped_performer
 
     def _build_queries(self) -> None:
         """Rebuild all query strings from the current field strings.
@@ -2661,6 +2910,180 @@ query FindFolders($folder_filter: FolderFilterType, $filter: FindFilterType, $id
             ...FolderFields
         }}
     }}
+}}
+"""
+
+        # ---- Scraper queries ----
+        self._build_scraper_queries()
+
+    def _build_scraper_queries(self) -> None:
+        """Build scraper query strings from the current scraped field strings."""
+
+        # ---- Single scene ----
+        self.SCRAPE_SINGLE_SCENE_QUERY = f"""
+query ScrapeSingleScene($source: ScraperSourceInput!, $input: ScrapeSingleSceneInput!) {{
+    scrapeSingleScene(source: $source, input: $input) {{
+{self.SCRAPED_SCENE_FIELDS}    }}
+}}
+"""
+
+        # ---- Multi scenes ----
+        self.SCRAPE_MULTI_SCENES_QUERY = f"""
+query ScrapeMultiScenes($source: ScraperSourceInput!, $input: ScrapeMultiScenesInput!) {{
+    scrapeMultiScenes(source: $source, input: $input) {{
+{self.SCRAPED_SCENE_FIELDS}    }}
+}}
+"""
+
+        # ---- Single studio ----
+        self.SCRAPE_SINGLE_STUDIO_QUERY = f"""
+query ScrapeSingleStudio($source: ScraperSourceInput!, $input: ScrapeSingleStudioInput!) {{
+    scrapeSingleStudio(source: $source, input: $input) {{
+{self.SCRAPED_STUDIO_FIELDS}    }}
+}}
+"""
+
+        # ---- Single tag ----
+        self.SCRAPE_SINGLE_TAG_QUERY = f"""
+query ScrapeSingleTag($source: ScraperSourceInput!, $input: ScrapeSingleTagInput!) {{
+    scrapeSingleTag(source: $source, input: $input) {{
+{self.SCRAPED_TAG_FIELDS}    }}
+}}
+"""
+
+        # ---- Single performer ----
+        self.SCRAPE_SINGLE_PERFORMER_QUERY = f"""
+query ScrapeSinglePerformer($source: ScraperSourceInput!, $input: ScrapeSinglePerformerInput!) {{
+    scrapeSinglePerformer(source: $source, input: $input) {{
+{self.SCRAPED_PERFORMER_FIELDS}    }}
+}}
+"""
+
+        # ---- Multi performers ----
+        self.SCRAPE_MULTI_PERFORMERS_QUERY = f"""
+query ScrapeMultiPerformers($source: ScraperSourceInput!, $input: ScrapeMultiPerformersInput!) {{
+    scrapeMultiPerformers(source: $source, input: $input) {{
+{self.SCRAPED_PERFORMER_FIELDS}    }}
+}}
+"""
+
+        # ---- Single gallery ----
+        self.SCRAPE_SINGLE_GALLERY_QUERY = f"""
+query ScrapeSingleGallery($source: ScraperSourceInput!, $input: ScrapeSingleGalleryInput!) {{
+    scrapeSingleGallery(source: $source, input: $input) {{
+{self.SCRAPED_GALLERY_FIELDS}    }}
+}}
+"""
+
+        # ---- Single movie (deprecated) ----
+        self.SCRAPE_SINGLE_MOVIE_QUERY = f"""
+query ScrapeSingleMovie($source: ScraperSourceInput!, $input: ScrapeSingleMovieInput!) {{
+    scrapeSingleMovie(source: $source, input: $input) {{
+{self.SCRAPED_MOVIE_FIELDS}    }}
+}}
+"""
+
+        # ---- Single group ----
+        self.SCRAPE_SINGLE_GROUP_QUERY = f"""
+query ScrapeSingleGroup($source: ScraperSourceInput!, $input: ScrapeSingleGroupInput!) {{
+    scrapeSingleGroup(source: $source, input: $input) {{
+{self.SCRAPED_GROUP_FIELDS}    }}
+}}
+"""
+
+        # ---- Single image ----
+        self.SCRAPE_SINGLE_IMAGE_QUERY = f"""
+query ScrapeSingleImage($source: ScraperSourceInput!, $input: ScrapeSingleImageInput!) {{
+    scrapeSingleImage(source: $source, input: $input) {{
+{self.SCRAPED_IMAGE_FIELDS}    }}
+}}
+"""
+
+        # ---- Scrape URL (union type, uses nested field variants) ----
+        self.SCRAPE_URL_QUERY = f"""
+query ScrapeURL($url: String!, $ty: ScrapeContentType!) {{
+    scrapeURL(url: $url, ty: $ty) {{
+        __typename
+        ... on ScrapedStudio {{
+{self.SCRAPED_STUDIO_NESTED_FIELDS}        }}
+        ... on ScrapedTag {{
+{self.SCRAPED_TAG_NESTED_FIELDS}        }}
+        ... on ScrapedScene {{
+            title
+            code
+            details
+            urls
+            date
+        }}
+        ... on ScrapedGallery {{
+            title
+            code
+            details
+            urls
+            date
+        }}
+        ... on ScrapedImage {{
+            title
+            code
+            details
+            urls
+            date
+        }}
+        ... on ScrapedMovie {{
+{self.SCRAPED_GROUP_NESTED_FIELDS}        }}
+        ... on ScrapedGroup {{
+{self.SCRAPED_GROUP_NESTED_FIELDS}        }}
+        ... on ScrapedPerformer {{
+{self.SCRAPED_PERFORMER_NESTED_FIELDS}        }}
+    }}
+}}
+"""
+
+        # ---- Performer URL ----
+        self.SCRAPE_PERFORMER_URL_QUERY = f"""
+query ScrapePerformerURL($url: String!) {{
+    scrapePerformerURL(url: $url) {{
+{self.SCRAPED_PERFORMER_FIELDS}    }}
+}}
+"""
+
+        # ---- Scene URL ----
+        self.SCRAPE_SCENE_URL_QUERY = f"""
+query ScrapeSceneURL($url: String!) {{
+    scrapeSceneURL(url: $url) {{
+{self.SCRAPED_SCENE_FIELDS}    }}
+}}
+"""
+
+        # ---- Gallery URL ----
+        self.SCRAPE_GALLERY_URL_QUERY = f"""
+query ScrapeGalleryURL($url: String!) {{
+    scrapeGalleryURL(url: $url) {{
+{self.SCRAPED_GALLERY_FIELDS}    }}
+}}
+"""
+
+        # ---- Image URL ----
+        self.SCRAPE_IMAGE_URL_QUERY = f"""
+query ScrapeImageURL($url: String!) {{
+    scrapeImageURL(url: $url) {{
+{self.SCRAPED_IMAGE_FIELDS}    }}
+}}
+"""
+
+        # ---- Movie URL (deprecated) ----
+        self.SCRAPE_MOVIE_URL_QUERY = f"""
+query ScrapeMovieURL($url: String!) {{
+    scrapeMovieURL(url: $url) {{
+{self.SCRAPED_MOVIE_FIELDS}    }}
+}}
+"""
+
+        # ---- Group URL ----
+        self.SCRAPE_GROUP_URL_QUERY = f"""
+query ScrapeGroupURL($url: String!) {{
+    scrapeGroupURL(url: $url) {{
+{self.SCRAPED_GROUP_FIELDS}    }}
 }}
 """
 

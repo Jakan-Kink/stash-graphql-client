@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -429,9 +429,7 @@ class SceneCreateInput(StashInput):
     cover_image: str | None | UnsetType = UNSET  # String (URL or base64)
     stash_ids: list[StashIDInput] | None | UnsetType = UNSET  # [StashIDInput!]
     file_ids: list[str] | None | UnsetType = UNSET  # [ID!]
-    custom_fields: CustomFieldsInput | None | UnsetType = (
-        UNSET  # CustomFieldsInput (appSchema >= 79)
-    )
+    custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map (appSchema >= 79)
 
 
 class BulkSceneUpdateInput(StashInput):

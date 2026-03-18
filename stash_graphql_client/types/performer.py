@@ -7,7 +7,7 @@ import mimetypes
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from stash_graphql_client.fragments import fragment_store
 
@@ -19,7 +19,7 @@ from .base import (
     StashObject,
     StashResult,
 )
-from .enums import CircumisedEnum, GenderEnum
+from .enums import CircumcisedEnum, GenderEnum
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
 from .scalars import Map
@@ -63,7 +63,7 @@ class PerformerCreateInput(StashInput):
     measurements: str | None | UnsetType = UNSET  # String
     fake_tits: str | None | UnsetType = UNSET  # String
     penis_length: float | None | UnsetType = UNSET  # Float
-    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    circumcised: CircumcisedEnum | None | UnsetType = UNSET  # CircumcisedEnum
     career_length: str | None | UnsetType = UNSET  # String
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
@@ -79,8 +79,16 @@ class PerformerCreateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: dict[str, Any] | None | UnsetType = UNSET  # Map
-    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
-    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
 
 class PerformerUpdateInput(StashInput):
@@ -102,7 +110,7 @@ class PerformerUpdateInput(StashInput):
     measurements: str | None | UnsetType = UNSET  # String
     fake_tits: str | None | UnsetType = UNSET  # String
     penis_length: float | None | UnsetType = UNSET  # Float
-    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    circumcised: CircumcisedEnum | None | UnsetType = UNSET  # CircumcisedEnum
     career_length: str | None | UnsetType = UNSET  # String
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
@@ -118,8 +126,16 @@ class PerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
-    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
-    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
 
 class BulkPerformerUpdateInput(StashInput):
@@ -140,7 +156,7 @@ class BulkPerformerUpdateInput(StashInput):
     measurements: str | None | UnsetType = UNSET  # String
     fake_tits: str | None | UnsetType = UNSET  # String
     penis_length: float | None | UnsetType = UNSET  # Float
-    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    circumcised: CircumcisedEnum | None | UnsetType = UNSET  # CircumcisedEnum
     career_length: str | None | UnsetType = UNSET  # String
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
@@ -154,8 +170,16 @@ class BulkPerformerUpdateInput(StashInput):
     weight: int | None | UnsetType = UNSET  # Int
     ignore_auto_tag: bool | None | UnsetType = UNSET  # Boolean
     custom_fields: CustomFieldsInput | None | UnsetType = UNSET  # CustomFieldsInput
-    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
-    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
 
 class PerformerDestroyInput(StashInput):
@@ -245,7 +269,7 @@ class Performer(StashObject):
     measurements: str | None | UnsetType = UNSET  # String
     fake_tits: str | None | UnsetType = UNSET  # String
     penis_length: float | None | UnsetType = UNSET  # Float
-    circumcised: CircumisedEnum | None | UnsetType = UNSET  # CircumisedEnum
+    circumcised: CircumcisedEnum | None | UnsetType = UNSET  # CircumcisedEnum
     career_length: str | None | UnsetType = UNSET  # String
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
@@ -256,9 +280,17 @@ class Performer(StashObject):
     weight: int | None | UnsetType = UNSET  # Int
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int (Resolver)
 
-    # Capability-gated fields (appSchema >= 78)
-    career_start: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
-    career_end: int | None | UnsetType = UNSET  # Int (year, appSchema >= 78)
+    # Capability-gated fields (appSchema >= 78; str fuzzy date as of appSchema 85)
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date, appSchema >= 78)
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
     async def update_avatar(
         self, client: StashClient, image_path: str | Path
@@ -333,8 +365,8 @@ class Performer(StashObject):
         "rating100": int,
         "favorite": bool,
         "ignore_auto_tag": bool,
-        "career_start": int,
-        "career_end": int,
+        "career_start": str,
+        "career_end": str,
     }
 
     __relationships__ = {

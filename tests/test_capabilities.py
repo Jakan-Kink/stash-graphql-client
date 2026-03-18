@@ -101,6 +101,12 @@ class TestServerCapabilitiesProperties:
         assert make_server_capabilities(84).has_folder_basename
 
     @pytest.mark.unit
+    def test_performer_career_date_strings_boundary(self) -> None:
+        """has_performer_career_date_strings flips at appSchema 85."""
+        assert not make_server_capabilities(84).has_performer_career_date_strings
+        assert make_server_capabilities(85).has_performer_career_date_strings
+
+    @pytest.mark.unit
     def test_max_schema_all_capabilities(self) -> None:
         """Very high appSchema — all schema-gated capabilities enabled."""
         caps = make_server_capabilities(
@@ -130,6 +136,7 @@ class TestServerCapabilitiesProperties:
         assert caps.has_group_custom_fields
         assert caps.has_image_custom_fields
         assert caps.has_folder_basename
+        assert caps.has_performer_career_date_strings
         assert caps.uses_new_duplication_type
         assert caps.has_type("PerformerMergeInput")
         assert caps.has_mutation("bulkSceneMarkerUpdate")

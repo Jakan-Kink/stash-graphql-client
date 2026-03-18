@@ -17,7 +17,7 @@ class GenderEnum(StrEnum):
     NON_BINARY = "NON_BINARY"
 
 
-class CircumisedEnum(StrEnum):
+class CircumcisedEnum(StrEnum):
     """Circumcision enum from schema."""
 
     CUT = "CUT"

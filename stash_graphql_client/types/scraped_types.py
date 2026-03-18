@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from .base import FromGraphQLMixin, StashInput
 from .unset import UNSET, UnsetType
@@ -115,8 +115,8 @@ class ScrapedPerformer(FromGraphQLMixin, BaseModel):
     career_length: str | None | UnsetType = (
         UNSET  # String (deprecated, use career_start/end)
     )
-    career_start: int | None | UnsetType = UNSET  # Int
-    career_end: int | None | UnsetType = UNSET  # Int
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date)
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = (
@@ -129,6 +129,14 @@ class ScrapedPerformer(FromGraphQLMixin, BaseModel):
     hair_color: str | None | UnsetType = UNSET  # String
     weight: str | None | UnsetType = UNSET  # String
     remote_site_id: str | None | UnsetType = UNSET  # String
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
 
 class ScrapedPerformerInput(StashInput):
@@ -151,8 +159,8 @@ class ScrapedPerformerInput(StashInput):
     career_length: str | None | UnsetType = (
         UNSET  # String (deprecated, use career_start/end)
     )
-    career_start: int | None | UnsetType = UNSET  # Int
-    career_end: int | None | UnsetType = UNSET  # Int
+    career_start: str | None | UnsetType = UNSET  # String (fuzzy date)
+    career_end: str | None | UnsetType = UNSET  # String (fuzzy date)
     tattoos: str | None | UnsetType = UNSET  # String
     piercings: str | None | UnsetType = UNSET  # String
     aliases: str | None | UnsetType = UNSET  # String
@@ -161,6 +169,14 @@ class ScrapedPerformerInput(StashInput):
     hair_color: str | None | UnsetType = UNSET  # String
     weight: str | None | UnsetType = UNSET  # String
     remote_site_id: str | None | UnsetType = UNSET  # String
+
+    @field_validator("career_start", "career_end", mode="before")
+    @classmethod
+    def _coerce_career_date(cls, v: Any) -> Any:
+        """Coerce int year to str for backward compat with appSchema 78-84."""
+        if isinstance(v, int):
+            return str(v)
+        return v
 
 
 class ScrapedScene(FromGraphQLMixin, BaseModel):

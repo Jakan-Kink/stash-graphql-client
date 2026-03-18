@@ -152,6 +152,11 @@ class ServerCapabilities:
         return self.app_schema >= 84
 
     @property
+    def has_performer_career_date_strings(self) -> bool:
+        """Performer career_start/career_end changed from Int to String (fuzzy date) at appSchema >= 85."""
+        return self.app_schema >= 85
+
+    @property
     def uses_new_duplication_type(self) -> bool:
         """Whether the server uses DuplicationCriterionInput (vs PHashDuplicationCriterionInput)."""
         return self.has_type("DuplicationCriterionInput")

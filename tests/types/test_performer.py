@@ -18,7 +18,12 @@ import pytest
 import respx
 from pydantic import ValidationError
 
-from stash_graphql_client.types.performer import Performer
+from stash_graphql_client.types.performer import (
+    BulkPerformerUpdateInput,
+    Performer,
+    PerformerCreateInput,
+    PerformerUpdateInput,
+)
 from stash_graphql_client.types.unset import UNSET, UnsetType
 from tests.fixtures import (
     create_find_performers_result,
@@ -391,3 +396,58 @@ def test_performer_alias_list_from_dict_with_none() -> None:
         error["loc"] == ("alias_list",) or "alias_list" in str(error)
         for error in errors
     ), f"Expected validation error for 'alias_list' field, got: {errors}"
+
+
+# ============================================================================
+# _coerce_career_date validator tests (performer.py lines 89-91, 137, 180-182)
+# ============================================================================
+
+
+class TestPerformerCareerDateCoercion:
+    """Test _coerce_career_date validators coerce int years to str.
+
+    Covers performer.py lines 89-91 (PerformerCreateInput),
+    137-138 (PerformerUpdateInput), 180-182 (BulkPerformerUpdateInput).
+    """
+
+    # -- PerformerCreateInput (lines 89-91) --
+
+    @pytest.mark.unit
+    def test_create_input_career_start_int_coerced(self) -> None:
+        """PerformerCreateInput coerces int career_start to str."""
+        inp = PerformerCreateInput(name="Test", career_start=2020)
+        assert inp.career_start == "2020"
+
+    @pytest.mark.unit
+    def test_create_input_career_end_str_passthrough(self) -> None:
+        """PerformerCreateInput passes through str career_end unchanged."""
+        inp = PerformerCreateInput(name="Test", career_end="2023-06")
+        assert inp.career_end == "2023-06"
+
+    # -- PerformerUpdateInput (lines 137-138) --
+
+    @pytest.mark.unit
+    def test_update_input_career_start_int_coerced(self) -> None:
+        """PerformerUpdateInput coerces int career_start to str."""
+        inp = PerformerUpdateInput(id="1", career_start=2019)
+        assert inp.career_start == "2019"
+
+    @pytest.mark.unit
+    def test_update_input_career_end_str_passthrough(self) -> None:
+        """PerformerUpdateInput passes through str career_end unchanged."""
+        inp = PerformerUpdateInput(id="1", career_end="2024-01")
+        assert inp.career_end == "2024-01"
+
+    # -- BulkPerformerUpdateInput (lines 180-182) --
+
+    @pytest.mark.unit
+    def test_bulk_update_input_career_start_int_coerced(self) -> None:
+        """BulkPerformerUpdateInput coerces int career_start to str."""
+        inp = BulkPerformerUpdateInput(career_start=2018)
+        assert inp.career_start == "2018"
+
+    @pytest.mark.unit
+    def test_bulk_update_input_career_end_str_passthrough(self) -> None:
+        """BulkPerformerUpdateInput passes through str career_end unchanged."""
+        inp = BulkPerformerUpdateInput(career_end="2022")
+        assert inp.career_end == "2022"

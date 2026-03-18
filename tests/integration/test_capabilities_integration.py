@@ -111,6 +111,7 @@ async def test_capabilities_derived_properties_consistent(
         assert caps.has_group_custom_fields == (schema >= 82)
         assert caps.has_image_custom_fields == (schema >= 83)
         assert caps.has_folder_basename == (schema >= 84)
+        assert caps.has_performer_career_date_strings == (schema >= 85)
 
 
 @pytest.mark.integration
@@ -976,6 +977,7 @@ async def test_capabilities_flags_are_monotonic(
             ("has_group_custom_fields", 82),
             ("has_image_custom_fields", 83),
             ("has_folder_basename", 84),
+            ("has_performer_career_date_strings", 85),
         ]
 
         for i, (flag, threshold) in enumerate(chain):
@@ -1428,6 +1430,9 @@ async def test_fresh_client_detects_same_capabilities(
                 original_caps.has_image_custom_fields
             )
             assert fresh_caps.has_folder_basename == (original_caps.has_folder_basename)
+            assert fresh_caps.has_performer_career_date_strings == (
+                original_caps.has_performer_career_date_strings
+            )
 
             # Check all mutation/query presence flags via lookup methods
             for mutation_name in _MUTATION_REGISTRY.values():
@@ -1676,18 +1681,18 @@ async def test_performer_career_fields_round_trip_through_update(
         cleanup["performers"].append(performer.id)
 
         if caps.has_performer_career_start_end:
-            performer.career_start = 2010
-            performer.career_end = 2020
+            performer.career_start = "2010"
+            performer.career_end = "2020"
             updated = await stash_client.update_performer(performer)
 
             assert is_set(updated.career_start)
-            assert updated.career_start == 2010
+            assert updated.career_start == "2010"
             assert is_set(updated.career_end)
-            assert updated.career_end == 2020
+            assert updated.career_end == "2020"
 
             found = await stash_client.find_performer(performer.id)
-            assert found.career_start == 2010
-            assert found.career_end == 2020
+            assert found.career_start == "2010"
+            assert found.career_end == "2020"
         else:
             # On older servers: update with base fields only, should not error
             performer.name = "SGC Compat Round-Trip Career Performer Updated"

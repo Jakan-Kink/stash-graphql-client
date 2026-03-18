@@ -2,7 +2,7 @@
 
 This module provides factories for creating test instances of Stash API types
 (Performer, Studio, Scene, etc.) using FactoryBoy. These are NOT SQLAlchemy models,
-but rather Strawberry GraphQL types used to interact with the Stash API.
+but rather GraphQL types used to interact with the Stash API.
 
 Usage:
     from tests.fixtures import PerformerFactory, StudioFactory

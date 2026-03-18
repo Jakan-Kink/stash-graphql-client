@@ -6,7 +6,7 @@ from typing import Any
 
 from .base import StashInput, StashResult
 from .enums import (
-    CircumisedEnum,
+    CircumcisedEnum,
     CriterionModifier,
     FilterMode,
     GenderEnum,
@@ -145,7 +145,7 @@ class GenderCriterionInput(StashInput):
 class CircumcisionCriterionInput(StashInput):
     """Input for circumcision criterion."""
 
-    value: list[CircumisedEnum]  # [CircumisedEnum!]!
+    value: list[CircumcisedEnum]  # [CircumcisedEnum!]!
     modifier: CriterionModifier  # CriterionModifier!
 
 
@@ -243,8 +243,8 @@ class PerformerFilterType(StashInput):
     penis_length: FloatCriterionInput | None | UnsetType = UNSET
     circumcised: CircumcisionCriterionInput | None | UnsetType = UNSET
     career_length: StringCriterionInput | None | UnsetType = UNSET  # deprecated
-    career_start: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
-    career_end: IntCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
+    career_start: DateCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
+    career_end: DateCriterionInput | None | UnsetType = UNSET  # appSchema >= 78
     tattoos: StringCriterionInput | None | UnsetType = UNSET
     piercings: StringCriterionInput | None | UnsetType = UNSET
     aliases: StringCriterionInput | None | UnsetType = UNSET

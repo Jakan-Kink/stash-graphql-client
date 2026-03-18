@@ -15,6 +15,7 @@ from stash_graphql_client.fragments import (
     _BASE_IMAGE_FIELDS,
     _BASE_PERFORMER_FIELDS,
     _BASE_SCENE_FIELDS,
+    _BASE_SCRAPED_PERFORMER_FIELDS,
     _BASE_STUDIO_FIELDS,
     _BASE_TAG_FIELDS,
     FragmentStore,
@@ -363,3 +364,208 @@ class TestFragmentStoreQueries:
         assert "basename" not in store.FOLDER_FIELDS
         assert "custom_fields" not in store.FIND_SCENE_QUERY
         assert "basename" not in store.FIND_FOLDER_QUERY
+
+
+# ---------------------------------------------------------------------------
+# FragmentStore: scraped type fields
+# ---------------------------------------------------------------------------
+
+
+class TestFragmentStoreScrapedTypes:
+    """Test scraped type field constants and capability gating."""
+
+    @pytest.mark.unit
+    def test_base_scraped_performer_excludes_career(self) -> None:
+        """Base SCRAPED_PERFORMER_FIELDS excludes career_start/career_end."""
+        store = FragmentStore()
+        assert "career_start" not in store.SCRAPED_PERFORMER_FIELDS
+        assert "career_end" not in store.SCRAPED_PERFORMER_FIELDS
+
+    @pytest.mark.unit
+    def test_base_scraped_performer_includes_all_other_fields(self) -> None:
+        """Base SCRAPED_PERFORMER_FIELDS includes penis_length, circumcised, etc."""
+        store = FragmentStore()
+        assert "penis_length" in store.SCRAPED_PERFORMER_FIELDS
+        assert "circumcised" in store.SCRAPED_PERFORMER_FIELDS
+        assert "career_length" in store.SCRAPED_PERFORMER_FIELDS
+        assert "disambiguation" in store.SCRAPED_PERFORMER_FIELDS
+        assert "remote_site_id" in store.SCRAPED_PERFORMER_FIELDS
+
+    @pytest.mark.unit
+    def test_rebuild_adds_career_fields_at_78(self) -> None:
+        """rebuild(appSchema=78) adds career_start/career_end to SCRAPED_PERFORMER_FIELDS."""
+        store = FragmentStore()
+        store.rebuild(make_server_capabilities(78))
+        assert "career_start" in store.SCRAPED_PERFORMER_FIELDS
+        assert "career_end" in store.SCRAPED_PERFORMER_FIELDS
+
+    @pytest.mark.unit
+    def test_rebuild_excludes_career_fields_at_77(self) -> None:
+        """rebuild(appSchema=77) does not add career_start/career_end."""
+        store = FragmentStore()
+        store.rebuild(make_server_capabilities(77))
+        assert "career_start" not in store.SCRAPED_PERFORMER_FIELDS
+        assert "career_end" not in store.SCRAPED_PERFORMER_FIELDS
+
+    @pytest.mark.unit
+    def test_scraped_performer_fields_match_base(self) -> None:
+        """Default SCRAPED_PERFORMER_FIELDS equals the base constant."""
+        store = FragmentStore()
+        assert store.SCRAPED_PERFORMER_FIELDS == _BASE_SCRAPED_PERFORMER_FIELDS
+
+    @pytest.mark.unit
+    def test_scraped_scene_fields_have_nested_objects(self) -> None:
+        """SCRAPED_SCENE_FIELDS includes nested studio, tags, performers, groups."""
+        store = FragmentStore()
+        assert "studio {" in store.SCRAPED_SCENE_FIELDS
+        assert "tags {" in store.SCRAPED_SCENE_FIELDS
+        assert "performers {" in store.SCRAPED_SCENE_FIELDS
+        assert "groups {" in store.SCRAPED_SCENE_FIELDS
+
+    @pytest.mark.unit
+    def test_scraped_group_fields_equal_movie_fields(self) -> None:
+        """SCRAPED_MOVIE_FIELDS is the same as SCRAPED_GROUP_FIELDS."""
+        store = FragmentStore()
+        assert store.SCRAPED_MOVIE_FIELDS == store.SCRAPED_GROUP_FIELDS
+
+    @pytest.mark.unit
+    def test_scraped_tag_fields_include_description(self) -> None:
+        """SCRAPED_TAG_FIELDS includes description and alias_list."""
+        store = FragmentStore()
+        assert "description" in store.SCRAPED_TAG_FIELDS
+        assert "alias_list" in store.SCRAPED_TAG_FIELDS
+
+    @pytest.mark.unit
+    def test_scraped_studio_fields_include_parent(self) -> None:
+        """SCRAPED_STUDIO_FIELDS includes parent nested object."""
+        store = FragmentStore()
+        assert "parent {" in store.SCRAPED_STUDIO_FIELDS
+        assert "remote_site_id" in store.SCRAPED_STUDIO_FIELDS
+
+
+# ---------------------------------------------------------------------------
+# Scraped type query string assembly
+# ---------------------------------------------------------------------------
+
+
+class TestFragmentStoreScrapedQueries:
+    """Test that scraper queries are built correctly after rebuild."""
+
+    @pytest.mark.unit
+    def test_base_scraper_queries_exist(self) -> None:
+        """Base store has all scraper query attributes defined."""
+        store = FragmentStore()
+        assert "scrapeSingleScene" in store.SCRAPE_SINGLE_SCENE_QUERY
+        assert "scrapeMultiScenes" in store.SCRAPE_MULTI_SCENES_QUERY
+        assert "scrapeSingleStudio" in store.SCRAPE_SINGLE_STUDIO_QUERY
+        assert "scrapeSingleTag" in store.SCRAPE_SINGLE_TAG_QUERY
+        assert "scrapeSinglePerformer" in store.SCRAPE_SINGLE_PERFORMER_QUERY
+        assert "scrapeMultiPerformers" in store.SCRAPE_MULTI_PERFORMERS_QUERY
+        assert "scrapeSingleGallery" in store.SCRAPE_SINGLE_GALLERY_QUERY
+        assert "scrapeSingleMovie" in store.SCRAPE_SINGLE_MOVIE_QUERY
+        assert "scrapeSingleGroup" in store.SCRAPE_SINGLE_GROUP_QUERY
+        assert "scrapeSingleImage" in store.SCRAPE_SINGLE_IMAGE_QUERY
+        assert "scrapeURL" in store.SCRAPE_URL_QUERY
+        assert "scrapePerformerURL" in store.SCRAPE_PERFORMER_URL_QUERY
+        assert "scrapeSceneURL" in store.SCRAPE_SCENE_URL_QUERY
+        assert "scrapeGalleryURL" in store.SCRAPE_GALLERY_URL_QUERY
+        assert "scrapeImageURL" in store.SCRAPE_IMAGE_URL_QUERY
+        assert "scrapeMovieURL" in store.SCRAPE_MOVIE_URL_QUERY
+        assert "scrapeGroupURL" in store.SCRAPE_GROUP_URL_QUERY
+
+    @pytest.mark.unit
+    def test_performer_queries_exclude_career_at_base(self) -> None:
+        """Base scraper performer queries do not contain career_start/career_end."""
+        store = FragmentStore()
+        assert "career_start" not in store.SCRAPE_SINGLE_PERFORMER_QUERY
+        assert "career_start" not in store.SCRAPE_MULTI_PERFORMERS_QUERY
+        assert "career_start" not in store.SCRAPE_PERFORMER_URL_QUERY
+
+    @pytest.mark.unit
+    def test_performer_queries_include_career_at_78(self) -> None:
+        """rebuild(appSchema=78) adds career_start/end to performer queries."""
+        store = FragmentStore()
+        store.rebuild(make_server_capabilities(78))
+        assert "career_start" in store.SCRAPE_SINGLE_PERFORMER_QUERY
+        assert "career_end" in store.SCRAPE_SINGLE_PERFORMER_QUERY
+        assert "career_start" in store.SCRAPE_MULTI_PERFORMERS_QUERY
+        assert "career_start" in store.SCRAPE_PERFORMER_URL_QUERY
+
+    @pytest.mark.unit
+    def test_performer_queries_include_penis_circumcised(self) -> None:
+        """All performer queries include penis_length and circumcised."""
+        store = FragmentStore()
+        for query in [
+            store.SCRAPE_SINGLE_PERFORMER_QUERY,
+            store.SCRAPE_MULTI_PERFORMERS_QUERY,
+            store.SCRAPE_PERFORMER_URL_QUERY,
+        ]:
+            assert "penis_length" in query
+            assert "circumcised" in query
+
+    @pytest.mark.unit
+    def test_scrape_url_has_union_fragments(self) -> None:
+        """SCRAPE_URL_QUERY contains inline fragments for all scraped types."""
+        store = FragmentStore()
+        assert "... on ScrapedStudio" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedTag" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedScene" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedGallery" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedImage" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedMovie" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedGroup" in store.SCRAPE_URL_QUERY
+        assert "... on ScrapedPerformer" in store.SCRAPE_URL_QUERY
+        assert "__typename" in store.SCRAPE_URL_QUERY
+
+    @pytest.mark.unit
+    def test_rebuild_downgrade_removes_career_from_scraped(self) -> None:
+        """Downgrading removes career_start/end from scraped performer queries."""
+        store = FragmentStore()
+        store.rebuild(make_server_capabilities(84))
+        assert "career_start" in store.SCRAPE_SINGLE_PERFORMER_QUERY
+
+        store.rebuild(make_server_capabilities(75))
+        assert "career_start" not in store.SCRAPE_SINGLE_PERFORMER_QUERY
+        assert "career_start" not in store.SCRAPED_PERFORMER_FIELDS
+
+
+# ---------------------------------------------------------------------------
+# ScrapedPerformer / ScrapedPerformerInput career date coercion
+# (scraped_types.py lines 137-139, 177-179)
+# ---------------------------------------------------------------------------
+
+
+class TestScrapedPerformerCareerDateCoercion:
+    """Test _coerce_career_date on ScrapedPerformer and ScrapedPerformerInput."""
+
+    @pytest.mark.unit
+    def test_scraped_performer_career_start_int_coerced(self) -> None:
+        """ScrapedPerformer coerces int career_start to str."""
+        from stash_graphql_client.types.scraped_types import ScrapedPerformer
+
+        p = ScrapedPerformer(career_start=2020)
+        assert p.career_start == "2020"
+
+    @pytest.mark.unit
+    def test_scraped_performer_career_end_str_passthrough(self) -> None:
+        """ScrapedPerformer passes through str career_end unchanged."""
+        from stash_graphql_client.types.scraped_types import ScrapedPerformer
+
+        p = ScrapedPerformer(career_end="2023-06")
+        assert p.career_end == "2023-06"
+
+    @pytest.mark.unit
+    def test_scraped_performer_input_career_start_int_coerced(self) -> None:
+        """ScrapedPerformerInput coerces int career_start to str."""
+        from stash_graphql_client.types.scraped_types import ScrapedPerformerInput
+
+        inp = ScrapedPerformerInput(career_start=2019)
+        assert inp.career_start == "2019"
+
+    @pytest.mark.unit
+    def test_scraped_performer_input_career_end_str_passthrough(self) -> None:
+        """ScrapedPerformerInput passes through str career_end unchanged."""
+        from stash_graphql_client.types.scraped_types import ScrapedPerformerInput
+
+        inp = ScrapedPerformerInput(career_end="2022")
+        assert inp.career_end == "2022"
