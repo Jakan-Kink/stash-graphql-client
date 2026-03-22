@@ -39,10 +39,9 @@ async def test_version_returns_current_version(
         assert version is not None
         assert isinstance(version, Version)
 
-        # Verify required fields are present and non-empty
+        # Verify required fields are present
         assert version.version is not None
         assert is_set(version.version)
-        assert len(version.version) > 0
         assert version.hash is not None
         assert is_set(version.hash)
         assert len(version.hash) > 0
@@ -50,8 +49,9 @@ async def test_version_returns_current_version(
         assert is_set(version.build_time)
         assert len(version.build_time) > 0
 
-        # Version should follow semantic versioning pattern (v0.0.0 or similar)
-        assert version.version.startswith("v") or version.version[0].isdigit()
+        # Version may be empty on develop/untagged builds (only hash and build_time set)
+        if version.version:
+            assert version.version.startswith("v") or version.version[0].isdigit()
 
 
 @pytest.mark.integration
@@ -166,10 +166,9 @@ async def test_version_and_latestversion_compatibility(
         assert is_set(current.version)
         assert is_set(latest.version)
 
-        # Both should have version info in similar format
-        # (both start with 'v' or both are numeric)
-        current_starts_with_v = current.version.startswith("v")
-        latest_starts_with_v = latest.version.startswith("v")
-
-        # They should follow the same versioning scheme
-        assert current_starts_with_v == latest_starts_with_v
+        # On tagged builds, both should follow the same versioning scheme.
+        # On develop/untagged builds, current.version is empty — skip the comparison.
+        if current.version:
+            current_starts_with_v = current.version.startswith("v")
+            latest_starts_with_v = latest.version.startswith("v")
+            assert current_starts_with_v == latest_starts_with_v

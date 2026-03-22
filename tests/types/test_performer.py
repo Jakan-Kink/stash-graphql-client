@@ -451,3 +451,17 @@ class TestPerformerCareerDateCoercion:
         """BulkPerformerUpdateInput passes through str career_end unchanged."""
         inp = BulkPerformerUpdateInput(career_end="2022")
         assert inp.career_end == "2022"
+
+    # -- Performer entity (lines 287-293) --
+
+    @pytest.mark.unit
+    def test_performer_entity_career_start_int_coerced(self) -> None:
+        """Performer entity coerces int career_start to str (appSchema 78-84 compat)."""
+        p = Performer(name="Test", career_start=2020)  # type: ignore[arg-type]
+        assert p.career_start == "2020"
+
+    @pytest.mark.unit
+    def test_performer_entity_career_end_str_passthrough(self) -> None:
+        """Performer entity passes through str career_end unchanged."""
+        p = Performer(name="Test", career_end="2023-06")
+        assert p.career_end == "2023-06"

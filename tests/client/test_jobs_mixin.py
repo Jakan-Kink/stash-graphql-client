@@ -431,6 +431,52 @@ async def test_job_queue_none(respx_stash_client: StashClient) -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_job_queue_null_entries_in_list(respx_stash_client: StashClient) -> None:
+    """Test job_queue filters out null entries within the job list.
+
+    Stash may return jobQueue: [{...}, null, {...}] in edge cases
+    (e.g., race conditions during job cleanup). The library should
+    silently skip null entries rather than crashing with Job(**None).
+    """
+    jobs_data = [
+        {
+            "id": "job-1",
+            "status": "RUNNING",
+            "description": "Job 1",
+            "progress": 50.0,
+            "subTasks": [],
+            "addTime": "2024-01-01T00:00:00Z",
+        },
+        None,
+        {
+            "id": "job-3",
+            "status": "FINISHED",
+            "description": "Job 3",
+            "progress": 100.0,
+            "subTasks": [],
+            "addTime": "2024-01-01T00:02:00Z",
+        },
+    ]
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        return_value=httpx.Response(
+            200, json=create_graphql_response("jobQueue", jobs_data)
+        )
+    )
+
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    assert len(jobs) == 2
+    assert jobs[0].id == "job-1"
+    assert jobs[1].id == "job-3"
+    assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_job_queue_unexpected_type(respx_stash_client: StashClient) -> None:
     """Test job_queue handles non-list response gracefully."""
     respx.post("http://localhost:9999/graphql").mock(

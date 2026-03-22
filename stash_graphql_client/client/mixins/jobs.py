@@ -211,7 +211,9 @@ class JobsClientMixin(StashClientProtocol):
                 )
                 return []
 
-            return [Job(**job_data) for job_data in job_data_list]
+            return [
+                Job(**job_data) for job_data in job_data_list if job_data is not None
+            ]
         except Exception as e:
             self.log.error(f"Failed to get job queue: {e}")
             return []

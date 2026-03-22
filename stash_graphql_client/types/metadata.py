@@ -208,6 +208,9 @@ class CleanMetadataInput(StashInput):
     """Input for metadata cleaning from schema/types/metadata.graphql."""
 
     paths: list[str] | UnsetType = UNSET  # [String!]
+    ignore_zip_file_contents: bool | UnsetType = Field(
+        default=UNSET, alias="ignoreZipFileContents"
+    )  # Boolean (Skip checking zip file contents during clean)
     dry_run: bool | UnsetType = Field(
         default=UNSET, alias="dryRun"
     )  # Boolean! (Do a dry run. Don't delete any files)
