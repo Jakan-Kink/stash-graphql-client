@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -18,10 +18,12 @@ from .base import (
 from .files import ImageFile, VideoFile
 from .metadata import CustomFieldsInput
 from .scalars import Map
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
+    from stash_graphql_client.client import StashClient
+
     from .gallery import Gallery
     from .performer import Performer
     from .studio import Studio
@@ -104,7 +106,7 @@ class Image(StashObject):
     __bulk_destroy_input_type__ = ImagesDestroyInput
     # No __create_input_type__ - images can only be updated
 
-    # Fields to track for changes - only fields that can be written via input types
+    # Fields to track for changes
     __tracked_fields__ = {
         "title",  # ImageUpdateInput
         "code",  # ImageUpdateInput
@@ -117,6 +119,13 @@ class Image(StashObject):
         "galleries",  # mapped to gallery_ids
         "tags",  # mapped to tag_ids
         "performers",  # mapped to performer_ids
+        # Side-mutation field
+        "o_counter",  # imageIncrementO/imageDecrementO/imageResetO
+    }
+
+    # Side mutations: o_counter is managed via increment/decrement/reset mutations
+    __side_mutations__: ClassVar[dict] = {
+        "o_counter": lambda client, obj: Image._save_o_counter(client, obj),  # noqa: PLW0108
     }
 
     # Optional fields
@@ -205,6 +214,39 @@ class Image(StashObject):
             )
         ),
     }
+
+    @staticmethod
+    async def _save_o_counter(client: StashClient, image: Image) -> None:
+        """Side-mutation handler for o_counter.
+
+        Computes delta between current and snapshot o_counter, then fires
+        the appropriate client mixin methods. Updates the local o_counter
+        from the mutation's returned Int!.
+        """
+        current = image.o_counter if is_set(image.o_counter) else 0
+        snapshot = image._snapshot.get("o_counter", 0)
+        # Treat UNSET/None snapshot as 0
+        if not isinstance(snapshot, int):
+            snapshot = 0
+        if not isinstance(current, int):
+            current = 0
+
+        # Reset takes priority if current is explicitly 0
+        if current == 0 and snapshot != 0:
+            image.o_counter = await client.image_reset_o(image.id)
+            return
+
+        delta = current - snapshot
+        if delta > 0:
+            new_count = current
+            for _ in range(delta):
+                new_count = await client.image_increment_o(image.id)
+            image.o_counter = new_count
+        elif delta < 0:
+            new_count = current
+            for _ in range(abs(delta)):
+                new_count = await client.image_decrement_o(image.id)
+            image.o_counter = new_count
 
     async def add_performer(self, performer: Performer) -> None:
         """Add performer (syncs inverse automatically, call save() to persist)."""

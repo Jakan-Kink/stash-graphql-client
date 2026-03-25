@@ -367,7 +367,7 @@ class StashInput(BaseModel):
         """Emit deprecation warning for unknown fields.
 
         In v0.11.0, we emit warnings for unknown fields to help users identify typos.
-        In v0.12.0+, unknown fields will be rejected with ValidationError (extra="forbid").
+        In v0.13.0+, unknown fields will be rejected with ValidationError (extra="forbid").
 
         This gives users at least one full release cycle to fix field name typos
         before they become hard errors.
@@ -390,7 +390,7 @@ class StashInput(BaseModel):
 
         if extra_fields:
             warnings.warn(
-                f"{cls.__name__}: Unknown fields will be rejected in v0.12.0: "
+                f"{cls.__name__}: Unknown fields will be rejected in v0.13.0: "
                 f"{', '.join(sorted(extra_fields))}. "
                 f"Please check for typos or outdated field names. "
                 f"Common mistakes: 'tag_id' should be 'tag_ids' (plural), "
@@ -560,6 +560,16 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Fields to track for changes
     __tracked_fields__: ClassVar[set[str]] = set()
 
+    # Side mutations: fields that are dirty-tracked but persisted via separate
+    # GraphQL mutations instead of the main create/update input.
+    # Maps field name → async callable(client, obj) that fires the side mutation.
+    # Handlers are called AFTER the main save mutation (so new objects have real IDs).
+    # When the field value is None (reset), the handler is still called — it is the
+    # handler's responsibility to distinguish set vs. reset semantics.
+    __side_mutations__: ClassVar[
+        dict[str, Callable[[StashClient, StashObject], Any]]
+    ] = {}
+
     # Relationship mappings for converting to input types
     __relationships__: ClassVar[
         dict[
@@ -589,6 +599,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
     _snapshot: dict = PrivateAttr(default_factory=dict)
     _is_new: bool = PrivateAttr(default=False)
     _received_fields: set = PrivateAttr(default_factory=set)
+    _pending_side_ops: list = PrivateAttr(default_factory=list)
 
     id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
@@ -1219,7 +1230,8 @@ class StashObject(FromGraphQLMixin, BaseModel):
     def mark_clean(self) -> None:
         """Mark object as having no unsaved changes.
 
-        Updates the snapshot to match the current state.
+        Updates the snapshot to match the current state and clears
+        any pending queued side operations.
         """
         # Capture current field values directly to avoid circular reference errors
         # Use _snapshot_value to copy mutable collections (lists)
@@ -1227,6 +1239,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
             field: self._snapshot_value(getattr(self, field, UNSET))
             for field in self.__tracked_fields__
         }
+        self._pending_side_ops.clear()
 
     def _update_snapshot_for_fields(
         self, field_names: set[str] | frozenset[str]
@@ -1249,6 +1262,24 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Clears the snapshot to force all tracked fields to be considered dirty.
         """
         self._snapshot = {}
+
+    def _queue_side_op(self, op: Callable[[StashClient, StashObject], Any]) -> None:
+        """Queue an async operation to fire during save().
+
+        Queued operations fire AFTER the main create/update mutation and AFTER
+        field-based side mutations, so the object has its real server ID.
+
+        Args:
+            op: Async callable ``(client, obj) -> Any``. Use closures to
+                capture arguments::
+
+                    def increment_o(self):
+                        async def _op(client, obj):
+                            result = await client.execute(MUTATION, {"id": obj.id})
+                            obj.o_counter = result["imageIncrementO"]
+                        self._queue_side_op(_op)
+        """
+        self._pending_side_ops.append(op)
 
     @classmethod
     def _get_field_names(cls) -> set[str]:
@@ -1328,60 +1359,84 @@ class StashObject(FromGraphQLMixin, BaseModel):
         For existing objects, this performs an update operation, but only if
         there are dirty (changed) fields.
 
+        Side mutations (__side_mutations__) are fired AFTER the main mutation
+        so that new objects already have their server-assigned ID. Side-mutation
+        fields are excluded from the main create/update input. When multiple
+        fields map to the same handler (e.g., resume_time and play_duration
+        both map to _save_activity), the handler is deduplicated and fires once.
+
+        Queued operations (_pending_side_ops) fire after field-based side
+        mutations. These are closures queued by entity methods like
+        ``increment_o()`` or ``reset_play_count()``.
+
         Args:
             client: StashClient instance
 
         Raises:
             ValueError: If save fails
         """
-        # Skip save if object is not dirty and not new
-        if not self.is_dirty() and not self.is_new():
+        # Skip save if object is not dirty, not new, and has no queued ops
+        if not self.is_dirty() and not self.is_new() and not self._pending_side_ops:
             return
 
-        # Get input data
+        # Identify dirty side-mutation fields before building input
+        dirty_fields = set(self.get_changed_fields().keys())
+        dirty_side_fields = dirty_fields & set(self.__side_mutations__.keys())
+
         try:
+            # --- Main mutation ---
             input_data = await self.to_input()
-            # Ensure input_data is a plain dict
             if not isinstance(input_data, dict):
                 raise ValueError(
                     f"to_input() must return a dict, got {type(input_data)}"
                 )
 
-            # For existing objects, if only ID is present, no actual changes to save
-            if not self.is_new() and set(input_data.keys()) <= {"id"}:
-                log.debug(f"No changes to save for {self.__type_name__} {self.id}")
-                self.mark_clean()  # Mark as clean since there are no changes
-                return
+            # Determine if there are real (non-side) changes for the main mutation
+            has_main_changes = self.is_new() or set(input_data.keys()) > {"id"}
 
-            is_update = not self.is_new()
-            operation = "Update" if is_update else "Create"
-            type_name = self.__type_name__
+            if has_main_changes:
+                is_update = not self.is_new()
+                operation = "Update" if is_update else "Create"
+                type_name = self.__type_name__
 
-            # Generate consistent camelCase operation key
-            operation_key = f"{type_name[0].lower()}{type_name[1:]}{operation}"
-            mutation = f"""
-                mutation {operation}{type_name}($input: {type_name}{operation}Input!) {{
-                    {operation_key}(input: $input) {{
-                        id
+                operation_key = f"{type_name[0].lower()}{type_name[1:]}{operation}"
+                mutation = f"""
+                    mutation {operation}{type_name}($input: {type_name}{operation}Input!) {{
+                        {operation_key}(input: $input) {{
+                            id
+                        }}
                     }}
-                }}
-            """
+                """
 
-            result = await client.execute(mutation, {"input": input_data})
+                result = await client.execute(mutation, {"input": input_data})
 
-            # Extract the result using the same camelCase key
-            if operation_key not in result:
-                raise ValueError(f"Missing '{operation_key}' in response: {result}")
+                if operation_key not in result:
+                    raise ValueError(f"Missing '{operation_key}' in response: {result}")
 
-            operation_result = result[operation_key]
-            if operation_result is None:
-                raise ValueError(f"{operation} operation returned None")
+                operation_result = result[operation_key]
+                if operation_result is None:
+                    raise ValueError(f"{operation} operation returned None")
 
-            # Update ID for new objects using the dedicated method
-            if not is_update:
-                self.update_id(operation_result["id"])
+                # Update ID for new objects using the dedicated method
+                if not is_update:
+                    self.update_id(operation_result["id"])
 
-            # Mark object as clean after successful save
+            # --- Field-based side mutations (fire AFTER main mutation so ID is real) ---
+            # Deduplicate handlers: multiple fields may map to the same handler
+            # (e.g., resume_time and play_duration both → _save_activity)
+            seen_handlers: set[int] = set()
+            for field_name in dirty_side_fields:
+                handler = self.__side_mutations__[field_name]
+                handler_id = id(handler)
+                if handler_id not in seen_handlers:
+                    seen_handlers.add(handler_id)
+                    await handler(client, self)
+
+            # --- Queued side operations ---
+            for op in self._pending_side_ops:
+                await op(client, self)
+
+            # Mark object as clean after all mutations succeed
             self.mark_clean()
 
         except Exception as e:
@@ -1791,11 +1846,16 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Raises:
             ValueError: If creation is not supported and object is new
         """
-        # Process all fields
-        data = await self._process_fields(set(self.__field_conversions__.keys()))
+        # Process all fields (excluding side-mutation fields)
+        side_keys = set(self.__side_mutations__.keys())
+        data = await self._process_fields(
+            set(self.__field_conversions__.keys()) - side_keys
+        )
 
-        # Process all relationships
-        rel_data = await self._process_relationships(set(self.__relationships__.keys()))
+        # Process all relationships (excluding side-mutation fields)
+        rel_data = await self._process_relationships(
+            set(self.__relationships__.keys()) - side_keys
+        )
         data.update(rel_data)
 
         # Determine if this is a create or update operation
@@ -1838,6 +1898,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Get dirty fields using snapshot comparison
         # This leverages Pydantic's model_dump() for accurate change detection
         dirty_fields = set(self.get_changed_fields().keys())
+
+        # Exclude side-mutation fields — they are persisted by separate handlers
+        dirty_fields -= set(self.__side_mutations__.keys())
 
         # Process dirty regular fields
         field_data = await self._process_fields(dirty_fields)

@@ -24,7 +24,9 @@ from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
-from tests.fixtures import dump_graphql_calls
+from tests.fixtures import (
+    dump_graphql_calls,
+)
 
 
 class TestChangeTracking:

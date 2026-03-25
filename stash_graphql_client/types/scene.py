@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -19,10 +19,12 @@ from .base import (
 from .files import StashID, StashIDInput, VideoFile
 from .metadata import CustomFieldsInput
 from .scalars import Map, Time
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
+    from stash_graphql_client.client import StashClient
+
     from .gallery import Gallery
     from .group import Group
     from .markers import SceneMarker
@@ -182,21 +184,43 @@ class Scene(StashObject):
     __merge_input_type__ = SceneMergeInput
     # No __create_input_type__ - scenes can only be updated, they are created by the server during scanning
 
-    # Fields to track for changes - only fields that can be written via input types
+    # Fields to track for changes
     __tracked_fields__ = {
-        "title",  # SceneCreateInput/SceneUpdateInput
-        "code",  # SceneCreateInput/SceneUpdateInput
-        "details",  # SceneCreateInput/SceneUpdateInput
-        "director",  # SceneCreateInput/SceneUpdateInput
-        "date",  # SceneCreateInput/SceneUpdateInput
+        "title",  # SceneUpdateInput
+        "code",  # SceneUpdateInput
+        "details",  # SceneUpdateInput
+        "director",  # SceneUpdateInput
+        "date",  # SceneUpdateInput
         "studio",  # mapped to studio_id
-        "urls",  # SceneCreateInput/SceneUpdateInput
-        "organized",  # SceneCreateInput/SceneUpdateInput
+        "urls",  # SceneUpdateInput
+        "organized",  # SceneUpdateInput
         "files",  # mapped to file_ids
         "galleries",  # mapped to gallery_ids
-        "groups",  # SceneCreateInput/SceneUpdateInput
+        "groups",  # SceneUpdateInput
         "tags",  # mapped to tag_ids
         "performers",  # mapped to performer_ids
+        # Side-mutation fields (excluded from to_input, handled by dedicated mutations)
+        "resume_time",  # sceneSaveActivity
+        "play_duration",  # sceneSaveActivity
+        "o_counter",  # sceneAddO/sceneDeleteO/sceneResetO
+        "o_history",  # sceneAddO/sceneDeleteO
+        "play_count",  # sceneAddPlay/sceneDeletePlay/sceneResetPlayCount
+        "play_history",  # sceneAddPlay/sceneDeletePlay
+    }
+
+    # Side mutations: fields persisted via separate GraphQL mutations.
+    # Shared lambda refs ensure save() deduplicates by identity (id()) when
+    # multiple fields map to the same handler (e.g., resume_time + play_duration).
+    _sm_activity = lambda client, obj: Scene._save_activity(client, obj)  # noqa: E731, PLW0108
+    _sm_o = lambda client, obj: Scene._save_o(client, obj)  # noqa: E731, PLW0108
+    _sm_play = lambda client, obj: Scene._save_play(client, obj)  # noqa: E731, PLW0108
+    __side_mutations__: ClassVar[dict] = {
+        "resume_time": _sm_activity,
+        "play_duration": _sm_activity,
+        "o_counter": _sm_o,
+        "o_history": _sm_o,
+        "play_count": _sm_play,
+        "play_history": _sm_play,
     }
 
     # Optional fields
@@ -315,6 +339,125 @@ class Scene(StashObject):
             )
         ),
     }
+
+    # =========================================================================
+    # Side-Mutation Handlers (field-based)
+    # =========================================================================
+
+    @staticmethod
+    async def _save_activity(client: StashClient, scene: Scene) -> None:
+        """Side-mutation handler for resume_time and play_duration.
+
+        Called by save() when either field is dirty. Uses the client's
+        scene_save_activity mixin method.
+        """
+        await client.scene_save_activity(
+            scene.id,
+            resume_time=scene.resume_time if is_set(scene.resume_time) else None,
+            play_duration=scene.play_duration if is_set(scene.play_duration) else None,
+        )
+
+    @staticmethod
+    async def _save_o(client: StashClient, scene: Scene) -> None:
+        """Side-mutation handler for o_counter and o_history.
+
+        Computes diff between current and snapshot o_history to determine
+        which entries were added/removed, then fires the appropriate client
+        mixin methods. Updates local fields from the mutation response.
+        """
+        current_history = scene.o_history if is_set(scene.o_history) else []
+        snapshot_history = scene._snapshot.get("o_history", [])
+
+        current_set = set(current_history) if current_history else set()
+        snapshot_set = set(snapshot_history) if snapshot_history else set()
+
+        added = current_set - snapshot_set
+        removed = snapshot_set - current_set
+
+        if added:
+            hmr = await client.scene_add_o(scene.id, times=list(added))
+            scene.o_counter = hmr.count
+            scene.o_history = hmr.history
+        if removed:
+            hmr = await client.scene_delete_o(scene.id, times=list(removed))
+            scene.o_counter = hmr.count
+            scene.o_history = hmr.history
+
+    @staticmethod
+    async def _save_play(client: StashClient, scene: Scene) -> None:
+        """Side-mutation handler for play_count and play_history.
+
+        Computes diff between current and snapshot play_history to determine
+        which entries were added/removed, then fires the appropriate client
+        mixin methods. Updates local fields from the mutation response.
+        """
+        current_history = scene.play_history if is_set(scene.play_history) else []
+        snapshot_history = scene._snapshot.get("play_history", [])
+
+        current_set = set(current_history) if current_history else set()
+        snapshot_set = set(snapshot_history) if snapshot_history else set()
+
+        added = current_set - snapshot_set
+        removed = snapshot_set - current_set
+
+        if added:
+            hmr = await client.scene_add_play(scene.id, times=list(added))
+            scene.play_count = hmr.count
+            scene.play_history = hmr.history
+        if removed:
+            hmr = await client.scene_delete_play(scene.id, times=list(removed))
+            scene.play_count = hmr.count
+            scene.play_history = hmr.history
+
+    # =========================================================================
+    # Queued Side Operations
+    # =========================================================================
+
+    def reset_play_count(self) -> None:
+        """Queue resetting play count to 0. Call save() to persist."""
+
+        async def _op(client, obj) -> None:
+            await client.scene_reset_play_count(obj.id)
+            obj.play_count = 0
+            obj.play_history = []
+
+        self._queue_side_op(_op)
+
+    def reset_o(self) -> None:
+        """Queue resetting o-counter to 0. Call save() to persist."""
+
+        async def _op(client, obj) -> None:
+            await client.scene_reset_o(obj.id)
+            obj.o_counter = 0
+            obj.o_history = []
+
+        self._queue_side_op(_op)
+
+    def reset_activity(
+        self, reset_resume: bool = True, reset_duration: bool = True
+    ) -> None:
+        """Queue resetting activity data. Call save() to persist."""
+
+        async def _op(client, obj) -> None:
+            await client.scene_reset_activity(
+                obj.id,
+                reset_resume=reset_resume,
+                reset_duration=reset_duration,
+            )
+            if reset_resume:
+                obj.resume_time = None
+            if reset_duration:
+                obj.play_duration = None
+
+        self._queue_side_op(_op)
+
+    def generate_screenshot(self, at: float | None = None) -> None:
+        """Queue screenshot generation. Call save() to persist."""
+
+        async def _op(client, obj) -> None:
+            await client.scene_generate_screenshot(obj.id, at=at)
+
+        self._queue_side_op(_op)
 
     # =========================================================================
     # Convenience Helper Methods for Bidirectional Relationships

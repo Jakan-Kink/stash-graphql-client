@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b1] - 2026-03-25
+
+### Added
+
+- **Generic `__side_mutations__` mechanism on `StashObject`**: Fields persisted via separate GraphQL
+  mutations instead of the main create/update input. Handlers fire AFTER the main mutation so new
+  objects have their real server ID. Multiple fields sharing the same handler are deduplicated by
+  identity.
+- **Queued side operations** (`_pending_side_ops`): Entity methods can queue async closures via
+  `_queue_side_op()` that fire during `save()` after field-based side mutations. Enables operations
+  like `scene.reset_play_count()` or `scene.generate_screenshot()` that don't map to a trackable
+  field change.
+- **`Gallery.cover`** side mutation: `setGalleryCover` / `resetGalleryCover` — set cover to an
+  `Image` or reset to null via dirty tracking on the `cover` field
+- **`Gallery.images`** side mutation: `addGalleryImages` / `removeGalleryImages` — new `images`
+  field with `RelationshipMetadata` (reverse of `Image.galleries`), list-diff handler fires bulk
+  add/remove mutations. Includes `add_image()` / `remove_image()` convenience methods with
+  automatic inverse sync.
+- **`Scene.resume_time` + `Scene.play_duration`** side mutation: `sceneSaveActivity` — both fields
+  share a deduplicated handler
+- **`Scene.o_counter` + `Scene.o_history`** side mutation: `sceneAddO` / `sceneDeleteO` — list-diff
+  handler computes added/removed history entries, updates local state from `HistoryMutationResult`
+- **`Scene.play_count` + `Scene.play_history`** side mutation: `sceneAddPlay` / `sceneDeletePlay` —
+  same list-diff pattern as o-counter
+- **`Image.o_counter`** side mutation: `imageIncrementO` / `imageDecrementO` / `imageResetO` —
+  delta-computing handler fires increment/decrement N times or reset
+- **Scene queued operations**: `reset_play_count()`, `reset_o()`, `reset_activity()`,
+  `generate_screenshot()` — queue operations that fire during `save()`
+
+### Changed
+
+- Delayed `StashInput` unknown-field enforcement (`extra="forbid"`) from v0.12.0 to v0.13.0;
+  deprecation warnings updated accordingly
+
 ## [0.11.1] - 2026-03-21
 
 ### Changed
@@ -117,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - **Extra Fields Behavior**: Unknown fields in dict inputs now emit `DeprecationWarning`.
-  In v0.12.0+, these will be rejected with `ValidationError`.
+  In v0.13.0+, these will be rejected with `ValidationError`.
 
 ## [0.10.14] - 2026-02-15
 
@@ -619,7 +653,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...HEAD
+[0.12.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.12.0b1
 [0.11.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14
