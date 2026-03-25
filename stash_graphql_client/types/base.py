@@ -48,6 +48,7 @@ from pydantic import (
     ModelWrapValidatorHandler,
     PrivateAttr,
     ValidationInfo,
+    field_validator,
     model_validator,
 )
 
@@ -593,6 +594,44 @@ class StashObject(FromGraphQLMixin, BaseModel):
     id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
     updated_at: Time | UnsetType = UNSET  # Time! - Stash internal
+
+    @field_validator("id")
+    @classmethod
+    def _validate_id(cls, value: str) -> str:
+        """Validate that id is either a numeric string or a valid UUID4.
+
+        Stash server assigns integer IDs (transmitted as strings), while
+        new unsaved objects receive a UUID4 hex identifier from _inject_uuid().
+        Any other format indicates corrupted or unexpected data.
+
+        Args:
+            value: The id string to validate.
+
+        Returns:
+            The validated id string, unchanged.
+
+        Raises:
+            ValueError: If the id is not a numeric string or valid UUID4.
+        """
+        if not value:
+            return value
+
+        # Accept numeric strings (Stash server-assigned IDs)
+        if value.isdigit():
+            return value
+
+        # Accept UUID4 (both hex and dashed formats)
+        try:
+            parsed = uuid.UUID(value, version=4)
+            # Verify it round-trips (catches malformed strings that UUID() coerces)
+            if parsed.hex == value.replace("-", ""):
+                return value
+        except (ValueError, AttributeError):
+            pass
+
+        raise ValueError(
+            f"Invalid StashObject id {value!r}: must be a numeric string or UUID4"
+        )
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Override setattr to automatically sync inverse relationships.
