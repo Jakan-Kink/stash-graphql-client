@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b3] - 2026-03-26
+
+### Added
+
+- **Batched GraphQL mutations** — collapse N individual mutations into a single aliased HTTP request:
+  - `client.execute_batch(operations)`: low-level API accepting `BatchOperation` dataclasses, builds
+    aliased mutation documents with automatic chunking (`max_batch_size=250`), per-operation error
+    mapping via `TransportQueryError` partial results, and `_convert_datetime()` pre-processing
+  - `store.save_batch(objects)`: entity-aware batch save with cascade saves for unsaved related
+    objects, creates-before-updates alias ordering, UUID→real-ID cache key remapping, `__typename`
+    response validation, and sequential per-entity side mutations
+  - `store.save_all()`: ORM flush — scans identity map cache for dirty/new entities, partitions
+    new objects first, delegates to `save_batch()`
+- **`BatchOperation`** and **`BatchResult`** dataclasses in `stash_graphql_client.client.batch`
+- **`StashBatchError`**: raised on any batch failure; `.batch_result` carries the full `BatchResult`
+  for partial-success inspection
+
 ## [0.12.0b2] - 2026-03-26
 
 ### Added
@@ -690,7 +707,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b3...HEAD
+[0.12.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b2...v0.12.0b3
+[0.12.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...v0.12.0b2
 [0.12.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.12.0b1
 [0.11.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0
