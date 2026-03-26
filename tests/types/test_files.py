@@ -88,14 +88,14 @@ async def test_base_file_to_input_with_id() -> None:
     This covers lines 95-103 in files.py - the to_input method for files.
     """
     # Create file with ID and basename
-    file = BaseFile(id="file123", basename="test.mp4")
+    file = BaseFile(id="801", basename="test.mp4")
 
     # Call to_input
     result = await file.to_input()
 
     # Verify structure
     assert result == {
-        "ids": ["file123"],
+        "ids": ["801"],
         "destination_folder": None,
         "destination_folder_id": None,
         "destination_basename": "test.mp4",
@@ -114,7 +114,7 @@ async def test_base_file_to_input_without_id() -> None:
     # Since id is required, we can't actually create a BaseFile without one.
     # The ValueError on line 103 is defensive code that's unreachable.
     # Let's just verify the happy path works.
-    file = BaseFile(id="test123")
+    file = BaseFile(id="802")
     result = await file.to_input()
     assert "ids" in result
 
@@ -127,14 +127,14 @@ async def test_folder_to_input_with_id() -> None:
     This covers lines 218-226 in files.py - the to_input method for folders.
     """
     # Create folder with ID
-    folder = Folder(id="folder123")
+    folder = Folder(id="901")
 
     # Call to_input
     result = await folder.to_input()
 
     # Verify structure
     assert result == {
-        "ids": ["folder123"],
+        "ids": ["901"],
         "destination_folder": None,
         "destination_folder_id": None,
         "destination_basename": None,
@@ -153,7 +153,7 @@ async def test_folder_to_input_without_id() -> None:
     # Since id is required, we can't actually create a Folder without one.
     # The ValueError on line 226 is defensive code that's unreachable.
     # Let's just verify the happy path works.
-    folder = Folder(id="folder456")
+    folder = Folder(id="902")
     result = await folder.to_input()
     assert "ids" in result
 
@@ -178,7 +178,7 @@ def test_image_file_format_accepts_string_value() -> None:
     This verifies the happy path - format field accepts actual string values.
     """
     # Create ImageFile with format as string
-    image = ImageFile(id="img1", format="jpeg", width=1920, height=1080)
+    image = ImageFile(id="601", format="jpeg", width=1920, height=1080)
 
     # Verify format is set correctly
     assert image.format == "jpeg"
@@ -191,7 +191,7 @@ def test_image_file_format_accepts_unset() -> None:
     This verifies that UNSET is valid for format field when not queried.
     """
     # Create ImageFile with format as UNSET
-    image = ImageFile(id="img2", format=UNSET, width=1920, height=1080)
+    image = ImageFile(id="602", format=UNSET, width=1920, height=1080)
 
     # Verify format is UNSET
     assert isinstance(image.format, UnsetType)
@@ -208,7 +208,7 @@ def test_image_file_format_rejects_none() -> None:
     # Attempt to create ImageFile with format=None
     # This should raise ValidationError because format is non-nullable
     with pytest.raises(ValidationError) as exc_info:
-        ImageFile(id="img3", format=None, width=1920, height=1080)  # type: ignore[arg-type]
+        ImageFile(id="603", format=None, width=1920, height=1080)  # type: ignore[arg-type]
 
     # Verify the error is about format field
     errors = exc_info.value.errors()
@@ -227,7 +227,7 @@ def test_image_file_format_from_dict_with_none() -> None:
     # Attempt to create ImageFile from dict with format=None
     with pytest.raises(ValidationError) as exc_info:
         ImageFile.model_validate(
-            {"id": "img4", "format": None, "width": 1920, "height": 1080}
+            {"id": "604", "format": None, "width": 1920, "height": 1080}
         )
 
     # Verify the error is about format field

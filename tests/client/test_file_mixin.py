@@ -106,7 +106,7 @@ async def test_find_file_not_found(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        file = await respx_stash_client.find_file(id="none_file")
+        file = await respx_stash_client.find_file(id="9990")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -135,7 +135,7 @@ async def test_find_file_error_returns_none(respx_stash_client: StashClient) -> 
     )
 
     try:
-        file = await respx_stash_client.find_file(id="error_file")
+        file = await respx_stash_client.find_file(id="9991")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -438,7 +438,7 @@ async def test_file_set_fingerprints(respx_stash_client: StashClient) -> None:
     try:
         result = await respx_stash_client.file_set_fingerprints(
             {
-                "id": "file123",
+                "id": "801",
                 "fingerprints": [{"type": "MD5", "value": "abc123def456"}],
             }
         )
@@ -451,7 +451,7 @@ async def test_file_set_fingerprints(respx_stash_client: StashClient) -> None:
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "fileSetFingerprints" in req["query"]
-    assert req["variables"]["input"]["id"] == "file123"
+    assert req["variables"]["input"]["id"] == "801"
     assert req["variables"]["input"]["fingerprints"][0]["type"] == "MD5"
 
 
@@ -469,7 +469,7 @@ async def test_file_set_fingerprints_error_returns_false(
 
     try:
         result = await respx_stash_client.file_set_fingerprints(
-            {"id": "file123", "fingerprints": []}
+            {"id": "801", "fingerprints": []}
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
@@ -491,7 +491,7 @@ async def test_scene_assign_file(respx_stash_client: StashClient) -> None:
 
     try:
         result = await respx_stash_client.scene_assign_file(
-            {"scene_id": "scene123", "file_id": "file456"}
+            {"scene_id": "401", "file_id": "802"}
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
@@ -502,8 +502,8 @@ async def test_scene_assign_file(respx_stash_client: StashClient) -> None:
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneAssignFile" in req["query"]
-    assert req["variables"]["input"]["scene_id"] == "scene123"
-    assert req["variables"]["input"]["file_id"] == "file456"
+    assert req["variables"]["input"]["scene_id"] == "401"
+    assert req["variables"]["input"]["file_id"] == "802"
 
 
 @pytest.mark.asyncio
@@ -520,7 +520,7 @@ async def test_scene_assign_file_error_returns_false(
 
     try:
         result = await respx_stash_client.scene_assign_file(
-            {"scene_id": "scene123", "file_id": "file456"}
+            {"scene_id": "401", "file_id": "802"}
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
@@ -626,7 +626,7 @@ async def test_file_set_fingerprints_with_input_type(
     )
 
     input_data = FileSetFingerprintsInput(
-        id="file123",
+        id="801",
         fingerprints=[
             SetFingerprintsInput(type="MD5", value="abc123"),
             SetFingerprintsInput(type="PHASH", value="def456"),
@@ -642,7 +642,7 @@ async def test_file_set_fingerprints_with_input_type(
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert req["variables"]["input"]["id"] == "file123"
+    assert req["variables"]["input"]["id"] == "801"
     assert len(req["variables"]["input"]["fingerprints"]) == 2
 
 
@@ -661,7 +661,7 @@ async def test_scene_assign_file_with_input_type(
         ]
     )
 
-    input_data = AssignSceneFileInput(scene_id="scene123", file_id="file456")
+    input_data = AssignSceneFileInput(scene_id="401", file_id="802")
     try:
         result = await respx_stash_client.scene_assign_file(input_data)
     finally:
@@ -672,8 +672,8 @@ async def test_scene_assign_file_with_input_type(
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert req["variables"]["input"]["scene_id"] == "scene123"
-    assert req["variables"]["input"]["file_id"] == "file456"
+    assert req["variables"]["input"]["scene_id"] == "401"
+    assert req["variables"]["input"]["file_id"] == "802"
 
 
 # Tests for find_folder (lines 372-386)
@@ -686,7 +686,7 @@ async def test_find_folder_by_id(respx_stash_client: StashClient) -> None:
 
     This covers lines 372-386: find_folder method.
     """
-    folder_data = create_folder_dict(id="folder123", path="/videos/scenes")
+    folder_data = create_folder_dict(id="901", path="/videos/scenes")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -695,26 +695,26 @@ async def test_find_folder_by_id(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        folder = await respx_stash_client.find_folder(id="folder123")
+        folder = await respx_stash_client.find_folder(id="901")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert folder is not None
-    assert folder.id == "folder123"
+    assert folder.id == "901"
     assert folder.path == "/videos/scenes"
 
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "findFolder" in req["query"]
-    assert req["variables"]["id"] == "folder123"
+    assert req["variables"]["id"] == "901"
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_find_folder_by_path(respx_stash_client: StashClient) -> None:
     """Test finding a folder by path."""
-    folder_data = create_folder_dict(id="folder456", path="/images/gallery")
+    folder_data = create_folder_dict(id="902", path="/images/gallery")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -747,7 +747,7 @@ async def test_find_folder_not_found(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        folder = await respx_stash_client.find_folder(id="nonexistent")
+        folder = await respx_stash_client.find_folder(id="9992")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -777,7 +777,7 @@ async def test_find_folder_error_returns_none(respx_stash_client: StashClient) -
     )
 
     try:
-        folder = await respx_stash_client.find_folder(id="error_folder")
+        folder = await respx_stash_client.find_folder(id="9993")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -797,8 +797,8 @@ async def test_find_folders(respx_stash_client: StashClient) -> None:
     This covers lines 404-422: find_folders method.
     """
     folder_data = [
-        create_folder_dict(id="folder1", path="/videos"),
-        create_folder_dict(id="folder2", path="/images"),
+        create_folder_dict(id="903", path="/videos"),
+        create_folder_dict(id="904", path="/images"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -820,7 +820,7 @@ async def test_find_folders(respx_stash_client: StashClient) -> None:
 
     assert result.count == 2
     assert len(result.folders) == 2
-    assert result.folders[0].id == "folder1"
+    assert result.folders[0].id == "903"
 
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
@@ -858,7 +858,7 @@ async def test_find_folders_empty(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_find_folders_with_filter(respx_stash_client: StashClient) -> None:
     """Test finding folders with filter parameters."""
-    folder_data = [create_folder_dict(id="folder1", path="/filtered")]
+    folder_data = [create_folder_dict(id="903", path="/filtered")]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -896,7 +896,7 @@ async def test_find_folders_with_folder_filter_type(
 
     This covers line 406-407: if isinstance(folder_filter, FolderFilterType)
     """
-    folder_data = [create_folder_dict(id="folder1", path="/videos/scenes")]
+    folder_data = [create_folder_dict(id="903", path="/videos/scenes")]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -931,8 +931,8 @@ async def test_find_folders_with_folder_filter_type(
 async def test_find_folders_by_ids(respx_stash_client: StashClient) -> None:
     """Test finding folders by a list of IDs."""
     folder_data = [
-        create_folder_dict(id="folder1", path="/path1"),
-        create_folder_dict(id="folder2", path="/path2"),
+        create_folder_dict(id="903", path="/path1"),
+        create_folder_dict(id="904", path="/path2"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -948,7 +948,7 @@ async def test_find_folders_by_ids(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        result = await respx_stash_client.find_folders(ids=["folder1", "folder2"])
+        result = await respx_stash_client.find_folders(ids=["903", "904"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -957,7 +957,7 @@ async def test_find_folders_by_ids(respx_stash_client: StashClient) -> None:
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert req["variables"]["ids"] == ["folder1", "folder2"]
+    assert req["variables"]["ids"] == ["903", "904"]
 
 
 @pytest.mark.asyncio
@@ -1044,7 +1044,7 @@ async def test_reveal_file_in_file_manager(respx_stash_client: StashClient) -> N
     )
 
     try:
-        result = await respx_stash_client.reveal_file_in_file_manager(id="file-42")
+        result = await respx_stash_client.reveal_file_in_file_manager(id="42")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -1053,7 +1053,7 @@ async def test_reveal_file_in_file_manager(respx_stash_client: StashClient) -> N
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "revealFileInFileManager" in req["query"]
-    assert req["variables"]["id"] == "file-42"
+    assert req["variables"]["id"] == "42"
 
 
 @pytest.mark.asyncio
@@ -1069,7 +1069,7 @@ async def test_reveal_file_in_file_manager_error_raises(
     )
 
     with pytest.raises(StashGraphQLError):
-        await respx_stash_client.reveal_file_in_file_manager(id="file-42")
+        await respx_stash_client.reveal_file_in_file_manager(id="42")
 
 
 # =============================================================================
@@ -1091,7 +1091,7 @@ async def test_reveal_folder_in_file_manager(respx_stash_client: StashClient) ->
     )
 
     try:
-        result = await respx_stash_client.reveal_folder_in_file_manager(id="folder-7")
+        result = await respx_stash_client.reveal_folder_in_file_manager(id="7")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -1100,7 +1100,7 @@ async def test_reveal_folder_in_file_manager(respx_stash_client: StashClient) ->
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "revealFolderInFileManager" in req["query"]
-    assert req["variables"]["id"] == "folder-7"
+    assert req["variables"]["id"] == "7"
 
 
 @pytest.mark.asyncio
@@ -1116,4 +1116,4 @@ async def test_reveal_folder_in_file_manager_error_raises(
     )
 
     with pytest.raises(StashGraphQLError):
-        await respx_stash_client.reveal_folder_in_file_manager(id="folder-7")
+        await respx_stash_client.reveal_folder_in_file_manager(id="7")

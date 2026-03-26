@@ -257,12 +257,12 @@ async def respx_entity_store(
             # Set up mock response
             respx.post("http://localhost:9999/graphql").mock(
                 return_value=httpx.Response(200, json={
-                    "data": {"findScene": {"id": "s1", "title": "Test"}}
+                    "data": {"findScene": {"id": "1", "title": "Test"}}
                 })
             )
 
             # Use the store - identity map and field tracking work
-            scene = await respx_entity_store.get(Scene, "s1")
+            scene = await respx_entity_store.get(Scene, "1")
             assert scene is not None
         ```
     """

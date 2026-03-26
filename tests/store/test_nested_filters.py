@@ -105,14 +105,12 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # Create parent studio with name populated
-        parent = StudioFactory.build(id="parent-1", name="Parent Studio")
+        parent = StudioFactory.build(id="10", name="Parent Studio")
         parent._received_fields = {"id", "name"}
         store._cache_entity(parent)
 
         # Create child studio with parent populated
-        child = StudioFactory.build(
-            id="child-1", name="Child Studio", parent_studio=parent
-        )
+        child = StudioFactory.build(id="11", name="Child Studio", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
@@ -160,12 +158,12 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # Parent with name=UNSET
-        parent = StudioFactory.build(id="parent-1", name=UNSET)
+        parent = StudioFactory.build(id="10", name=UNSET)
         parent._received_fields = {"id"}
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child = StudioFactory.build(id="11", name="Child", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
@@ -181,15 +179,15 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # Create files with path populated
-        file1 = ImageFileFactory.build(id="f1", path="/path/to/image1.jpg")
-        file2 = ImageFileFactory.build(id="f2", path="/path/to/image2.jpg")
+        file1 = ImageFileFactory.build(id="801", path="/path/to/image1.jpg")
+        file2 = ImageFileFactory.build(id="802", path="/path/to/image2.jpg")
 
         for f in [file1, file2]:
             f._received_fields = {"id", "path"}
             store._cache_entity(f)
 
         # Create image with visual_files populated
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1, file2])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -205,16 +203,16 @@ class TestNestedFieldPresenceChecking:
         store = respx_entity_store
 
         # file1 has path, file2 has path=UNSET
-        file1 = ImageFileFactory.build(id="f1", path="/path/to/image1.jpg")
+        file1 = ImageFileFactory.build(id="801", path="/path/to/image1.jpg")
         file1._received_fields = {"id", "path"}
         store._cache_entity(file1)
 
-        file2 = ImageFileFactory.build(id="f2", path=UNSET)
+        file2 = ImageFileFactory.build(id="802", path=UNSET)
         file2._received_fields = {"id"}
         store._cache_entity(file2)
 
         # Image with both visual_files
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1, file2])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -262,12 +260,12 @@ class TestMissingFieldsNested:
         store = respx_entity_store
 
         # Parent with name=UNSET
-        parent = StudioFactory.build(id="parent-1", name=UNSET)
+        parent = StudioFactory.build(id="10", name=UNSET)
         parent._received_fields = {"id"}
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child = StudioFactory.build(id="11", name="Child", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
@@ -281,12 +279,12 @@ class TestMissingFieldsNested:
         """Test missing_fields_nested with mix of regular and nested specs."""
         store = respx_entity_store
 
-        parent = StudioFactory.build(id="parent-1", name="Parent")
+        parent = StudioFactory.build(id="10", name="Parent")
         parent._received_fields = {"id", "name"}
         store._cache_entity(parent)
 
         # Build without rating100, then explicitly set to UNSET
-        child = StudioFactory.build(id="child-1", name="Child", parent_studio=parent)
+        child = StudioFactory.build(id="11", name="Child", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         object.__setattr__(child, "rating100", UNSET)
         store._cache_entity(child)
@@ -372,14 +370,14 @@ class TestFilterStrictWithNestedFields:
         store = respx_entity_store
 
         # Create files with path populated
-        file1 = ImageFileFactory.build(id="f1", path="/path1.jpg", size=1024)
-        file2 = ImageFileFactory.build(id="f2", path="/path2.jpg", size=2048)
+        file1 = ImageFileFactory.build(id="801", path="/path1.jpg", size=1024)
+        file2 = ImageFileFactory.build(id="802", path="/path2.jpg", size=2048)
         for f in [file1, file2]:
             f._received_fields = {"id", "path", "size"}
             store._cache_entity(f)
 
         # Image with visual_files populated
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1, file2])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1, file2])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -391,7 +389,7 @@ class TestFilterStrictWithNestedFields:
         )
 
         assert len(results) == 1
-        assert results[0].id == "img1"
+        assert results[0].id == "601"
 
     def test_filter_strict_nested_missing_raises(
         self, respx_entity_store: StashEntityStore
@@ -400,12 +398,12 @@ class TestFilterStrictWithNestedFields:
         store = respx_entity_store
 
         # File with path=UNSET
-        file1 = ImageFileFactory.build(id="f1", path=UNSET, size=1024)
+        file1 = ImageFileFactory.build(id="801", path=UNSET, size=1024)
         file1._received_fields = {"id", "size"}
         store._cache_entity(file1)
 
         # Image with visual_files populated
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -429,12 +427,12 @@ class TestFilterAndPopulateWithNestedFields:
         store = respx_entity_store
 
         # File with path=UNSET
-        file1 = ImageFileFactory.build(id="f1", path=UNSET, size=UNSET)
+        file1 = ImageFileFactory.build(id="801", path=UNSET, size=UNSET)
         file1._received_fields = {"id"}
         store._cache_entity(file1)
 
         # Image with visual_files populated
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -442,7 +440,7 @@ class TestFilterAndPopulateWithNestedFields:
         # Each fetch returns the complete file data (GraphQL returns all fields queried)
         file_response_complete = {
             "__typename": "ImageFile",
-            "id": "f1",
+            "id": "801",
             "path": "/large.jpg",
             "size": 5_000_000,
             "width": 1920,
@@ -502,7 +500,7 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Image with empty visual_files list
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[])
         image._received_fields = {"id", "title", "visual_files"}
         store._cache_entity(image)
 
@@ -519,18 +517,18 @@ class TestNestedFieldEdgeCases:
 
         # Grandparent
         grandparent = StudioFactory.build(
-            id="gp", name="Grandparent", parent_studio=None
+            id="20", name="Grandparent", parent_studio=None
         )
         grandparent._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(grandparent)
 
         # Parent
-        parent = StudioFactory.build(id="p", name="Parent", parent_studio=grandparent)
+        parent = StudioFactory.build(id="14", name="Parent", parent_studio=grandparent)
         parent._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(parent)
 
         # Child
-        child = StudioFactory.build(id="c", name="Child", parent_studio=parent)
+        child = StudioFactory.build(id="15", name="Child", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
@@ -667,18 +665,18 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Parent with name=UNSET
-        parent = StudioFactory.build(id="p1")
+        parent = StudioFactory.build(id="12")
         parent._received_fields = {"id"}
         object.__setattr__(parent, "name", UNSET)
         store._cache_entity(parent)
 
         # Child with parent populated
-        child = StudioFactory.build(id="c1", name="Child", parent_studio=parent)
+        child = StudioFactory.build(id="13", name="Child", parent_studio=parent)
         child._received_fields = {"id", "name", "parent_studio"}
         store._cache_entity(child)
 
         # Mock GraphQL response for fetching parent.name
-        parent_response = {"id": "p1", "name": "Parent Name"}
+        parent_response = {"id": "12", "name": "Parent Name"}
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
@@ -687,7 +685,7 @@ class TestNestedFieldEdgeCases:
                     200,
                     json=create_graphql_response(
                         "findStudio",
-                        {"id": "c1", "name": "Child", "parent_studio": parent_response},
+                        {"id": "13", "name": "Child", "parent_studio": parent_response},
                     ),
                 ),
                 # Second call: populate parent with 'name'
@@ -715,11 +713,11 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Create an image with a visual_files list that contains a mix (shouldn't happen in practice)
-        image = ImageFactory.build(id="img1", title="Test")
+        image = ImageFactory.build(id="601", title="Test")
         # Manually set visual_files to include a non-StashObject (simulates data corruption)
         files_list = [
-            ImageFileFactory.build(id="f1"),
-            {"id": "f2", "not_a_stashobject": True},  # This shouldn't happen normally
+            ImageFileFactory.build(id="801"),
+            {"id": "802", "not_a_stashobject": True},  # This shouldn't happen normally
         ]
         object.__setattr__(image, "visual_files", files_list)
         image._received_fields = {"id", "title", "visual_files"}
@@ -733,9 +731,9 @@ class TestNestedFieldEdgeCases:
                     json=create_graphql_response(
                         "findImage",
                         {
-                            "id": "img1",
+                            "id": "601",
                             "title": "Test",
-                            "files": [{"id": "f1", "path": "/test.jpg"}],
+                            "files": [{"id": "801", "path": "/test.jpg"}],
                         },
                     ),
                 )
@@ -760,12 +758,12 @@ class TestNestedFieldEdgeCases:
 
         # Create an image with visual_files that has a non-StashObject item mixed in
         # This is an edge case that shouldn't normally happen but code should handle it
-        file1 = ImageFileFactory.build(id="f1", path="/test.jpg")
+        file1 = ImageFileFactory.build(id="801", path="/test.jpg")
         file1._received_fields = {"id"}  # path is UNSET
 
         # Create image normally first, then directly modify visual_files to add a non-StashObject
         # (Can't use Factory.build() with mixed types as Pydantic validation rejects it)
-        image = ImageFactory.build(id="img1", title="Test", visual_files=[file1])
+        image = ImageFactory.build(id="601", title="Test", visual_files=[file1])
         # Directly set visual_files to include a string (bypassing Pydantic validation)
         object.__setattr__(image, "visual_files", [file1, "not-a-stash-object"])
         image._received_fields = {"id", "title", "visual_files"}
@@ -778,7 +776,7 @@ class TestNestedFieldEdgeCases:
                 200,
                 json=create_graphql_response(
                     "findFile",
-                    {"__typename": "ImageFile", "id": "f1", "path": "/test.jpg"},
+                    {"__typename": "ImageFile", "id": "801", "path": "/test.jpg"},
                 ),
             )
         )
@@ -843,12 +841,12 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Studio with minimal data
-        studio = StudioFactory.build(id="s1", name="Test")
+        studio = StudioFactory.build(id="201", name="Test")
         studio._received_fields = {"id", "name"}
         store._cache_entity(studio)
 
         # Scene with studio reference
-        scene = SceneFactory.build(id="sc1", title="Test", studio=studio)
+        scene = SceneFactory.build(id="401", title="Test", studio=studio)
         scene._received_fields = {"id", "title", "studio"}
         store._cache_entity(scene)
 
@@ -861,7 +859,7 @@ class TestNestedFieldEdgeCases:
                     json=create_graphql_response(
                         "findStudio",
                         {
-                            "id": "s1",
+                            "id": "201",
                             "name": "Test",
                             "urls": ["http://test.com"],
                             "details": "Test details",
@@ -902,7 +900,7 @@ class TestNestedFieldEdgeCases:
 
         # Create a GalleryChapter (not independently fetchable) as a SINGLE object
         chapter = GalleryChapter.from_dict(
-            {"id": "ch1", "title": "Chapter 1", "image_index": 5}
+            {"id": "901", "title": "Chapter 1", "image_index": 5}
         )
         chapter._received_fields = {"id"}
         store._cache_entity(chapter)
@@ -910,7 +908,7 @@ class TestNestedFieldEdgeCases:
         # Create a Gallery with a single chapter field (not a list for this test)
         # We'll manually set a field to be a single chapter using object.__setattr__
         # to bypass Pydantic validation
-        gallery = Gallery.from_dict({"id": "gal1", "title": "Test Gallery"})
+        gallery = Gallery.from_dict({"id": "501", "title": "Test Gallery"})
         # Use object.__setattr__ to bypass Pydantic validation
         object.__setattr__(gallery, "test_field", chapter)  # Custom field for testing
         gallery._received_fields = {"id", "title", "test_field"}
@@ -927,7 +925,7 @@ class TestNestedFieldEdgeCases:
 
         # Should complete without errors (GalleryChapter not fetchable, just skipped)
         assert result is not None
-        assert result.id == "gal1"
+        assert result.id == "501"
 
     async def test_populate_skips_non_fetchable_nested_items(
         self, respx_mock, respx_entity_store: StashEntityStore
@@ -936,14 +934,14 @@ class TestNestedFieldEdgeCases:
         store = respx_entity_store
 
         # Create a GalleryChapter with partial fields (not independently fetchable)
-        chapter_data = {"id": "ch1", "title": "Chapter 1", "image_index": 0}
+        chapter_data = {"id": "901", "title": "Chapter 1", "image_index": 0}
         chapter = GalleryChapter.from_dict(chapter_data)
         chapter._received_fields = {"id"}  # Only id fetched
         store._cache_entity(chapter)
 
         # Create a Gallery with chapters
         gallery = Gallery.from_dict(
-            {"id": "gal1", "title": "Test Gallery", "chapters": [chapter]}
+            {"id": "501", "title": "Test Gallery", "chapters": [chapter]}
         )
         gallery._received_fields = {"id", "title", "chapters"}
         store._cache_entity(gallery)
@@ -959,4 +957,4 @@ class TestNestedFieldEdgeCases:
         # Should complete successfully without GraphQL calls
         # (Gallery already has chapters, GalleryChapter is not fetchable)
         assert result is not None
-        assert result.id == "gal1"
+        assert result.id == "501"

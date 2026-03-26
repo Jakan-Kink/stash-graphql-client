@@ -230,7 +230,7 @@ async def test_create_tag(respx_stash_client: StashClient) -> None:
     This covers lines 91-97: successful creation.
     """
     created_tag_data = create_tag_dict(
-        id="new_tag_123",
+        id="9001",
         name="New Tag",
     )
 
@@ -242,14 +242,14 @@ async def test_create_tag(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    tag = Tag(id="new", name="New Tag")
+    tag = Tag(id="9999", name="New Tag")
     try:
         result = await respx_stash_client.create_tag(tag)
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "new_tag_123"
+    assert result.id == "9001"
     assert result.name == "New Tag"
 
     assert len(graphql_route.calls) == 1
@@ -267,7 +267,7 @@ async def test_create_tag_already_exists_fallback(
     This covers lines 98-111: when tag already exists error.
     """
     existing_tag_data = create_tag_dict(
-        id="existing_123",
+        id="9002",
         name="Existing Tag",
     )
 
@@ -300,14 +300,14 @@ async def test_create_tag_already_exists_fallback(
         side_effect=mock_response
     )
 
-    tag = Tag(id="new", name="Existing Tag")
+    tag = Tag(id="9999", name="Existing Tag")
     try:
         result = await respx_stash_client.create_tag(tag)
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "existing_123"
+    assert result.id == "9002"
     assert result.name == "Existing Tag"
 
     # Should have made 2 calls - create then find
@@ -350,7 +350,7 @@ async def test_create_tag_already_exists_but_not_found_raises(
         side_effect=mock_response
     )
 
-    tag = Tag(id="new", name="Ghost Tag")
+    tag = Tag(id="9999", name="Ghost Tag")
 
     try:
         with pytest.raises(StashGraphQLError):
@@ -375,7 +375,7 @@ async def test_create_tag_error_raises(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    tag = Tag(id="new", name="Will Fail")
+    tag = Tag(id="9999", name="Will Fail")
 
     try:
         with pytest.raises(StashGraphQLError):
@@ -398,7 +398,7 @@ async def test_tags_merge(respx_stash_client: StashClient) -> None:
 
     This covers lines 133-138: successful merge.
     """
-    merged_tag_data = create_tag_dict(id="dest_tag", name="Merged Tag")
+    merged_tag_data = create_tag_dict(id="9010", name="Merged Tag")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -411,20 +411,20 @@ async def test_tags_merge(respx_stash_client: StashClient) -> None:
     try:
         result = await respx_stash_client.tags_merge(
             source=["tag1", "tag2", "tag3"],
-            destination="dest_tag",
+            destination="9010",
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "dest_tag"
+    assert result.id == "9010"
     assert result.name == "Merged Tag"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "tagsMerge" in req["query"]
     assert req["variables"]["input"]["source"] == ["tag1", "tag2", "tag3"]
-    assert req["variables"]["input"]["destination"] == "dest_tag"
+    assert req["variables"]["input"]["destination"] == "9010"
 
 
 @pytest.mark.asyncio
@@ -462,9 +462,9 @@ async def test_bulk_tag_update(respx_stash_client: StashClient) -> None:
     This covers lines 169-187: successful bulk update.
     """
     updated_tags_data = [
-        create_tag_dict(id="t1", name="Tag 1"),
-        create_tag_dict(id="t2", name="Tag 2"),
-        create_tag_dict(id="t3", name="Tag 3"),
+        create_tag_dict(id="1", name="Tag 1"),
+        create_tag_dict(id="2", name="Tag 2"),
+        create_tag_dict(id="3", name="Tag 3"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -477,7 +477,7 @@ async def test_bulk_tag_update(respx_stash_client: StashClient) -> None:
 
     try:
         result = await respx_stash_client.bulk_tag_update(
-            ids=["t1", "t2", "t3"],
+            ids=["1", "2", "3"],
             description="Updated description",
             aliases=["alias1", "alias2"],
             favorite=True,
@@ -488,14 +488,14 @@ async def test_bulk_tag_update(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0].id == "t1"
-    assert result[1].id == "t2"
-    assert result[2].id == "t3"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkTagUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["t1", "t2", "t3"]
+    assert req["variables"]["input"]["ids"] == ["1", "2", "3"]
     assert req["variables"]["input"]["description"] == "Updated description"
     assert req["variables"]["input"]["aliases"] == ["alias1", "alias2"]
     assert req["variables"]["input"]["favorite"] is True
@@ -508,7 +508,7 @@ async def test_bulk_tag_update(respx_stash_client: StashClient) -> None:
 async def test_bulk_tag_update_minimal(respx_stash_client: StashClient) -> None:
     """Test bulk updating tags with only required fields."""
     updated_tags_data = [
-        create_tag_dict(id="t1", name="Tag 1"),
+        create_tag_dict(id="1", name="Tag 1"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -520,17 +520,17 @@ async def test_bulk_tag_update_minimal(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        result = await respx_stash_client.bulk_tag_update(ids=["t1"])
+        result = await respx_stash_client.bulk_tag_update(ids=["1"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0].id == "t1"
+    assert result[0].id == "1"
 
     # Verify only ids was passed
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert req["variables"]["input"] == {"ids": ["t1"]}
+    assert req["variables"]["input"] == {"ids": ["1"]}
 
 
 @pytest.mark.asyncio
@@ -548,7 +548,7 @@ async def test_bulk_tag_update_error_raises(respx_stash_client: StashClient) -> 
 
     try:
         with pytest.raises(StashGraphQLError):
-            await respx_stash_client.bulk_tag_update(ids=["t1", "t2"])
+            await respx_stash_client.bulk_tag_update(ids=["1", "2"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -759,7 +759,7 @@ async def test_map_tag_ids_string_input_found(respx_stash_client: StashClient) -
 
     This covers lines 349-350, 352-358: string input, tag found.
     """
-    tag_data = create_tag_dict(id="tag123", name="Action")
+    tag_data = create_tag_dict(id="4", name="Action")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -779,7 +779,7 @@ async def test_map_tag_ids_string_input_found(respx_stash_client: StashClient) -
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "tag123"
+    assert result[0] == "4"
 
     # Verify request
     assert len(graphql_route.calls) == 1
@@ -829,7 +829,7 @@ async def test_map_tag_ids_string_input_not_found_with_create(
 
     This covers lines 349-350, 352-363: string input, not found, create new tag.
     """
-    created_tag_data = create_tag_dict(id="new_tag_456", name="NewTag")
+    created_tag_data = create_tag_dict(id="9004", name="NewTag")
 
     call_count = 0
 
@@ -860,7 +860,7 @@ async def test_map_tag_ids_string_input_not_found_with_create(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "new_tag_456"
+    assert result[0] == "9004"
 
     # Should have made 2 calls - find then create
     assert len(graphql_route.calls) == 2
@@ -873,7 +873,7 @@ async def test_map_tag_ids_tag_object_with_id(respx_stash_client: StashClient) -
 
     This covers lines 340-344: Tag object with ID, use directly.
     """
-    tag = Tag(id="existing123", name="Action")
+    tag = Tag(id="5", name="Action")
 
     # No HTTP calls should be made since tag has ID
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -886,7 +886,7 @@ async def test_map_tag_ids_tag_object_with_id(respx_stash_client: StashClient) -
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "existing123"
+    assert result[0] == "5"
 
     # Verify NO HTTP calls were made
     assert len(graphql_route.calls) == 0
@@ -901,7 +901,7 @@ async def test_map_tag_ids_tag_object_without_id(
 
     This covers lines 340-346, 352-358: Tag object without ID, search by name.
     """
-    found_tag_data = create_tag_dict(id="drama789", name="Drama")
+    found_tag_data = create_tag_dict(id="6", name="Drama")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -923,7 +923,7 @@ async def test_map_tag_ids_tag_object_without_id(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "drama789"
+    assert result[0] == "6"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -937,7 +937,7 @@ async def test_map_tag_ids_dict_input_found(respx_stash_client: StashClient) -> 
 
     This covers lines 370-377: dict input with name, tag found.
     """
-    tag_data = create_tag_dict(id="comedy555", name="Comedy")
+    tag_data = create_tag_dict(id="7", name="Comedy")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -957,7 +957,7 @@ async def test_map_tag_ids_dict_input_found(respx_stash_client: StashClient) -> 
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "comedy555"
+    assert result[0] == "7"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -973,7 +973,7 @@ async def test_map_tag_ids_dict_input_with_create(
 
     This covers lines 370-381: dict input, not found, create new tag.
     """
-    created_tag_data = create_tag_dict(id="thriller999", name="Thriller")
+    created_tag_data = create_tag_dict(id="8", name="Thriller")
 
     call_count = 0
 
@@ -1006,7 +1006,7 @@ async def test_map_tag_ids_dict_input_with_create(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 1
-    assert result[0] == "thriller999"
+    assert result[0] == "8"
 
     assert len(graphql_route.calls) == 2
 
@@ -1042,11 +1042,11 @@ async def test_map_tag_ids_mixed_input_types(respx_stash_client: StashClient) ->
 
     This tests the full integration across all input types.
     """
-    tag_with_id = Tag(id="id1", name="Action")
+    tag_with_id = Tag(id="9", name="Action")
     tag_without_id = Tag.model_construct(name="Drama", id=None)
 
-    tag_data_drama = create_tag_dict(id="drama123", name="Drama")
-    tag_data_comedy = create_tag_dict(id="comedy456", name="Comedy")
+    tag_data_drama = create_tag_dict(id="10", name="Drama")
+    tag_data_comedy = create_tag_dict(id="11", name="Comedy")
 
     call_count = 0
 
@@ -1099,9 +1099,9 @@ async def test_map_tag_ids_mixed_input_types(respx_stash_client: StashClient) ->
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0] == "id1"  # Direct from Tag with ID
-    assert result[1] == "drama123"  # Found by name search
-    assert result[2] == "comedy456"  # Found by dict name search
+    assert result[0] == "9"  # Direct from Tag with ID
+    assert result[1] == "10"  # Found by name search
+    assert result[2] == "11"  # Found by dict name search
 
     # 2 HTTP calls (tag_without_id and dict lookup)
     assert len(graphql_route.calls) == 2
@@ -1114,7 +1114,7 @@ async def test_map_tag_ids_exception_handling(respx_stash_client: StashClient) -
 
     This covers lines 383-385: exception caught, logged, continue processing.
     """
-    tag_data = create_tag_dict(id="good_tag", name="GoodTag")
+    tag_data = create_tag_dict(id="12", name="GoodTag")
 
     # Mock find_tags to raise exception for first call, succeed for second
     original_find_tags = respx_stash_client.find_tags
@@ -1150,7 +1150,7 @@ async def test_map_tag_ids_exception_handling(respx_stash_client: StashClient) -
 
     # First tag failed (exception caught at lines 383-385), second succeeded
     assert len(result) == 1
-    assert result[0] == "good_tag"
+    assert result[0] == "12"
 
     assert call_count == 2  # Both calls were attempted
 

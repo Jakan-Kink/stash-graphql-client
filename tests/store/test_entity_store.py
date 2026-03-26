@@ -253,7 +253,7 @@ class TestCacheOperations:
         store = respx_entity_store
         p1 = PerformerFactory.build(id="1")
         p2 = PerformerFactory.build(id="2")
-        tag = TagFactory.build(id="t1")
+        tag = TagFactory.build(id="301")
 
         store._cache_entity(p1)
         store._cache_entity(p2)
@@ -263,14 +263,14 @@ class TestCacheOperations:
 
         assert not store.is_cached(Performer, "1")
         assert not store.is_cached(Performer, "2")
-        assert store.is_cached(Tag, "t1")  # Tag should still be cached
+        assert store.is_cached(Tag, "301")  # Tag should still be cached
 
     @pytest.mark.unit
     def test_invalidate_all(self, respx_entity_store) -> None:
         """Test invalidating entire cache."""
         store = respx_entity_store
         performer = PerformerFactory.build(id="1")
-        tag = TagFactory.build(id="t1")
+        tag = TagFactory.build(id="301")
 
         store._cache_entity(performer)
         store._cache_entity(tag)
@@ -523,7 +523,7 @@ class TestCacheOperations:
         store = respx_entity_store
         p1 = PerformerFactory.build(id="1")
         p2 = PerformerFactory.build(id="2")
-        tag = TagFactory.build(id="t1")
+        tag = TagFactory.build(id="301")
 
         store._cache_entity(p1)
         store._cache_entity(p2)
@@ -560,7 +560,7 @@ class TestCacheOperations:
         store = respx_entity_store
         p1 = PerformerFactory.build(id="1")
         p2 = PerformerFactory.build(id="2")
-        tag = TagFactory.build(id="t1")
+        tag = TagFactory.build(id="301")
 
         store._cache_entity(p1)
         store._cache_entity(p2)
@@ -584,7 +584,7 @@ class TestCacheOperations:
         # Add some entities
         p1 = PerformerFactory.build(id="1")
         p2 = PerformerFactory.build(id="2")
-        tag = TagFactory.build(id="t1")
+        tag = TagFactory.build(id="301")
 
         store._cache_entity(p1)
         assert store.cache_size == 1
@@ -1265,7 +1265,7 @@ class TestPopulateFunction:
             store.add(stub1)
             store.add(stub2)
 
-            scene = SceneFactory.build(id="s1", performers=[stub1, stub2])
+            scene = SceneFactory.build(id="1", performers=[stub1, stub2])
 
             # Mock performer fetches - use side_effect with enough responses for all calls
             # populate() may fetch each performer to complete the data
@@ -1321,12 +1321,12 @@ class TestPopulateFunction:
         # Patch store reference BEFORE creating stubs so identity map validator works
         with patch.object(StashObject, "_store", store):
             # Create scene with stub studio - it'll auto-register in store via identity map
-            stub_studio = Studio(id="st1", name="")
+            stub_studio = Studio(id="201", name="")
 
             # Explicitly add stub to ensure it's cached
             store.add(stub_studio)
 
-            scene = SceneFactory.build(id="s1", studio=stub_studio)
+            scene = SceneFactory.build(id="1", studio=stub_studio)
 
             # Mock studio fetch - use side_effect with enough responses for all calls
             # populate() may fetch the studio to complete the data
@@ -1336,14 +1336,14 @@ class TestPopulateFunction:
                         200,
                         json=create_graphql_response(
                             "findStudio",
-                            create_studio_dict(id="st1", name="Big Studio"),
+                            create_studio_dict(id="201", name="Big Studio"),
                         ),
                     ),
                     httpx.Response(
                         200,
                         json=create_graphql_response(
                             "findStudio",
-                            create_studio_dict(id="st1", name="Big Studio"),
+                            create_studio_dict(id="201", name="Big Studio"),
                         ),
                     ),
                 ]
@@ -1365,19 +1365,19 @@ class TestPopulateFunction:
     async def test_populate_nonexistent_field(self, respx_entity_store) -> None:
         """Test populate() with non-existent field logs warning."""
         store = respx_entity_store
-        scene = SceneFactory.build(id="s1")
+        scene = SceneFactory.build(id="1")
 
         # Should not raise, just log warning
         result = await store.populate(scene, fields=["nonexistent_field"])
 
-        assert result.id == "s1"
+        assert result.id == "1"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_populate_none_value_skipped(self, respx_entity_store) -> None:
         """Test populate() skips fields with None value."""
         store = respx_entity_store
-        scene = SceneFactory.build(id="s1", studio=None)
+        scene = SceneFactory.build(id="1", studio=None)
 
         # Should not raise or attempt to populate None
         result = await store.populate(scene, fields=["studio"])
@@ -1414,7 +1414,7 @@ class TestPopulateFunction:
         store = respx_entity_store
 
         # Scene has a 'title' field that is a string, not list or StashObject
-        scene = SceneFactory.build(id="s1", title="My Scene Title")
+        scene = SceneFactory.build(id="1", title="My Scene Title")
 
         # Should not raise, title is neither list nor StashObject
         result = await store.populate(scene, fields=["title"])
@@ -1429,8 +1429,8 @@ class TestPopulateFunction:
         store = respx_entity_store
 
         # Create scene with stub studio
-        stub_studio = Studio(id="st1", name="")
-        scene = SceneFactory.build(id="s1", studio=stub_studio)
+        stub_studio = Studio(id="201", name="")
+        scene = SceneFactory.build(id="1", studio=stub_studio)
 
         # Mock studio fetch returns None (not found)
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1449,7 +1449,7 @@ class TestPopulateFunction:
 
         # Studio should remain the stub since populated_single is None
         assert result.studio is not None
-        assert result.studio.id == "st1"
+        assert result.studio.id == "201"
         assert result.studio.name == ""  # Still the stub
 
     @pytest.mark.asyncio
@@ -1462,9 +1462,9 @@ class TestPopulateFunction:
 
         # Create scene with a FULL studio (not a stub)
         full_studio = StudioFactory.build(
-            id="st1", name="Full Studio", urls=["http://example.com"]
+            id="201", name="Full Studio", urls=["http://example.com"]
         )
-        scene = SceneFactory.build(id="s1", studio=full_studio)
+        scene = SceneFactory.build(id="1", studio=full_studio)
 
         # Mock for potential GraphQL calls - populate() may still check
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1495,7 +1495,7 @@ class TestPopulateFunction:
         full_performer1 = PerformerFactory.build(id="1", name="Alice", country="USA")
         full_performer2 = PerformerFactory.build(id="2", name="Bob", country="UK")
         scene = SceneFactory.build(
-            id="s1", performers=[full_performer1, full_performer2]
+            id="1", performers=[full_performer1, full_performer2]
         )
 
         # No mock needed for get_many since stub_ids will be empty
@@ -1525,8 +1525,8 @@ class TestPopulateFunction:
         store = respx_entity_store
 
         # Create scene with stub studio
-        stub_studio = Studio(id="st1", name="")
-        scene = SceneFactory.build(id="s1", studio=stub_studio)
+        stub_studio = Studio(id="201", name="")
+        scene = SceneFactory.build(id="1", studio=stub_studio)
 
         # Mock studio fetch
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1535,14 +1535,14 @@ class TestPopulateFunction:
                     200,
                     json=create_graphql_response(
                         "findStudio",
-                        create_studio_dict(id="st1", name="Big Studio"),
+                        create_studio_dict(id="201", name="Big Studio"),
                     ),
                 ),
                 httpx.Response(
                     200,
                     json=create_graphql_response(
                         "findStudio",
-                        create_studio_dict(id="st1", name="Big Studio"),
+                        create_studio_dict(id="201", name="Big Studio"),
                     ),
                 ),
             ]
@@ -1564,14 +1564,14 @@ class TestPopulateFunction:
         store = respx_entity_store
 
         # Create scene
-        scene = SceneFactory.build(id="s1")
+        scene = SceneFactory.build(id="1")
 
         # Try to populate a field that doesn't exist on Scene
         # This should hit the `if not hasattr(obj, field_name): continue` path (line 461)
         result = await store.populate(scene, fields=["nonexistent_field", "title"])
 
         # Should complete without error, skipping the nonexistent field
-        assert result.id == "s1"
+        assert result.id == "1"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -1583,7 +1583,7 @@ class TestPopulateFunction:
 
         # Create a FULL performer (not a stub) with many fields populated
         full_performer = PerformerFactory.build(
-            id="p1",
+            id="101",
             name="Full Performer",
             country="USA",
             ethnicity="Caucasian",
@@ -1797,7 +1797,7 @@ class TestExecuteFindQueryEntityTypes:
 
         galleries_data = create_find_galleries_result(
             count=1,
-            galleries=[create_gallery_dict(id="g1", title="Test Gallery")],
+            galleries=[create_gallery_dict(id="501", title="Test Gallery")],
         )
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1817,7 +1817,7 @@ class TestExecuteFindQueryEntityTypes:
             dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 1
-        assert results[0].id == "g1"
+        assert results[0].id == "501"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -1827,7 +1827,7 @@ class TestExecuteFindQueryEntityTypes:
 
         images_data = create_find_images_result(
             count=1,
-            images=[create_image_dict(id="i1", title="Test Image")],
+            images=[create_image_dict(id="601", title="Test Image")],
         )
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1847,7 +1847,7 @@ class TestExecuteFindQueryEntityTypes:
             dump_graphql_calls(graphql_route.calls)
 
         assert len(results) == 1
-        assert results[0].id == "i1"
+        assert results[0].id == "601"
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -2421,7 +2421,7 @@ class TestStoreThreadSafety:
             try:
                 # Create test entity
                 performer = Performer(
-                    id=f"performer-{thread_id}",
+                    id=f"{thread_id}",
                     name=f"Performer {thread_id}",
                     tags=[],
                 )
@@ -2466,7 +2466,7 @@ class TestStoreThreadSafety:
         # Pre-populate cache with 100 entities
         for i in range(100):
             performer = Performer(
-                id=f"performer-{i}",
+                id=f"{i}",
                 name=f"Performer {i}",
                 tags=[],
             )
@@ -2477,7 +2477,7 @@ class TestStoreThreadSafety:
         def invalidate_batch(start_id: int, count: int) -> None:
             """Invalidate a batch of entities."""
             for i in range(start_id, start_id + count):
-                store.invalidate(Performer, f"performer-{i}")
+                store.invalidate(Performer, f"{i}")
 
         # Invalidate from multiple threads simultaneously
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
@@ -2496,7 +2496,7 @@ class TestStoreThreadSafety:
         # Pre-populate cache
         for i in range(50):
             performer = Performer(
-                id=f"performer-{i}",
+                id=f"{i}",
                 name=f"Performer {i}",
                 tags=[],
             )

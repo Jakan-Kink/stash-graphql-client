@@ -329,7 +329,7 @@ async def test_find_scenes_error_returns_empty(respx_stash_client: StashClient) 
 @pytest.mark.unit
 async def test_find_scene_with_studio(respx_stash_client: StashClient) -> None:
     """Test finding a scene with studio relationship."""
-    studio_data = create_studio_dict(id="studio_123", name="Test Studio")
+    studio_data = create_studio_dict(id="201", name="Test Studio")
     scene_data = create_scene_dict(
         id="123",
         title="Scene with Studio",
@@ -350,7 +350,7 @@ async def test_find_scene_with_studio(respx_stash_client: StashClient) -> None:
     assert scene is not None
     assert scene.studio is not None
     assert is_set(scene.studio)
-    assert scene.studio.id == "studio_123"
+    assert scene.studio.id == "201"
     assert scene.studio.name == "Test Studio"
 
     assert len(graphql_route.calls) == 1
@@ -361,8 +361,8 @@ async def test_find_scene_with_studio(respx_stash_client: StashClient) -> None:
 async def test_find_scene_with_performers(respx_stash_client: StashClient) -> None:
     """Test finding a scene with performers."""
     performer_data = [
-        create_performer_dict(id="perf_1", name="Performer 1"),
-        create_performer_dict(id="perf_2", name="Performer 2"),
+        create_performer_dict(id="101", name="Performer 1"),
+        create_performer_dict(id="102", name="Performer 2"),
     ]
     scene_data = create_scene_dict(
         id="123",
@@ -384,8 +384,8 @@ async def test_find_scene_with_performers(respx_stash_client: StashClient) -> No
     assert scene is not None
     assert is_set(scene.performers)
     assert len(scene.performers) == 2
-    assert scene.performers[0].id == "perf_1"
-    assert scene.performers[1].id == "perf_2"
+    assert scene.performers[0].id == "101"
+    assert scene.performers[1].id == "102"
 
     assert len(graphql_route.calls) == 1
 
@@ -395,8 +395,8 @@ async def test_find_scene_with_performers(respx_stash_client: StashClient) -> No
 async def test_find_scene_with_tags(respx_stash_client: StashClient) -> None:
     """Test finding a scene with tags."""
     tag_data = [
-        create_tag_dict(id="tag_1", name="Tag 1"),
-        create_tag_dict(id="tag_2", name="Tag 2"),
+        create_tag_dict(id="301", name="Tag 1"),
+        create_tag_dict(id="302", name="Tag 2"),
     ]
     scene_data = create_scene_dict(
         id="123",
@@ -418,8 +418,8 @@ async def test_find_scene_with_tags(respx_stash_client: StashClient) -> None:
     assert scene is not None
     assert is_set(scene.tags)
     assert len(scene.tags) == 2
-    assert scene.tags[0].id == "tag_1"
-    assert scene.tags[1].id == "tag_2"
+    assert scene.tags[0].id == "301"
+    assert scene.tags[1].id == "302"
 
     assert len(graphql_route.calls) == 1
 
@@ -923,7 +923,7 @@ async def test_scenes_destroy(respx_stash_client: StashClient) -> None:
 async def test_create_scene(respx_stash_client: StashClient, mock_scene) -> None:
     """Test creating a new scene."""
     created_scene_data = create_scene_dict(
-        id="new_123",
+        id="9001",
         title="New Scene",
     )
 
@@ -941,7 +941,7 @@ async def test_create_scene(respx_stash_client: StashClient, mock_scene) -> None
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "new_123"
+    assert result.id == "9001"
     assert result.title == "New Scene"
 
     # Verify GraphQL call
@@ -1043,7 +1043,7 @@ async def test_bulk_scene_update_error(respx_stash_client: StashClient) -> None:
 
     input_data = {
         "ids": ["1", "2"],
-        "tag_ids": {"ids": ["tag1"], "mode": "ADD"},
+        "tag_ids": {"ids": ["301"], "mode": "ADD"},
     }
 
     try:
@@ -1244,9 +1244,9 @@ async def test_bulk_scene_update_success(respx_stash_client: StashClient) -> Non
     This covers line 470: successful bulk update returning list.
     """
     updated_scenes_data = [
-        create_scene_dict(id="s1", title="Scene 1"),
-        create_scene_dict(id="s2", title="Scene 2"),
-        create_scene_dict(id="s3", title="Scene 3"),
+        create_scene_dict(id="1", title="Scene 1"),
+        create_scene_dict(id="2", title="Scene 2"),
+        create_scene_dict(id="3", title="Scene 3"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1259,7 +1259,7 @@ async def test_bulk_scene_update_success(respx_stash_client: StashClient) -> Non
     )
 
     input_data = {
-        "ids": ["s1", "s2", "s3"],
+        "ids": ["1", "2", "3"],
         "rating100": 80,
     }
 
@@ -1269,9 +1269,9 @@ async def test_bulk_scene_update_success(respx_stash_client: StashClient) -> Non
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0].id == "s1"
-    assert result[1].id == "s2"
-    assert result[2].id == "s3"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -1286,8 +1286,8 @@ async def test_scenes_update_success(respx_stash_client: StashClient) -> None:
     This covers line 493: successful scenes update returning list.
     """
     updated_scenes_data = [
-        create_scene_dict(id="s1", title="Updated Scene 1"),
-        create_scene_dict(id="s2", title="Updated Scene 2"),
+        create_scene_dict(id="1", title="Updated Scene 1"),
+        create_scene_dict(id="2", title="Updated Scene 2"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1299,8 +1299,8 @@ async def test_scenes_update_success(respx_stash_client: StashClient) -> None:
     )
 
     scenes = [
-        Scene(id="s1", title="Updated Scene 1"),
-        Scene(id="s2", title="Updated Scene 2"),
+        Scene(id="1", title="Updated Scene 1"),
+        Scene(id="2", title="Updated Scene 2"),
     ]
 
     try:
@@ -1309,8 +1309,8 @@ async def test_scenes_update_success(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
-    assert result[0].id == "s1"
-    assert result[1].id == "s2"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -1406,7 +1406,7 @@ async def test_scene_merge_with_dict(respx_stash_client: StashClient) -> None:
 
     This covers line 782-783: else branch when input_data is a dict.
     """
-    merged_scene_data = create_scene_dict(id="dest", title="Merged Scene")
+    merged_scene_data = create_scene_dict(id="9010", title="Merged Scene")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1418,13 +1418,13 @@ async def test_scene_merge_with_dict(respx_stash_client: StashClient) -> None:
 
     try:
         result = await respx_stash_client.scene_merge(
-            {"source": ["src1", "src2"], "destination": "dest"}
+            {"source": ["401", "402"], "destination": "9010"}
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "dest"
+    assert result.id == "9010"
     assert result.title == "Merged Scene"
 
     assert len(graphql_route.calls) == 1
@@ -1450,8 +1450,8 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
         "duration": 240.5,
         "filesize": 1024000,
         "scenes": [
-            create_scene_dict(id="s1", title="Scene 1", urls=[]),
-            create_scene_dict(id="s2", title="Scene 2", urls=[]),
+            create_scene_dict(id="1", title="Scene 1", urls=[]),
+            create_scene_dict(id="2", title="Scene 2", urls=[]),
         ],
     }
 
@@ -1477,9 +1477,9 @@ async def test_find_scenes_by_path_regex(respx_stash_client: StashClient) -> Non
     assert result.filesize == 1024000
     assert isinstance(result.scenes, list)  # Type narrowing for mypy
     assert len(result.scenes) == 2
-    assert result.scenes[0].id == "s1"
+    assert result.scenes[0].id == "1"
     assert result.scenes[0].title == "Scene 1"
-    assert result.scenes[1].id == "s2"
+    assert result.scenes[1].id == "2"
     assert result.scenes[1].title == "Scene 2"
 
     assert len(graphql_route.calls) == 1
@@ -1632,22 +1632,22 @@ async def test_merge_scene_markers_single_source(
     # Mock finding markers from source scene
     source_markers = [
         {
-            "id": "marker1",
+            "id": "501",
             "title": "Marker 1",
             "seconds": 10.0,
-            "scene": {"id": "source1"},
-            "primary_tag": {"id": "tag1"},
-            "tags": [{"id": "tag1"}, {"id": "tag2"}],
+            "scene": {"id": "401"},
+            "primary_tag": {"id": "301"},
+            "tags": [{"id": "301"}, {"id": "302"}],
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
         },
         {
-            "id": "marker2",
+            "id": "502",
             "title": "Marker 2",
             "seconds": 20.0,
-            "scene": {"id": "source1"},
-            "primary_tag": {"id": "tag2"},
-            "tags": [{"id": "tag2"}],
+            "scene": {"id": "401"},
+            "primary_tag": {"id": "302"},
+            "tags": [{"id": "302"}],
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
         },
@@ -1655,22 +1655,22 @@ async def test_merge_scene_markers_single_source(
 
     # Mock created markers on target scene
     created_marker1 = {
-        "id": "new_marker1",
+        "id": "9101",
         "title": "Marker 1",
         "seconds": 10.0,
-        "scene": {"id": "target"},
-        "primary_tag": {"id": "tag1"},
-        "tags": [{"id": "tag1"}, {"id": "tag2"}],
+        "scene": {"id": "403"},
+        "primary_tag": {"id": "301"},
+        "tags": [{"id": "301"}, {"id": "302"}],
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }
     created_marker2 = {
-        "id": "new_marker2",
+        "id": "9102",
         "title": "Marker 2",
         "seconds": 20.0,
-        "scene": {"id": "target"},
-        "primary_tag": {"id": "tag2"},
-        "tags": [{"id": "tag2"}],
+        "scene": {"id": "403"},
+        "primary_tag": {"id": "302"},
+        "tags": [{"id": "302"}],
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }
@@ -1699,16 +1699,16 @@ async def test_merge_scene_markers_single_source(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
-    assert result[0].id == "new_marker1"
+    assert result[0].id == "9101"
     assert result[0].title == "Marker 1"
     assert result[0].seconds == 10.0
-    assert result[1].id == "new_marker2"
+    assert result[1].id == "9102"
     assert result[1].title == "Marker 2"
     assert result[1].seconds == 20.0
 
@@ -1718,21 +1718,21 @@ async def test_merge_scene_markers_single_source(
     # Verify first call (find markers from source)
     req1 = json.loads(graphql_route.calls[0].request.content)
     assert "findSceneMarkers" in req1["query"]
-    assert req1["variables"]["marker_filter"]["scene_id"]["value"] == ["source1"]
+    assert req1["variables"]["marker_filter"]["scene_id"]["value"] == ["401"]
 
     # Verify second call (create first marker)
     req2 = json.loads(graphql_route.calls[1].request.content)
     assert "sceneMarkerCreate" in req2["query"]
-    assert req2["variables"]["input"]["scene_id"] == "target"
+    assert req2["variables"]["input"]["scene_id"] == "403"
     assert req2["variables"]["input"]["title"] == "Marker 1"
     assert req2["variables"]["input"]["seconds"] == 10.0
-    assert req2["variables"]["input"]["primary_tag_id"] == "tag1"
-    assert req2["variables"]["input"]["tag_ids"] == ["tag1", "tag2"]
+    assert req2["variables"]["input"]["primary_tag_id"] == "301"
+    assert req2["variables"]["input"]["tag_ids"] == ["301", "302"]
 
     # Verify third call (create second marker)
     req3 = json.loads(graphql_route.calls[2].request.content)
     assert "sceneMarkerCreate" in req3["query"]
-    assert req3["variables"]["input"]["scene_id"] == "target"
+    assert req3["variables"]["input"]["scene_id"] == "403"
     assert req3["variables"]["input"]["title"] == "Marker 2"
     assert req3["variables"]["input"]["seconds"] == 20.0
 
@@ -1746,12 +1746,12 @@ async def test_merge_scene_markers_multiple_sources(
     # Mock finding markers from both source scenes
     source1_markers = [
         {
-            "id": "marker1",
+            "id": "501",
             "title": "Source 1 Marker",
             "seconds": 10.0,
-            "scene": {"id": "source1"},
-            "primary_tag": {"id": "tag1"},
-            "tags": [{"id": "tag1"}],
+            "scene": {"id": "401"},
+            "primary_tag": {"id": "301"},
+            "tags": [{"id": "301"}],
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
         },
@@ -1759,35 +1759,35 @@ async def test_merge_scene_markers_multiple_sources(
 
     source2_markers = [
         {
-            "id": "marker2",
+            "id": "502",
             "title": "Source 2 Marker",
             "seconds": 20.0,
-            "scene": {"id": "source2"},
-            "primary_tag": {"id": "tag2"},
-            "tags": [{"id": "tag2"}],
+            "scene": {"id": "402"},
+            "primary_tag": {"id": "302"},
+            "tags": [{"id": "302"}],
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
         },
     ]
 
     created_marker1 = {
-        "id": "new1",
+        "id": "9103",
         "title": "Source 1 Marker",
         "seconds": 10.0,
-        "scene": {"id": "target"},
-        "primary_tag": {"id": "tag1"},
-        "tags": [{"id": "tag1"}],
+        "scene": {"id": "403"},
+        "primary_tag": {"id": "301"},
+        "tags": [{"id": "301"}],
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }
 
     created_marker2 = {
-        "id": "new2",
+        "id": "9104",
         "title": "Source 2 Marker",
         "seconds": 20.0,
-        "scene": {"id": "target"},
-        "primary_tag": {"id": "tag2"},
-        "tags": [{"id": "tag2"}],
+        "scene": {"id": "403"},
+        "primary_tag": {"id": "302"},
+        "tags": [{"id": "302"}],
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }
@@ -1824,9 +1824,7 @@ async def test_merge_scene_markers_multiple_sources(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers(
-            "target", ["source1", "source2"]
-        )
+        result = await respx_stash_client.merge_scene_markers("403", ["401", "402"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -1859,7 +1857,7 @@ async def test_merge_scene_markers_no_markers_in_source(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -1883,7 +1881,7 @@ async def test_merge_scene_markers_error_handling(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -2066,11 +2064,11 @@ async def test_merge_scene_markers_with_end_seconds_and_no_tags(
     # Marker with end_seconds but no tags or primary_tag
     source_markers = [
         {
-            "id": "marker1",
+            "id": "501",
             "title": "Marker with end",
             "seconds": 10.0,
             "end_seconds": 15.0,
-            "scene": {"id": "source1"},
+            "scene": {"id": "401"},
             "primary_tag": None,
             "tags": None,
             "created_at": "2024-01-01T00:00:00Z",
@@ -2079,11 +2077,11 @@ async def test_merge_scene_markers_with_end_seconds_and_no_tags(
     ]
 
     created_marker = {
-        "id": "new1",
+        "id": "9103",
         "title": "Marker with end",
         "seconds": 10.0,
         "end_seconds": 15.0,
-        "scene": {"id": "target"},
+        "scene": {"id": "403"},
         "primary_tag": None,
         "tags": None,
         "created_at": "2024-01-02T00:00:00Z",
@@ -2107,7 +2105,7 @@ async def test_merge_scene_markers_with_end_seconds_and_no_tags(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -2139,7 +2137,7 @@ async def test_merge_scene_markers_null_result(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -2163,26 +2161,26 @@ async def test_merge_scene_markers_without_end_seconds(
     # Marker without end_seconds
     source_markers = [
         {
-            "id": "marker1",
+            "id": "501",
             "title": "Marker without end",
             "seconds": 10.0,
             "end_seconds": None,  # None instead of a value
-            "scene": {"id": "source1"},
-            "primary_tag": {"id": "tag1", "name": "Test Tag"},
-            "tags": [{"id": "tag1", "name": "Test Tag"}],
+            "scene": {"id": "401"},
+            "primary_tag": {"id": "301", "name": "Test Tag"},
+            "tags": [{"id": "301", "name": "Test Tag"}],
             "created_at": "2024-01-01T00:00:00Z",
             "updated_at": "2024-01-01T00:00:00Z",
         },
     ]
 
     created_marker = {
-        "id": "new1",
+        "id": "9103",
         "title": "Marker without end",
         "seconds": 10.0,
         "end_seconds": None,
-        "scene": {"id": "target"},
-        "primary_tag": {"id": "tag1", "name": "Test Tag"},
-        "tags": [{"id": "tag1", "name": "Test Tag"}],
+        "scene": {"id": "403"},
+        "primary_tag": {"id": "301", "name": "Test Tag"},
+        "tags": [{"id": "301", "name": "Test Tag"}],
         "created_at": "2024-01-02T00:00:00Z",
         "updated_at": "2024-01-02T00:00:00Z",
     }
@@ -2204,7 +2202,7 @@ async def test_merge_scene_markers_without_end_seconds(
     )
 
     try:
-        result = await respx_stash_client.merge_scene_markers("target", ["source1"])
+        result = await respx_stash_client.merge_scene_markers("403", ["401"])
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -2215,5 +2213,5 @@ async def test_merge_scene_markers_without_end_seconds(
     assert len(graphql_route.calls) == 2
     req = json.loads(graphql_route.calls[1].request.content)
     assert "end_seconds" not in req["variables"]["input"]  # Key should not be present
-    assert req["variables"]["input"]["tag_ids"] == ["tag1"]
-    assert req["variables"]["input"]["primary_tag_id"] == "tag1"
+    assert req["variables"]["input"]["tag_ids"] == ["301"]
+    assert req["variables"]["input"]["primary_tag_id"] == "301"

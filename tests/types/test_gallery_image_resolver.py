@@ -30,7 +30,7 @@ class TestGalleryImageResolver:
         """Test successful image retrieval by index."""
 
         # Create gallery
-        gallery = Gallery(id="gallery-123", title="Test Gallery", urls=[])
+        gallery = Gallery(id="501", title="Test Gallery", urls=[])
 
         # Mock GraphQL HTTP response using side_effect to avoid StopIteration
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -42,7 +42,7 @@ class TestGalleryImageResolver:
                             "findGallery": {
                                 "image": {
                                     "__typename": "Image",
-                                    "id": "image-456",
+                                    "id": "601",
                                     "title": "Test Image",
                                     "organized": False,
                                     "o_counter": 0,
@@ -62,7 +62,7 @@ class TestGalleryImageResolver:
 
         # Verify result
         assert isinstance(result, Image)
-        assert result.id == "image-456"
+        assert result.id == "601"
         assert result.title == "Test Image"
 
         # Verify GraphQL query was called
@@ -89,7 +89,7 @@ class TestGalleryImageResolver:
     @pytest.mark.asyncio
     async def test_image_no_store_raises_error(self):
         """Test that image() raises RuntimeError when no store is configured."""
-        gallery = Gallery(id="gallery-123", title="Test", urls=[])
+        gallery = Gallery(id="501", title="Test", urls=[])
 
         # Use patch.object for thread-safe test isolation in parallel execution
         with (
@@ -106,7 +106,7 @@ class TestGalleryImageResolver:
     ):
         """Test that image() raises ValueError when GraphQL execution fails."""
 
-        gallery = Gallery(id="gallery-123", title="Test", urls=[])
+        gallery = Gallery(id="501", title="Test", urls=[])
 
         # Mock GraphQL HTTP failure using side_effect
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -116,7 +116,7 @@ class TestGalleryImageResolver:
         try:
             with pytest.raises(
                 ValueError,
-                match="Failed to fetch image at index 0 from gallery gallery-123",
+                match="Failed to fetch image at index 0 from gallery 501",
             ):
                 await gallery.image(0)
         finally:
@@ -128,7 +128,7 @@ class TestGalleryImageResolver:
     ):
         """Test that image() raises ValueError when gallery is not found."""
 
-        gallery = Gallery(id="gallery-123", title="Test", urls=[])
+        gallery = Gallery(id="501", title="Test", urls=[])
 
         # Mock empty GraphQL response (gallery not found) using side_effect
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -136,7 +136,7 @@ class TestGalleryImageResolver:
         )
 
         try:
-            with pytest.raises(ValueError, match="Gallery gallery-123 not found"):
+            with pytest.raises(ValueError, match="Gallery 501 not found"):
                 await gallery.image(0)
         finally:
             dump_graphql_calls(graphql_route.calls)
@@ -147,20 +147,18 @@ class TestGalleryImageResolver:
     ):
         """Test that image() raises ValueError when image not found at index."""
 
-        gallery = Gallery(id="gallery-123", title="Test", urls=[])
+        gallery = Gallery(id="501", title="Test", urls=[])
 
         # Mock GraphQL response with findGallery present but no image using side_effect
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
-                httpx.Response(
-                    200, json={"data": {"findGallery": {"id": "gallery-123"}}}
-                )
+                httpx.Response(200, json={"data": {"findGallery": {"id": "501"}}})
             ]
         )
 
         try:
             with pytest.raises(
-                ValueError, match="No image found at index 5 in gallery gallery-123"
+                ValueError, match="No image found at index 5 in gallery 501"
             ):
                 await gallery.image(5)
         finally:
@@ -172,14 +170,12 @@ class TestGalleryImageResolver:
     ):
         """Test that error message includes image_count when available."""
 
-        gallery = Gallery(id="gallery-123", title="Test", urls=[], image_count=10)
+        gallery = Gallery(id="501", title="Test", urls=[], image_count=10)
 
         # Mock GraphQL response with findGallery present but no image using side_effect
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
-                httpx.Response(
-                    200, json={"data": {"findGallery": {"id": "gallery-123"}}}
-                )
+                httpx.Response(200, json={"data": {"findGallery": {"id": "501"}}})
             ]
         )
 
@@ -195,12 +191,12 @@ class TestGalleryImageResolver:
     ):
         """Test that image() uses from_graphql() for identity map integration."""
 
-        gallery = Gallery(id="gallery-123", title="Test", urls=[])
+        gallery = Gallery(id="501", title="Test", urls=[])
 
         # Mock GraphQL response with same image ID twice using side_effect for multiple calls
         image_data = {
             "__typename": "Image",
-            "id": "image-456",
+            "id": "601",
             "title": "Test Image",
             "organized": False,
             "o_counter": 0,
@@ -227,7 +223,7 @@ class TestGalleryImageResolver:
         # Both should be valid Image objects with same ID
         assert isinstance(result1, Image)
         assert isinstance(result2, Image)
-        assert result1.id == result2.id == "image-456"
+        assert result1.id == result2.id == "601"
 
         # Identity map ensures same instance (if called in same context)
         # Note: Actual identity (result1 is result2) depends on cache state

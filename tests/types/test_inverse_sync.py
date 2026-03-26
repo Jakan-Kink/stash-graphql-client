@@ -201,7 +201,7 @@ class TestInverseSyncEdgeCases:
         This covers line 505: continue when isinstance(related_obj, StashObject) is False.
         """
         # Create tags with explicit parents/children to enable inverse sync
-        child = Tag(id="child-1", name="Child", parents=[], children=[])
+        child = Tag(id="301", name="Child", parents=[], children=[])
 
         # Create a mixed list with StashObject and non-StashObject items
         mixed_list = [
@@ -210,7 +210,7 @@ class TestInverseSyncEdgeCases:
             123,  # Int - should be skipped at line 505
         ]
 
-        tag_with_mixed = Tag(id="mixed-1", name="Mixed", parents=[], children=[])
+        tag_with_mixed = Tag(id="302", name="Mixed", parents=[], children=[])
 
         # Manually call _sync_inverse_relationship (singular!) to test line 505
         tag_with_mixed._sync_inverse_relationship("children", mixed_list)
@@ -229,10 +229,10 @@ class TestInverseSyncEdgeCases:
         # So let's create a custom scenario by directly manipulating metadata
 
         # Create mock Gallery with scenes list
-        gallery = Gallery(id="gal-1", title="Gallery", scenes=[])
+        gallery = Gallery(id="501", title="Gallery", scenes=[])
 
         # Create Scene and manually trigger single-object sync
-        scene = Scene(id="scene-1", title="Scene", galleries=[], performers=[], tags=[])
+        scene = Scene(id="401", title="Scene", galleries=[], performers=[], tags=[])
 
         # Temporarily modify Scene's relationship metadata to treat galleries as single-object
         # Save original metadata
@@ -271,10 +271,10 @@ class TestInverseSyncEdgeCases:
         """
         # Create scenes with IDs
         scene1 = Scene.model_construct(
-            id="scene-1", title="Scene 1", galleries=[], performers=[], tags=[]
+            id="401", title="Scene 1", galleries=[], performers=[], tags=[]
         )
         scene2 = Scene.model_construct(
-            id="scene-2", title="Scene 2", galleries=[], performers=[], tags=[]
+            id="402", title="Scene 2", galleries=[], performers=[], tags=[]
         )
 
         # Manually set scene1.studio to a non-list value (simulating single-object inverse)
@@ -307,10 +307,10 @@ class TestInverseSyncEdgeCases:
         This covers line 509->exit: when new_value is None for single-object relationship.
         """
         # Create Gallery with scenes list
-        gallery = Gallery(id="gal-1", title="Gallery", scenes=[])
+        gallery = Gallery(id="501", title="Gallery", scenes=[])
 
         # Create Scene with a single-object relationship metadata
-        scene = Scene(id="scene-1", title="Scene", galleries=[], performers=[], tags=[])
+        scene = Scene(id="401", title="Scene", galleries=[], performers=[], tags=[])
 
         # Save original metadata
         original_metadata = scene.__relationships__.get("galleries")

@@ -35,8 +35,8 @@ from tests.fixtures import (
 @pytest.mark.unit
 async def test_find_marker(respx_stash_client: StashClient) -> None:
     """Test finding a marker by ID."""
-    scene_data = create_scene_dict(id="scene_123", title="Test Scene")
-    tag_data = create_tag_dict(id="tag_123", name="Intro")
+    scene_data = create_scene_dict(id="401", title="Test Scene")
+    tag_data = create_tag_dict(id="301", name="Intro")
     marker_data = create_marker_dict(
         id="123",
         title="Chapter 1",
@@ -316,7 +316,7 @@ async def test_find_markers_with_marker_filter(respx_stash_client: StashClient) 
 
     try:
         result = await respx_stash_client.find_markers(
-            marker_filter={"tags": {"value": ["tag_123"], "modifier": "INCLUDES"}}
+            marker_filter={"tags": {"value": ["301"], "modifier": "INCLUDES"}}
         )
     finally:
         dump_graphql_calls(graphql_route.calls)
@@ -326,7 +326,7 @@ async def test_find_markers_with_marker_filter(respx_stash_client: StashClient) 
     # Verify GraphQL call includes marker_filter
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
-    assert req["variables"]["marker_filter"]["tags"]["value"] == ["tag_123"]
+    assert req["variables"]["marker_filter"]["tags"]["value"] == ["301"]
 
 
 @pytest.mark.asyncio
@@ -359,10 +359,10 @@ async def test_find_markers_error_returns_empty(
 async def test_find_marker_with_tags(respx_stash_client: StashClient) -> None:
     """Test finding a marker with tags."""
     tag_data = [
-        create_tag_dict(id="tag_1", name="Tag 1"),
-        create_tag_dict(id="tag_2", name="Tag 2"),
+        create_tag_dict(id="302", name="Tag 1"),
+        create_tag_dict(id="303", name="Tag 2"),
     ]
-    primary_tag = create_tag_dict(id="primary_tag", name="Primary")
+    primary_tag = create_tag_dict(id="304", name="Primary")
     marker_data = create_marker_dict(
         id="123",
         title="Marker with Tags",
@@ -390,12 +390,12 @@ async def test_find_marker_with_tags(respx_stash_client: StashClient) -> None:
     assert marker is not None
     assert is_set(marker.primary_tag)
     assert marker.primary_tag is not None
-    assert marker.primary_tag.id == "primary_tag"
+    assert marker.primary_tag.id == "304"
     assert is_set(marker.tags)
     assert marker.tags is not None
     assert len(marker.tags) == 2
-    assert marker.tags[0].id == "tag_1"
-    assert marker.tags[1].id == "tag_2"
+    assert marker.tags[0].id == "302"
+    assert marker.tags[1].id == "303"
 
     assert len(graphql_route.calls) == 1
 
@@ -406,12 +406,12 @@ async def test_scene_marker_tags(respx_stash_client: StashClient) -> None:
     """Test getting scene marker tags for a scene."""
     marker_tags_data = [
         {
-            "tag": create_tag_dict(id="tag_1", name="Intro"),
-            "scene_markers": [create_marker_dict(id="m1", title="Intro Start")],
+            "tag": create_tag_dict(id="302", name="Intro"),
+            "scene_markers": [create_marker_dict(id="1", title="Intro Start")],
         },
         {
-            "tag": create_tag_dict(id="tag_2", name="Outro"),
-            "scene_markers": [create_marker_dict(id="m2", title="Outro Start")],
+            "tag": create_tag_dict(id="303", name="Outro"),
+            "scene_markers": [create_marker_dict(id="2", title="Outro Start")],
         },
     ]
 
@@ -424,20 +424,20 @@ async def test_scene_marker_tags(respx_stash_client: StashClient) -> None:
     )
 
     try:
-        result = await respx_stash_client.scene_marker_tags("scene_123")
+        result = await respx_stash_client.scene_marker_tags("401")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Verify the results
     assert len(result) == 2
-    assert result[0]["tag"]["id"] == "tag_1"
-    assert result[1]["tag"]["id"] == "tag_2"
+    assert result[0]["tag"]["id"] == "302"
+    assert result[1]["tag"]["id"] == "303"
 
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneMarkerTags" in req["query"]
-    assert req["variables"]["scene_id"] == "scene_123"
+    assert req["variables"]["scene_id"] == "401"
 
 
 @pytest.mark.asyncio
@@ -453,7 +453,7 @@ async def test_scene_marker_tags_error_returns_empty(
     )
 
     try:
-        result = await respx_stash_client.scene_marker_tags("scene_123")
+        result = await respx_stash_client.scene_marker_tags("401")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
@@ -568,7 +568,7 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
     """Test creating a new scene marker."""
     # Mock response for created marker
     created_marker_data = create_marker_dict(
-        id="new_marker_123",
+        id="9001",
         title="New Chapter",
         seconds=45.0,
     )
@@ -583,8 +583,8 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
     )
 
     # Create a new marker object using .new() to properly set _is_new=True
-    scene = Scene(id="scene_123", title="Test Scene")
-    primary_tag = Tag(id="tag_123", name="Chapter")
+    scene = Scene(id="401", title="Test Scene")
+    primary_tag = Tag(id="301", name="Chapter")
     marker = SceneMarker.new(
         title="New Chapter",
         seconds=45.0,
@@ -603,7 +603,7 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
 
     # Verify the result
     assert result is not None
-    assert result.id == "new_marker_123"
+    assert result.id == "9001"
     assert result.title == "New Chapter"
     assert result.seconds == 45.0
 
@@ -615,8 +615,8 @@ async def test_create_marker(respx_stash_client: StashClient) -> None:
     assert inp["title"] == "New Chapter"
     assert inp["seconds"] == 45.0
     # These required fields must be serialized — not silently dropped as UNSET
-    assert inp["scene_id"] == "scene_123"
-    assert inp["primary_tag_id"] == "tag_123"
+    assert inp["scene_id"] == "401"
+    assert inp["primary_tag_id"] == "301"
     # Optional UNSET fields must NOT appear in the payload
     assert "end_seconds" not in inp
     assert "tag_ids" not in inp
@@ -632,10 +632,10 @@ async def test_create_marker_error_raises(respx_stash_client: StashClient) -> No
         ]
     )
 
-    scene = Scene(id="scene_123", title="Test Scene")
-    primary_tag = Tag(id="tag_123", name="Chapter")
+    scene = Scene(id="401", title="Test Scene")
+    primary_tag = Tag(id="301", name="Chapter")
     marker = SceneMarker(
-        id="new",
+        id="9999",
         title="Fail Marker",
         seconds=0.0,
         scene=scene,
@@ -661,7 +661,7 @@ async def test_update_marker(respx_stash_client: StashClient) -> None:
     """Test updating an existing scene marker."""
     # Mock response for updated marker
     updated_marker_data = create_marker_dict(
-        id="marker_123",
+        id="9002",
         title="Updated Chapter",
         seconds=60.0,
     )
@@ -676,10 +676,10 @@ async def test_update_marker(respx_stash_client: StashClient) -> None:
     )
 
     # Create an existing marker object and modify it
-    scene = Scene(id="scene_123", title="Test Scene")
-    primary_tag = Tag(id="tag_123", name="Chapter")
+    scene = Scene(id="401", title="Test Scene")
+    primary_tag = Tag(id="301", name="Chapter")
     marker = SceneMarker(
-        id="marker_123",
+        id="9002",
         title="Original Chapter",
         seconds=45.0,
         scene=scene,
@@ -701,7 +701,7 @@ async def test_update_marker(respx_stash_client: StashClient) -> None:
 
     # Verify the result
     assert result is not None
-    assert result.id == "marker_123"
+    assert result.id == "9002"
     assert result.title == "Updated Chapter"
     assert result.seconds == 60.0
 
@@ -721,10 +721,10 @@ async def test_update_marker_error_raises(respx_stash_client: StashClient) -> No
         ]
     )
 
-    scene = Scene(id="scene_123", title="Test Scene")
-    primary_tag = Tag(id="tag_123", name="Chapter")
+    scene = Scene(id="401", title="Test Scene")
+    primary_tag = Tag(id="301", name="Chapter")
     marker = SceneMarker(
-        id="marker_123",
+        id="9002",
         title="Fail Marker",
         seconds=0.0,
         scene=scene,
@@ -755,9 +755,9 @@ async def test_bulk_scene_marker_update_with_dict(
     This covers line 241-242: else branch when input_data is a dict.
     """
     updated_markers_data = [
-        create_marker_dict(id="m1", title="Updated Marker 1", seconds=10.0),
-        create_marker_dict(id="m2", title="Updated Marker 2", seconds=20.0),
-        create_marker_dict(id="m3", title="Updated Marker 3", seconds=30.0),
+        create_marker_dict(id="1", title="Updated Marker 1", seconds=10.0),
+        create_marker_dict(id="2", title="Updated Marker 2", seconds=20.0),
+        create_marker_dict(id="3", title="Updated Marker 3", seconds=30.0),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -773,7 +773,7 @@ async def test_bulk_scene_marker_update_with_dict(
 
     # Use a dict input (the else branch)
     input_dict = {
-        "ids": ["m1", "m2", "m3"],
+        "ids": ["1", "2", "3"],
         "title": "Updated Marker",
     }
 
@@ -784,15 +784,15 @@ async def test_bulk_scene_marker_update_with_dict(
 
     # Verify the results
     assert len(result) == 3
-    assert result[0].id == "m1"
-    assert result[1].id == "m2"
-    assert result[2].id == "m3"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkSceneMarkerUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["m1", "m2", "m3"]
+    assert req["variables"]["input"]["ids"] == ["1", "2", "3"]
 
 
 @pytest.mark.asyncio
@@ -805,8 +805,8 @@ async def test_bulk_scene_marker_update_with_input_type(
     This covers line 239-240: if isinstance(input_data, BulkSceneMarkerUpdateInput).
     """
     updated_markers_data = [
-        create_marker_dict(id="m1", title="Updated Marker 1", seconds=10.0),
-        create_marker_dict(id="m2", title="Updated Marker 2", seconds=20.0),
+        create_marker_dict(id="1", title="Updated Marker 1", seconds=10.0),
+        create_marker_dict(id="2", title="Updated Marker 2", seconds=20.0),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -822,7 +822,7 @@ async def test_bulk_scene_marker_update_with_input_type(
 
     # Use the Pydantic model input (triggers the isinstance branch)
     input_data = BulkSceneMarkerUpdateInput(
-        ids=["m1", "m2"],
+        ids=["1", "2"],
         title="Updated Title",
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
@@ -834,14 +834,14 @@ async def test_bulk_scene_marker_update_with_input_type(
 
     # Verify the results
     assert len(result) == 2
-    assert result[0].id == "m1"
-    assert result[1].id == "m2"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
 
     # Verify GraphQL call
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkSceneMarkerUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["m1", "m2"]
+    assert req["variables"]["input"]["ids"] == ["1", "2"]
     assert req["variables"]["input"]["title"] == "Updated Title"
     assert req["variables"]["input"]["tag_ids"]["ids"] == [
         "tag1",
@@ -865,7 +865,7 @@ async def test_bulk_scene_marker_update_error_raises(
     )
 
     input_data = BulkSceneMarkerUpdateInput(
-        ids=["m1", "m2"],
+        ids=["1", "2"],
         title="Will Fail",
     )
 
@@ -883,8 +883,8 @@ async def test_bulk_scene_marker_update_error_raises(
 async def test_marker_wall(respx_stash_client: StashClient) -> None:
     """Test getting marker wall."""
     marker_data = [
-        {"id": "m1", "title": "Marker 1", "seconds": 10.0},
-        {"id": "m2", "title": "Marker 2", "seconds": 20.0},
+        {"id": "1", "title": "Marker 1", "seconds": 10.0},
+        {"id": "2", "title": "Marker 2", "seconds": 20.0},
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -897,8 +897,8 @@ async def test_marker_wall(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(markers) == 2
-    assert markers[0].id == "m1"
-    assert markers[1].id == "m2"
+    assert markers[0].id == "1"
+    assert markers[1].id == "2"
     assert len(graphql_route.calls) == 1
 
 
@@ -922,8 +922,8 @@ async def test_marker_wall_error_returns_empty(respx_stash_client: StashClient) 
 async def test_marker_strings(respx_stash_client: StashClient) -> None:
     """Test getting marker strings."""
     strings_data = [
-        {"id": "bj", "title": "BJ", "count": 5},
-        {"id": "hj", "title": "HJ", "count": 3},
+        {"id": "10", "title": "BJ", "count": 5},
+        {"id": "11", "title": "HJ", "count": 3},
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -938,7 +938,7 @@ async def test_marker_strings(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(strings) == 2
-    assert strings[0].id == "bj"
+    assert strings[0].id == "10"
     assert strings[0].count == 5
     assert len(graphql_route.calls) == 1
 
