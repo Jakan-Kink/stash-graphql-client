@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b2] - 2026-03-26
+
+### Added
+
+- **`StashObject` ID validator**: `id` field now enforces numeric-string or UUID4 format via
+  `@field_validator`, matching actual Stash server behavior (integer IDs for persisted entities,
+  UUID4 hex for unsaved objects)
+- **Bulk-update side mutations** for bidirectional relationship writes where the upstream API has no
+  direct write path from the entity's side:
+  - `Performer`: `scenes` / `galleries` / `images` via `bulkSceneUpdate` / `bulkGalleryUpdate` /
+    `bulkImageUpdate` with `performer_ids` `BulkUpdateIds`; `groups` marked read-only (derived
+    through scenes)
+  - `Studio`: `scenes` / `images` / `galleries` / `groups` via bulk updates with scalar `studio_id`
+    FK (nullable for removes)
+  - `Tag`: `scenes` / `images` / `galleries` / `performers` / `groups` / `scene_markers` via bulk
+    updates with `tag_ids` `BulkUpdateIds` — all 6 content types
+- **`_make_bulk_relationship_handler()` factory** on `StashObject`: shared diff + bulk-update logic
+  with configurable `batch_size` (default 500, respects SQLite's `SQLITE_MAX_VARIABLE_NUMBER`)
+- **UNSET guards in `_add_to_relationship()`**: `filter_query`-specific error messages guide users
+  to initialize fields manually or assign from the other side
+
+### Fixed
+
+- `Image.galleries`: add missing `inverse_query_field="images"` (asymmetric inverse sync bug)
+- `Group.studio`: add `inverse_query_field="groups"` for bidirectional sync
+- `Scene.groups`: add to `__relationships__` with `SceneGroupInput` transform (was in
+  `__tracked_fields__` but never serialized by `to_input()`)
+- `_process_list_relationship()`: `BaseModel` transforms now call `model_dump()` instead of `str()`
+  (fixes `Scene.groups` serialization)
+- Graceful inverse sync: if inverse field stays UNSET after `populate()`, skip sync instead of
+  crashing
+- `Studio.groups` type annotation: `list[Any]` → `list[Group]` with `TYPE_CHECKING` import
+
+### Changed
+
+- All test IDs updated to numeric-string format to comply with new `StashObject` ID validator
+
 ## [0.12.0b1] - 2026-03-25
 
 ### Added
