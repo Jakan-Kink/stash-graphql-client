@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import Field, model_validator
 
@@ -21,6 +21,10 @@ from .unset import UNSET, UnsetType
 
 
 if TYPE_CHECKING:
+    from .gallery import Gallery
+    from .group import Group
+    from .image import Image
+    from .scene import Scene
     from .tag import Tag
 
 
@@ -97,6 +101,40 @@ class Studio(StashObject):
         "favorite",  # StudioCreateInput/StudioUpdateInput
         "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
         "organized",  # StudioUpdateInput (appSchema >= 80)
+        # Side-mutation fields (excluded from to_input, handled by bulk updates)
+        "scenes",  # bulkSceneUpdate with studio_id
+        "images",  # bulkImageUpdate with studio_id
+        "galleries",  # bulkGalleryUpdate with studio_id
+        "groups",  # bulkGroupUpdate with studio_id
+    }
+
+    # Side mutations: content entities are writable via bulk updates using scalar
+    # studio_id FK (StudioUpdateInput has no scene_ids/image_ids/gallery_ids/group_ids).
+    __side_mutations__: ClassVar[dict] = {
+        "scenes": StashObject._make_bulk_relationship_handler(
+            "scenes",
+            "bulk_scene_update",
+            "studio_id",
+            use_bulk_ids=False,
+        ),
+        "images": StashObject._make_bulk_relationship_handler(
+            "images",
+            "bulk_image_update",
+            "studio_id",
+            use_bulk_ids=False,
+        ),
+        "galleries": StashObject._make_bulk_relationship_handler(
+            "galleries",
+            "bulk_gallery_update",
+            "studio_id",
+            use_bulk_ids=False,
+        ),
+        "groups": StashObject._make_bulk_relationship_handler(
+            "groups",
+            "bulk_group_update",
+            "studio_id",
+            use_bulk_ids=False,
+        ),
     }
 
     # All fields are optional in client (fragment-based loading)
@@ -129,8 +167,11 @@ class Studio(StashObject):
     )  # Int (1-100)
     favorite: bool | None | UnsetType = UNSET  # Boolean!
     details: str | None | UnsetType = UNSET  # String
-    groups: list[Any] | None | UnsetType = (
-        UNSET  # [Group!]! - Any to avoid circular import
+    groups: list[Group] | None | UnsetType = UNSET  # [Group!]!
+    scenes: list[Scene] | None | UnsetType = UNSET  # queryable via FindScenes filter
+    images: list[Image] | None | UnsetType = UNSET  # queryable via FindImages filter
+    galleries: list[Gallery] | None | UnsetType = (
+        UNSET  # queryable via FindGalleries filter
     )
     o_counter: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int
 
@@ -206,7 +247,84 @@ class Studio(StashObject):
             query_field="stash_ids",
             notes="Requires transform to StashIDInput for mutations",
         ),
+        # Side-mutation relationships: writable via bulk updates on content entities
+        "scenes": RelationshipMetadata(
+            target_field="scene_ids",
+            is_list=True,
+            query_field="scenes",
+            inverse_type="Scene",
+            inverse_query_field="studio",
+            query_strategy="filter_query",
+            filter_query_hint="findScenes(scene_filter={studios: {value: [studio_id]}})",
+            notes="Writable via bulkSceneUpdate(studio_id). Direct FK (scenes.studio_id).",
+        ),
+        "images": RelationshipMetadata(
+            target_field="image_ids",
+            is_list=True,
+            query_field="images",
+            inverse_type="Image",
+            inverse_query_field="studio",
+            query_strategy="filter_query",
+            filter_query_hint="findImages(image_filter={studios: {value: [studio_id]}})",
+            notes="Writable via bulkImageUpdate(studio_id). Direct FK (images.studio_id).",
+        ),
+        "galleries": RelationshipMetadata(
+            target_field="gallery_ids",
+            is_list=True,
+            query_field="galleries",
+            inverse_type="Gallery",
+            inverse_query_field="studio",
+            query_strategy="filter_query",
+            filter_query_hint="findGalleries(gallery_filter={studios: {value: [studio_id]}})",
+            notes="Writable via bulkGalleryUpdate(studio_id). Direct FK (galleries.studio_id).",
+        ),
+        "groups": RelationshipMetadata(
+            target_field="group_ids",
+            is_list=True,
+            query_field="groups",
+            inverse_type="Group",
+            inverse_query_field="studio",
+            query_strategy="filter_query",
+            filter_query_hint="findGroups(group_filter={studios: {value: [studio_id]}})",
+            notes="Writable via bulkGroupUpdate(studio_id). Direct FK (groups.studio_id).",
+        ),
     }
+
+    # =========================================================================
+    # Convenience Helper Methods for Bidirectional Relationships
+    # =========================================================================
+
+    async def add_scene(self, scene: Scene) -> None:
+        """Add scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scenes", scene)
+
+    async def remove_scene(self, scene: Scene) -> None:
+        """Remove scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scenes", scene)
+
+    async def add_image(self, image: Image) -> None:
+        """Add image (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("images", image)
+
+    async def remove_image(self, image: Image) -> None:
+        """Remove image (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("images", image)
+
+    async def add_gallery(self, gallery: Gallery) -> None:
+        """Add gallery (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("galleries", gallery)
+
+    async def remove_gallery(self, gallery: Gallery) -> None:
+        """Remove gallery (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("galleries", gallery)
+
+    async def add_group(self, group: Group) -> None:
+        """Add group (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("groups", group)
+
+    async def remove_group(self, group: Group) -> None:
+        """Remove group (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("groups", group)
 
     async def set_parent_studio(self, parent: Studio | None) -> None:
         """Set parent studio (syncs inverse automatically, call save() to persist)."""

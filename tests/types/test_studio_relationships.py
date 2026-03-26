@@ -20,12 +20,22 @@ class TestStudioRelationshipMetadata:
 
     def test_studio_relationships_count(self):
         """Test that Studio has expected number of relationships."""
-        # Studio has 4 relationships: parent_studio, child_studios, tags, stash_ids
-        assert len(Studio.__relationships__) == 4
+        # Studio has 8 relationships: parent_studio, child_studios, tags, stash_ids,
+        # scenes, images, galleries, groups (side-mutation relationships)
+        assert len(Studio.__relationships__) == 8
 
     def test_studio_relationships_keys(self):
         """Test that Studio has expected relationship keys."""
-        expected_keys = {"parent_studio", "child_studios", "tags", "stash_ids"}
+        expected_keys = {
+            "parent_studio",
+            "child_studios",
+            "tags",
+            "stash_ids",
+            "scenes",
+            "images",
+            "galleries",
+            "groups",
+        }
         assert set(Studio.__relationships__.keys()) == expected_keys
 
 

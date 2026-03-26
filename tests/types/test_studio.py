@@ -109,6 +109,11 @@ def test_studio_class_variables() -> None:
         "favorite",
         "ignore_auto_tag",
         "organized",
+        # Side-mutation fields
+        "scenes",
+        "images",
+        "galleries",
+        "groups",
     }
     assert Studio.__tracked_fields__ == expected_tracked_fields
 

@@ -190,8 +190,9 @@ class Image(StashObject):
             is_list=True,
             query_field="galleries",
             inverse_type="Gallery",
+            inverse_query_field="images",
             query_strategy="direct_field",
-            notes="Gallery has image_count and image(index) method, not direct images list",
+            notes="Bidirectional with Gallery.images. Backend syncs both sides.",
         ),
     }
 

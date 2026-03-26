@@ -310,6 +310,20 @@ class Scene(StashObject):
             filter_query_hint="findScenes(scene_filter={studios: {value: [studio_id]}})",
             notes="Studio uses filter-based queries. Use client.find_scenes(scene_filter=...) for inverse.",
         ),
+        # Pattern C: Complex objects with metadata
+        "groups": RelationshipMetadata(
+            target_field="groups",
+            is_list=True,
+            query_field="groups",
+            inverse_type="Group",
+            inverse_query_field="scenes",
+            query_strategy="complex_object",
+            transform=lambda sg: SceneGroupInput(
+                group_id=sg.group.id if hasattr(sg, "group") else sg.id,
+                scene_index=sg.scene_index if hasattr(sg, "scene_index") else None,
+            ),
+            notes="Uses SceneGroup wrapper with scene_index metadata",
+        ),
         # Special case: Complex transform for StashID
         "stash_ids": RelationshipMetadata(
             target_field="stash_ids",

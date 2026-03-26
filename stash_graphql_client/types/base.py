@@ -721,12 +721,35 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # 3. If UNSET, fetch from store
         if isinstance(current_value, UnsetType):
             if self._store is None:
+                if metadata.query_strategy == "filter_query":
+                    raise StashIntegrationError(
+                        f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                        f"this relationship uses filter_query strategy and requires "
+                        f"a store connection to populate. Either initialize the field "
+                        f"manually (e.g., obj.{field_name} = []) or assign the "
+                        f"relationship from the other side."
+                    )
                 raise StashIntegrationError(
                     f"Cannot add to '{field_name}': store not available. "
                     f"Ensure the {self.__type_name__} was loaded through a StashEntityStore."
                 )
             await self._store.populate(self, fields=[field_name])
             current_value = getattr(self, field_name)
+
+            # populate() may not resolve filter_query fields
+            if isinstance(current_value, UnsetType):
+                if metadata.query_strategy == "filter_query":
+                    raise StashIntegrationError(
+                        f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                        f"field uses filter_query strategy and could not be populated "
+                        f"from the store. Initialize the field manually "
+                        f"(e.g., obj.{field_name} = []) or assign the relationship "
+                        f"from the other side."
+                    )
+                raise StashIntegrationError(
+                    f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                    f"field is still UNSET after populate."
+                )
 
         # 4. Initialize to [] if None (for list relationships)
         if current_value is None and metadata.is_list:
@@ -740,11 +763,32 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
             if isinstance(inverse_value, UnsetType):
                 if related_obj._store is None:
+                    inverse_meta = related_obj.__relationships__.get(inverse_field)
+                    strategy = (
+                        inverse_meta.query_strategy
+                        if isinstance(inverse_meta, RelationshipMetadata)
+                        else "unknown"
+                    )
+                    if strategy == "filter_query":
+                        raise StashIntegrationError(
+                            f"Cannot sync inverse '{inverse_field}' on "
+                            f"{type(related_obj).__name__}: this relationship uses "
+                            f"filter_query strategy and requires a store connection. "
+                            f"Either initialize the field manually "
+                            f"(e.g., obj.{inverse_field} = []) or assign the "
+                            f"relationship from the other side."
+                        )
                     raise StashIntegrationError(
                         f"Cannot sync inverse '{inverse_field}': store not available. "
-                        f"Ensure the {metadata.inverse_type} was loaded through a StashEntityStore."
+                        f"Ensure the {metadata.inverse_type} was loaded through "
+                        f"a StashEntityStore."
                     )
                 await related_obj._store.populate(related_obj, fields=[inverse_field])
+                # If still UNSET after populate, skip inverse sync gracefully
+                # — the field simply isn't available in the store's fragment
+                inverse_value = getattr(related_obj, inverse_field, UNSET)
+                if isinstance(inverse_value, UnsetType):
+                    inverse_value = None  # skip inverse init below
 
             # Initialize inverse to [] if None
             inverse_value = getattr(related_obj, inverse_field)
@@ -1281,6 +1325,82 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         self._pending_side_ops.append(op)
 
+    # Default batch size for bulk update side mutations.
+    # SQLite's SQLITE_MAX_VARIABLE_NUMBER defaults to 999, so keep batches
+    # well under that to avoid query failures on large relationship sets.
+    _BULK_BATCH_SIZE: ClassVar[int] = 500
+
+    @staticmethod
+    def _make_bulk_relationship_handler(
+        field_name: str,
+        bulk_method_name: str,
+        id_field: str,
+        *,
+        use_bulk_ids: bool = True,
+        batch_size: int = 500,
+    ) -> Callable[[StashClient, StashObject], Any]:
+        """Factory for bulk-update side mutation handlers.
+
+        Creates a handler that computes the diff between the current and
+        snapshot values of ``field_name``, then fires the client's bulk update
+        method to add/remove items.  Large diffs are automatically split into
+        batches to stay within SQLite's parameter limits.
+
+        Args:
+            field_name: Field name on the entity to diff (e.g., ``"scenes"``).
+            bulk_method_name: Name of the client method (e.g.,
+                ``"bulk_scene_update"``).
+            id_field: Field name in the bulk update input (e.g.,
+                ``"performer_ids"``, ``"studio_id"``).
+            use_bulk_ids: If ``True`` (default), uses ``BulkUpdateIds`` with
+                ``mode: ADD/REMOVE``.  If ``False``, uses a scalar value
+                (``entity.id`` for adds, ``None`` for removes).
+            batch_size: Maximum number of IDs per bulk update call.  Defaults
+                to 500 to stay within SQLite's parameter limits.
+
+        Returns:
+            Async callable ``(client, entity) -> None`` suitable for
+            ``__side_mutations__``.
+        """
+
+        async def handler(client: StashClient, entity: StashObject) -> None:
+            current = getattr(entity, field_name)
+            current = current if is_set(current) else []
+            snapshot = entity._snapshot.get(field_name, [])
+
+            current_ids = {obj.id for obj in current} if current else set()
+            snapshot_ids = {obj.id for obj in snapshot} if snapshot else set()
+
+            added = list(current_ids - snapshot_ids)
+            removed = list(snapshot_ids - current_ids)
+
+            bulk_method = getattr(client, bulk_method_name)
+
+            # Process in batches to stay within SQLite parameter limits
+            for i in range(0, max(len(added), 1), batch_size):
+                batch = added[i : i + batch_size]
+                if not batch:
+                    break
+                if use_bulk_ids:
+                    await bulk_method(
+                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "ADD"}}
+                    )
+                else:
+                    await bulk_method({"ids": batch, id_field: entity.id})
+
+            for i in range(0, max(len(removed), 1), batch_size):
+                batch = removed[i : i + batch_size]
+                if not batch:
+                    break
+                if use_bulk_ids:
+                    await bulk_method(
+                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "REMOVE"}}
+                    )
+                else:
+                    await bulk_method({"ids": batch, id_field: None})
+
+        return handler
+
     @classmethod
     def _get_field_names(cls) -> set[str]:
         """Get field names from Pydantic model definition.
@@ -1701,8 +1821,14 @@ class StashObject(FromGraphQLMixin, BaseModel):
                 else:
                     transformed = transform(item)
                 if transformed:
-                    # Ensure we append a string to the list
-                    items.append(str(transformed))
+                    # For BaseModel results (complex objects), convert to dict;
+                    # for simple results (IDs), convert to string.
+                    if isinstance(transformed, BaseModel):
+                        items.append(
+                            transformed.model_dump(exclude_unset=True, by_alias=True)
+                        )
+                    else:
+                        items.append(str(transformed))
         return items
 
     async def _process_relationships(

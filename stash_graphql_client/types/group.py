@@ -186,9 +186,10 @@ class Group(StashObject):
             is_list=False,
             query_field="studio",
             inverse_type="Studio",
+            inverse_query_field="groups",
             query_strategy="filter_query",
             filter_query_hint="findGroups(group_filter={studios: {value: [studio_id]}})",
-            notes="Studio has group_count and filter queries, not direct groups field",
+            notes="Bidirectional with Studio.groups. Direct FK (groups.studio_id).",
         ),
         "tags": RelationshipMetadata(
             target_field="tag_ids",

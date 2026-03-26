@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import mimetypes
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pydantic import Field, field_validator
 
@@ -33,7 +33,9 @@ from .unset import UNSET, UnsetType
 if TYPE_CHECKING:
     from stash_graphql_client.client import StashClient
 
+    from .gallery import Gallery
     from .group import Group
+    from .image import Image
     from .scene import Scene
     from .tag import Tag
 
@@ -235,6 +237,31 @@ class Performer(StashObject):
         "ignore_auto_tag",  # PerformerCreateInput/PerformerUpdateInput
         "career_start",  # PerformerUpdateInput (appSchema >= 78)
         "career_end",  # PerformerUpdateInput (appSchema >= 78)
+        # Side-mutation fields (excluded from to_input, handled by bulk updates)
+        "scenes",  # bulkSceneUpdate with performer_ids
+        "galleries",  # bulkGalleryUpdate with performer_ids
+        "images",  # bulkImageUpdate with performer_ids
+    }
+
+    # Side mutations: scenes/galleries/images are writable via bulk updates on
+    # the content entities (PerformerUpdateInput has no scene_ids/gallery_ids/image_ids).
+    # Shared handler refs for deduplication are not needed here (1:1 field→handler).
+    __side_mutations__: ClassVar[dict] = {
+        "scenes": StashObject._make_bulk_relationship_handler(
+            "scenes",
+            "bulk_scene_update",
+            "performer_ids",
+        ),
+        "galleries": StashObject._make_bulk_relationship_handler(
+            "galleries",
+            "bulk_gallery_update",
+            "performer_ids",
+        ),
+        "images": StashObject._make_bulk_relationship_handler(
+            "images",
+            "bulk_image_update",
+            "performer_ids",
+        ),
     }
 
     # Required fields from schema
@@ -244,6 +271,8 @@ class Performer(StashObject):
     stash_ids: list[StashID] | UnsetType = UNSET  # [StashID!]!
     scenes: list[Scene] | UnsetType = UNSET  # [Scene!]!
     groups: list[Group] | UnsetType = UNSET  # [Group!]!
+    galleries: list[Gallery] | UnsetType = UNSET  # queryable via FindGalleries filter
+    images: list[Image] | UnsetType = UNSET  # queryable via FindImages filter
     favorite: bool | UnsetType = UNSET  # Boolean!
     ignore_auto_tag: bool | UnsetType = UNSET  # Boolean!
     scene_count: int | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
@@ -386,7 +415,76 @@ class Performer(StashObject):
             query_field="stash_ids",
             notes="Requires transform to StashIDInput for mutations",
         ),
+        # Side-mutation relationships: writable via bulk updates on content entities
+        "scenes": RelationshipMetadata(
+            target_field="scene_ids",
+            is_list=True,
+            query_field="scenes",
+            inverse_type="Scene",
+            inverse_query_field="performers",
+            query_strategy="filter_query",
+            filter_query_hint="findScenes(scene_filter={performers: {value: [performer_id]}})",
+            notes="Writable via bulkSceneUpdate(performer_ids). Direct performers_scenes join table.",
+        ),
+        "galleries": RelationshipMetadata(
+            target_field="gallery_ids",
+            is_list=True,
+            query_field="galleries",
+            inverse_type="Gallery",
+            inverse_query_field="performers",
+            query_strategy="filter_query",
+            filter_query_hint="findGalleries(gallery_filter={performers: {value: [performer_id]}})",
+            notes="Writable via bulkGalleryUpdate(performer_ids). No direct Performer.galleries in schema.",
+        ),
+        "images": RelationshipMetadata(
+            target_field="image_ids",
+            is_list=True,
+            query_field="images",
+            inverse_type="Image",
+            inverse_query_field="performers",
+            query_strategy="filter_query",
+            filter_query_hint="findImages(image_filter={performers: {value: [performer_id]}})",
+            notes="Writable via bulkImageUpdate(performer_ids). No direct Performer.images in schema.",
+        ),
+        # Read-only: derived through scenes (performers_scenes → groups_scenes multi-join)
+        "groups": RelationshipMetadata(
+            target_field="",  # Read-only: no group_ids in PerformerUpdateInput
+            is_list=True,
+            query_field="groups",
+            inverse_type="Group",
+            query_strategy="filter_query",
+            filter_query_hint="findGroups(group_filter={performers: {value: [performer_id]}})",
+            notes="Derived through scenes. Queryable via filter, not directly writable.",
+        ),
     }
+
+    # =========================================================================
+    # Convenience Helper Methods for Bidirectional Relationships
+    # =========================================================================
+
+    async def add_scene(self, scene: Scene) -> None:
+        """Add scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scenes", scene)
+
+    async def remove_scene(self, scene: Scene) -> None:
+        """Remove scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scenes", scene)
+
+    async def add_gallery(self, gallery: Gallery) -> None:
+        """Add gallery (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("galleries", gallery)
+
+    async def remove_gallery(self, gallery: Gallery) -> None:
+        """Remove gallery (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("galleries", gallery)
+
+    async def add_image(self, image: Image) -> None:
+        """Add image (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("images", image)
+
+    async def remove_image(self, image: Image) -> None:
+        """Remove image (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("images", image)
 
     @classmethod
     async def find_by_name(

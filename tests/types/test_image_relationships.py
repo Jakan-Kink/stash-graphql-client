@@ -106,9 +106,7 @@ class TestImageGalleriesRelationship:
         assert rel.is_list is True
         assert rel.query_field == "galleries"
         assert rel.inverse_type == "Gallery"
-        assert (
-            rel.inverse_query_field is None
-        )  # Gallery has image_count and image(index), not images list
+        assert rel.inverse_query_field == "images"  # Bidirectional with Gallery.images
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True

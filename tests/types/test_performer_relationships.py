@@ -19,12 +19,13 @@ class TestPerformerRelationshipMetadata:
 
     def test_performer_relationships_count(self):
         """Test that Performer has expected number of relationships."""
-        # Performer has 2 relationships: tags, stash_ids
-        assert len(Performer.__relationships__) == 2
+        # Performer has 6 relationships: tags, stash_ids,
+        # scenes, galleries, images (side-mutation), groups (read-only metadata)
+        assert len(Performer.__relationships__) == 6
 
     def test_performer_relationships_keys(self):
         """Test that Performer has expected relationship keys."""
-        expected_keys = {"tags", "stash_ids"}
+        expected_keys = {"tags", "stash_ids", "scenes", "galleries", "images", "groups"}
         assert set(Performer.__relationships__.keys()) == expected_keys
 
 
