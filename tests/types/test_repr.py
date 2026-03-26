@@ -31,17 +31,17 @@ class TestShortRepr:
 
     def test_short_repr_scene_title(self):
         """Scene uses title for short repr."""
-        scene = Scene(id="s1", title="My Movie")
+        scene = Scene(id="1", title="My Movie")
         assert scene._short_repr() == "Scene(title='My Movie')"
 
     def test_short_repr_performer_name(self):
         """Performer uses name for short repr."""
-        perf = Performer(id="p1", name="Jane Doe")
+        perf = Performer(id="101", name="Jane Doe")
         assert perf._short_repr() == "Performer(name='Jane Doe')"
 
     def test_short_repr_studio_name(self):
         """Studio uses name for short repr."""
-        studio = Studio(id="st1", name="Acme Studios")
+        studio = Studio(id="201", name="Acme Studios")
         assert studio._short_repr() == "Studio(name='Acme Studios')"
 
     def test_short_repr_multiple_fields(self):
@@ -80,8 +80,8 @@ class TestShortRepr:
             __update_input_type__ = None  # type: ignore[assignment]
             __tracked_fields__: ClassVar[set[str]] = set()
 
-        obj = Bare(id="xyz")
-        assert obj._short_repr() == "Bare(id='xyz')"
+        obj = Bare(id="999")
+        assert obj._short_repr() == "Bare(id='999')"
 
 
 class TestRepr:
@@ -105,22 +105,22 @@ class TestRepr:
 
     def test_single_relationship_uses_short_repr(self):
         """A single StashObject relationship renders via _short_repr()."""
-        studio = Studio(id="st1", name="Acme")
-        scene = Scene(id="s1", title="Movie", studio=studio)
+        studio = Studio(id="201", name="Acme")
+        scene = Scene(id="1", title="Movie", studio=studio)
         r = repr(scene)
         assert "studio=Studio(name='Acme')" in r
 
     def test_list_relationship_shows_first_two(self):
         """List of StashObjects shows first 2 items then ..N more."""
         tags = [Tag(id=str(i), name=f"tag{i}") for i in range(5)]
-        scene = Scene(id="s1", tags=tags)
+        scene = Scene(id="1", tags=tags)
         r = repr(scene)
         assert "tags=[Tag(name='tag0'), Tag(name='tag1'), ..3 more]" in r
 
     def test_list_relationship_two_items_no_truncation(self):
         """List with exactly 2 items shows all, no truncation suffix."""
         tags = [Tag(id="1", name="a"), Tag(id="2", name="b")]
-        scene = Scene(id="s1", tags=tags)
+        scene = Scene(id="1", tags=tags)
         r = repr(scene)
         assert "tags=[Tag(name='a'), Tag(name='b')]" in r
         assert "more" not in r.split("tags=")[1].split("]")[0]
@@ -128,13 +128,13 @@ class TestRepr:
     def test_list_relationship_one_item(self):
         """List with 1 item shows it without truncation."""
         tags = [Tag(id="1", name="solo")]
-        scene = Scene(id="s1", tags=tags)
+        scene = Scene(id="1", tags=tags)
         r = repr(scene)
         assert "tags=[Tag(name='solo')]" in r
 
     def test_empty_list_shown(self):
         """Empty list is shown as []."""
-        scene = Scene(id="s1", tags=[])
+        scene = Scene(id="1", tags=[])
         r = repr(scene)
         assert "tags=[]" in r
 
@@ -203,8 +203,8 @@ class TestRepr:
         This is the core problem this feature solves: Scene→Performer→Scene
         should not expand each nested object recursively.
         """
-        perf = Performer(id="p1", name="Jane")
-        scene = Scene(id="s1", title="Movie", performers=[perf])
+        perf = Performer(id="101", name="Jane")
+        scene = Scene(id="1", title="Movie", performers=[perf])
         # Manually set up bidirectional reference
         perf.scenes = [scene]
 
@@ -225,12 +225,12 @@ class TestReprFileTypes:
         """VideoFile inherits basename for short repr from BaseFile."""
         from stash_graphql_client.types.files import VideoFile
 
-        vf = VideoFile(id="f1", basename="clip.mp4")
+        vf = VideoFile(id="801", basename="clip.mp4")
         assert vf._short_repr() == "VideoFile(basename='clip.mp4')"
 
     def test_folder_short_repr(self):
         """Folder uses path for short repr."""
         from stash_graphql_client.types.files import Folder
 
-        folder = Folder(id="d1", path="/media/videos")
+        folder = Folder(id="901", path="/media/videos")
         assert folder._short_repr() == "Folder(path='/media/videos')"

@@ -573,14 +573,14 @@ def create_marker_dict(
             id="123",
             title="Chapter 1",
             seconds=30.5,
-            scene={"id": "scene_1", "title": "Test Scene"},
-            primary_tag={"id": "tag_1", "name": "Intro"},
+            scene={"id": "1", "title": "Test Scene"},
+            primary_tag={"id": "1", "name": "Intro"},
         )
     """
     # Provide defaults for required nested objects if not provided
     if scene is None:
         scene = {
-            "id": f"scene_for_{id}",
+            "id": f"{int(id) + 10000}" if id.isdigit() else "99990",
             "title": "Default Scene",
             "performers": [],
             "tags": [],
@@ -596,7 +596,7 @@ def create_marker_dict(
         }
     if primary_tag is None:
         primary_tag = {
-            "id": f"tag_for_{id}",
+            "id": f"{int(id) + 20000}" if id.isdigit() else "99991",
             "name": "Default Tag",
             "aliases": [],
             "parents": [],
@@ -688,7 +688,7 @@ def create_file_dict(
     if parent_folder is None:
         parent_path = "/".join(path.split("/")[:-1]) or "/"
         parent_folder = {
-            "id": f"folder_for_{id}",
+            "id": f"{int(id) + 30000}" if id.isdigit() else "99992",
             "path": parent_path,
             "mod_time": mod_time,  # Folder requires mod_time
         }

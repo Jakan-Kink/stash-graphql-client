@@ -326,7 +326,7 @@ def test_performer_alias_list_accepts_string_list() -> None:
     This verifies the happy path - alias_list field accepts actual list values.
     """
     # Create Performer with alias_list as list of strings
-    performer = Performer(id="p1", name="Jane Doe", alias_list=["Jane D", "JD"])
+    performer = Performer(id="1", name="Jane Doe", alias_list=["Jane D", "JD"])
 
     # Verify alias_list is set correctly
     assert performer.alias_list == ["Jane D", "JD"]
@@ -339,7 +339,7 @@ def test_performer_alias_list_accepts_empty_list() -> None:
     This verifies that empty list is valid for alias_list field.
     """
     # Create Performer with alias_list as empty list
-    performer = Performer(id="p2", name="John Smith", alias_list=[])
+    performer = Performer(id="2", name="John Smith", alias_list=[])
 
     # Verify alias_list is set correctly
     assert performer.alias_list == []
@@ -352,7 +352,7 @@ def test_performer_alias_list_accepts_unset() -> None:
     This verifies that UNSET is valid for alias_list field when not queried.
     """
     # Create Performer with alias_list as UNSET
-    performer = Performer(id="p3", name="Test Performer", alias_list=UNSET)
+    performer = Performer(id="3", name="Test Performer", alias_list=UNSET)
 
     # Verify alias_list is UNSET
     assert isinstance(performer.alias_list, UnsetType)
@@ -369,7 +369,7 @@ def test_performer_alias_list_rejects_none() -> None:
     # Attempt to create Performer with alias_list=None
     # This should raise ValidationError because alias_list is non-nullable
     with pytest.raises(ValidationError) as exc_info:
-        Performer(id="p4", name="Test Performer", alias_list=None)  # type: ignore[arg-type]
+        Performer(id="4", name="Test Performer", alias_list=None)  # type: ignore[arg-type]
 
     # Verify the error is about alias_list field
     errors = exc_info.value.errors()
@@ -388,7 +388,7 @@ def test_performer_alias_list_from_dict_with_none() -> None:
     """
     # Attempt to create Performer from dict with alias_list=None
     with pytest.raises(ValidationError) as exc_info:
-        Performer.model_validate({"id": "p5", "name": "Test", "alias_list": None})
+        Performer.model_validate({"id": "5", "name": "Test", "alias_list": None})
 
     # Verify the error is about alias_list field
     errors = exc_info.value.errors()

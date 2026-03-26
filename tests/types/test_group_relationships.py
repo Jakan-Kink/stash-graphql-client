@@ -102,7 +102,7 @@ class TestGroupContainingGroupsRelationship:
         rel = Group.__relationships__["containing_groups"]
 
         # Create mock GroupDescription
-        mock_group = Group(id="group-123", name="Test Group")
+        mock_group = Group(id="401", name="Test Group")
         mock_desc = GroupDescription(group=mock_group, description="Parent group")
 
         # Apply transform
@@ -110,7 +110,7 @@ class TestGroupContainingGroupsRelationship:
 
         # Should produce GroupDescriptionInput
         assert isinstance(result, GroupDescriptionInput)
-        assert result.group_id == "group-123"
+        assert result.group_id == "401"
         assert result.description == "Parent group"
 
 
@@ -136,7 +136,7 @@ class TestGroupSubGroupsRelationship:
         rel = Group.__relationships__["sub_groups"]
 
         # Create mock GroupDescription
-        mock_group = Group(id="subgroup-789", name="Child Group")
+        mock_group = Group(id="402", name="Child Group")
         mock_desc = GroupDescription(group=mock_group, description="Child description")
 
         # Apply transform
@@ -144,7 +144,7 @@ class TestGroupSubGroupsRelationship:
 
         # Should produce GroupDescriptionInput
         assert isinstance(result, GroupDescriptionInput)
-        assert result.group_id == "subgroup-789"
+        assert result.group_id == "402"
         assert result.description == "Child description"
 
 

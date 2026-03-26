@@ -313,7 +313,7 @@ async def test_find_images_error_returns_empty(respx_stash_client: StashClient) 
 @pytest.mark.unit
 async def test_find_image_with_studio(respx_stash_client: StashClient) -> None:
     """Test finding an image with studio relationship."""
-    studio_data = create_studio_dict(id="studio_123", name="Test Studio")
+    studio_data = create_studio_dict(id="201", name="Test Studio")
     image_data = create_image_dict(
         id="123",
         title="Image with Studio",
@@ -334,7 +334,7 @@ async def test_find_image_with_studio(respx_stash_client: StashClient) -> None:
     assert image is not None
     assert is_set(image.studio)
     assert image.studio is not None
-    assert image.studio.id == "studio_123"
+    assert image.studio.id == "201"
     assert image.studio.name == "Test Studio"
 
     assert len(graphql_route.calls) == 1
@@ -345,8 +345,8 @@ async def test_find_image_with_studio(respx_stash_client: StashClient) -> None:
 async def test_find_image_with_performers(respx_stash_client: StashClient) -> None:
     """Test finding an image with performers."""
     performer_data = [
-        create_performer_dict(id="perf_1", name="Performer 1"),
-        create_performer_dict(id="perf_2", name="Performer 2"),
+        create_performer_dict(id="101", name="Performer 1"),
+        create_performer_dict(id="102", name="Performer 2"),
     ]
     image_data = create_image_dict(
         id="123",
@@ -368,8 +368,8 @@ async def test_find_image_with_performers(respx_stash_client: StashClient) -> No
     assert image is not None
     assert is_set(image.performers)
     assert len(image.performers) == 2
-    assert image.performers[0].id == "perf_1"
-    assert image.performers[1].id == "perf_2"
+    assert image.performers[0].id == "101"
+    assert image.performers[1].id == "102"
 
     assert len(graphql_route.calls) == 1
 
@@ -379,8 +379,8 @@ async def test_find_image_with_performers(respx_stash_client: StashClient) -> No
 async def test_find_image_with_tags(respx_stash_client: StashClient) -> None:
     """Test finding an image with tags."""
     tag_data = [
-        create_tag_dict(id="tag_1", name="Tag 1"),
-        create_tag_dict(id="tag_2", name="Tag 2"),
+        create_tag_dict(id="301", name="Tag 1"),
+        create_tag_dict(id="302", name="Tag 2"),
     ]
     image_data = create_image_dict(
         id="123",
@@ -402,8 +402,8 @@ async def test_find_image_with_tags(respx_stash_client: StashClient) -> None:
     assert image is not None
     assert is_set(image.tags)
     assert len(image.tags) == 2
-    assert image.tags[0].id == "tag_1"
-    assert image.tags[1].id == "tag_2"
+    assert image.tags[0].id == "301"
+    assert image.tags[1].id == "302"
 
     assert len(graphql_route.calls) == 1
 
@@ -567,7 +567,7 @@ async def test_images_destroy_with_model_input(respx_stash_client: StashClient) 
 async def test_create_image(respx_stash_client: StashClient, mock_image) -> None:
     """Test creating a new image."""
     created_image_data = create_image_dict(
-        id="new_123",
+        id="9001",
         title="New Image",
     )
 
@@ -585,7 +585,7 @@ async def test_create_image(respx_stash_client: StashClient, mock_image) -> None
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "new_123"
+    assert result.id == "9001"
     assert result.title == "New Image"
 
     # Verify GraphQL call

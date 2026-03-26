@@ -46,7 +46,7 @@ def test_find_files_result_files_already_constructed():
             "id": "1",
             "path": "/test.mp4",
             "basename": "test.mp4",
-            "parent_folder": {"id": "f1", "path": "/"},
+            "parent_folder": {"id": "801", "path": "/"},
             "zip_file": None,
             "size": 1000000,
             "mod_time": "2024-01-01T12:00:00Z",
@@ -90,7 +90,7 @@ def test_image_visual_files_none():
     # visual_files can be None (optional field)
     # This tests line 151 in image.py
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -118,7 +118,7 @@ def test_image_visual_files_unset():
     """Test that validator handles UNSET value for visual_files."""
     # Test line 151 in image.py - UNSET handling
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -139,7 +139,7 @@ def test_image_visual_files_not_a_list():
     """Test that validator handles non-list visual_files value."""
     # Test line 154 in image.py - non-list handling
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -160,7 +160,7 @@ def test_image_visual_files_unknown_typename():
     """Test that validator skips items with unknown __typename."""
     # Test line 172 in image.py - unknown typename skipped
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -168,10 +168,10 @@ def test_image_visual_files_unknown_typename():
         "visual_files": [
             {
                 "__typename": "ImageFile",
-                "id": "file1",
+                "id": "701",
                 "path": "/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "f1", "path": "/"},
+                "parent_folder": {"id": "801", "path": "/"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -184,7 +184,7 @@ def test_image_visual_files_unknown_typename():
             },
             {
                 "__typename": "UnknownFileType",  # Unknown! Should be skipped
-                "id": "file2",
+                "id": "702",
                 "path": "/unknown.xyz",
                 "basename": "unknown.xyz",
             },
@@ -210,10 +210,10 @@ def test_image_visual_files_already_constructed():
     video_file = VideoFile.model_validate(
         {
             "__typename": "VideoFile",
-            "id": "file1",
+            "id": "701",
             "path": "/video.gif",
             "basename": "video.gif",
-            "parent_folder": {"id": "f1", "path": "/"},
+            "parent_folder": {"id": "801", "path": "/"},
             "zip_file": None,
             "size": 1000000,
             "mod_time": "2024-01-01T12:00:00Z",
@@ -232,7 +232,7 @@ def test_image_visual_files_already_constructed():
     )
 
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -257,7 +257,7 @@ def test_image_visual_files_no_typename():
     """Test that validator handles dicts without __typename field."""
     # Test line 175 in image.py - no __typename, already constructed case
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -265,10 +265,10 @@ def test_image_visual_files_no_typename():
         "visual_files": [
             {
                 # Missing __typename!
-                "id": "file1",
+                "id": "701",
                 "path": "/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "f1", "path": "/"},
+                "parent_folder": {"id": "801", "path": "/"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
