@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14", "3.15"]
 
     services:
       stash:
@@ -96,6 +96,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Install Poetry via pipx
         run: |
@@ -195,7 +196,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
@@ -205,7 +206,7 @@ jobs:
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           report_type: test_results
           files: ./junit.xml
@@ -224,7 +225,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14", "3.15"]
 
     services:
       stash:
@@ -260,6 +261,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Install Poetry via pipx
         run: |
@@ -359,7 +361,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
@@ -369,7 +371,7 @@ jobs:
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           report_type: test_results
           files: ./junit.xml
