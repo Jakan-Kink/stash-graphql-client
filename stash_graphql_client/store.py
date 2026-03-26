@@ -15,7 +15,7 @@ from itertools import batched
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from .client.utils import sanitize_model_data
-from .errors import StashError, StashIntegrationError
+from .errors import StashBatchError, StashError, StashIntegrationError
 from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import StashObject
@@ -23,6 +23,7 @@ from .types.base import StashObject
 
 if TYPE_CHECKING:
     from .client import StashClient
+    from .client.batch import BatchResult
 
 T = TypeVar("T", bound=StashObject)
 
@@ -1651,6 +1652,268 @@ class StashEntityStore:
                     # Not in cache - add it now with real ID
                     self._cache_entity(obj)
                     log.debug(f"Cached {obj.__type_name__} {obj.id} after save")
+
+    async def save_batch(
+        self,
+        objects: list[StashObject],
+        *,
+        max_batch_size: int = 250,
+    ) -> BatchResult:
+        """Batch-save multiple dirty/new objects in a single HTTP request.
+
+        Groups creates before updates in the alias order so that GraphQL's
+        sequential execution assigns server IDs to new objects before any
+        updates that might reference them.
+
+        Side mutations and queued operations are fired sequentially per-entity
+        after the main batch succeeds (same as :meth:`save`).
+
+        Args:
+            objects: List of :class:`StashObject` instances to save.
+                Non-dirty/non-new objects are silently skipped.
+            max_batch_size: Maximum operations per HTTP request (passed
+                through to :meth:`client.execute_batch`).
+
+        Returns:
+            :class:`BatchResult` with per-operation results.
+
+        Raises:
+            StashBatchError: If any operation in the batch fails.  The
+                exception's ``batch_result`` contains partial results.
+                Successfully-saved objects still get their side mutations
+                and ``mark_clean()``; failed objects remain dirty.
+        """
+        from .client.batch import BatchOperation, BatchResult
+
+        # ── Phase 1: Pre-process ──────────────────────────────────
+
+        # Metadata kept per-object for Phase 2/3
+        pending: list[
+            dict[str, Any]
+        ] = []  # [{obj, input_data, was_new, old_id, dirty_side_fields, pending_ops}]
+
+        for obj in objects:
+            # Skip non-dirty objects
+            if not obj.is_dirty() and not obj.is_new() and not obj._pending_side_ops:
+                continue
+
+            # Cascade-save unsaved related objects (they become clean and
+            # are excluded from this batch)
+            unsaved_related = self._find_unsaved_related_objects(obj)
+            if unsaved_related:
+                unsaved_desc = ", ".join(
+                    f"{o.__type_name__}({o.id[:8]}...)" for o in unsaved_related[:3]
+                )
+                if len(unsaved_related) > 3:  # pragma: no cover
+                    unsaved_desc += f" and {len(unsaved_related) - 3} more"
+                log.warning(
+                    f"Cascade-saving unsaved related object(s) before batch: "
+                    f"{unsaved_desc}. Preferred: explicitly save related objects "
+                    f"before calling save_batch()."
+                )
+                for related_obj in unsaved_related:
+                    await self.save(related_obj, _cascade_depth=1)
+
+            # Re-check dirtiness (cascade may have changed relationships)
+            if not obj.is_dirty() and not obj.is_new() and not obj._pending_side_ops:
+                continue  # pragma: no cover — requires cascade to make parent fully clean
+
+            # Identify dirty side-mutation fields before building input
+            dirty_fields = set(obj.get_changed_fields().keys())
+            dirty_side_fields = dirty_fields & set(obj.__side_mutations__.keys())
+
+            # Build input
+            input_data = await obj.to_input()
+            if not isinstance(input_data, dict):
+                log.warning(
+                    f"to_input() for {obj.__type_name__} {obj.id} returned "
+                    f"{type(input_data)}, skipping"
+                )
+                continue
+
+            has_main_changes = obj.is_new() or set(input_data.keys()) > {"id"}
+
+            pending.append(
+                {
+                    "obj": obj,
+                    "input_data": input_data,
+                    "was_new": obj.is_new(),
+                    "old_id": obj.id,
+                    "dirty_side_fields": dirty_side_fields,
+                    "pending_ops": list(obj._pending_side_ops),
+                    "has_main_changes": has_main_changes,
+                }
+            )
+
+        if not pending:
+            return BatchResult(operations=[], raw_response=None)
+
+        # ── Phase 2: Batch main mutations (creates before updates) ─
+
+        # Partition: creates first, then updates
+        creates = [p for p in pending if p["was_new"] and p["has_main_changes"]]
+        updates = [p for p in pending if not p["was_new"] and p["has_main_changes"]]
+        side_only = [p for p in pending if not p["has_main_changes"]]
+        ordered = creates + updates
+
+        # Build BatchOperations
+        batch_ops: list[BatchOperation] = []
+        op_to_pending: list[dict[str, Any]] = []  # parallel index
+
+        for p in ordered:
+            obj = p["obj"]
+            type_name = obj.__type_name__
+            is_update = not p["was_new"]
+            operation = "Update" if is_update else "Create"
+            mutation_name = f"{type_name[0].lower()}{type_name[1:]}{operation}"
+            input_type_name = f"{type_name}{operation}Input!"
+
+            batch_ops.append(
+                BatchOperation(
+                    mutation_name=mutation_name,
+                    input_type_name=input_type_name,
+                    variables={"input": p["input_data"]},
+                    return_fields="id __typename",
+                )
+            )
+            op_to_pending.append(p)
+
+        # Execute batch (may raise StashBatchError on any failure)
+        batch_result: BatchResult | None = None
+        batch_error: Exception | None = None
+
+        if batch_ops:
+            try:
+                batch_result = await self._client.execute_batch(
+                    batch_ops, max_batch_size=max_batch_size
+                )
+            except StashBatchError as e:
+                batch_result = e.batch_result
+                batch_error = e
+
+        # Process results for successfully-saved operations
+        succeeded_pending: list[dict[str, Any]] = []
+        if batch_result:
+            for op, p in zip(batch_result.operations, op_to_pending, strict=True):
+                if op.error is not None:
+                    log.warning(
+                        f"Batch save failed for {p['obj'].__type_name__} "
+                        f"{p['obj'].id}: {op.error}"
+                    )
+                    continue
+
+                obj = p["obj"]
+                result_data = op.result or {}
+
+                # Validate __typename
+                returned_type = result_data.get("__typename")
+                if returned_type and returned_type != obj.__type_name__:
+                    log.warning(
+                        f"Batch response __typename mismatch: expected "
+                        f"'{obj.__type_name__}', got '{returned_type}' "
+                        f"for operation {op.mutation_name}"
+                    )
+
+                # Update ID for new objects
+                if p["was_new"] and "id" in result_data:
+                    old_id = p["old_id"]
+                    obj.update_id(result_data["id"])
+
+                    # Remap cache key UUID → real ID
+                    old_key = (obj.__type_name__, old_id)
+                    new_key = (obj.__type_name__, obj.id)
+                    with self._lock:
+                        if old_key in self._cache:
+                            entry = self._cache[old_key]
+                            self._cache[new_key] = entry
+                            del self._cache[old_key]
+                            type_ids = self._type_index.get(obj.__type_name__)
+                            if type_ids is not None:
+                                type_ids.discard(old_id)
+                                type_ids.add(obj.id)
+                        else:
+                            self._cache_entity(obj)
+
+                succeeded_pending.append(p)
+
+        # side-only objects (no main mutation needed) are always "succeeded"
+        succeeded_pending.extend(side_only)
+
+        # ── Phase 3: Side mutations (sequential per-entity) ────────
+
+        for p in succeeded_pending:
+            obj = p["obj"]
+            dirty_side_fields = p["dirty_side_fields"]
+            pending_ops = p["pending_ops"]
+
+            # Field-based side mutations (deduplicated by handler identity)
+            seen_handlers: set[int] = set()
+            for field_name in dirty_side_fields:
+                handler = obj.__side_mutations__[field_name]
+                handler_id = id(handler)
+                if handler_id not in seen_handlers:
+                    seen_handlers.add(handler_id)
+                    try:
+                        await handler(self._client, obj)
+                    except Exception as e:
+                        log.error(
+                            f"Side mutation for {obj.__type_name__}.{field_name} "
+                            f"failed: {e}"
+                        )
+                        # Side mutation failure doesn't prevent mark_clean
+                        # for the main mutation, but we log the error
+
+            # Queued operations
+            for op_fn in pending_ops:
+                try:
+                    await op_fn(self._client, obj)
+                except Exception as e:
+                    log.error(
+                        f"Queued operation for {obj.__type_name__} {obj.id} failed: {e}"
+                    )
+
+            obj.mark_clean()
+
+        # Build final result including all operations
+        final_result = batch_result or BatchResult(
+            operations=batch_ops, raw_response=None
+        )
+
+        if batch_error:
+            raise batch_error
+
+        return final_result
+
+    async def save_all(self, *, max_batch_size: int = 250) -> BatchResult:
+        """Find all dirty/new entities in cache and batch-save them.
+
+        Partitions entities into new objects first, then updates, to
+        ensure creates get server IDs before updates that might reference
+        them.
+
+        Returns:
+            :class:`BatchResult` — empty result if nothing is dirty.
+
+        Raises:
+            StashBatchError: If any operation fails (see :meth:`save_batch`).
+        """
+        from .client.batch import BatchResult
+
+        new_objects: list[StashObject] = []
+        dirty_objects: list[StashObject] = []
+        with self._lock:
+            for entry in self._cache.values():
+                obj = entry.entity
+                if obj.is_new():
+                    new_objects.append(obj)
+                elif obj.is_dirty() or obj._pending_side_ops:
+                    dirty_objects.append(obj)
+
+        ordered = new_objects + dirty_objects
+        if not ordered:
+            return BatchResult(operations=[], raw_response=None)
+
+        return await self.save_batch(ordered, max_batch_size=max_batch_size)
 
     def _find_unsaved_related_objects(self, obj: StashObject) -> list[StashObject]:
         """Find related StashObjects that have UUID IDs (unsaved).

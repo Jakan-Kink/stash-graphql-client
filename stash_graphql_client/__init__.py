@@ -21,9 +21,9 @@ Example:
 from importlib.metadata import PackageNotFoundError, version
 
 from stash_graphql_client.capabilities import ServerCapabilities
-from stash_graphql_client.client import StashClient
+from stash_graphql_client.client import BatchOperation, BatchResult, StashClient
 from stash_graphql_client.context import StashContext
-from stash_graphql_client.errors import StashError, StashVersionError
+from stash_graphql_client.errors import StashBatchError, StashError, StashVersionError
 from stash_graphql_client.logging import (
     client_logger,
     configure_logging,
@@ -76,10 +76,13 @@ __all__ = [
     # Version
     "__version__",
     # Client
+    "BatchOperation",
+    "BatchResult",
     "StashClient",
     "StashContext",
     "ServerCapabilities",
     # Errors
+    "StashBatchError",
     "StashError",
     "StashVersionError",
     # Store

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..logging import client_logger
 from .base import StashClientBase
+from .batch import BatchOperation, BatchResult
 from .mixins.config import ConfigClientMixin
 from .mixins.file import FileClientMixin
 from .mixins.filter import FilterClientMixin
@@ -157,4 +158,4 @@ class StashClient(
         fragment_store.rebuild(self._capabilities)
 
 
-__all__ = ["StashClient", "sanitize_model_data"]
+__all__ = ["BatchOperation", "BatchResult", "StashClient", "sanitize_model_data"]

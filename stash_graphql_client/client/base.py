@@ -17,6 +17,7 @@ from gql.transport.websockets import WebsocketsTransport
 from httpx_retries import Retry, RetryTransport
 
 from ..errors import (
+    StashBatchError,
     StashConnectionError,
     StashError,
     StashGraphQLError,
@@ -25,6 +26,7 @@ from ..errors import (
 from ..logging import client_logger
 from ..types.enums import SortDirectionEnum
 from ..types.unset import UnsetType
+from .batch import BatchOperation, BatchResult
 from .utils import sanitize_model_data
 
 
@@ -481,6 +483,159 @@ class StashClientBase:
         except Exception as e:
             self._handle_gql_error(e)  # This will raise ValueError
             raise RuntimeError("Unexpected execution path")  # pragma: no cover
+
+    async def execute_batch(
+        self,
+        operations: list[BatchOperation],
+        *,
+        max_batch_size: int = 250,
+    ) -> BatchResult:
+        """Execute multiple mutations in a single aliased GraphQL request.
+
+        Combines *operations* into one (or more, if chunking is needed)
+        aliased mutation document and sends each chunk as a single HTTP
+        request.  Results and errors are mapped back to the original
+        operations list by alias.
+
+        Args:
+            operations: List of :class:`BatchOperation` instances to execute.
+                An empty list returns an empty :class:`BatchResult` immediately.
+            max_batch_size: Maximum operations per HTTP request.  Larger
+                batches are split into sequential chunks of this size.
+
+        Returns:
+            :class:`BatchResult` with every operation's ``.result`` and
+            ``.error`` populated.
+
+        Raises:
+            StashBatchError: If **any** operation fails.  The exception's
+                ``batch_result`` attribute contains the full
+                :class:`BatchResult` so callers can inspect partial successes.
+            StashConnectionError: On network/transport failures.
+            StashServerError: On server-side 5xx errors.
+        """
+        from .batch import build_batch_document
+
+        # Fast path: empty batch
+        if not operations:
+            return BatchResult(operations=[], raw_response=None)
+
+        self._ensure_initialized()
+
+        # Pre-process variables (strip UNSET, convert datetimes)
+        for op in operations:
+            op.variables = self._convert_datetime(op.variables)
+
+        # Chunk into sub-batches
+        chunks = [
+            operations[start : start + max_batch_size]
+            for start in range(0, len(operations), max_batch_size)
+        ]
+
+        aggregated_raw: dict[str, Any] = {}
+
+        for chunk_offset_base, chunk in zip(
+            range(0, len(operations), max_batch_size), chunks, strict=True
+        ):
+            query, merged_vars = build_batch_document(chunk)
+
+            try:
+                operation = gql(query)
+            except Exception as e:
+                self.log.error(f"Batch GraphQL syntax error: {e}")
+                self.log.error(f"Failed batch query:\n{query}")
+                raise ValueError(f"Invalid batch GraphQL query syntax: {e}")
+
+            if not self._session:
+                raise RuntimeError(
+                    "GQL session not initialized - call initialize() first"
+                )
+
+            operation.variable_values = merged_vars
+
+            try:
+                result = await self._session.execute(operation)
+                result_dict = dict(result)
+
+                # Map chunk-local aliases back to operations
+                for i, op in enumerate(chunk):
+                    alias = f"op{i}"
+                    if alias in result_dict:
+                        op.result = result_dict[alias]
+                    else:
+                        op.error = StashGraphQLError(
+                            f"No response for alias '{alias}' in batch"
+                        )
+
+                aggregated_raw.update(
+                    {
+                        f"op{chunk_offset_base + i}": v
+                        for i, (k, v) in enumerate(result_dict.items())
+                    }
+                )
+
+            except TransportQueryError as e:
+                # Partial failure: extract data + errors
+                partial_data = dict(e.data) if e.data else {}
+                errors_list = e.errors or []
+
+                # Map successful results from partial data
+                for i, op in enumerate(chunk):
+                    alias = f"op{i}"
+                    if alias in partial_data and partial_data[alias] is not None:
+                        op.result = partial_data[alias]
+
+                # Map errors to specific operations by path[0]
+                for error_entry in errors_list:
+                    path = error_entry.get("path", [])
+                    message = error_entry.get("message", str(error_entry))
+                    if path and isinstance(path[0], str) and path[0].startswith("op"):
+                        try:
+                            op_index = int(path[0][2:])
+                            if 0 <= op_index < len(chunk):
+                                chunk[op_index].error = StashGraphQLError(message)
+                        except (ValueError, IndexError):
+                            self.log.warning(
+                                f"Could not map batch error path {path}: {message}"
+                            )
+                    else:
+                        # Error without a mappable path — assign to all
+                        # operations that don't have a result yet
+                        self.log.warning(f"Batch error without alias path: {message}")
+                        for op in chunk:
+                            if op.result is None and op.error is None:
+                                op.error = StashGraphQLError(message)
+
+                # Operations with neither result nor error
+                for op in chunk:
+                    if op.result is None and op.error is None:
+                        op.error = StashGraphQLError(
+                            "No response or error for operation in batch"
+                        )
+
+                aggregated_raw.update(partial_data)
+
+            except Exception as e:
+                # Total failure for this chunk — mark all operations
+                self._handle_gql_error(e)
+                # _handle_gql_error always raises, but just in case:
+                raise  # pragma: no cover
+
+        batch_result = BatchResult(
+            operations=operations,
+            raw_response=aggregated_raw or None,
+        )
+
+        # Raise on any failure (per user decision)
+        if not batch_result.all_succeeded:
+            failed_count = len(batch_result.failed)
+            total_count = len(batch_result)
+            raise StashBatchError(
+                f"Batch mutation failed: {failed_count}/{total_count} operations had errors",
+                batch_result=batch_result,
+            )
+
+        return batch_result
 
     def _parse_result_to_type(
         self, result_dict: dict[str, Any], result_type: type[T]

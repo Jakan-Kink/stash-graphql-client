@@ -128,6 +128,19 @@ class StashUnmappedFieldWarning(UserWarning):
     """
 
 
+class StashBatchError(StashError):
+    """Raised when a batched mutation has any failures.
+
+    Contains the ``batch_result`` (:class:`BatchResult`) so callers can
+    inspect which operations succeeded and which failed, even on partial
+    failure.
+    """
+
+    def __init__(self, message: str, batch_result: Any = None) -> None:
+        super().__init__(message)
+        self.batch_result = batch_result
+
+
 class StashVersionError(StashError):
     """Raised when the Stash server version is too old to be supported.
 
@@ -140,6 +153,7 @@ class StashVersionError(StashError):
 
 
 __all__ = [
+    "StashBatchError",
     "StashCleanupWarning",
     "StashConfigurationError",
     "StashConnectionError",
