@@ -1074,3 +1074,38 @@ async def test_find_markers_null_result_returns_empty(
     assert result.count == 0
     assert result.scene_markers == []
     assert len(graphql_route.calls) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_bulk_scene_marker_update_with_return_fields(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test bulk_scene_marker_update with return_fields uses minimal mutation."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "bulkSceneMarkerUpdate",
+                    [{"id": "1"}, {"id": "2"}],
+                ),
+            )
+        ]
+    )
+
+    try:
+        result = await respx_stash_client.bulk_scene_marker_update(
+            {"ids": ["1", "2"], "primary_tag_id": "10"},
+            return_fields="id",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    # Returns raw dicts, not SceneMarker objects
+    assert result == [{"id": "1"}, {"id": "2"}]
+
+    # Verify minimal mutation (no full fragment fields)
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "bulkSceneMarkerUpdate" in req["query"]
+    assert "primary_tag" not in req["query"]

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b4] - 2026-03-26
+
+### Added
+
+- **`return_fields` override on all bulk update methods**: `bulk_image_update()`,
+  `bulk_scene_update()`, `bulk_gallery_update()`, `bulk_group_update()`,
+  `bulk_performer_update()`, `bulk_studio_update()`, `bulk_scene_marker_update()` now accept
+  an optional `return_fields` keyword argument.  When provided (e.g. `return_fields="id"`),
+  uses a minimal inline mutation instead of the full fragment, avoiding server-side resolution
+  of all relationship fields for every entity in the batch.  Eliminates ~160K unnecessary
+  SELECT queries for a 32K-image studio assignment.
+- **Documentation**: new [Batched Mutations](guide/batched-mutations.md) user guide and
+  [Batch Operations](api/batch.md) API reference page
+
+### Changed
+
+- Side mutation handlers (`_make_bulk_relationship_handler`) now use
+  `return_fields="id __typename"` for all bulk calls, significantly reducing server load
+  on large bulk relationship writes
+- CI: test matrix expanded to Python 3.14 and 3.15 (prerelease)
+- CI: `codecov/codecov-action` upgraded v5 → v6 (fixes Node.js 20 deprecation warning from
+  `actions/github-script@v7` → `@v8` which uses Node.js 24)
+
 ## [0.12.0b3] - 2026-03-26
 
 ### Added
@@ -707,7 +730,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b3...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b4...HEAD
+[0.12.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b3...v0.12.0b4
 [0.12.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b2...v0.12.0b3
 [0.12.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...v0.12.0b2
 [0.12.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.12.0b1

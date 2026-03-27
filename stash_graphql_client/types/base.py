@@ -1415,17 +1415,24 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
             bulk_method = getattr(client, bulk_method_name)
 
-            # Process in batches to stay within SQLite parameter limits
+            # Process in batches to stay within SQLite parameter limits.
+            # Use return_fields="id" to avoid the server resolving the full
+            # entity fragment for every item in the batch (massive perf win
+            # for large batches — avoids N*M relationship SELECTs).
             for i in range(0, max(len(added), 1), batch_size):
                 batch = added[i : i + batch_size]
                 if not batch:
                     break
                 if use_bulk_ids:
                     await bulk_method(
-                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "ADD"}}
+                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "ADD"}},
+                        return_fields="id __typename",
                     )
                 else:
-                    await bulk_method({"ids": batch, id_field: entity.id})
+                    await bulk_method(
+                        {"ids": batch, id_field: entity.id},
+                        return_fields="id __typename",
+                    )
 
             for i in range(0, max(len(removed), 1), batch_size):
                 batch = removed[i : i + batch_size]
@@ -1433,10 +1440,17 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     break
                 if use_bulk_ids:
                     await bulk_method(
-                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "REMOVE"}}
+                        {
+                            "ids": batch,
+                            id_field: {"ids": [entity.id], "mode": "REMOVE"},
+                        },
+                        return_fields="id __typename",
                     )
                 else:
-                    await bulk_method({"ids": batch, id_field: None})
+                    await bulk_method(
+                        {"ids": batch, id_field: None},
+                        return_fields="id __typename",
+                    )
 
         return handler
 

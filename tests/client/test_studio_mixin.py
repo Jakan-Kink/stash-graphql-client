@@ -1331,3 +1331,39 @@ async def test_map_studio_ids_studio_object_with_id_but_name_unset(
 
     # Verify NO HTTP calls were made (name lookup was skipped)
     assert len(graphql_route.calls) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_bulk_studio_update_with_return_fields(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test bulk_studio_update with return_fields uses minimal mutation."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "bulkStudioUpdate",
+                    [{"id": "1"}, {"id": "2"}],
+                ),
+            )
+        ]
+    )
+
+    try:
+        result = await respx_stash_client.bulk_studio_update(
+            {"ids": ["1", "2"], "rating100": 80},
+            return_fields="id",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    # Returns raw dicts, not Studio objects
+    assert result == [{"id": "1"}, {"id": "2"}]
+
+    # Verify the minimal mutation was used (no full fragment)
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "bulkStudioUpdate" in req["query"]
+    # Should NOT contain full studio fields like "image_path" or "child_studios"
+    assert "child_studios" not in req["query"]

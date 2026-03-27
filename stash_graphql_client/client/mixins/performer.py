@@ -1,6 +1,6 @@
 """Performer-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...errors import StashGraphQLError
@@ -539,10 +539,25 @@ class PerformerClientMixin(StashClientProtocol):
             self.log.error(f"Failed to get all performers: {e}")
             return []
 
+    @overload
+    async def bulk_performer_update(
+        self, input_data: BulkPerformerUpdateInput | dict[str, Any]
+    ) -> list[Performer]: ...
+
+    @overload
     async def bulk_performer_update(
         self,
         input_data: BulkPerformerUpdateInput | dict[str, Any],
-    ) -> list[Performer]:
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_performer_update(
+        self,
+        input_data: BulkPerformerUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Performer] | list[dict[str, Any]]:
         """Bulk update performers.
 
         Args:
@@ -586,6 +601,13 @@ class PerformerClientMixin(StashClientProtocol):
             input_dict = validated.to_graphql()
 
         try:
+            if return_fields is not None:
+                mutation = f"""mutation BulkPerformerUpdate($input: BulkPerformerUpdateInput!) {{
+                    bulkPerformerUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_dict})
+                return result.get("bulkPerformerUpdate") or []
+
             result = await self.execute(
                 fragment_store.BULK_PERFORMER_UPDATE_MUTATION,
                 {"input": input_dict},

@@ -1,6 +1,6 @@
 """Image-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...fragments import fragment_store
@@ -218,39 +218,41 @@ class ImageClientMixin(StashClientProtocol):
             self.log.error(f"Failed to delete images: {e}")
             raise
 
+    @overload
     async def bulk_image_update(
         self,
         input_data: BulkImageUpdateInput | dict[str, Any],
-    ) -> list[Image]:
+    ) -> list[Image]: ...
+
+    @overload
+    async def bulk_image_update(
+        self,
+        input_data: BulkImageUpdateInput | dict[str, Any],
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_image_update(
+        self,
+        input_data: BulkImageUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Image] | list[dict[str, Any]]:
         """Bulk update images.
 
         Args:
             input_data: BulkImageUpdateInput object or dictionary containing:
                 - ids: List of image IDs to update (optional)
                 - And any fields to update (e.g., organized, rating100, etc.)
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Avoids the full fragment
+                response, which is significantly faster for fire-and-forget
+                bulk updates.  When set, returns a list of raw dicts instead
+                of Image objects.
 
         Returns:
-            List of updated Image objects
-
-        Examples:
-            Mark multiple images as organized:
-            ```python
-            images = await client.bulk_image_update({
-                "ids": ["1", "2", "3"],
-                "organized": True
-            })
-            ```
-
-            Add tags to multiple images:
-            ```python
-            from stash_graphql_client.types import BulkImageUpdateInput, BulkUpdateIds
-
-            input_data = BulkImageUpdateInput(
-                ids=["1", "2", "3"],
-                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
-            )
-            images = await client.bulk_image_update(input_data)
-            ```
+            List of updated Image objects (default), or list of dicts when
+            ``return_fields`` is provided.
         """
         try:
             # Convert BulkImageUpdateInput to dict if needed
@@ -265,6 +267,13 @@ class ImageClientMixin(StashClientProtocol):
                     )
                 validated = BulkImageUpdateInput(**input_data)
                 input_dict = validated.to_graphql()
+
+            if return_fields is not None:
+                mutation = f"""mutation BulkImageUpdate($input: BulkImageUpdateInput!) {{
+                    bulkImageUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_dict})
+                return result.get("bulkImageUpdate") or []
 
             result = await self.execute(
                 fragment_store.BULK_IMAGE_UPDATE_MUTATION,

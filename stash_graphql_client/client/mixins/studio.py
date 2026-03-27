@@ -1,6 +1,6 @@
 """Studio-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...fragments import fragment_store
@@ -193,39 +193,38 @@ class StudioClientMixin(StashClientProtocol):
             self.log.error(f"Failed to delete studios: {e}")
             raise
 
+    @overload
+    async def bulk_studio_update(
+        self, input_data: BulkStudioUpdateInput | dict[str, Any]
+    ) -> list[Studio]: ...
+
+    @overload
     async def bulk_studio_update(
         self,
         input_data: BulkStudioUpdateInput | dict[str, Any],
-    ) -> list[Studio]:
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_studio_update(
+        self,
+        input_data: BulkStudioUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Studio] | list[dict[str, Any]]:
         """Bulk update studios.
 
         Args:
             input_data: BulkStudioUpdateInput object or dictionary containing:
                 - ids: List of studio IDs to update (optional)
                 - And any fields to update (e.g., url, rating100, etc.)
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Returns raw dicts instead
+                of Studio objects.
 
         Returns:
-            List of updated Studio objects
-
-        Examples:
-            Update multiple studios' ratings:
-            ```python
-            studios = await client.bulk_studio_update({
-                "ids": ["1", "2", "3"],
-                "rating100": 80
-            })
-            ```
-
-            Add tags to multiple studios:
-            ```python
-            from stash_graphql_client.types import BulkStudioUpdateInput, BulkUpdateIds
-
-            input_data = BulkStudioUpdateInput(
-                ids=["1", "2", "3"],
-                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
-            )
-            studios = await client.bulk_studio_update(input_data)
-            ```
+            List of updated Studio objects (default), or list of dicts when
+            ``return_fields`` is provided.
         """
         try:
             # Convert BulkStudioUpdateInput to dict if needed
@@ -240,6 +239,13 @@ class StudioClientMixin(StashClientProtocol):
                     )
                 validated = BulkStudioUpdateInput(**input_data)
                 input_dict = validated.to_graphql()
+
+            if return_fields is not None:
+                mutation = f"""mutation BulkStudioUpdate($input: BulkStudioUpdateInput!) {{
+                    bulkStudioUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_dict})
+                return result.get("bulkStudioUpdate") or []
 
             return await self.execute(
                 fragment_store.BULK_STUDIO_UPDATE_MUTATION,
