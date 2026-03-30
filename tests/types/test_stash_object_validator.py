@@ -17,6 +17,8 @@ import respx
 from pydantic import BaseModel
 
 from stash_graphql_client.types.base import FromGraphQLMixin, StashObject
+from stash_graphql_client.types.files import ImageFile
+from stash_graphql_client.types.image import Image
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
@@ -515,3 +517,81 @@ class TestStashObjectInit:
         # Clean up
         Studio._store._cache.clear()
         Scene._store._cache.clear()
+
+
+class TestMergePathUnionTypeDiscrimination:
+    """Regression tests for union-typed list field corruption on merge path.
+
+    Pydantic v2's model_validate() post-processes the returned instance for
+    union-typed list fields, overwriting __dict__ with raw input data.  The
+    merge path must inoculate the input dict with validated values to prevent
+    this corruption.
+    """
+
+    @pytest.mark.unit
+    def test_visual_files_not_corrupted_on_merge(self, respx_entity_store) -> None:
+        """visual_files should contain ImageFile objects after a merge, not raw dicts."""
+        raw_data = {
+            "id": "900",
+            "title": "Merge Test",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "901", "path": "/test.jpg"},
+            ],
+        }
+
+        # First construction — caches the Image
+        img1 = Image.from_graphql(raw_data.copy())
+        assert isinstance(img1.visual_files[0], ImageFile)
+
+        # Second construction — triggers merge path
+        img2 = Image.from_graphql(raw_data.copy())
+        assert img2 is img1, "Identity map must return same object"
+        assert isinstance(img2.visual_files[0], ImageFile), (
+            "visual_files[0] should be ImageFile after merge, not dict"
+        )
+
+    @pytest.mark.unit
+    def test_identity_preserved_across_merge(self, respx_entity_store) -> None:
+        """Merge path must return the same cached instance (identity map contract)."""
+        data = {
+            "id": "910",
+            "title": "Identity Test",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "911", "path": "/a.jpg"},
+            ],
+        }
+
+        img1 = Image.from_graphql(data.copy())
+        img2 = Image.from_graphql(data.copy())
+        assert img1 is img2
+
+    @pytest.mark.unit
+    def test_merge_preserves_fields_absent_from_new_data(
+        self, respx_entity_store
+    ) -> None:
+        """Fields present in cached but absent from new data must survive the merge."""
+        full_data = {
+            "id": "920",
+            "title": "Full Data",
+            "rating100": 75,
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "921", "path": "/b.jpg"},
+            ],
+        }
+        partial_data = {
+            "id": "920",
+            "title": "Updated Title",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "921", "path": "/b.jpg"},
+            ],
+        }
+
+        img = Image.from_graphql(full_data)
+        assert img.rating100 == 75
+
+        merged = Image.from_graphql(partial_data)
+        assert merged is img
+        assert merged.title == "Updated Title"
+        assert merged.rating100 == 75, (
+            "rating100 should survive merge when absent from new data"
+        )

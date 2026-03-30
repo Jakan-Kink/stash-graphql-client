@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b6] - 2026-03-30
+
+### Fixed
+
+- **Identity map merge path corruption on union-typed list fields**: `visual_files`
+  (and other `list[UnionType]` fields) were corrupted to raw dicts after a second
+  `from_graphql()` call hit the merge path. Root cause: pydantic-core's post-validator
+  pipeline overwrites `__dict__` with raw input data for union-typed fields when the
+  wrap validator returns a pre-existing instance. Fix: the merge path now calls
+  `handler(data)` to produce a fully validated fresh instance, merges validated values
+  into the cached instance, and inoculates the input dict in-place so pydantic-core's
+  post-processing writes back correct types
+- **`_process_nested_cache_lookups` skipping union list types**: `list[VideoFile | ImageFile]`
+  fields were not resolved from cache because `isinstance(UnionType, type)` is `False`.
+  Now builds a `__typename → StashObject subclass` map from union members and resolves
+  dicts to cached instances by concrete type
+
 ## [0.12.0b5] - 2026-03-30
 
 ### Added

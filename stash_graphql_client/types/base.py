@@ -1340,37 +1340,54 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     log.debug(
                         f"Identity map: returning cached {cls.__type_name__} {data['id']}"
                     )
-                    # Merge new fields from data into cached instance
-                    # Track old and new received fields
+                    # Merge strategy: call handler() to get a properly
+                    # validated fresh instance (field validators run, union
+                    # types discriminated), then merge validated values into
+                    # cached_obj and RETURN cached_obj (preserves identity).
+                    #
+                    # To prevent pydantic-core's post-validator pipeline from
+                    # overwriting __dict__ with raw input data (Pydantic v2
+                    # regression on union-typed list fields), we mutate the
+                    # input `data` dict in-place with validated values before
+                    # returning.  pydantic-core holds a reference to (not a
+                    # copy of) the Python dict, so the overwrite becomes
+                    # harmless — it writes back already-validated values.
                     old_received: set[str] = cached_obj._received_fields
                     new_fields = set(data.keys())
 
-                    # Process nested lookups for new data
+                    # Process nested lookups, then let handler fully validate
                     processed_data = cls._process_nested_cache_lookups(data)
+                    fresh = handler(
+                        processed_data,
+                        info.context if info.context else None,
+                    )
 
-                    # Merge field values directly into __dict__ to bypass
-                    # validate_assignment, which would re-validate every nested
-                    # StashObject through handler() creating ~42M duplicate copies.
-                    # This is safe because processed_data already went through
-                    # _process_nested_cache_lookups (cached instances resolved)
-                    # and the data came from a validated GraphQL response.
+                    # Merge validated values from fresh into cached via
+                    # direct __dict__ writes (bypasses validate_assignment
+                    # to avoid the ~42M duplicate-copy memory leak).
                     merged_fields: set[str] = set()
-                    obj_dict = cached_obj.__dict__
-                    for field_name, field_value in processed_data.items():
-                        if field_name not in obj_dict:
+                    cached_dict = cached_obj.__dict__
+                    fresh_dict = fresh.__dict__
+                    for field_name in new_fields:
+                        if field_name not in cached_dict:
                             continue
-                        current = obj_dict[field_name]
-                        if current is field_value:
+                        fresh_val = fresh_dict.get(field_name)
+                        current = cached_dict[field_name]
+                        if current is fresh_val or current == fresh_val:
                             continue
-                        if current == field_value:
-                            continue
-                        obj_dict[field_name] = field_value
+                        cached_dict[field_name] = fresh_val
                         merged_fields.add(field_name)
                         # Sync inverse relationships (bypassed by __dict__ write)
                         if field_name in cached_obj.__relationships__:
-                            cached_obj._sync_inverse_relationship(
-                                field_name, field_value
-                            )
+                            cached_obj._sync_inverse_relationship(field_name, fresh_val)
+
+                    # Inoculate the input dict: replace raw values with
+                    # validated ones so pydantic-core's post-validator
+                    # pipeline writes back correct types (not raw dicts)
+                    # when it touches union-typed list fields.
+                    for k in data:
+                        if k in fresh_dict:
+                            data[k] = fresh_dict[k]
 
                     # Merge received fields
                     merged_received = old_received | new_fields
@@ -1466,22 +1483,45 @@ class StashObject(FromGraphQLMixin, BaseModel):
                 if args and isinstance(value, list):
                     # Process list of potential StashObjects
                     item_type = args[0]
-                    if isinstance(item_type, type) and issubclass(
-                        item_type, StashObject
-                    ):
+
+                    # Build a __typename → StashObject subclass map for
+                    # union-typed list items (e.g. list[VideoFile | ImageFile])
+                    typename_map: dict[str, type[StashObject]] | None = None
+                    if isinstance(item_type, types.UnionType):
+                        union_members = [
+                            t
+                            for t in get_args(item_type)
+                            if isinstance(t, type) and issubclass(t, StashObject)
+                        ]
+                        if union_members:
+                            typename_map = {t.__type_name__: t for t in union_members}
+
+                    if (
+                        isinstance(item_type, type)
+                        and issubclass(item_type, StashObject)
+                    ) or typename_map:
                         processed_list = []
                         for item in value:
                             if isinstance(item, dict) and "id" in item:
-                                # Check cache for this item
-                                cache_key = (item_type.__type_name__, item["id"])
-                                if cache_key in cls._store._cache:
-                                    cached_entry = cls._store._cache[cache_key]
-                                    if not cached_entry.is_expired():
-                                        log.debug(
-                                            f"Identity map: using cached {item_type.__type_name__} {item['id']} for nested list"
-                                        )
-                                        processed_list.append(cached_entry.entity)
-                                        continue
+                                # Resolve the concrete type for cache lookup
+                                if typename_map:
+                                    tn = item.get("__typename", "")
+                                    concrete = typename_map.get(tn)
+                                else:
+                                    concrete = item_type  # type: ignore[assignment]
+                                if concrete is not None:
+                                    cache_key = (
+                                        concrete.__type_name__,
+                                        item["id"],
+                                    )
+                                    if cache_key in cls._store._cache:
+                                        cached_entry = cls._store._cache[cache_key]
+                                        if not cached_entry.is_expired():
+                                            log.debug(
+                                                f"Identity map: using cached {concrete.__type_name__} {item['id']} for nested list"
+                                            )
+                                            processed_list.append(cached_entry.entity)
+                                            continue
                             processed_list.append(item)
                         processed[field_name] = processed_list
                 continue
