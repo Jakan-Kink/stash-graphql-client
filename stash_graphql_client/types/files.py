@@ -311,8 +311,11 @@ class FindFilesResultType(StashResult):
             if isinstance(item, dict) and "__typename" in item:
                 typename = item["__typename"]
                 file_type = type_map.get(typename, BaseFile)
-                # Construct the correct type from the dict
-                result.append(file_type.model_validate(item))
+                # Construct with from_graphql context so _received_fields
+                # is populated (fallback for validate_assignment path)
+                result.append(
+                    file_type.model_validate(item, context={"from_graphql": True})
+                )
             else:
                 # Already constructed or no typename
                 result.append(item)

@@ -454,6 +454,25 @@ class FromGraphQLMixin:
                 # For List[Type]
                 if origin is list and args and isinstance(value, list):
                     item_type = args[0]
+
+                    # Union-typed list (e.g. list[VideoFile | ImageFile]):
+                    # dispatch by __typename to the correct StashObject subclass
+                    if isinstance(item_type, types.UnionType):
+                        union_types = {
+                            t.__name__: t
+                            for t in get_args(item_type)
+                            if isinstance(t, type) and issubclass(t, StashObject)
+                        }
+                        if union_types:
+                            processed[field_name] = [
+                                union_types[item["__typename"]].from_graphql(item)
+                                if isinstance(item, dict)
+                                and item.get("__typename") in union_types
+                                else item
+                                for item in value
+                            ]
+                            continue
+
                     if isinstance(item_type, type) and issubclass(
                         item_type, StashObject
                     ):

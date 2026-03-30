@@ -268,8 +268,12 @@ class Image(StashObject):
                 typename = item["__typename"]
                 file_type = type_map.get(typename)
                 if file_type:
-                    # Construct the correct type from the dict
-                    result.append(file_type.model_validate(item))
+                    # Construct with from_graphql context so _received_fields
+                    # is populated (fallback path when _process_nested_graphql
+                    # didn't handle the item, e.g. via validate_assignment)
+                    result.append(
+                        file_type.model_validate(item, context={"from_graphql": True})
+                    )
                 else:
                     # Unknown typename, skip
                     continue

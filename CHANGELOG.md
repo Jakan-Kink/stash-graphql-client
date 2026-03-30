@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b7] - 2026-03-30
+
+### Fixed
+
+- **`_process_nested_graphql` skipping union list types**: Same
+  `isinstance(UnionType, type)` bug as `_process_nested_cache_lookups` (fixed in b6)
+  but in the construction path. `list[VideoFile | ImageFile]` items were not routed
+  through `from_graphql()`, so nested file objects bypassed `_received_fields` tracking.
+  Now dispatches by `__typename` to the correct `StashObject` subclass
+- **`_received_fields` empty on nested union-typed file objects**: Discriminator
+  validators (`_discriminate_visual_file_types`, `_discriminate_file_types`) called
+  `model_validate()` without `context={"from_graphql": True}`, so nested `ImageFile`/
+  `VideoFile` objects had empty `_received_fields`. This caused `populate()` to
+  consider fields like `path` as missing and trigger unnecessary re-fetches. Now passes
+  from_graphql context in both discriminator validators
+
 ## [0.12.0b6] - 2026-03-30
 
 ### Fixed

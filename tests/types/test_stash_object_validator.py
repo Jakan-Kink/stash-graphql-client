@@ -9,6 +9,7 @@ This test suite covers the wrap validator in StashObject that implements:
 
 from __future__ import annotations
 
+from typing import ClassVar
 from unittest.mock import patch
 
 import httpx
@@ -17,7 +18,7 @@ import respx
 from pydantic import BaseModel
 
 from stash_graphql_client.types.base import FromGraphQLMixin, StashObject
-from stash_graphql_client.types.files import ImageFile
+from stash_graphql_client.types.files import ImageFile, VideoFile
 from stash_graphql_client.types.image import Image
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
@@ -31,6 +32,17 @@ class _ModelMultiUnion(FromGraphQLMixin, BaseModel):
 
     id: str
     mixed_field: str | int | None | UnsetType = UNSET  # 4-way union!
+
+
+# Test model with a union-typed list where no member is a StashObject.
+# Extends StashObject so _process_nested_cache_lookups is available.
+class _ModelNonEntityUnionList(StashObject):
+    """Model with list[str | int] — union of non-StashObject types."""
+
+    __type_name__: ClassVar[str] = "_TestNonEntityUnion"
+
+    id: str | UnsetType = UNSET
+    items: list[str | int] | UnsetType = UNSET
 
 
 class TestIdValidator:
@@ -595,3 +607,151 @@ class TestMergePathUnionTypeDiscrimination:
         assert merged.rating100 == 75, (
             "rating100 should survive merge when absent from new data"
         )
+
+    @pytest.mark.unit
+    def test_visual_files_received_fields_tracked(self, respx_entity_store) -> None:
+        """Nested ImageFile created via from_graphql must have _received_fields populated.
+
+        Bug: _process_nested_graphql skipped union-typed list fields, so
+        visual_files dicts fell through to _discriminate_visual_file_types which
+        called model_validate() without from_graphql context.  Result: the
+        ImageFile objects had empty _received_fields.
+        """
+        data = {
+            "id": "930",
+            "title": "Received Fields Test",
+            "visual_files": [
+                {
+                    "__typename": "ImageFile",
+                    "id": "931",
+                    "path": "/received.jpg",
+                    "width": 100,
+                    "height": 200,
+                },
+            ],
+        }
+
+        img = Image.from_graphql(data)
+        file_obj = img.visual_files[0]
+        assert isinstance(file_obj, ImageFile)
+        assert "path" in file_obj._received_fields, (
+            "_received_fields should contain 'path' for nested ImageFile"
+        )
+        assert "id" in file_obj._received_fields
+        assert "width" in file_obj._received_fields
+
+    @pytest.mark.unit
+    def test_process_nested_graphql_dispatches_union_by_typename(
+        self, respx_entity_store
+    ) -> None:
+        """_process_nested_graphql should dispatch union list items by __typename."""
+
+        data = {
+            "id": "940",
+            "title": "Union Dispatch",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "941", "path": "/img.jpg"},
+                {
+                    "__typename": "VideoFile",
+                    "id": "942",
+                    "path": "/vid.mp4",
+                    "format": "mp4",
+                    "width": 1920,
+                    "height": 1080,
+                    "duration": 120.0,
+                    "video_codec": "h264",
+                    "audio_codec": "aac",
+                    "frame_rate": 30.0,
+                    "bit_rate": 5000000,
+                },
+            ],
+        }
+
+        img = Image.from_graphql(data)
+        assert isinstance(img.visual_files[0], ImageFile)
+        assert isinstance(img.visual_files[1], VideoFile)
+        # Both should have _received_fields populated
+        assert "path" in img.visual_files[0]._received_fields
+        assert "path" in img.visual_files[1]._received_fields
+
+
+class TestUnionListBranchCoverage:
+    """Branch coverage for union-typed list handling edge cases.
+
+    Covers the false branches when union members contain no StashObject
+    subclasses, and the typename_map dispatch path in cache lookups.
+    """
+
+    @pytest.mark.unit
+    def test_process_nested_graphql_skips_non_entity_union_list(self) -> None:
+        """list[str | int] union has no StashObject members → falls through.
+
+        Covers base.py _process_nested_graphql line 466 false branch.
+        """
+        data = {"id": "1", "items": ["hello", 42]}
+        result = _ModelNonEntityUnionList._process_nested_graphql(data)
+        # Items should pass through unchanged (no from_graphql dispatch)
+        assert result["items"] == ["hello", 42]
+
+    @pytest.mark.unit
+    def test_process_nested_cache_lookups_skips_non_entity_union_list(
+        self, respx_entity_store
+    ) -> None:
+        """list[str | int] union has no StashObject members → typename_map stays None.
+
+        Covers base.py _process_nested_cache_lookups line 1515 false branch.
+        """
+        data = {"id": "1", "items": ["hello", 42]}
+        result = _ModelNonEntityUnionList._process_nested_cache_lookups(data)
+        assert result["items"] == ["hello", 42]
+
+    @pytest.mark.unit
+    def test_cache_lookup_resolves_union_item_by_typename(
+        self, respx_entity_store
+    ) -> None:
+        """Pre-cached ImageFile resolved via typename_map dispatch in cache lookups.
+
+        Covers base.py _process_nested_cache_lookups lines 1527-1528
+        (typename_map truthy path).
+        """
+        store = Image._store
+        assert store is not None
+
+        # Pre-cache an ImageFile
+        img_file = ImageFile.from_graphql(
+            {"id": "501", "path": "/cached.jpg", "__typename": "ImageFile"}
+        )
+        store._cache_entity(img_file)
+
+        data = {
+            "id": "500",
+            "title": "Cache Resolve",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "501", "path": "/cached.jpg"},
+            ],
+        }
+        result = Image._process_nested_cache_lookups(data)
+        # Should have resolved to the cached instance
+        assert result["visual_files"][0] is img_file
+
+    @pytest.mark.unit
+    def test_cache_lookup_skips_unknown_typename_in_union(
+        self, respx_entity_store
+    ) -> None:
+        """Unknown __typename in union list → concrete is None → item passes through.
+
+        Covers base.py _process_nested_cache_lookups line 1531 false branch.
+        """
+        unknown_item = {
+            "__typename": "UnknownFileType",
+            "id": "999",
+            "path": "/mystery.dat",
+        }
+        data = {
+            "id": "500",
+            "title": "Unknown Type",
+            "visual_files": [unknown_item],
+        }
+        result = Image._process_nested_cache_lookups(data)
+        # Unknown typename should pass through as a raw dict
+        assert result["visual_files"][0] is unknown_item
