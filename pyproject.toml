@@ -262,6 +262,7 @@ python_functions = ["test_*"]
 xfail_strict = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+log_level = "WARNING"
 filterwarnings = [
     "ignore::ResourceWarning",
 ]
