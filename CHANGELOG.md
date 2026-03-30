@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b5] - 2026-03-30
+
+### Added
+
+- **ActiveRecord-style relationship DSL**: new factory helpers `belongs_to()`, `habtm()`,
+  `has_many()`, and `has_many_through()` in `types.base` for declaring `__relationships__`
+  with minimal boilerplate. Auto-derives `target_field`, `query_field`, and
+  `filter_query_hint` via `__init_subclass__`, eliminating ~70% of per-entity relationship
+  declaration verbosity
+- **`populate()` filter-query resolution**: `StashEntityStore.populate()` now detects
+  `filter_query` strategy relationships (e.g., `Tag.scenes`, `Studio.scenes`) and fetches
+  them via lightweight `find*` queries with `{ __typename id }` fragments, resolved through
+  the identity map cache. New `_fetch_filter_query_relationship()` method parses
+  `filter_query_hint` strings into executable GraphQL queries
+- **Configurable client timeout**: `StashClientBase` now reads a `Timeout` key from the
+  connection dict (default 30s) and propagates it to the httpx transport, gql `Client`
+  `execute_timeout`, and WebSocket transport
+
+### Changed
+
+- All entity types (`Scene`, `Tag`, `Studio`, `Performer`, `Image`, `Gallery`, `Group`,
+  `SceneMarker`) refactored from verbose `RelationshipMetadata(...)` declarations to the
+  new DSL helpers (`belongs_to`, `habtm`, `has_many`, `has_many_through`)
+- `populate()` now separates direct fields from filter-query fields, fetching each category
+  through the appropriate strategy instead of treating all relationships as fragment fields
+
+### Fixed
+
+- `populate()` snapshot updates now include filter-query fields, preventing phantom dirty
+  state after populating inverse relationships
+
 ## [0.12.0b4] - 2026-03-26
 
 ### Added
@@ -14,9 +45,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`return_fields` override on all bulk update methods**: `bulk_image_update()`,
   `bulk_scene_update()`, `bulk_gallery_update()`, `bulk_group_update()`,
   `bulk_performer_update()`, `bulk_studio_update()`, `bulk_scene_marker_update()` now accept
-  an optional `return_fields` keyword argument.  When provided (e.g. `return_fields="id"`),
+  an optional `return_fields` keyword argument. When provided (e.g. `return_fields="id"`),
   uses a minimal inline mutation instead of the full fragment, avoiding server-side resolution
-  of all relationship fields for every entity in the batch.  Eliminates ~160K unnecessary
+  of all relationship fields for every entity in the batch. Eliminates ~160K unnecessary
   SELECT queries for a 32K-image studio assignment.
 - **Documentation**: new [Batched Mutations](guide/batched-mutations.md) user guide and
   [Batch Operations](api/batch.md) API reference page
@@ -730,7 +761,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b4...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b5...HEAD
+[0.12.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b4...v0.12.0b5
 [0.12.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b3...v0.12.0b4
 [0.12.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b2...v0.12.0b3
 [0.12.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...v0.12.0b2

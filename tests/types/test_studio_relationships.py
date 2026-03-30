@@ -130,32 +130,6 @@ class TestStudioStashIDsRelationship:
         assert result.stash_id == "456def"
 
 
-class TestStudioRelationshipBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_to_tuple_conversion_for_parent_studio(self):
-        """Test that parent_studio RelationshipMetadata converts to tuple."""
-        rel = Studio.__relationships__["parent_studio"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "parent_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None
-
-    def test_to_tuple_conversion_for_tags(self):
-        """Test that tags RelationshipMetadata converts to tuple."""
-        rel = Studio.__relationships__["tags"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "tag_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None
-
-
 class TestStudioRelationshipUsage:
     """Test that Studio relationships work correctly in practice."""
 

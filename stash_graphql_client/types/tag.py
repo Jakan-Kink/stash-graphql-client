@@ -12,10 +12,11 @@ from stash_graphql_client.logging import processing_logger as logger
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    habtm,
+    has_many,
 )
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
@@ -218,94 +219,19 @@ class Tag(StashObject):
     }
 
     __relationships__ = {
-        # Self-referential parent/child hierarchy (Pattern A: direct fields)
-        "parents": RelationshipMetadata(
-            target_field="parent_ids",
-            is_list=True,
-            query_field="parents",
-            inverse_type="Tag",  # Self-referential!
-            inverse_query_field="children",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs both parent_ids and child_ids bidirectionally",
-        ),
-        "children": RelationshipMetadata(
-            target_field="child_ids",
-            is_list=True,
-            query_field="children",
-            inverse_type="Tag",  # Self-referential!
-            inverse_query_field="parents",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs both child_ids and parent_ids bidirectionally",
-        ),
-        # Special case: Complex transform for StashID
-        "stash_ids": RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
+        "parents": habtm("Tag", inverse_query_field="children"),
+        "children": habtm("Tag", inverse_query_field="parents"),
+        "stash_ids": habtm(
+            "StashID",
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
-            query_field="stash_ids",
-            notes="Requires transform to StashIDInput for mutations",
         ),
-        # Side-mutation relationships: writable via bulk updates on content entities
-        "scenes": RelationshipMetadata(
-            target_field="scene_ids",
-            is_list=True,
-            query_field="scenes",
-            inverse_type="Scene",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findScenes(scene_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkSceneUpdate(tag_ids). Direct scenes_tags join table.",
-        ),
-        "images": RelationshipMetadata(
-            target_field="image_ids",
-            is_list=True,
-            query_field="images",
-            inverse_type="Image",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findImages(image_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkImageUpdate(tag_ids). No direct Tag.images in schema.",
-        ),
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findGalleries(gallery_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkGalleryUpdate(tag_ids). No direct Tag.galleries in schema.",
-        ),
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
-            is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findPerformers(performer_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkPerformerUpdate(tag_ids). No direct Tag.performers in schema.",
-        ),
-        "groups": RelationshipMetadata(
-            target_field="group_ids",
-            is_list=True,
-            query_field="groups",
-            inverse_type="Group",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findGroups(group_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkGroupUpdate(tag_ids). No direct Tag.groups in schema.",
-        ),
-        "scene_markers": RelationshipMetadata(
-            target_field="scene_marker_ids",
-            is_list=True,
-            query_field="scene_markers",
-            inverse_type="SceneMarker",
-            inverse_query_field="tags",
-            query_strategy="filter_query",
-            filter_query_hint="findSceneMarkers(scene_marker_filter={tags: {value: [tag_id]}})",
-            notes="Writable via bulkSceneMarkerUpdate(tag_ids). No direct Tag.scene_markers in schema.",
-        ),
+        "scenes": has_many("Scene", inverse_query_field="tags"),
+        "images": has_many("Image", inverse_query_field="tags"),
+        "galleries": has_many("Gallery", inverse_query_field="tags"),
+        "performers": has_many("Performer", inverse_query_field="tags"),
+        "groups": has_many("Group", inverse_query_field="tags"),
+        "scene_markers": has_many("SceneMarker", inverse_query_field="tags"),
+        "studios": has_many("Studio", inverse_query_field="tags"),
     }
 
     # =========================================================================

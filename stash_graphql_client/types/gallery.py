@@ -13,6 +13,9 @@ from .base import (
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
 )
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
@@ -90,15 +93,7 @@ class GalleryChapter(StashObject):
     }
 
     __relationships__: ClassVar[dict] = {
-        "gallery": RelationshipMetadata(
-            target_field="gallery_id",
-            is_list=False,
-            query_field="gallery",
-            inverse_type="Gallery",
-            inverse_query_field="chapters",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs gallery_chapter.gallery and gallery.chapters",
-        ),
+        "gallery": belongs_to("Gallery", inverse_query_field="chapters"),
     }
 
 
@@ -399,44 +394,12 @@ class Gallery(StashObject):
     }
 
     __relationships__: ClassVar[dict] = {
-        # Pattern B: Filter query relationship (many-to-one)
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            query_strategy="filter_query",
-            filter_query_hint="findGalleries(gallery_filter={studios: {value: [studio_id]}})",
-            notes="Studio has gallery_count and filter queries, not direct galleries field",
-        ),
-        # Pattern A: Direct field relationships (many-to-many)
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
-            is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            query_strategy="direct_field",
-            notes="Performer has gallery_count resolver, not direct galleries list",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Tag has gallery_count resolver, not direct galleries list",
-        ),
-        "scenes": RelationshipMetadata(
-            target_field="scene_ids",
-            is_list=True,
-            query_field="scenes",
-            inverse_type="Scene",
-            inverse_query_field="galleries",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs gallery.scenes and scene.galleries",
-        ),
+        "studio": belongs_to("Studio", inverse_query_field="galleries"),
+        "performers": habtm("Performer", inverse_query_field="galleries"),
+        "tags": habtm("Tag", inverse_query_field="galleries"),
+        "scenes": habtm("Scene", inverse_query_field="galleries"),
         # Side-mutation relationship: managed via addGalleryImages/removeGalleryImages
-        # Not in GalleryUpdateInput — excluded from to_input() by __side_mutations__
+        # Uses filter_query (not direct_field) despite having target_field, so kept explicit.
         "images": RelationshipMetadata(
             target_field="image_ids",
             is_list=True,
@@ -448,6 +411,7 @@ class Gallery(StashObject):
             notes="Gallery has image(index) resolver, not images list. "
             "Managed via addGalleryImages/removeGalleryImages side mutations.",
         ),
+        "chapters": has_many("GalleryChapter", inverse_query_field="gallery"),
     }
 
 

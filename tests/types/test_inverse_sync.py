@@ -106,18 +106,24 @@ class TestTagSelfReferentialSync:
         assert grandchild.parents[0].parents[0] == parent
         assert grandchild.parents[0].parents[0].parents[0] == grandparent
 
-    def test_unset_relationships_not_synced(self):
-        """Test that UNSET relationships don't trigger sync."""
+    def test_unset_list_relationships_auto_initialized_on_sync(self):
+        """Test that UNSET list relationships are auto-initialized during sync.
 
+        When child sets parents=[parent], the inverse sync detects that
+        parent.children is UNSET but is a list relationship, initializes
+        it to [], and appends the child. This enables bidirectional sync
+        during preload regardless of entity load order.
+        """
         parent = Tag(name="Parent")  # parents/children default to UNSET
         child = Tag(name="Child", parents=[])  # Explicitly set to empty list
 
-        # This should not crash even though parent.children is UNSET
+        # This should auto-initialize parent.children and add child
         child.parents = [parent]
 
-        # parent.children is still UNSET, so sync is skipped
-        # (This is expected behavior - can't sync to UNSET fields)
-        assert isinstance(parent.children, UnsetType)
+        # parent.children was UNSET but auto-initialized to [child]
+        assert isinstance(parent.children, list)
+        assert len(parent.children) == 1
+        assert parent.children[0] is child
 
     def test_duplicate_prevention(self):
         """Test that setting the same relationship twice doesn't create duplicates."""

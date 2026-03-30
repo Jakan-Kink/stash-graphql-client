@@ -2086,31 +2086,55 @@ class TestUnsetGuards:
             await performer.add_scene(scene)
 
     @pytest.mark.asyncio
-    async def test_filter_query_field_unset_after_populate_raises(
+    async def test_filter_query_field_populated_via_filter_query_hint(
         self, respx_stash_client, respx_entity_store
     ) -> None:
-        """populate() returns data without the field → still UNSET → raises."""
-        from stash_graphql_client.errors import StashIntegrationError
+        """populate() for a filter_query field uses _fetch_filter_query_relationship
+        to resolve the field via the filter_query_hint, enabling add_scene to succeed."""
 
         performer = Performer.from_graphql({"id": "1001", "name": "Test"})
         # performer.scenes is UNSET (not in the from_graphql dict)
-        scene = Scene(id="2001")
+        scene = Scene.from_graphql({"id": "2001", "title": "Test Scene"})
 
-        # Mock: populate fires findPerformer, response has no "scenes" key
+        # Mock: populate now fires findScenes via filter_query_hint
+        # (not findPerformer), returning an empty scenes list
         respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
-                    json=create_graphql_response(
-                        "findPerformer", {"id": "1001", "name": "Test"}
-                    ),
+                    json={"data": {"findScenes": {"count": 0, "scenes": []}}},
                 ),
             ]
         )
 
-        with pytest.raises(
-            StashIntegrationError,
-            match="filter_query strategy and could not be populated",
+        # With filter_query support, populate successfully initializes
+        # performer.scenes to [], so add_scene can proceed
+        await performer.add_scene(scene)
+        assert scene in performer.scenes
+
+    @pytest.mark.asyncio
+    async def test_filter_query_field_still_unset_after_populate_raises(
+        self, respx_stash_client, respx_entity_store
+    ) -> None:
+        """If _fetch_filter_query_relationship silently fails to set the field,
+        the UNSET guard in _add_to_relationship still fires."""
+        from stash_graphql_client.errors import StashIntegrationError
+
+        performer = Performer.from_graphql({"id": "1001", "name": "Test"})
+        scene = Scene(id="2001")
+
+        # Patch _fetch_filter_query_relationship to be a no-op — populate()
+        # runs but leaves performer.scenes as UNSET
+        with (
+            patch.object(
+                respx_entity_store,
+                "_fetch_filter_query_relationship",
+                new_callable=AsyncMock,
+            ),
+            pytest.raises(
+                StashIntegrationError,
+                match="filter_query strategy and could not be populated",
+            ),
         ):
             await performer.add_scene(scene)
 

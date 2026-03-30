@@ -9,10 +9,12 @@ from pydantic import Field, model_validator
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
 )
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
@@ -213,81 +215,18 @@ class Studio(StashObject):
     }
 
     __relationships__ = {
-        "parent_studio": RelationshipMetadata(
-            target_field="parent_id",
-            is_list=False,
-            query_field="parent_studio",
-            inverse_type="Studio",  # Self-referential
-            inverse_query_field="child_studios",
-            query_strategy="direct_field",
-            notes="Self-referential parent/child hierarchy",
-        ),
-        "child_studios": RelationshipMetadata(
-            target_field="",  # Read-only: no child_ids in StudioInput (managed via parent_id on children)
-            is_list=True,
-            query_field="child_studios",
-            inverse_type="Studio",  # Self-referential
-            inverse_query_field="parent_studio",
-            query_strategy="direct_field",
-            notes="Self-referential parent/child hierarchy. Children managed via parent_id on child studios.",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            inverse_query_field="studios",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs studio.tags and tag.studios",
-        ),
-        "stash_ids": RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
+        "parent_studio": belongs_to("Studio", inverse_query_field="child_studios"),
+        "child_studios": has_many("Studio", inverse_query_field="parent_studio"),
+        "tags": habtm("Tag", inverse_query_field="studios"),
+        "stash_ids": habtm(
+            "StashID",
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
-            query_field="stash_ids",
-            notes="Requires transform to StashIDInput for mutations",
         ),
         # Side-mutation relationships: writable via bulk updates on content entities
-        "scenes": RelationshipMetadata(
-            target_field="scene_ids",
-            is_list=True,
-            query_field="scenes",
-            inverse_type="Scene",
-            inverse_query_field="studio",
-            query_strategy="filter_query",
-            filter_query_hint="findScenes(scene_filter={studios: {value: [studio_id]}})",
-            notes="Writable via bulkSceneUpdate(studio_id). Direct FK (scenes.studio_id).",
-        ),
-        "images": RelationshipMetadata(
-            target_field="image_ids",
-            is_list=True,
-            query_field="images",
-            inverse_type="Image",
-            inverse_query_field="studio",
-            query_strategy="filter_query",
-            filter_query_hint="findImages(image_filter={studios: {value: [studio_id]}})",
-            notes="Writable via bulkImageUpdate(studio_id). Direct FK (images.studio_id).",
-        ),
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            inverse_query_field="studio",
-            query_strategy="filter_query",
-            filter_query_hint="findGalleries(gallery_filter={studios: {value: [studio_id]}})",
-            notes="Writable via bulkGalleryUpdate(studio_id). Direct FK (galleries.studio_id).",
-        ),
-        "groups": RelationshipMetadata(
-            target_field="group_ids",
-            is_list=True,
-            query_field="groups",
-            inverse_type="Group",
-            inverse_query_field="studio",
-            query_strategy="filter_query",
-            filter_query_hint="findGroups(group_filter={studios: {value: [studio_id]}})",
-            notes="Writable via bulkGroupUpdate(studio_id). Direct FK (groups.studio_id).",
-        ),
+        "scenes": has_many("Scene", inverse_query_field="studio"),
+        "images": has_many("Image", inverse_query_field="studio"),
+        "galleries": has_many("Gallery", inverse_query_field="studio"),
+        "groups": has_many("Group", inverse_query_field="studio"),
     }
 
     # =========================================================================

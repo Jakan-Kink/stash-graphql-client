@@ -14,10 +14,11 @@ from stash_graphql_client.fragments import fragment_store
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    habtm,
+    has_many,
 )
 from .enums import CircumcisedEnum, GenderEnum
 from .files import StashID, StashIDInput
@@ -399,63 +400,17 @@ class Performer(StashObject):
     }
 
     __relationships__ = {
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            inverse_query_field=None,  # Tag has no performers field, only performer_count resolver
-            query_strategy="direct_field",
-            notes="One-directional: performer.tags queryable, tag→performer only via performer_count or filter query",
-        ),
-        "stash_ids": RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
+        "tags": habtm("Tag", inverse_query_field="performers"),
+        "stash_ids": habtm(
+            "StashID",
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
-            query_field="stash_ids",
-            notes="Requires transform to StashIDInput for mutations",
         ),
         # Side-mutation relationships: writable via bulk updates on content entities
-        "scenes": RelationshipMetadata(
-            target_field="scene_ids",
-            is_list=True,
-            query_field="scenes",
-            inverse_type="Scene",
-            inverse_query_field="performers",
-            query_strategy="filter_query",
-            filter_query_hint="findScenes(scene_filter={performers: {value: [performer_id]}})",
-            notes="Writable via bulkSceneUpdate(performer_ids). Direct performers_scenes join table.",
-        ),
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            inverse_query_field="performers",
-            query_strategy="filter_query",
-            filter_query_hint="findGalleries(gallery_filter={performers: {value: [performer_id]}})",
-            notes="Writable via bulkGalleryUpdate(performer_ids). No direct Performer.galleries in schema.",
-        ),
-        "images": RelationshipMetadata(
-            target_field="image_ids",
-            is_list=True,
-            query_field="images",
-            inverse_type="Image",
-            inverse_query_field="performers",
-            query_strategy="filter_query",
-            filter_query_hint="findImages(image_filter={performers: {value: [performer_id]}})",
-            notes="Writable via bulkImageUpdate(performer_ids). No direct Performer.images in schema.",
-        ),
+        "scenes": has_many("Scene", inverse_query_field="performers"),
+        "galleries": has_many("Gallery", inverse_query_field="performers"),
+        "images": has_many("Image", inverse_query_field="performers"),
         # Read-only: derived through scenes (performers_scenes → groups_scenes multi-join)
-        "groups": RelationshipMetadata(
-            target_field="",  # Read-only: no group_ids in PerformerUpdateInput
-            is_list=True,
-            query_field="groups",
-            inverse_type="Group",
-            query_strategy="filter_query",
-            filter_query_hint="findGroups(group_filter={performers: {value: [performer_id]}})",
-            notes="Derived through scenes. Queryable via filter, not directly writable.",
-        ),
+        "groups": has_many("Group"),
     }
 
     # =========================================================================

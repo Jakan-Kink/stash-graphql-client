@@ -1,7 +1,7 @@
 """Tests for Group RelationshipMetadata migration.
 
 This module tests the Group type's relationship metadata, including:
-- studio: filter_query strategy (many-to-one)
+- studio: direct_field strategy (many-to-one, belongs_to)
 - tags: direct_field strategy (many-to-many)
 - containing_groups: complex_object strategy with GroupDescriptionInput transform
 - sub_groups: complex_object strategy with GroupDescriptionInput transform
@@ -24,12 +24,13 @@ class TestGroupRelationshipMigration:
         """Test that all relationship entries use RelationshipMetadata objects."""
         relationships = Group.__relationships__
 
-        # Group should have 4 relationships
-        assert len(relationships) == 4
+        # Group should have 5 relationships
+        assert len(relationships) == 5
         assert "studio" in relationships
         assert "tags" in relationships
         assert "containing_groups" in relationships
         assert "sub_groups" in relationships
+        assert "scenes" in relationships
 
         # All should be RelationshipMetadata instances
         for rel_name, rel_meta in relationships.items():
@@ -39,10 +40,10 @@ class TestGroupRelationshipMigration:
 
 
 class TestGroupStudioRelationship:
-    """Test Group.studio relationship (Pattern B: filter_query)."""
+    """Test Group.studio relationship (Pattern B: belongs_to / direct_field)."""
 
     def test_studio_relationship_metadata(self):
-        """Test studio uses filter_query strategy."""
+        """Test studio uses direct_field strategy."""
         rel = Group.__relationships__["studio"]
 
         assert isinstance(rel, RelationshipMetadata)
@@ -50,16 +51,14 @@ class TestGroupStudioRelationship:
         assert rel.is_list is False
         assert rel.query_field == "studio"
         assert rel.inverse_type == "Studio"
-        assert rel.query_strategy == "filter_query"
+        assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True
 
     def test_studio_filter_query_hint(self):
-        """Test studio relationship provides filter query hint."""
+        """Test studio relationship has no filter query hint (uses direct_field)."""
         rel = Group.__relationships__["studio"]
-
-        assert rel.filter_query_hint is not None
-        assert "findGroups" in rel.filter_query_hint
+        assert rel.filter_query_hint is None
 
 
 class TestGroupTagsRelationship:
@@ -74,7 +73,9 @@ class TestGroupTagsRelationship:
         assert rel.is_list is True
         assert rel.query_field == "tags"
         assert rel.inverse_type == "Tag"
-        assert rel.inverse_query_field is None  # Tag has group_count, not groups list
+        assert (
+            rel.inverse_query_field == "groups"
+        )  # Inverse sync populates Tag.groups during preload
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True
@@ -163,18 +164,3 @@ class TestGroupSelfReferentialRelationships:
         # They should reference each other
         assert containing_rel.inverse_query_field == "sub_groups"
         assert sub_rel.inverse_query_field == "containing_groups"
-
-
-class TestGroupRelationshipBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_studio_to_tuple_conversion(self):
-        """Test that studio RelationshipMetadata converts to tuple."""
-        rel = Group.__relationships__["studio"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "studio_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None

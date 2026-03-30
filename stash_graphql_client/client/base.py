@@ -174,6 +174,9 @@ class StashClientBase:
         else:
             self.log.warning("No API key provided")
 
+        # Timeout for GraphQL requests (seconds). Configurable via conn dict.
+        timeout = conn.get("Timeout", 30)
+
         # Create retry transport for resilient GraphQL requests
         # This wraps the HTTP client to provide automatic retry on transient failures
         retry_policy = self._create_retry_policy()
@@ -186,7 +189,7 @@ class StashClientBase:
             transport=retry_transport,  # Add retry support to the transport
             headers=headers,  # Pass API key and other headers
             verify=verify_ssl,  # httpx uses 'verify' instead of 'ssl'
-            timeout=30,
+            timeout=timeout,
             http2=True,  # Enable HTTP/2 for better performance
             limits=httpx.Limits(
                 max_connections=100,  # Allow concurrent connections
@@ -224,7 +227,7 @@ class StashClientBase:
             "url": str(self.url),
             "headers": headers,
             "ssl": verify_ssl,
-            "timeout": 30,
+            "timeout": timeout,
         }
 
         self.log.debug(f"Using Stash endpoint at {self.url}")
@@ -243,10 +246,12 @@ class StashClientBase:
         self.gql_client = Client(
             transport=self.http_transport,
             fetch_schema_from_transport=False,  # Disabled due to Stash schema issues
+            execute_timeout=timeout,
         )
         self.gql_ws_client = Client(
             transport=self.ws_transport,
             fetch_schema_from_transport=False,  # Disabled due to Stash schema issues
+            execute_timeout=timeout,
         )
 
         # Schema is intentionally not fetched to avoid validation errors

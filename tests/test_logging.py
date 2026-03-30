@@ -105,6 +105,7 @@ def test_debug_print_with_client_logger() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     client_logger.addHandler(handler)
+    original_level = client_logger.level
     client_logger.setLevel(logging.DEBUG)
 
     try:
@@ -117,6 +118,7 @@ def test_debug_print_with_client_logger() -> None:
         assert "42" in output
     finally:
         client_logger.removeHandler(handler)
+        client_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -129,6 +131,7 @@ def test_debug_print_with_processing_logger() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     processing_logger.addHandler(handler)
+    original_level = processing_logger.level
     processing_logger.setLevel(logging.DEBUG)
 
     try:
@@ -140,6 +143,7 @@ def test_debug_print_with_processing_logger() -> None:
         assert "True" in output
     finally:
         processing_logger.removeHandler(handler)
+        processing_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -153,6 +157,7 @@ def test_debug_print_with_custom_logger_name() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     custom_logger.addHandler(handler)
+    original_level = custom_logger.level
     custom_logger.setLevel(logging.DEBUG)
 
     try:
@@ -164,6 +169,7 @@ def test_debug_print_with_custom_logger_name() -> None:
         assert "logger" in output
     finally:
         custom_logger.removeHandler(handler)
+        custom_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -176,6 +182,7 @@ def test_debug_print_with_no_logger_name() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     stash_logger.addHandler(handler)
+    original_level = stash_logger.level
     stash_logger.setLevel(logging.DEBUG)
 
     try:
@@ -187,6 +194,7 @@ def test_debug_print_with_no_logger_name() -> None:
         assert "logger" in output
     finally:
         stash_logger.removeHandler(handler)
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit

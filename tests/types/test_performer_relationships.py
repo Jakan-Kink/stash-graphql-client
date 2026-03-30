@@ -60,8 +60,8 @@ class TestPerformerTagsRelationship:
         assert rel.query_field == "tags"
         assert rel.inverse_type == "Tag"
         assert (
-            rel.inverse_query_field is None
-        )  # Tag has no performers field, only performer_count
+            rel.inverse_query_field == "performers"
+        )  # Inverse sync populates Tag.performers during preload
         assert rel.query_strategy == "direct_field"
         assert rel.auto_sync is True
         assert rel.transform is None
@@ -107,21 +107,6 @@ class TestPerformerStashIDsRelationship:
         """Test that stash_ids is a many-to-many relationship."""
         rel = Performer.__relationships__["stash_ids"]
         assert rel.is_list is True
-
-
-class TestPerformerRelationshipBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_to_tuple_conversion(self):
-        """Test that RelationshipMetadata can convert back to tuple format."""
-        rel = Performer.__relationships__["tags"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "tag_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None
 
 
 class TestPerformerRelationshipUsage:

@@ -187,42 +187,6 @@ class TestRelationshipMetadataQueryStrategies:
         assert rel.query_strategy == "direct_field"
 
 
-class TestRelationshipMetadataBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_to_tuple_conversion(self):
-        """Test conversion to legacy (target_field, is_list, transform) tuple."""
-        rel = RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            transform=None,
-        )
-
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "gallery_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None
-
-    def test_to_tuple_with_transform(self):
-        """Test to_tuple() preserves transform function."""
-
-        def transform_fn(x):
-            return x
-
-        rel = RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
-            transform=transform_fn,
-        )
-
-        legacy_tuple = rel.to_tuple()
-
-        assert legacy_tuple[2] is transform_fn
-
-
 class TestRelationshipMetadataRepresentation:
     """Test string representation for debugging."""
 
@@ -283,15 +247,15 @@ class TestRelationshipMetadataRealWorldExamples:
             is_list=False,
             query_field="studio",
             inverse_type="Studio",
-            inverse_query_field=None,  # No direct scenes field
+            inverse_query_field="scenes",
             query_strategy="filter_query",
             filter_query_hint="findScenes(scene_filter={studios: {value: [studio_id]}})",
-            notes="Studio has scene_count and filter queries, not direct scenes field",
+            notes="Inverse sync populates Studio.scenes during preload",
         )
 
         assert rel.target_field == "studio_id"
         assert rel.is_list is False
-        assert rel.inverse_query_field is None
+        assert rel.inverse_query_field == "scenes"
         assert rel.query_strategy == "filter_query"
         assert rel.filter_query_hint is not None
 
@@ -662,3 +626,96 @@ class TestGenericRelationshipMachinery:
 
         # Field unchanged
         assert entity.single_rel is other
+
+
+# ─── Coverage: uncovered branches in helpers and relationship methods ────
+
+
+class TestSingularizeEdgeCases:
+    """Cover uncovered branches in _singularize()."""
+
+    def test_ies_suffix_fallback(self):
+        """Line 199: plural ending in 'ies' not in _IRREGULAR_PLURALS."""
+        from stash_graphql_client.types.base import _singularize
+
+        assert _singularize("categories") == "category"
+        assert _singularize("entries") == "entry"
+
+    def test_no_plural_suffix(self):
+        """Line 202: word that doesn't end in 's' or 'ies'."""
+        from stash_graphql_client.types.base import _singularize
+
+        assert _singularize("stash") == "stash"
+        assert _singularize("staff") == "staff"
+
+
+class TestInitSubclassDeferredHintNone:
+    """Cover line 818: filter_query_hint is _DEFERRED but strategy != filter_query."""
+
+    def test_deferred_hint_cleared_when_inverse_type_missing(self):
+        """Line 818: filter_query_hint is _DEFERRED but no inverse_type to build from."""
+        from stash_graphql_client.types.base import has_many
+
+        # has_many sets filter_query_hint=_DEFERRED and strategy=filter_query,
+        # but without a valid inverse_type the hint can't be auto-generated.
+        # Patch inverse_type to None after construction to simulate this.
+        meta = has_many("Scene", inverse_query_field="tags")
+        meta.inverse_type = None  # Remove inverse_type so hint can't be built
+
+        class _TestEntity(StashObject):
+            __type_name__ = "_TestEntity"
+            __relationships__: ClassVar[dict] = {"items": meta}
+
+        # __init_subclass__ should clear _DEFERRED to None (can't build hint)
+        assert _TestEntity.__relationships__["items"].filter_query_hint is None
+
+
+class TestAddRemoveWithoutInverseQueryField:
+    """Cover lines 1044→1089 and 1147→exit: no inverse_query_field."""
+
+    @pytest.mark.asyncio
+    async def test_add_to_relationship_skips_inverse_when_no_inverse_field(self):
+        """Line 1044 false path → 1089: inverse_query_field is None."""
+        from stash_graphql_client.types.base import habtm
+
+        class _Parent(StashObject):
+            __type_name__ = "_Parent"
+            __relationships__: ClassVar[dict] = {
+                # No inverse_query_field
+                "items": habtm("_Child"),
+            }
+
+        class _Child(StashObject):
+            __type_name__ = "_Child"
+            __relationships__: ClassVar[dict] = {}
+
+        parent = _Parent(id="1")
+        child = _Child(id="2")
+        object.__setattr__(parent, "items", [])
+
+        await parent._add_to_relationship("items", child)
+
+        assert child in parent.items
+
+    @pytest.mark.asyncio
+    async def test_remove_from_relationship_skips_inverse_when_no_inverse_field(self):
+        """Line 1147 → exit: inverse_query_field is None on remove."""
+        from stash_graphql_client.types.base import habtm
+
+        class _ParentR(StashObject):
+            __type_name__ = "_ParentR"
+            __relationships__: ClassVar[dict] = {
+                "items": habtm("_ChildR"),
+            }
+
+        class _ChildR(StashObject):
+            __type_name__ = "_ChildR"
+            __relationships__: ClassVar[dict] = {}
+
+        parent = _ParentR(id="1")
+        child = _ChildR(id="2")
+        object.__setattr__(parent, "items", [child])
+
+        await parent._remove_from_relationship("items", child)
+
+        assert child not in parent.items

@@ -1,7 +1,7 @@
 """Tests for Image RelationshipMetadata migration.
 
 This module tests the Image type's relationship metadata, including:
-- studio: filter_query strategy (many-to-one)
+- studio: direct_field strategy (many-to-one, belongs_to)
 - performers: direct_field strategy (many-to-many)
 - tags: direct_field strategy (many-to-many)
 - galleries: direct_field strategy (many-to-many)
@@ -35,10 +35,10 @@ class TestImageRelationshipMigration:
 
 
 class TestImageStudioRelationship:
-    """Test Image.studio relationship (Pattern B: filter_query)."""
+    """Test Image.studio relationship (Pattern B: belongs_to / direct_field)."""
 
     def test_studio_relationship_metadata(self):
-        """Test studio uses filter_query strategy."""
+        """Test studio uses direct_field strategy."""
         rel = Image.__relationships__["studio"]
 
         assert isinstance(rel, RelationshipMetadata)
@@ -46,15 +46,14 @@ class TestImageStudioRelationship:
         assert rel.is_list is False
         assert rel.query_field == "studio"
         assert rel.inverse_type == "Studio"
-        assert rel.query_strategy == "filter_query"
+        assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True
 
     def test_studio_filter_query_hint(self):
-        """Test studio relationship provides filter query hint."""
+        """Test studio relationship has no filter query hint (uses direct_field)."""
         rel = Image.__relationships__["studio"]
-        assert rel.filter_query_hint is not None
-        assert "findImages" in rel.filter_query_hint
+        assert rel.filter_query_hint is None
 
 
 class TestImagePerformersRelationship:
@@ -69,9 +68,7 @@ class TestImagePerformersRelationship:
         assert rel.is_list is True
         assert rel.query_field == "performers"
         assert rel.inverse_type == "Performer"
-        assert (
-            rel.inverse_query_field is None
-        )  # Performer has image_count, not images list
+        assert rel.inverse_query_field == "images"
         assert rel.query_strategy == "direct_field"
         assert rel.transform is None
         assert rel.auto_sync is True
@@ -115,27 +112,17 @@ class TestImageGalleriesRelationship:
 class TestImageRelationshipPatterns:
     """Test Image relationship patterns and strategies."""
 
-    def test_only_studio_uses_filter_query(self):
-        """Test that only studio uses filter_query strategy."""
-        filter_query_rels = [
-            name
-            for name, rel in Image.__relationships__.items()
-            if rel.query_strategy == "filter_query"
-        ]
-
-        assert len(filter_query_rels) == 1
-        assert filter_query_rels[0] == "studio"
-
-    def test_most_relationships_use_direct_field(self):
-        """Test that most relationships use direct_field strategy."""
+    def test_all_relationships_use_direct_field(self):
+        """Test that all Image relationships use direct_field strategy."""
         direct_field_rels = [
             name
             for name, rel in Image.__relationships__.items()
             if rel.query_strategy == "direct_field"
         ]
 
-        # performers, tags, galleries all use direct_field
-        assert len(direct_field_rels) == 3
+        # studio, performers, tags, galleries all use direct_field
+        assert len(direct_field_rels) == 4
+        assert "studio" in direct_field_rels
         assert "performers" in direct_field_rels
         assert "tags" in direct_field_rels
         assert "galleries" in direct_field_rels
@@ -157,29 +144,3 @@ class TestImageRelationshipPatterns:
             assert rel_meta.transform is None, (
                 f"{rel_name} should not need a transform function"
             )
-
-
-class TestImageRelationshipBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_studio_to_tuple_conversion(self):
-        """Test that studio RelationshipMetadata converts to tuple."""
-        rel = Image.__relationships__["studio"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "studio_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None
-
-    def test_performers_to_tuple_conversion(self):
-        """Test that performers RelationshipMetadata converts to tuple."""
-        rel = Image.__relationships__["performers"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "performer_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None

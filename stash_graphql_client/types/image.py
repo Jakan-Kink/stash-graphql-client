@@ -10,10 +10,11 @@ from pydantic import BaseModel, Field, field_validator
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
 )
 from .files import ImageFile, VideoFile
 from .metadata import CustomFieldsInput
@@ -158,42 +159,10 @@ class Image(StashObject):
 
     # Relationship definitions with their mappings
     __relationships__ = {
-        # Pattern B: Filter query relationship (many-to-one)
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            query_strategy="filter_query",
-            filter_query_hint="findImages(image_filter={studios: {value: [studio_id]}})",
-            notes="Studio has image_count and filter queries, not direct images field",
-        ),
-        # Pattern A: Direct field relationships (many-to-many)
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
-            is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            query_strategy="direct_field",
-            notes="Performer has image_count resolver, not direct images list",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Tag has image_count resolver, not direct images list",
-        ),
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            inverse_query_field="images",
-            query_strategy="direct_field",
-            notes="Bidirectional with Gallery.images. Backend syncs both sides.",
-        ),
+        "studio": belongs_to("Studio", inverse_query_field="images"),
+        "performers": habtm("Performer", inverse_query_field="images"),
+        "tags": habtm("Tag", inverse_query_field="images"),
+        "galleries": habtm("Gallery", inverse_query_field="images"),
     }
 
     # Field definitions with their conversion functions

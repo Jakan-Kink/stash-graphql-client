@@ -182,13 +182,185 @@ class RelationshipMetadata:
             f"strategy={self.query_strategy!r})"
         )
 
-    def to_tuple(self) -> tuple[str, bool, Callable[[Any], Any] | None]:
-        """Convert to legacy tuple format for backward compatibility.
 
-        Returns:
-            (target_field, is_list, transform)
-        """
-        return (self.target_field, self.is_list, self.transform)
+# ─── Sentinel for deferred field resolution ─────────────────────────
+_DEFERRED = object()
+
+# ─── Singularization for target_field derivation ────────────────────
+_IRREGULAR_PLURALS = {"children": "child", "galleries": "gallery"}
+
+
+def _singularize(plural: str) -> str:
+    """Convert a plural field name to singular (e.g., galleries → gallery)."""
+    if plural in _IRREGULAR_PLURALS:
+        return _IRREGULAR_PLURALS[plural]
+    if plural.endswith("ies"):
+        return plural[:-3] + "y"  # galleries → gallery (fallback)
+    if plural.endswith("s") and not plural.endswith("ss"):
+        return plural[:-1]  # tags → tag, scenes → scene
+    return plural
+
+
+def _pluralize(singular: str) -> str:
+    """Convert a singular type name to plural for GraphQL operations."""
+    if singular.endswith("y") and not singular.endswith("ey"):
+        return singular[:-1] + "ies"  # Gallery → Galleries
+    return singular + "s"  # Scene → Scenes, Tag → Tags
+
+
+def _to_snake_case(name: str) -> str:
+    """Convert PascalCase/camelCase to snake_case (e.g., SceneMarker → scene_marker)."""
+    import re
+
+    return re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", name).lower()
+
+
+def _build_filter_query_hint(
+    inverse_type: str, owner_type: str, query_field: str
+) -> str:
+    """Auto-generate filter_query_hint from relationship metadata.
+
+    Examples:
+        Tag + "Scene" + "scenes" → findScenes(scene_filter={tags: {value: [tag_id]}})
+        Scene + "Studio" + "studio" → findScenes(scene_filter={studios: {value: [studio_id]}})
+        Tag + "SceneMarker" + "scene_markers" → findSceneMarkers(scene_marker_filter={tags: ...})
+    """
+    inverse_plural = _pluralize(inverse_type)  # SceneMarker → SceneMarkers
+    inverse_snake = _to_snake_case(inverse_type)  # SceneMarker → scene_marker
+    owner_snake = _to_snake_case(owner_type)  # Tag → tag
+    owner_plural_snake = _pluralize(owner_snake)  # tag → tags
+    return (
+        f"find{inverse_plural}("
+        f"{inverse_snake}_filter={{{owner_plural_snake}: "
+        f"{{value: [{owner_snake}_id]}}}})"
+    )
+
+
+# ─── ActiveRecord-style relationship helpers ────────────────────────
+
+
+def belongs_to(
+    inverse_type: str,
+    *,
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    transform: Callable[[Any], Any] | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """FK side of a many-to-one. Owns the write (studio_id, scene_id, etc.).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: key + "_id" (studio → studio_id)
+        - filter_query_hint: when inverse_query_field is set
+
+    Examples:
+        "studio": belongs_to("Studio", inverse_query_field="scenes")
+        "parent_studio": belongs_to("Studio", inverse_query_field="child_studios")
+        "scene": belongs_to("Scene", inverse_query_field="scene_markers")
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=False,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="direct_field",
+        notes=notes,
+    )
+
+
+def habtm(
+    inverse_type: str,
+    *,
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    transform: Callable[[Any], Any] | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Many-to-many join. Owns the write (tag_ids, performer_ids, etc.).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: singularize(key) + "_ids" (galleries → gallery_ids)
+
+    Examples:
+        "tags": habtm("Tag", inverse_query_field="scenes")
+        "performers": habtm("Performer", inverse_query_field="scenes")
+        "parents": habtm("Tag", inverse_query_field="children")
+        "stash_ids": habtm("StashID", transform=lambda s: StashIDInput(...))
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=True,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="direct_field",
+        notes=notes,
+    )
+
+
+def has_many(
+    inverse_type: str,
+    *,
+    inverse_query_field: str | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Inverse/read-only side. No mutation input — populated via inverse sync or filter_query.
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: "" (read-only)
+        - query_strategy: "filter_query"
+        - filter_query_hint: from inverse_type + owner type
+
+    Examples:
+        "scenes": has_many("Scene", inverse_query_field="tags")
+        "child_studios": has_many("Studio", inverse_query_field="parent_studio")
+    """
+    return RelationshipMetadata(
+        target_field="",  # Read-only — no mutation input
+        is_list=True,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="filter_query",
+        filter_query_hint=_DEFERRED,  # type: ignore[arg-type]
+        notes=notes,
+    )
+
+
+def has_many_through(
+    inverse_type: str,
+    *,
+    transform: Callable[[Any], Any],
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Ordered/metadata relationship via wrapper type (e.g., SceneGroup, GroupDescription).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: key as-is (groups → groups)
+
+    Examples:
+        "groups": has_many_through("Group", transform=lambda g: SceneGroupInput(...),
+                                    inverse_query_field="scenes")
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=True,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="complex_object",
+        notes=notes,
+    )
 
 
 class FromGraphQLMixin:
@@ -532,6 +704,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Class-level store reference (set by StashContext during initialization)
     # This enables identity map pattern without context propagation issues
     _store: ClassVar[StashEntityStore | None] = None
+    _handler_nondict_calls: ClassVar[
+        dict[str, int]
+    ] = {}  # Profiling: handler(non-dict) calls
 
     # GraphQL type name (e.g., "Scene", "Performer")
     __type_name__: ClassVar[str]
@@ -572,12 +747,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
     ] = {}
 
     # Relationship mappings for converting to input types
-    __relationships__: ClassVar[
-        dict[
-            str,
-            tuple[str, bool, Callable[[Any], Any] | None] | RelationshipMetadata,
-        ]
-    ] = {}
+    __relationships__: ClassVar[dict[str, RelationshipMetadata]] = {}
 
     # Field conversion functions
     __field_conversions__: ClassVar[dict[str, Callable[[Any], Any]]] = {}
@@ -587,6 +757,65 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
     # Max items to show in list-of-StashObject repr before truncating
     _SHORT_REPR_LIST_LIMIT: ClassVar[int] = 2
+
+    # ─── Resolve deferred relationship metadata ────────────────────
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Resolve deferred fields in __relationships__ from dict keys.
+
+        When ActiveRecord-style helpers (belongs_to, habtm, has_many, etc.)
+        are used, they set query_field and target_field to _DEFERRED.
+        This hook resolves them from the dict key after class creation.
+        """
+        super().__init_subclass__(**kwargs)
+
+        relationships = cls.__dict__.get("__relationships__")
+        if not relationships:
+            return
+
+        owner_type = getattr(cls, "__type_name__", cls.__name__)
+
+        for key, meta in relationships.items():
+            if not isinstance(meta, RelationshipMetadata):
+                continue
+
+            # Resolve deferred query_field
+            if meta.query_field is _DEFERRED:
+                meta.query_field = key
+
+            # Resolve deferred target_field
+            if meta.target_field is _DEFERRED:
+                if not meta.is_list:
+                    # belongs_to: studio → studio_id, parent_studio → parent_id
+                    if key.startswith("parent_"):
+                        meta.target_field = "parent_id"
+                    else:
+                        meta.target_field = f"{key}_id"
+                elif meta.query_strategy == "complex_object":
+                    # has_many_through: groups → groups (key as-is)
+                    meta.target_field = key
+                # habtm: galleries → gallery_ids, tags → tag_ids
+                # But stash_ids → stash_ids (already has _ids suffix)
+                elif key.endswith("_ids"):
+                    meta.target_field = key
+                else:
+                    singular = _singularize(key)
+                    meta.target_field = f"{singular}_ids"
+
+            # Resolve deferred filter_query_hint
+            if (
+                meta.filter_query_hint is _DEFERRED
+                and meta.query_strategy == "filter_query"
+                and meta.inverse_type
+            ):
+                meta.filter_query_hint = _build_filter_query_hint(
+                    inverse_type=meta.inverse_type
+                    if isinstance(meta.inverse_type, str)
+                    else meta.inverse_type.__name__,
+                    owner_type=owner_type,
+                    query_field=meta.query_field,
+                )
+            elif meta.filter_query_hint is _DEFERRED:
+                meta.filter_query_hint = None
 
     # Pydantic configuration
     model_config = ConfigDict(
@@ -698,14 +927,30 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Get current inverse value
         current_inverse = getattr(related_obj, inverse_field, UNSET)
 
-        # Skip if UNSET (not loaded)
+        # If UNSET and it's a list relationship, initialize to [] so the
+        # inverse sync can populate it. This enables bidirectional sync
+        # for filter_query relationships (e.g., Tag.scenes) during preload
+        # when entities are loaded in any order.
         if isinstance(current_inverse, UnsetType):
-            return
+            from .base import RelationshipMetadata
+
+            inverse_meta = related_obj.__relationships__.get(inverse_field)
+            if isinstance(inverse_meta, RelationshipMetadata) and inverse_meta.is_list:
+                current_inverse = []
+                related_obj.__dict__[inverse_field] = current_inverse
+                # Add to _received_fields so populate() knows it's loaded
+                received = getattr(related_obj, "_received_fields", set())
+                related_obj._received_fields = received | {inverse_field}
+            else:
+                return
 
         # Handle list inverse fields
         if isinstance(current_inverse, list):
             if self not in current_inverse:
                 current_inverse.append(self)
+                # Snapshot the list so inverse-sync additions aren't considered
+                # dirty (this is server-derived data, not user intent)
+                related_obj._update_snapshot_for_fields({inverse_field})
         # Handle single object inverse fields
         else:
             # Use object.__setattr__ to avoid triggering another sync
@@ -1077,6 +1322,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         # Skip identity map if no store or not a dict
         if not cls._store or not isinstance(data, dict):
+            _key = f"{cls.__name__}:{type(data).__name__}"
+            StashObject._handler_nondict_calls[_key] = (
+                StashObject._handler_nondict_calls.get(_key, 0) + 1
+            )
             return handler(data)
 
         # Check cache for current object if it has an ID
@@ -1099,10 +1348,29 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     # Process nested lookups for new data
                     processed_data = cls._process_nested_cache_lookups(data)
 
-                    # Update field values from new data
+                    # Merge field values directly into __dict__ to bypass
+                    # validate_assignment, which would re-validate every nested
+                    # StashObject through handler() creating ~42M duplicate copies.
+                    # This is safe because processed_data already went through
+                    # _process_nested_cache_lookups (cached instances resolved)
+                    # and the data came from a validated GraphQL response.
+                    merged_fields: set[str] = set()
+                    obj_dict = cached_obj.__dict__
                     for field_name, field_value in processed_data.items():
-                        if hasattr(cached_obj, field_name):
-                            setattr(cached_obj, field_name, field_value)
+                        if field_name not in obj_dict:
+                            continue
+                        current = obj_dict[field_name]
+                        if current is field_value:
+                            continue
+                        if current == field_value:
+                            continue
+                        obj_dict[field_name] = field_value
+                        merged_fields.add(field_name)
+                        # Sync inverse relationships (bypassed by __dict__ write)
+                        if field_name in cached_obj.__relationships__:
+                            cached_obj._sync_inverse_relationship(
+                                field_name, field_value
+                            )
 
                     # Merge received fields
                     merged_received = old_received | new_fields
@@ -1111,7 +1379,8 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     # Selectively update snapshot for merged fields only.
                     # Fields the user modified locally that weren't in this merge
                     # remain dirty and will still be saved.
-                    cached_obj._update_snapshot_for_fields(set(processed_data.keys()))
+                    if merged_fields:
+                        cached_obj._update_snapshot_for_fields(merged_fields)
 
                     log.debug(
                         f"Identity map: merged {len(new_fields)} new fields into cached "

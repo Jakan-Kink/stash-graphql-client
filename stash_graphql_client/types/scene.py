@@ -11,10 +11,13 @@ from pydantic import BaseModel, Field
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
+    has_many_through,
 )
 from .files import StashID, StashIDInput, VideoFile
 from .metadata import CustomFieldsInput
@@ -271,67 +274,23 @@ class Scene(StashObject):
 
     # Relationship definitions with their mappings
     __relationships__ = {
-        # Pattern A: Direct field relationships (many-to-many)
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            inverse_query_field="scenes",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs both scene.galleries and gallery.scenes",
-        ),
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
-            is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            inverse_query_field="scenes",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs scene.performers and performer.scenes",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            inverse_query_field=None,  # Tag only has scene_count, not scenes list
-            query_strategy="direct_field",
-            notes="Tag has scene_count resolver, not direct scenes list",
-        ),
-        # Pattern B: Filter query relationship (many-to-one)
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            inverse_query_field=None,  # No direct scenes field on Studio
-            query_strategy="filter_query",
-            filter_query_hint="findScenes(scene_filter={studios: {value: [studio_id]}})",
-            notes="Studio uses filter-based queries. Use client.find_scenes(scene_filter=...) for inverse.",
-        ),
-        # Pattern C: Complex objects with metadata
-        "groups": RelationshipMetadata(
-            target_field="groups",
-            is_list=True,
-            query_field="groups",
-            inverse_type="Group",
-            inverse_query_field="scenes",
-            query_strategy="complex_object",
+        "galleries": habtm("Gallery", inverse_query_field="scenes"),
+        "performers": habtm("Performer", inverse_query_field="scenes"),
+        "tags": habtm("Tag", inverse_query_field="scenes"),
+        "studio": belongs_to("Studio", inverse_query_field="scenes"),
+        "groups": has_many_through(
+            "Group",
             transform=lambda sg: SceneGroupInput(
                 group_id=sg.group.id if hasattr(sg, "group") else sg.id,
                 scene_index=sg.scene_index if hasattr(sg, "scene_index") else None,
             ),
-            notes="Uses SceneGroup wrapper with scene_index metadata",
+            inverse_query_field="scenes",
         ),
-        # Special case: Complex transform for StashID
-        "stash_ids": RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
+        "stash_ids": habtm(
+            "StashID",
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
-            query_field="stash_ids",
-            notes="Requires transform to StashIDInput for mutations",
         ),
+        "scene_markers": has_many("SceneMarker", inverse_query_field="scene"),
     }
 
     # Field definitions with their conversion functions

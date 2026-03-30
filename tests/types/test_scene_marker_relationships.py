@@ -32,7 +32,7 @@ class TestSceneMarkerRelationshipMetadata:
         assert rel.target_field == "scene_id"
         assert rel.is_list is False
         assert rel.query_field == "scene"
-        assert rel.query_strategy == "direct_field"
+        assert rel.query_strategy == "direct_field"  # belongs_to
         assert rel.transform is None
         assert rel.inverse_type == "Scene"
         assert rel.inverse_query_field == "scene_markers"
@@ -45,7 +45,7 @@ class TestSceneMarkerRelationshipMetadata:
         assert rel.target_field == "primary_tag_id"
         assert rel.is_list is False
         assert rel.query_field == "primary_tag"
-        assert rel.query_strategy == "direct_field"
+        assert rel.query_strategy == "direct_field"  # belongs_to
         assert rel.transform is None
         assert rel.inverse_type == "Tag"
 
@@ -107,43 +107,6 @@ class TestSceneMarkerRelationshipUsage:
         assert tag2 in marker.tags
 
 
-class TestSceneMarkerBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_to_tuple_conversion_scene(self):
-        """Test that scene relationship can convert to legacy tuple."""
-        rel = SceneMarker.__relationships__["scene"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "scene_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None
-
-    def test_to_tuple_conversion_primary_tag(self):
-        """Test that primary_tag relationship can convert to legacy tuple."""
-        rel = SceneMarker.__relationships__["primary_tag"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "primary_tag_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None
-
-    def test_to_tuple_conversion_tags(self):
-        """Test that tags relationship can convert to legacy tuple."""
-        rel = SceneMarker.__relationships__["tags"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "tag_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None
-
-
 class TestSceneMarkerRelationshipValidation:
     """Test relationship metadata validation."""
 
@@ -163,9 +126,14 @@ class TestSceneMarkerRelationshipValidation:
                 "complex_object",
             ], f"{rel_name} has invalid query_strategy: {rel_meta.query_strategy}"
 
-    def test_all_use_direct_field_strategy(self):
-        """Test that SceneMarker relationships use direct_field strategy."""
+    def test_strategy_matches_relationship_type(self):
+        """Test that SceneMarker relationships use correct strategies."""
+        expected = {
+            "scene": "direct_field",  # belongs_to
+            "primary_tag": "direct_field",  # belongs_to
+            "tags": "direct_field",  # habtm
+        }
         for rel_name, rel_meta in SceneMarker.__relationships__.items():
-            assert rel_meta.query_strategy == "direct_field", (
-                f"{rel_name} should use direct_field strategy"
+            assert rel_meta.query_strategy == expected[rel_name], (
+                f"{rel_name} should use {expected[rel_name]} strategy"
             )
