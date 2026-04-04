@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-04-03
+
+### Changed
+
+- Updated Stash GraphQL schema from upstream (v0.31.0)
+- Added `Folder.sub_folders` field (introspection-gated via `type_has_field`; upstream added as a
+  pure resolver with no appSchema bump)
+- Added `has_folder_sub_folders` capability property to `ServerCapabilities`
+- `FragmentStore` conditionally injects `sub_folders` into `FolderFields` fragment when server
+  reports the field
+
 ## [0.11.1] - 2026-03-21
 
 ### Changed

@@ -2378,6 +2378,11 @@ class FragmentStore:
                 folder,
                 "    parent_folders {\n        __typename\n        id\n        path\n    }",
             )
+        if caps.has_folder_sub_folders:
+            folder = _inject_named_fragment_fields(
+                folder,
+                "    sub_folders {\n        __typename\n        id\n        path\n    }",
+            )
         self.FOLDER_FIELDS = folder
 
         # -- Scraped Performer (career_start/career_end gated at appSchema >= 78) --

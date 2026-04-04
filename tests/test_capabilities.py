@@ -101,6 +101,18 @@ class TestServerCapabilitiesProperties:
         assert make_server_capabilities(84).has_folder_basename
 
     @pytest.mark.unit
+    def test_folder_sub_folders_introspection_gated(self) -> None:
+        """has_folder_sub_folders uses introspection, not appSchema threshold."""
+        # Without type_fields, even high appSchema is False
+        assert not make_server_capabilities(85).has_folder_sub_folders
+        # With the field present in introspection data, it's True
+        caps = make_server_capabilities(
+            85,
+            type_fields={"Folder": frozenset({"sub_folders"})},
+        )
+        assert caps.has_folder_sub_folders
+
+    @pytest.mark.unit
     def test_performer_career_date_strings_boundary(self) -> None:
         """has_performer_career_date_strings flips at appSchema 85."""
         assert not make_server_capabilities(84).has_performer_career_date_strings
@@ -126,6 +138,7 @@ class TestServerCapabilitiesProperties:
                 "stashBoxBatchStudioTag",
             },
             query_names={"scrapeSingleTag"},
+            type_fields={"Folder": frozenset({"sub_folders"})},
         )
         assert caps.has_studio_custom_fields
         assert caps.has_tag_custom_fields
@@ -137,6 +150,7 @@ class TestServerCapabilitiesProperties:
         assert caps.has_image_custom_fields
         assert caps.has_folder_basename
         assert caps.has_performer_career_date_strings
+        assert caps.has_folder_sub_folders
         assert caps.uses_new_duplication_type
         assert caps.has_type("PerformerMergeInput")
         assert caps.has_mutation("bulkSceneMarkerUpdate")
