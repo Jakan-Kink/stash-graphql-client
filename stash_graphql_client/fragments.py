@@ -213,6 +213,7 @@ query Configuration {{
             deleteGenerated
         }}
         ui
+        plugins
     }}
 }}
 """

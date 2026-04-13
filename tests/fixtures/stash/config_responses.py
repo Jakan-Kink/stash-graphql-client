@@ -131,4 +131,9 @@ def create_config_result() -> dict[str, Any]:
             "deleteGenerated": True,
         },
         "ui": {},
+        "plugins": {
+            "some_plugin": {
+                "some_setting": "setting_value",
+            }
+        },
     }
