@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
@@ -690,6 +690,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/batched-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batched Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1082,6 +1110,34 @@
     
   
     Context
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
   
 
     
@@ -2267,10 +2323,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
             
   
   
@@ -2288,8 +2344,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -3606,7 +3662,8 @@ StashObjects to avoid circular reference errors during comparison.</p>
     <div class="doc doc-contents ">
 
         <p>Mark object as having no unsaved changes.</p>
-<p>Updates the snapshot to match the current state.</p>
+<p>Updates the snapshot to match the current state and clears
+any pending queued side operations.</p>
 
 
     </div>
@@ -3751,6 +3808,14 @@ StashObjects to avoid circular reference errors during comparison.</p>
 operation and updates the temporary UUID with the server-assigned ID.</p>
 <p>For existing objects, this performs an update operation, but only if
 there are dirty (changed) fields.</p>
+<p>Side mutations (<strong>side_mutations</strong>) are fired AFTER the main mutation
+so that new objects already have their server-assigned ID. Side-mutation
+fields are excluded from the main create/update input. When multiple
+fields map to the same handler (e.g., resume_time and play_duration
+both map to _save_activity), the handler is deduplicated and fires once.</p>
+<p>Queued operations (_pending_side_ops) fire after field-based side
+mutations. These are closures queued by entity methods like
+<code>increment_o()</code> or <code>reset_play_count()</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5447,6 +5512,88 @@ functionality like find_by_id, save, and to_input methods.</p>
 <div class="doc doc-object doc-function">
 
 
+<h5 id="stash_graphql_client.types.scene.Scene.reset_play_count" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">reset_play_count</span>
+
+
+<a href="#stash_graphql_client.types.scene.Scene.reset_play_count" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reset_play_count</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Queue resetting play count to 0. Call save() to persist.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.scene.Scene.reset_o" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">reset_o</span>
+
+
+<a href="#stash_graphql_client.types.scene.Scene.reset_o" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reset_o</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Queue resetting o-counter to 0. Call save() to persist.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.scene.Scene.reset_activity" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">reset_activity</span>
+
+
+<a href="#stash_graphql_client.types.scene.Scene.reset_activity" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">reset_activity</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">reset_resume</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reset_duration</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Queue resetting activity data. Call save() to persist.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.scene.Scene.generate_screenshot" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">generate_screenshot</span>
+
+
+<a href="#stash_graphql_client.types.scene.Scene.generate_screenshot" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">generate_screenshot</span><span class="p">(</span><span class="n">at</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Queue screenshot generation. Call save() to persist.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h5 id="stash_graphql_client.types.scene.Scene.add_to_gallery" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_to_gallery</span>
 
@@ -5808,6 +5955,62 @@ functionality like find_by_id, save, and to_input methods.</p>
 
 <a href="#stash_graphql_client.types.performer.Performer.groups" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">groups</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.galleries" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">galleries</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.galleries" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">galleries</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.images" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">images</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.images" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">images</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   
@@ -6906,6 +7109,150 @@ functionality like find_by_id, save, and to_input methods.</p>
 <div class="doc doc-object doc-function">
 
 
+<h5 id="stash_graphql_client.types.performer.Performer.add_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.add_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.remove_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.remove_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.add_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.add_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.remove_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.remove_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.add_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.add_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.performer.Performer.remove_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.performer.Performer.remove_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h5 id="stash_graphql_client.types.performer.Performer.find_by_name" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">find_by_name</span>
 
@@ -7441,6 +7788,34 @@ functionality like find_by_id, save, and to_input methods.</p>
 
 
 
+<h5 id="stash_graphql_client.types.gallery.Gallery.images" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">images</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.images" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">images</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h5 id="stash_graphql_client.types.gallery.Gallery.image_count" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">image_count</span>
 
@@ -7699,6 +8074,54 @@ by its position in the gallery.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">if</span> <span class="n">is_set</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">image_count</span><span class="p">):</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">last_image</span> <span class="o">=</span> <span class="k">await</span> <span class="n">gallery</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">gallery</span><span class="o">.</span><span class="n">image_count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.gallery.Gallery.add_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.add_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add image (syncs Image.galleries inverse, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.gallery.Gallery.remove_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.remove_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove image (syncs Image.galleries inverse, call save() to persist).</p>
 
 
     </div>
@@ -9912,7 +10335,91 @@ by its position in the gallery.</p>
   </span>
 
 <a href="#stash_graphql_client.types.studio.Studio.groups" class="headerlink" title="Permanent link">&para;</a></h5>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">groups</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">groups</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.scenes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">scenes</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.scenes" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">scenes</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.images" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">images</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.images" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">images</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.galleries" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">galleries</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.galleries" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">galleries</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   
@@ -10033,6 +10540,198 @@ by its position in the gallery.</p>
     <div class="doc doc-contents ">
 
         <p>Convert deprecated 'url' field to 'urls' list for backward compatibility.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.add_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.add_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.remove_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.remove_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.add_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.add_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.remove_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.remove_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.add_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.add_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.remove_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.remove_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.add_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.add_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add group (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.studio.Studio.remove_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.studio.Studio.remove_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove group (syncs inverse automatically, call save() to persist).</p>
 
 
     </div>
@@ -10710,6 +11409,202 @@ by its position in the gallery.</p>
 
 
 
+<h5 id="stash_graphql_client.types.tag.Tag.scenes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">scenes</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.scenes" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">scenes</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.images" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">images</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.images" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">images</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.galleries" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">galleries</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.galleries" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">galleries</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.performers" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">performers</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.performers" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">performers</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.groups" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">groups</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.groups" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">groups</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.studios" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">studios</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.studios" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">studios</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Studio (stash_graphql_client.types.studio.Studio)" href="#stash_graphql_client.types.studio.Studio">Studio</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.scene_markers" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">scene_markers</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.scene_markers" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">scene_markers</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            SceneMarker (stash_graphql_client.types.markers.SceneMarker)" href="#stash_graphql_client.types.markers.SceneMarker">SceneMarker</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h5 id="stash_graphql_client.types.tag.Tag.custom_fields" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">custom_fields</span>
 
@@ -10827,6 +11722,294 @@ by its position in the gallery.</p>
     <div class="doc doc-contents ">
 
         <p>Remove child tag (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_scene" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_scene</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_scene" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_scene</span><span class="p">(</span><span class="n">scene</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove scene (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_image" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_image</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_image" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_image</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove image (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_gallery" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_gallery</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_gallery" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_gallery</span><span class="p">(</span><span class="n">gallery</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove gallery (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_performer" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_performer</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_performer" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add performer (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_performer" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_performer</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_performer" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_performer</span><span class="p">(</span><span class="n">performer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Performer (stash_graphql_client.types.performer.Performer)" href="#stash_graphql_client.types.performer.Performer">Performer</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove performer (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add group (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_group" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_group</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_group" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_group</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Group (stash_graphql_client.types.group.Group)" href="#stash_graphql_client.types.group.Group">Group</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove group (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.add_scene_marker" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">add_scene_marker</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.add_scene_marker" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_scene_marker</span><span class="p">(</span><span class="n">marker</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            SceneMarker (stash_graphql_client.types.markers.SceneMarker)" href="#stash_graphql_client.types.markers.SceneMarker">SceneMarker</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add scene marker (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.tag.Tag.remove_scene_marker" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">remove_scene_marker</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.tag.Tag.remove_scene_marker" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">remove_scene_marker</span><span class="p">(</span><span class="n">marker</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            SceneMarker (stash_graphql_client.types.markers.SceneMarker)" href="#stash_graphql_client.types.markers.SceneMarker">SceneMarker</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Remove scene marker (syncs inverse automatically, call save() to persist).</p>
 
 
     </div>
@@ -16973,6 +18156,34 @@ fields in the schema, matching the common pattern.</p>
 
 <a href="#stash_graphql_client.types.files.Folder.parent_folders" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">parent_folders</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Folder (stash_graphql_client.types.files.Folder)" href="#stash_graphql_client.types.files.Folder">Folder</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.files.Folder.sub_folders" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">sub_folders</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.files.Folder.sub_folders" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">sub_folders</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Folder (stash_graphql_client.types.files.Folder)" href="#stash_graphql_client.types.files.Folder">Folder</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   
@@ -30255,6 +31466,34 @@ scenes: List of scenes</p>
 
 <a href="#stash_graphql_client.types.config.ConfigResult.ui" class="headerlink" title="Permanent link">&para;</a></h5>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ui</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.config.ConfigResult.plugins" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">plugins</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.config.ConfigResult.plugins" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">plugins</span><span class="p">:</span> <span class="n"><span title="stash_graphql_client.types.scalars.PluginConfigMap">PluginConfigMap</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
 
 
   

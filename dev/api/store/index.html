@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/api/store/">
       
       
-        <link rel="prev" href="../context/">
+        <link rel="prev" href="../batch/">
       
       
         <link rel="next" href="../errors/">
@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.6">
     
     
       
@@ -690,6 +690,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/batched-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batched Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1099,6 +1127,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1318,10 +1374,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_5_7" id="__nav_5_7_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
             
   
   
@@ -1339,8 +1395,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_7">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -4815,6 +4871,228 @@ Preferred pattern: explicitly save related objects before parent.</p>
 <div class="doc doc-object doc-function">
 
 
+<h4 id="stash_graphql_client.store.StashEntityStore.save_batch" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">save_batch</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.store.StashEntityStore.save_batch" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">save_batch</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">objects</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">250</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
+
+
+  
+      dataclass
+   (stash_graphql_client.client.batch.BatchResult)" href="../batch/#stash_graphql_client.client.batch.BatchResult">BatchResult</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Batch-save multiple dirty/new objects in a single HTTP request.</p>
+<p>Groups creates before updates in the alias order so that GraphQL's
+sequential execution assigns server IDs to new objects before any
+updates that might reference them.</p>
+<p>Side mutations and queued operations are fired sequentially per-entity
+after the main batch succeeds (same as :meth:<code>save</code>).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>objects</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of :class:<code>StashObject</code> instances to save.
+Non-dirty/non-new objects are silently skipped.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_batch_size</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Maximum operations per HTTP request (passed
+through to :meth:<code>client.execute_batch</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>250</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            BatchResult
+
+
+  
+      dataclass
+   (stash_graphql_client.client.batch.BatchResult)" href="../batch/#stash_graphql_client.client.batch.BatchResult">BatchResult</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>class:<code>BatchResult</code> with per-operation results.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            StashBatchError (stash_graphql_client.errors.StashBatchError)" href="../errors/#stash_graphql_client.errors.StashBatchError">StashBatchError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any operation in the batch fails.  The
+exception's <code>batch_result</code> contains partial results.
+Successfully-saved objects still get their side mutations
+and <code>mark_clean()</code>; failed objects remain dirty.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="stash_graphql_client.store.StashEntityStore.save_all" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">save_all</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#stash_graphql_client.store.StashEntityStore.save_all" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">save_all</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">max_batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">250</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
+
+
+  
+      dataclass
+   (stash_graphql_client.client.batch.BatchResult)" href="../batch/#stash_graphql_client.client.batch.BatchResult">BatchResult</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Find all dirty/new entities in cache and batch-save them.</p>
+<p>Partitions entities into new objects first, then updates, to
+ensure creates get server IDs before updates that might reference
+them.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            BatchResult
+
+
+  
+      dataclass
+   (stash_graphql_client.client.batch.BatchResult)" href="../batch/#stash_graphql_client.client.batch.BatchResult">BatchResult</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>class:<code>BatchResult</code> — empty result if nothing is dirty.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="            StashBatchError (stash_graphql_client.errors.StashBatchError)" href="../errors/#stash_graphql_client.errors.StashBatchError">StashBatchError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any operation fails (see :meth:<code>save_batch</code>).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h4 id="stash_graphql_client.store.StashEntityStore.delete" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">delete</span>
 
@@ -5282,7 +5560,7 @@ Call store.save() or entity.save() to persist to Stash.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../context/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Context">
+          <a href="../batch/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Batch Operations">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -5292,7 +5570,7 @@ Call store.save() or entity.save() to persist to Stash.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Context
+                Batch Operations
               </div>
             </div>
           </a>
