@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, model_validator
 from stash_graphql_client.errors import StashConfigurationError
 
 from .base import FromGraphQLMixin, StashInput
+from .scalars import PluginConfigMap
 from .unset import UNSET, UnsetType, is_set
 
 
@@ -745,6 +746,7 @@ class ConfigResult(FromGraphQLMixin, BaseModel):
         UNSET  # ConfigDefaultSettingsResult!
     )
     ui: dict[str, Any] | UnsetType = UNSET  # Map!
+    plugins: PluginConfigMap | UnsetType = UNSET  # PluginConfigMap!
 
 
 class Directory(BaseModel):
