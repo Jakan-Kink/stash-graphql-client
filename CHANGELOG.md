@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-04-15
+
+### Added
+
+- **Generic `__side_mutations__` mechanism on `StashObject`**: Fields persisted via separate GraphQL
+  mutations instead of the main create/update input. Handlers fire AFTER the main mutation so new
+  objects have their real server ID. Multiple fields sharing the same handler are deduplicated by
+  identity
+- **Queued side operations** (`_pending_side_ops`): Entity methods can queue async closures via
+  `_queue_side_op()` that fire during `save()` after field-based side mutations. Enables operations
+  like `scene.reset_play_count()` or `scene.generate_screenshot()` that don't map to a trackable
+  field change
+- **Side mutation implementations**:
+  - `Gallery.cover`: `setGalleryCover` / `resetGalleryCover`
+  - `Gallery.images`: `addGalleryImages` / `removeGalleryImages` with `add_image()` /
+    `remove_image()` convenience methods and automatic inverse sync
+  - `Scene.resume_time` + `Scene.play_duration`: `sceneSaveActivity` (deduplicated handler)
+  - `Scene.o_counter` + `Scene.o_history`: `sceneAddO` / `sceneDeleteO` (list-diff handler)
+  - `Scene.play_count` + `Scene.play_history`: `sceneAddPlay` / `sceneDeletePlay`
+  - `Image.o_counter`: `imageIncrementO` / `imageDecrementO` / `imageResetO` (delta-computing)
+  - Scene queued operations: `reset_play_count()`, `reset_o()`, `reset_activity()`,
+    `generate_screenshot()`
+- **Bulk-update side mutations** for bidirectional relationship writes where the upstream API has
+  no direct write path from the entity's side:
+  - `Performer`: `scenes` / `galleries` / `images` via bulk updates with `performer_ids`
+  - `Studio`: `scenes` / `images` / `galleries` / `groups` via bulk updates with scalar `studio_id`
+  - `Tag`: `scenes` / `images` / `galleries` / `performers` / `groups` / `scene_markers` via bulk
+    updates with `tag_ids` — all 6 content types
+- **`_make_bulk_relationship_handler()` factory** on `StashObject`: shared diff + bulk-update logic
+  with configurable `batch_size` (default 500, respects SQLite's `SQLITE_MAX_VARIABLE_NUMBER`)
+- **`StashObject` ID validator**: `id` field now enforces numeric-string or UUID4 format via
+  `@field_validator`, matching actual Stash server behavior
+- **Batched GraphQL mutations** — collapse N individual mutations into a single aliased HTTP request:
+  - `client.execute_batch(operations)`: low-level API with automatic chunking (`max_batch_size=250`),
+    per-operation error mapping, and `_convert_datetime()` pre-processing
+  - `store.save_batch(objects)`: entity-aware batch save with cascade saves, creates-before-updates
+    ordering, UUID→real-ID cache key remapping, and sequential per-entity side mutations
+  - `store.save_all()`: ORM flush — scans identity map for dirty/new entities, delegates to
+    `save_batch()`
+- **`BatchOperation`**, **`BatchResult`**, and **`StashBatchError`** in
+  `stash_graphql_client.client.batch`
+- **`return_fields` override on all bulk update methods**: `bulk_image_update()`,
+  `bulk_scene_update()`, `bulk_gallery_update()`, `bulk_group_update()`,
+  `bulk_performer_update()`, `bulk_studio_update()`, `bulk_scene_marker_update()` now accept
+  an optional `return_fields` keyword argument, avoiding server-side resolution of all
+  relationship fields for every entity in the batch
+- **ActiveRecord-style relationship DSL**: new factory helpers `belongs_to()`, `habtm()`,
+  `has_many()`, and `has_many_through()` for declaring `__relationships__` with minimal
+  boilerplate. Auto-derives `target_field`, `query_field`, and `filter_query_hint` via
+  `__init_subclass__`
+- **`populate()` filter-query resolution**: `StashEntityStore.populate()` now detects
+  `filter_query` strategy relationships (e.g., `Tag.scenes`, `Studio.scenes`) and fetches
+  them via lightweight `find*` queries resolved through the identity map cache
+- **Configurable client timeout**: `StashClientBase` reads a `Timeout` key from the connection
+  dict (default 30s) and propagates it to all transports
+- **`plugins` field on `ConfigResult`**: Exposes `plugins: PluginConfigMap` from the GraphQL
+  schema for retrieval of per-plugin configuration maps (closes #25, ports PR #26)
+- **`ScrapedTag.parent` field**: Introspection-gated via `has_scraped_tag_parent` capability
+  for tag hierarchy support in scraped data (stashapp/stash#6620)
+- **`Folder.sub_folders` field**: Introspection-gated via `has_folder_sub_folders` capability
+  (Stash v0.31.0+, stashapp/stash#6494)
+- **Documentation**: Batched Mutations user guide, Batch Operations API reference,
+  architecture design history document
+
+### Changed
+
+- All entity types refactored from verbose `RelationshipMetadata(...)` declarations to the
+  new DSL helpers (`belongs_to`, `habtm`, `has_many`, `has_many_through`)
+- `populate()` now separates direct fields from filter-query fields, fetching each category
+  through the appropriate strategy
+- Side mutation handlers use `return_fields="id __typename"` for all bulk calls, significantly
+  reducing server load on large bulk relationship writes
+- Delayed `StashInput` unknown-field enforcement (`extra="forbid"`) from v0.12.0 to v0.13.0;
+  deprecation warnings updated accordingly
+- Bumped ruff pre-commit hook v0.15.7 → v0.15.10
+- CI: test matrix expanded to Python 3.14 and 3.15 (prerelease)
+- CI: `codecov/codecov-action` upgraded v5 → v6
+- Updated Stash GraphQL schema from upstream (v0.31.0)
+
+### Fixed
+
+- Identity map merge path corruption on union-typed list fields (`visual_files` and other
+  `list[UnionType]` fields corrupted to raw dicts after a second `from_graphql()` call)
+- `_process_nested_graphql` and `_process_nested_cache_lookups` skipping union list types
+  (`isinstance(UnionType, type)` is `False` — now builds `__typename → subclass` maps)
+- `_received_fields` empty on nested union-typed file objects (discriminator validators now
+  pass `from_graphql` context)
+- `populate()` snapshot updates now include filter-query fields, preventing phantom dirty state
+- `Image.galleries` missing `inverse_query_field` (asymmetric inverse sync bug)
+- `Group.studio` missing `inverse_query_field` for bidirectional sync
+- `Scene.groups` not serialized by `to_input()` (was in `__tracked_fields__` but not
+  `__relationships__`)
+- `_process_list_relationship()` `BaseModel` transforms now call `model_dump()` instead of
+  `str()` (fixes `Scene.groups` serialization)
+- Graceful inverse sync when inverse field stays UNSET after `populate()`
+- `Studio.groups` type annotation: `list[Any]` → `list[Group]`
+
 ## [0.11.2] - 2026-04-03
 
 ### Changed
@@ -128,7 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - **Extra Fields Behavior**: Unknown fields in dict inputs now emit `DeprecationWarning`.
-  In v0.12.0+, these will be rejected with `ValidationError`.
+  In v0.13.0+, these will be rejected with `ValidationError`.
 
 ## [0.10.14] - 2026-02-15
 
@@ -630,7 +727,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.2...v0.12.0
+[0.11.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14

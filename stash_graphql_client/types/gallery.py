@@ -13,16 +13,21 @@ from .base import (
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
 )
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
 from .metadata import CustomFieldsInput
 from .scalars import Map
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
+    from stash_graphql_client.client import StashClient
+
     from .performer import Performer
     from .scene import Scene
     from .studio import Studio
@@ -88,15 +93,7 @@ class GalleryChapter(StashObject):
     }
 
     __relationships__: ClassVar[dict] = {
-        "gallery": RelationshipMetadata(
-            target_field="gallery_id",
-            is_list=False,
-            query_field="gallery",
-            inverse_type="Gallery",
-            inverse_query_field="chapters",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs gallery_chapter.gallery and gallery.chapters",
-        ),
+        "gallery": belongs_to("Gallery", inverse_query_field="chapters"),
     }
 
 
@@ -194,6 +191,15 @@ class Gallery(StashObject):
         "tags",
         "performers",
         "studio",
+        "cover",
+        "images",
+    }
+
+    # Side mutations: fields persisted via separate GraphQL mutations
+    # Lambdas are intentional: forward references to methods defined below
+    __side_mutations__: ClassVar[dict] = {
+        "cover": lambda client, obj: Gallery._save_cover(client, obj),  # noqa: PLW0108
+        "images": lambda client, obj: Gallery._save_images(client, obj),  # noqa: PLW0108
     }
 
     # Optional fields
@@ -213,6 +219,7 @@ class Gallery(StashObject):
     files: list[GalleryFile] | UnsetType = UNSET
     chapters: list[GalleryChapter] | UnsetType = UNSET
     scenes: list[Scene] | UnsetType = UNSET
+    images: list[Image] | UnsetType = UNSET  # Reverse of Image.galleries
     image_count: int | UnsetType = Field(default=UNSET, ge=0)
     tags: list[Tag] | UnsetType = UNSET
     performers: list[Performer] | UnsetType = UNSET
@@ -300,6 +307,48 @@ class Gallery(StashObject):
         # This ensures proper _received_fields tracking and identity map integration
         return Image.from_graphql(image_data)
 
+    @staticmethod
+    async def _save_cover(client: StashClient, gallery: Gallery) -> None:
+        """Side-mutation handler for the cover field.
+
+        Called by save() after the main mutation. Sets or resets the gallery
+        cover image via the dedicated client mixin methods.
+        """
+        cover = gallery.cover
+        if is_set(cover) and cover is not None:
+            await client.set_gallery_cover(gallery.id, cover.id)
+        else:
+            await client.reset_gallery_cover(gallery.id)
+
+    @staticmethod
+    async def _save_images(client: StashClient, gallery: Gallery) -> None:
+        """Side-mutation handler for the images field.
+
+        Called by save() after the main mutation. Computes the diff between
+        current and snapshot images and fires addGalleryImages /
+        removeGalleryImages bulk mutations accordingly.
+        """
+        current = gallery.images if is_set(gallery.images) else []
+        snapshot = gallery._snapshot.get("images", [])
+        current_ids = {img.id for img in current} if current else set()
+        snapshot_ids = {img.id for img in snapshot} if snapshot else set()
+
+        added = current_ids - snapshot_ids
+        removed = snapshot_ids - current_ids
+
+        if added:
+            await client.add_gallery_images(gallery.id, list(added))
+        if removed:
+            await client.remove_gallery_images(gallery.id, list(removed))
+
+    async def add_image(self, image: Image) -> None:
+        """Add image (syncs Image.galleries inverse, call save() to persist)."""
+        await self._add_to_relationship("images", image)
+
+    async def remove_image(self, image: Image) -> None:
+        """Remove image (syncs Image.galleries inverse, call save() to persist)."""
+        await self._remove_from_relationship("images", image)
+
     async def add_performer(self, performer: Performer) -> None:
         """Add performer (syncs inverse automatically, call save() to persist)."""
         await self._add_to_relationship("performers", performer)
@@ -345,42 +394,24 @@ class Gallery(StashObject):
     }
 
     __relationships__: ClassVar[dict] = {
-        # Pattern B: Filter query relationship (many-to-one)
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            query_strategy="filter_query",
-            filter_query_hint="findGalleries(gallery_filter={studios: {value: [studio_id]}})",
-            notes="Studio has gallery_count and filter queries, not direct galleries field",
-        ),
-        # Pattern A: Direct field relationships (many-to-many)
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
+        "studio": belongs_to("Studio", inverse_query_field="galleries"),
+        "performers": habtm("Performer", inverse_query_field="galleries"),
+        "tags": habtm("Tag", inverse_query_field="galleries"),
+        "scenes": habtm("Scene", inverse_query_field="galleries"),
+        # Side-mutation relationship: managed via addGalleryImages/removeGalleryImages
+        # Uses filter_query (not direct_field) despite having target_field, so kept explicit.
+        "images": RelationshipMetadata(
+            target_field="image_ids",
             is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            query_strategy="direct_field",
-            notes="Performer has gallery_count resolver, not direct galleries list",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Tag has gallery_count resolver, not direct galleries list",
-        ),
-        "scenes": RelationshipMetadata(
-            target_field="scene_ids",
-            is_list=True,
-            query_field="scenes",
-            inverse_type="Scene",
+            query_field="images",
+            inverse_type="Image",
             inverse_query_field="galleries",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs gallery.scenes and scene.galleries",
+            query_strategy="filter_query",
+            filter_query_hint="findImages(image_filter={galleries: {value: [gallery_id]}})",
+            notes="Gallery has image(index) resolver, not images list. "
+            "Managed via addGalleryImages/removeGalleryImages side mutations.",
         ),
+        "chapters": has_many("GalleryChapter", inverse_query_field="gallery"),
     }
 
 

@@ -159,46 +159,6 @@ class TestBidirectionalRelationshipConsistency:
         assert marker_rel.inverse_query_field == "scene_markers"
 
 
-class TestRelationshipMetadataToTupleBackwardCompatibility:
-    """Test that all relationships can convert to legacy tuple format."""
-
-    def test_all_relationships_support_to_tuple(self):
-        """Verify all RelationshipMetadata instances can convert to tuple."""
-        entity_types = [
-            Scene,
-            Gallery,
-            GalleryChapter,
-            Tag,
-            Performer,
-            Studio,
-            Group,
-            Image,
-            SceneMarker,
-        ]
-
-        for entity_cls in entity_types:
-            for rel_name, rel_meta in entity_cls.__relationships__.items():
-                assert hasattr(rel_meta, "to_tuple"), (
-                    f"{entity_cls.__name__}.{rel_name} missing to_tuple()"
-                )
-
-                legacy_tuple = rel_meta.to_tuple()
-                assert isinstance(legacy_tuple, tuple), (
-                    f"{entity_cls.__name__}.{rel_name}.to_tuple() didn't return tuple"
-                )
-                assert len(legacy_tuple) == 3, (
-                    f"{entity_cls.__name__}.{rel_name} tuple wrong length"
-                )
-
-                # Tuple format: (target_field, is_list, transform)
-                assert isinstance(legacy_tuple[0], str), (
-                    f"{entity_cls.__name__}.{rel_name} tuple[0] (target_field) not string"
-                )
-                assert isinstance(legacy_tuple[1], bool), (
-                    f"{entity_cls.__name__}.{rel_name} tuple[1] (is_list) not bool"
-                )
-
-
 class TestEntityTypesCoverage:
     """Verify we're testing all expected entity types."""
 

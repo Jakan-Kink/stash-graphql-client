@@ -1,6 +1,6 @@
 """Group-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...fragments import fragment_store
@@ -363,9 +363,25 @@ class GroupClientMixin(StashClientProtocol):
         )
         return result.get("groupsDestroy") is True
 
+    @overload
     async def bulk_group_update(
         self, input_data: BulkGroupUpdateInput | dict[str, Any]
-    ) -> list[Group]:
+    ) -> list[Group]: ...
+
+    @overload
+    async def bulk_group_update(
+        self,
+        input_data: BulkGroupUpdateInput | dict[str, Any],
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_group_update(
+        self,
+        input_data: BulkGroupUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Group] | list[dict[str, Any]]:
         """Bulk update multiple groups.
 
         Args:
@@ -378,12 +394,13 @@ class GroupClientMixin(StashClientProtocol):
                 - tag_ids: Optional list of tag IDs
                 - containing_groups: Optional groups that contain these groups
                 - sub_groups: Optional sub-groups
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Returns raw dicts instead
+                of Group objects.
 
         Returns:
-            List of updated Group objects
-
-        Raises:
-            gql.TransportError: If the request fails
+            List of updated Group objects (default), or list of dicts when
+            ``return_fields`` is provided.
 
         Examples:
             Update rating for multiple groups:
@@ -395,23 +412,12 @@ class GroupClientMixin(StashClientProtocol):
             print(f"Updated {len(result)} groups")
             ```
 
-            Add tags to multiple groups:
+            Fire-and-forget bulk update (minimal server load):
             ```python
-            from stash_graphql_client.types import BulkGroupUpdateInput
-
-            input_data = BulkGroupUpdateInput(
-                ids=["1", "2", "3"],
-                tag_ids=["tag1", "tag2"]
+            await client.bulk_group_update(
+                {"ids": ["1", "2", "3"], "studio_id": "42"},
+                return_fields="id",
             )
-            result = await client.bulk_group_update(input_data)
-            ```
-
-            Set studio for multiple groups:
-            ```python
-            result = await client.bulk_group_update({
-                "ids": ["1", "2", "3"],
-                "studio_id": "studio_123"
-            })
             ```
         """
         if isinstance(input_data, dict):
@@ -421,6 +427,13 @@ class GroupClientMixin(StashClientProtocol):
                 f"input_data must be BulkGroupUpdateInput or dict, "
                 f"got {type(input_data).__name__}"
             )
+
+        if return_fields is not None:
+            mutation = f"""mutation BulkGroupUpdate($input: BulkGroupUpdateInput!) {{
+                bulkGroupUpdate(input: $input) {{ {return_fields} }}
+            }}"""
+            result = await self.execute(mutation, {"input": input_data.to_graphql()})
+            return result.get("bulkGroupUpdate") or []
 
         result = await self.execute(
             fragment_store.BULK_GROUP_UPDATE_MUTATION,

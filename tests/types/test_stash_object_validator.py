@@ -9,6 +9,7 @@ This test suite covers the wrap validator in StashObject that implements:
 
 from __future__ import annotations
 
+from typing import ClassVar
 from unittest.mock import patch
 
 import httpx
@@ -17,6 +18,8 @@ import respx
 from pydantic import BaseModel
 
 from stash_graphql_client.types.base import FromGraphQLMixin, StashObject
+from stash_graphql_client.types.files import ImageFile, VideoFile
+from stash_graphql_client.types.image import Image
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
@@ -29,6 +32,73 @@ class _ModelMultiUnion(FromGraphQLMixin, BaseModel):
 
     id: str
     mixed_field: str | int | None | UnsetType = UNSET  # 4-way union!
+
+
+# Test model with a union-typed list where no member is a StashObject.
+# Extends StashObject so _process_nested_cache_lookups is available.
+class _ModelNonEntityUnionList(StashObject):
+    """Model with list[str | int] — union of non-StashObject types."""
+
+    __type_name__: ClassVar[str] = "_TestNonEntityUnion"
+
+    id: str | UnsetType = UNSET
+    items: list[str | int] | UnsetType = UNSET
+
+
+class TestIdValidator:
+    """Tests for StashObject._validate_id field validator."""
+
+    @pytest.mark.unit
+    def test_rejects_non_numeric_non_uuid_id(self) -> None:
+        """Test that non-numeric, non-UUID4 ids are rejected."""
+        with (
+            patch.object(StashObject, "_store", None),
+            pytest.raises(ValueError, match="Invalid StashObject id 'bad-id'"),
+        ):
+            Tag(id="bad-id", name="Test")
+
+    @pytest.mark.unit
+    def test_rejects_prefixed_numeric_id(self) -> None:
+        """Test that prefixed IDs like 'scene-123' are rejected."""
+        with (
+            patch.object(StashObject, "_store", None),
+            pytest.raises(ValueError, match="Invalid StashObject id 'scene-123'"),
+        ):
+            Scene(id="scene-123", title="Test")
+
+    @pytest.mark.unit
+    def test_rejects_uuid_shaped_string_that_is_not_uuid4(self) -> None:
+        """Test that a UUID-shaped string coerced by uuid.UUID(version=4) is rejected.
+
+        uuid.UUID('...', version=4) overwrites the version nibble, so the
+        parsed hex won't round-trip back to the input. The validator catches
+        this via the `parsed.hex == value.replace('-', '')` check.
+        """
+        # Version-1 UUID: uuid.UUID() accepts it with version=4 but silently
+        # rewrites the version nibble, so the hex no longer matches the input.
+        coercible_id = "12345678-1234-1234-8234-123456789abc"
+        with (
+            patch.object(StashObject, "_store", None),
+            pytest.raises(ValueError, match="Invalid StashObject id"),
+        ):
+            Tag(id=coercible_id, name="Test")
+
+    @pytest.mark.unit
+    def test_accepts_numeric_id(self) -> None:
+        """Test that numeric string IDs are accepted."""
+        with patch.object(StashObject, "_store", None):
+            tag = Tag(id="42", name="Test")
+            assert tag.id == "42"
+
+    @pytest.mark.unit
+    def test_accepts_uuid4_hex_id(self) -> None:
+        """Test that UUID4 hex IDs (from _inject_uuid) are accepted."""
+        import uuid
+
+        hex_id = uuid.uuid4().hex
+        with patch.object(StashObject, "_store", None):
+            tag = Tag(id=hex_id, name="Test")
+            assert tag.id == hex_id
 
 
 class TestIdentityMapValidator:
@@ -59,7 +129,7 @@ class TestIdentityMapValidator:
 
         # Step 1: Create initial scene via from_graphql to populate cache
         scene_data = {
-            "id": "test_scene_123",
+            "id": "401",
             "title": "Original Scene",
             "urls": [],
             "organized": False,
@@ -73,11 +143,11 @@ class TestIdentityMapValidator:
         }
 
         scene1 = Scene.from_graphql(scene_data)
-        assert scene1.id == "test_scene_123"
+        assert scene1.id == "401"
         assert scene1.title == "Original Scene"
 
         # Verify it was cached
-        cache_key = ("Scene", "test_scene_123")
+        cache_key = ("Scene", "401")
         assert cache_key in Scene._store._cache
 
         # Step 2: Force the cache entry to expire
@@ -92,7 +162,7 @@ class TestIdentityMapValidator:
 
         # Step 4: Verify behavior
         # The expired entry should have been evicted and a new instance created
-        assert scene2.id == "test_scene_123"
+        assert scene2.id == "401"
         assert scene2.title == "Original Scene"
 
         # The cache should now contain a NEW entry (not the expired one)
@@ -120,19 +190,19 @@ class TestFromGraphQLMixin:
         """
 
         # Test data with string value for mixed_field
-        data = {"id": "test-123", "mixed_field": "string-value"}
+        data = {"id": "402", "mixed_field": "string-value"}
 
         # Known mypy limitation with @classmethod + TypeVar (see base.py:from_graphql)
         result = _ModelMultiUnion.from_graphql(data)  # type: ignore[misc]
 
         # Verify the field wasn't unwrapped (branch 138->145 taken)
-        assert result.id == "test-123"
+        assert result.id == "402"
         assert result.mixed_field == "string-value"
 
     def test_from_dict_alias_calls_from_graphql(self) -> None:
         """Test from_dict() is a working alias for from_graphql() - covers line 182."""
         scene_data = {
-            "id": "scene-456",
+            "id": "403",
             "title": "Test Scene",
             "urls": [],
             "organized": False,
@@ -148,7 +218,7 @@ class TestFromGraphQLMixin:
         # Call from_dict (line 182)
         scene = Scene.from_dict(scene_data)
 
-        assert scene.id == "scene-456"
+        assert scene.id == "403"
         assert scene.title == "Test Scene"
 
 
@@ -209,21 +279,21 @@ class TestStashObjectInit:
         Scene._store._cache.clear()
 
         # Pre-populate cache with a tag
-        tag_data = {"id": "tag-123", "name": "Cached Tag"}
+        tag_data = {"id": "301", "name": "Cached Tag"}
         cached_tag = Tag.from_graphql(tag_data)
 
         # Verify tag was cached
-        cache_key = ("Tag", "tag-123")
+        cache_key = ("Tag", "301")
         assert cache_key in Tag._store._cache
         assert Tag._store._cache[cache_key].entity is cached_tag
 
         # Create scene data with tags list containing the cached tag
         scene_data = {
-            "id": "scene-456",
+            "id": "403",
             "title": "Test Scene",
             "tags": [
-                {"id": "tag-123", "name": "Cached Tag"},  # Should use cached instance
-                {"id": "tag-789", "name": "New Tag"},  # Not cached
+                {"id": "301", "name": "Cached Tag"},  # Should use cached instance
+                {"id": "302", "name": "New Tag"},  # Not cached
             ],
         }
 
@@ -234,7 +304,7 @@ class TestStashObjectInit:
         assert processed["tags"][0] is cached_tag
         # New tag should still be a dict (not yet constructed)
         assert isinstance(processed["tags"][1], dict)
-        assert processed["tags"][1]["id"] == "tag-789"
+        assert processed["tags"][1]["id"] == "302"
 
         # Clean up
         Tag._store._cache.clear()
@@ -252,7 +322,7 @@ class TestStashObjectInit:
             multi_field: str | int | None | UnsetType = UNSET  # Multiple types
 
         # Process data - Union won't be unwrapped since len(non_none_args) != 1
-        data = {"id": "test-123", "multi_field": "value"}
+        data = {"id": "402", "multi_field": "value"}
         processed = TestModel._process_nested_cache_lookups(data)
 
         # Data should pass through unchanged (no StashObject to cache)
@@ -264,7 +334,7 @@ class TestStashObjectInit:
         """Test _process_nested_cache_lookups with list field but non-list value - covers branch 594->615."""
         # Scene has a tags field that's list[Tag], but we'll provide a non-list value
         scene_data = {
-            "id": "scene-123",
+            "id": "404",
             "title": "Test Scene",
             "tags": "not-a-list",  # Wrong type - should be a list
         }
@@ -286,11 +356,11 @@ class TestStashObjectInit:
         Tag._store._cache.clear()
 
         # Pre-populate cache with a tag
-        tag_data = {"id": "tag-456", "name": "Expired Tag"}
+        tag_data = {"id": "303", "name": "Expired Tag"}
         cached_tag = Tag.from_graphql(tag_data)
 
         # Verify tag was cached
-        cache_key = ("Tag", "tag-456")
+        cache_key = ("Tag", "303")
         assert cache_key in Tag._store._cache
         assert Tag._store._cache[cache_key].entity is cached_tag
 
@@ -299,10 +369,10 @@ class TestStashObjectInit:
 
         # Create scene data with tags list containing the expired cached tag
         scene_data = {
-            "id": "scene-789",
+            "id": "405",
             "title": "Test Scene",
             "tags": [
-                {"id": "tag-456", "name": "Expired Tag"},  # Cached but expired
+                {"id": "303", "name": "Expired Tag"},  # Cached but expired
             ],
         }
 
@@ -311,7 +381,7 @@ class TestStashObjectInit:
 
         # Expired tag should NOT be reused (stays as dict)
         assert isinstance(processed["tags"][0], dict)
-        assert processed["tags"][0]["id"] == "tag-456"
+        assert processed["tags"][0]["id"] == "303"
 
         # Clean up
         Tag._store._cache.clear()
@@ -327,11 +397,11 @@ class TestStashObjectInit:
         Studio._store._cache.clear()
 
         # Pre-populate cache with a studio
-        studio_data = {"id": "studio-123", "name": "Test Studio"}
+        studio_data = {"id": "201", "name": "Test Studio"}
         cached_studio = Studio.from_graphql(studio_data)
 
         # Verify studio was cached
-        cache_key = ("Studio", "studio-123")
+        cache_key = ("Studio", "201")
         assert cache_key in Studio._store._cache
         assert Studio._store._cache[cache_key].entity is cached_studio
 
@@ -340,9 +410,9 @@ class TestStashObjectInit:
 
         # Create scene data with studio field containing the expired cached studio
         scene_data = {
-            "id": "scene-999",
+            "id": "406",
             "title": "Test Scene",
-            "studio": {"id": "studio-123", "name": "Test Studio"},  # Cached but expired
+            "studio": {"id": "201", "name": "Test Studio"},  # Cached but expired
         }
 
         # Process the nested data
@@ -350,7 +420,7 @@ class TestStashObjectInit:
 
         # Expired studio should NOT be reused (stays as dict)
         assert isinstance(processed["studio"], dict)
-        assert processed["studio"]["id"] == "studio-123"
+        assert processed["studio"]["id"] == "201"
 
         # Clean up
         Studio._store._cache.clear()
@@ -379,21 +449,21 @@ class TestStashObjectInit:
         Scene._store._cache.clear()
 
         # Pre-populate cache with a studio
-        studio_data = {"id": "studio-456", "name": "Cached Studio"}
+        studio_data = {"id": "202", "name": "Cached Studio"}
         cached_studio = Studio.from_graphql(studio_data)
 
         # Verify studio was cached and NOT expired
-        cache_key = ("Studio", "studio-456")
+        cache_key = ("Studio", "202")
         assert cache_key in Studio._store._cache
         assert Studio._store._cache[cache_key].entity is cached_studio
         assert not Studio._store._cache[cache_key].is_expired()  # Confirm not expired
 
         # Create scene data with studio field containing a dict reference to the cached studio
         scene_data = {
-            "id": "scene-111",
+            "id": "407",
             "title": "Test Scene with Cached Studio",
             "studio": {
-                "id": "studio-456",
+                "id": "202",
                 "name": "Cached Studio",
             },  # Should reuse cached
         }
@@ -404,7 +474,7 @@ class TestStashObjectInit:
         # Verify the cached studio instance was reused (same object reference)
         assert processed["studio"] is cached_studio
         assert not isinstance(processed["studio"], dict)  # Not a dict anymore
-        assert processed["studio"].id == "studio-456"
+        assert processed["studio"].id == "202"
         assert processed["studio"].name == "Cached Studio"
 
         # Clean up
@@ -433,16 +503,16 @@ class TestStashObjectInit:
         # Create scene data with studio field containing a dict reference
         # This studio is NOT pre-cached, so the dict should remain unchanged
         scene_data = {
-            "id": "scene-222",
+            "id": "408",
             "title": "Test Scene with Uncached Studio",
             "studio": {
-                "id": "studio-999",
+                "id": "203",
                 "name": "Uncached Studio",
             },  # NOT in cache
         }
 
         # Verify the studio is NOT in cache before processing
-        cache_key = ("Studio", "studio-999")
+        cache_key = ("Studio", "203")
         assert cache_key not in Studio._store._cache
 
         # Process the nested data - should take FALSE branch at line 800
@@ -450,7 +520,7 @@ class TestStashObjectInit:
 
         # Verify the studio dict was NOT replaced (stays as dict)
         assert isinstance(processed["studio"], dict)
-        assert processed["studio"]["id"] == "studio-999"
+        assert processed["studio"]["id"] == "203"
         assert processed["studio"]["name"] == "Uncached Studio"
 
         # Verify it's still not cached after processing
@@ -459,3 +529,229 @@ class TestStashObjectInit:
         # Clean up
         Studio._store._cache.clear()
         Scene._store._cache.clear()
+
+
+class TestMergePathUnionTypeDiscrimination:
+    """Regression tests for union-typed list field corruption on merge path.
+
+    Pydantic v2's model_validate() post-processes the returned instance for
+    union-typed list fields, overwriting __dict__ with raw input data.  The
+    merge path must inoculate the input dict with validated values to prevent
+    this corruption.
+    """
+
+    @pytest.mark.unit
+    def test_visual_files_not_corrupted_on_merge(self, respx_entity_store) -> None:
+        """visual_files should contain ImageFile objects after a merge, not raw dicts."""
+        raw_data = {
+            "id": "900",
+            "title": "Merge Test",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "901", "path": "/test.jpg"},
+            ],
+        }
+
+        # First construction — caches the Image
+        img1 = Image.from_graphql(raw_data.copy())
+        assert isinstance(img1.visual_files[0], ImageFile)
+
+        # Second construction — triggers merge path
+        img2 = Image.from_graphql(raw_data.copy())
+        assert img2 is img1, "Identity map must return same object"
+        assert isinstance(img2.visual_files[0], ImageFile), (
+            "visual_files[0] should be ImageFile after merge, not dict"
+        )
+
+    @pytest.mark.unit
+    def test_identity_preserved_across_merge(self, respx_entity_store) -> None:
+        """Merge path must return the same cached instance (identity map contract)."""
+        data = {
+            "id": "910",
+            "title": "Identity Test",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "911", "path": "/a.jpg"},
+            ],
+        }
+
+        img1 = Image.from_graphql(data.copy())
+        img2 = Image.from_graphql(data.copy())
+        assert img1 is img2
+
+    @pytest.mark.unit
+    def test_merge_preserves_fields_absent_from_new_data(
+        self, respx_entity_store
+    ) -> None:
+        """Fields present in cached but absent from new data must survive the merge."""
+        full_data = {
+            "id": "920",
+            "title": "Full Data",
+            "rating100": 75,
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "921", "path": "/b.jpg"},
+            ],
+        }
+        partial_data = {
+            "id": "920",
+            "title": "Updated Title",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "921", "path": "/b.jpg"},
+            ],
+        }
+
+        img = Image.from_graphql(full_data)
+        assert img.rating100 == 75
+
+        merged = Image.from_graphql(partial_data)
+        assert merged is img
+        assert merged.title == "Updated Title"
+        assert merged.rating100 == 75, (
+            "rating100 should survive merge when absent from new data"
+        )
+
+    @pytest.mark.unit
+    def test_visual_files_received_fields_tracked(self, respx_entity_store) -> None:
+        """Nested ImageFile created via from_graphql must have _received_fields populated.
+
+        Bug: _process_nested_graphql skipped union-typed list fields, so
+        visual_files dicts fell through to _discriminate_visual_file_types which
+        called model_validate() without from_graphql context.  Result: the
+        ImageFile objects had empty _received_fields.
+        """
+        data = {
+            "id": "930",
+            "title": "Received Fields Test",
+            "visual_files": [
+                {
+                    "__typename": "ImageFile",
+                    "id": "931",
+                    "path": "/received.jpg",
+                    "width": 100,
+                    "height": 200,
+                },
+            ],
+        }
+
+        img = Image.from_graphql(data)
+        file_obj = img.visual_files[0]
+        assert isinstance(file_obj, ImageFile)
+        assert "path" in file_obj._received_fields, (
+            "_received_fields should contain 'path' for nested ImageFile"
+        )
+        assert "id" in file_obj._received_fields
+        assert "width" in file_obj._received_fields
+
+    @pytest.mark.unit
+    def test_process_nested_graphql_dispatches_union_by_typename(
+        self, respx_entity_store
+    ) -> None:
+        """_process_nested_graphql should dispatch union list items by __typename."""
+
+        data = {
+            "id": "940",
+            "title": "Union Dispatch",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "941", "path": "/img.jpg"},
+                {
+                    "__typename": "VideoFile",
+                    "id": "942",
+                    "path": "/vid.mp4",
+                    "format": "mp4",
+                    "width": 1920,
+                    "height": 1080,
+                    "duration": 120.0,
+                    "video_codec": "h264",
+                    "audio_codec": "aac",
+                    "frame_rate": 30.0,
+                    "bit_rate": 5000000,
+                },
+            ],
+        }
+
+        img = Image.from_graphql(data)
+        assert isinstance(img.visual_files[0], ImageFile)
+        assert isinstance(img.visual_files[1], VideoFile)
+        # Both should have _received_fields populated
+        assert "path" in img.visual_files[0]._received_fields
+        assert "path" in img.visual_files[1]._received_fields
+
+
+class TestUnionListBranchCoverage:
+    """Branch coverage for union-typed list handling edge cases.
+
+    Covers the false branches when union members contain no StashObject
+    subclasses, and the typename_map dispatch path in cache lookups.
+    """
+
+    @pytest.mark.unit
+    def test_process_nested_graphql_skips_non_entity_union_list(self) -> None:
+        """list[str | int] union has no StashObject members → falls through.
+
+        Covers base.py _process_nested_graphql line 466 false branch.
+        """
+        data = {"id": "1", "items": ["hello", 42]}
+        result = _ModelNonEntityUnionList._process_nested_graphql(data)
+        # Items should pass through unchanged (no from_graphql dispatch)
+        assert result["items"] == ["hello", 42]
+
+    @pytest.mark.unit
+    def test_process_nested_cache_lookups_skips_non_entity_union_list(
+        self, respx_entity_store
+    ) -> None:
+        """list[str | int] union has no StashObject members → typename_map stays None.
+
+        Covers base.py _process_nested_cache_lookups line 1515 false branch.
+        """
+        data = {"id": "1", "items": ["hello", 42]}
+        result = _ModelNonEntityUnionList._process_nested_cache_lookups(data)
+        assert result["items"] == ["hello", 42]
+
+    @pytest.mark.unit
+    def test_cache_lookup_resolves_union_item_by_typename(
+        self, respx_entity_store
+    ) -> None:
+        """Pre-cached ImageFile resolved via typename_map dispatch in cache lookups.
+
+        Covers base.py _process_nested_cache_lookups lines 1527-1528
+        (typename_map truthy path).
+        """
+        store = Image._store
+        assert store is not None
+
+        # Pre-cache an ImageFile
+        img_file = ImageFile.from_graphql(
+            {"id": "501", "path": "/cached.jpg", "__typename": "ImageFile"}
+        )
+        store._cache_entity(img_file)
+
+        data = {
+            "id": "500",
+            "title": "Cache Resolve",
+            "visual_files": [
+                {"__typename": "ImageFile", "id": "501", "path": "/cached.jpg"},
+            ],
+        }
+        result = Image._process_nested_cache_lookups(data)
+        # Should have resolved to the cached instance
+        assert result["visual_files"][0] is img_file
+
+    @pytest.mark.unit
+    def test_cache_lookup_skips_unknown_typename_in_union(
+        self, respx_entity_store
+    ) -> None:
+        """Unknown __typename in union list → concrete is None → item passes through.
+
+        Covers base.py _process_nested_cache_lookups line 1531 false branch.
+        """
+        unknown_item = {
+            "__typename": "UnknownFileType",
+            "id": "999",
+            "path": "/mystery.dat",
+        }
+        data = {
+            "id": "500",
+            "title": "Unknown Type",
+            "visual_files": [unknown_item],
+        }
+        result = Image._process_nested_cache_lookups(data)
+        # Unknown typename should pass through as a raw dict
+        assert result["visual_files"][0] is unknown_item

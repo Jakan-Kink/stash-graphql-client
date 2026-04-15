@@ -459,7 +459,7 @@ class JobFactory(Factory):
 
         # Create a running job with progress
         job = JobFactory(
-            id="job_123",
+            id="123",
             status=JobStatus.RUNNING,
             progress=50.0,
             description="Scanning metadata"
@@ -470,7 +470,7 @@ class JobFactory(Factory):
         model = Job
 
     # Required fields
-    id = Sequence(lambda n: f"job_{n}")
+    id = Sequence(lambda n: str(700 + n))
     __typename = "Job"
     status = JobStatus.FINISHED
     subTasks = LazyFunction(list)

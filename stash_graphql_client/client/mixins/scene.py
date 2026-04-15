@@ -1,7 +1,7 @@
 """Scene-related client functionality."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from pydantic import TypeAdapter
 
@@ -440,18 +440,42 @@ class SceneClientMixin(StashClientProtocol):
 
             return []
 
-    async def bulk_scene_update(self, input_data: dict[str, Any]) -> list[Scene]:
+    @overload
+    async def bulk_scene_update(self, input_data: dict[str, Any]) -> list[Scene]: ...
+
+    @overload
+    async def bulk_scene_update(
+        self, input_data: dict[str, Any], *, return_fields: str
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_scene_update(
+        self,
+        input_data: dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Scene] | list[dict[str, Any]]:
         """Update multiple scenes at once.
 
         Args:
             input_data: Dictionary containing:
                 - ids: List of scene IDs to update
                 - Any other fields to update on all scenes
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Returns raw dicts instead
+                of Scene objects.
 
         Returns:
-            List of updated Scene objects
+            List of updated Scene objects (default), or list of dicts when
+            ``return_fields`` is provided.
         """
         try:
+            if return_fields is not None:
+                mutation = f"""mutation BulkSceneUpdate($input: BulkSceneUpdateInput!) {{
+                    bulkSceneUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_data})
+                return result.get("bulkSceneUpdate") or []
+
             result = await self.execute(
                 fragment_store.BULK_SCENE_UPDATE_MUTATION,
                 {"input": input_data},

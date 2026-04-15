@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 from pydantic import Field
 
@@ -12,10 +12,11 @@ from stash_graphql_client.logging import processing_logger as logger
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    habtm,
+    has_many,
 )
 from .files import StashID, StashIDInput
 from .metadata import CustomFieldsInput
@@ -25,6 +26,14 @@ from .unset import UNSET, UnsetType, is_set
 
 if TYPE_CHECKING:
     from stash_graphql_client.client import StashClient
+
+    from .gallery import Gallery
+    from .group import Group
+    from .image import Image
+    from .markers import SceneMarker
+    from .performer import Performer
+    from .scene import Scene
+    from .studio import Studio
 
 T = TypeVar("T", bound="Tag")
 
@@ -110,6 +119,48 @@ class Tag(StashObject):
         "favorite",  # TagCreateInput/TagUpdateInput
         "ignore_auto_tag",  # TagCreateInput/TagUpdateInput
         "stash_ids",  # TagCreateInput/TagUpdateInput
+        # Side-mutation fields (excluded from to_input, handled by bulk updates)
+        "scenes",  # bulkSceneUpdate with tag_ids
+        "images",  # bulkImageUpdate with tag_ids
+        "galleries",  # bulkGalleryUpdate with tag_ids
+        "performers",  # bulkPerformerUpdate with tag_ids
+        "groups",  # bulkGroupUpdate with tag_ids
+        "scene_markers",  # bulkSceneMarkerUpdate with tag_ids
+    }
+
+    # Side mutations: content entities are writable via bulk updates using
+    # BulkUpdateIds for tag_ids (TagUpdateInput has no scene_ids/image_ids/etc.).
+    __side_mutations__: ClassVar[dict] = {
+        "scenes": StashObject._make_bulk_relationship_handler(
+            "scenes",
+            "bulk_scene_update",
+            "tag_ids",
+        ),
+        "images": StashObject._make_bulk_relationship_handler(
+            "images",
+            "bulk_image_update",
+            "tag_ids",
+        ),
+        "galleries": StashObject._make_bulk_relationship_handler(
+            "galleries",
+            "bulk_gallery_update",
+            "tag_ids",
+        ),
+        "performers": StashObject._make_bulk_relationship_handler(
+            "performers",
+            "bulk_performer_update",
+            "tag_ids",
+        ),
+        "groups": StashObject._make_bulk_relationship_handler(
+            "groups",
+            "bulk_group_update",
+            "tag_ids",
+        ),
+        "scene_markers": StashObject._make_bulk_relationship_handler(
+            "scene_markers",
+            "bulk_scene_marker_update",
+            "tag_ids",
+        ),
     }
 
     # All fields are optional in client (fragment-based loading)
@@ -147,6 +198,15 @@ class Tag(StashObject):
     parent_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
     child_count: int | None | UnsetType = Field(default=UNSET, ge=0)  # Int! (Resolver)
 
+    # Content relationship fields (queryable via Find* filters, writable via bulk updates)
+    scenes: list[Scene] | UnsetType = UNSET  # via FindScenes filter
+    images: list[Image] | UnsetType = UNSET  # via FindImages filter
+    galleries: list[Gallery] | UnsetType = UNSET  # via FindGalleries filter
+    performers: list[Performer] | UnsetType = UNSET  # via FindPerformers filter
+    groups: list[Group] | UnsetType = UNSET  # via FindGroups filter
+    studios: list[Studio] | UnsetType = UNSET  # already bidirectional with Studio.tags
+    scene_markers: list[SceneMarker] | UnsetType = UNSET  # via FindSceneMarkers filter
+
     # Capability-gated fields (appSchema >= 77)
     custom_fields: Map | UnsetType = UNSET  # Map! (appSchema >= 77)
 
@@ -159,33 +219,19 @@ class Tag(StashObject):
     }
 
     __relationships__ = {
-        # Self-referential parent/child hierarchy (Pattern A: direct fields)
-        "parents": RelationshipMetadata(
-            target_field="parent_ids",
-            is_list=True,
-            query_field="parents",
-            inverse_type="Tag",  # Self-referential!
-            inverse_query_field="children",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs both parent_ids and child_ids bidirectionally",
-        ),
-        "children": RelationshipMetadata(
-            target_field="child_ids",
-            is_list=True,
-            query_field="children",
-            inverse_type="Tag",  # Self-referential!
-            inverse_query_field="parents",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs both child_ids and parent_ids bidirectionally",
-        ),
-        # Special case: Complex transform for StashID
-        "stash_ids": RelationshipMetadata(
-            target_field="stash_ids",
-            is_list=True,
+        "parents": habtm("Tag", inverse_query_field="children"),
+        "children": habtm("Tag", inverse_query_field="parents"),
+        "stash_ids": habtm(
+            "StashID",
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
-            query_field="stash_ids",
-            notes="Requires transform to StashIDInput for mutations",
         ),
+        "scenes": has_many("Scene", inverse_query_field="tags"),
+        "images": has_many("Image", inverse_query_field="tags"),
+        "galleries": has_many("Gallery", inverse_query_field="tags"),
+        "performers": has_many("Performer", inverse_query_field="tags"),
+        "groups": has_many("Group", inverse_query_field="tags"),
+        "scene_markers": has_many("SceneMarker", inverse_query_field="tags"),
+        "studios": has_many("Studio", inverse_query_field="tags"),
     }
 
     # =========================================================================
@@ -207,6 +253,62 @@ class Tag(StashObject):
     async def remove_child(self, child_tag: Tag) -> None:
         """Remove child tag (syncs inverse automatically, call save() to persist)."""
         await self._remove_from_relationship("children", child_tag)
+
+    # =========================================================================
+    # Convenience Helper Methods for Content Relationships
+    # =========================================================================
+
+    async def add_scene(self, scene: Scene) -> None:
+        """Add scene (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scenes", scene)
+
+    async def remove_scene(self, scene: Scene) -> None:
+        """Remove scene (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scenes", scene)
+
+    async def add_image(self, image: Image) -> None:
+        """Add image (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("images", image)
+
+    async def remove_image(self, image: Image) -> None:
+        """Remove image (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("images", image)
+
+    async def add_gallery(self, gallery: Gallery) -> None:
+        """Add gallery (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("galleries", gallery)
+
+    async def remove_gallery(self, gallery: Gallery) -> None:
+        """Remove gallery (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("galleries", gallery)
+
+    async def add_performer(self, performer: Performer) -> None:
+        """Add performer (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("performers", performer)
+
+    async def remove_performer(self, performer: Performer) -> None:
+        """Remove performer (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("performers", performer)
+
+    async def add_group(self, group: Group) -> None:
+        """Add group (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("groups", group)
+
+    async def remove_group(self, group: Group) -> None:
+        """Remove group (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("groups", group)
+
+    async def add_scene_marker(self, marker: SceneMarker) -> None:
+        """Add scene marker (syncs inverse automatically, call save() to persist)."""
+        await self._add_to_relationship("scene_markers", marker)
+
+    async def remove_scene_marker(self, marker: SceneMarker) -> None:
+        """Remove scene marker (syncs inverse automatically, call save() to persist)."""
+        await self._remove_from_relationship("scene_markers", marker)
+
+    # =========================================================================
+    # Tree Traversal Methods
+    # =========================================================================
 
     async def get_all_descendants(self) -> list[Tag]:
         """Get all descendant tags recursively (children, grandchildren, etc.).

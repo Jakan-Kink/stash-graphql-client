@@ -1222,6 +1222,13 @@ async def test_get_configuration(respx_stash_client: StashClient) -> None:
     assert result.dlna is not None
     assert result.scraping is not None
     assert result.defaults is not None
+
+    assert result.plugins is not None
+    assert isinstance(result.plugins, dict)
+    some_plugin = result.plugins.get("some_plugin")
+    assert some_plugin
+    assert some_plugin.get("some_setting") == "setting_value"
+
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "configuration" in req["query"]

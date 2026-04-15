@@ -1,6 +1,6 @@
 """Gallery-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...fragments import fragment_store
@@ -441,19 +441,38 @@ class GalleryClientMixin(StashClientProtocol):
             self.log.error(f"Failed to destroy chapter {id}: {e}")
             raise
 
+    @overload
+    async def bulk_gallery_update(
+        self, input_data: BulkGalleryUpdateInput | dict[str, Any]
+    ) -> list[Gallery]: ...
+
+    @overload
     async def bulk_gallery_update(
         self,
         input_data: BulkGalleryUpdateInput | dict[str, Any],
-    ) -> list[Gallery]:
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_gallery_update(
+        self,
+        input_data: BulkGalleryUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[Gallery] | list[dict[str, Any]]:
         """Bulk update galleries.
 
         Args:
             input_data: BulkGalleryUpdateInput object or dictionary containing:
                 - ids: List of gallery IDs to update (optional)
                 - And any fields to update (e.g., organized, rating100, etc.)
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Returns raw dicts instead
+                of Gallery objects.
 
         Returns:
-            List of updated Gallery objects
+            List of updated Gallery objects (default), or list of dicts when
+            ``return_fields`` is provided.
         """
         try:
             if isinstance(input_data, BulkGalleryUpdateInput):
@@ -467,6 +486,13 @@ class GalleryClientMixin(StashClientProtocol):
                     )
                 validated = BulkGalleryUpdateInput(**input_data)
                 input_dict = validated.to_graphql()
+
+            if return_fields is not None:
+                mutation = f"""mutation BulkGalleryUpdate($input: BulkGalleryUpdateInput!) {{
+                    bulkGalleryUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_dict})
+                return result.get("bulkGalleryUpdate") or []
 
             result = await self.execute(
                 fragment_store.BULK_GALLERY_UPDATE_MUTATION,

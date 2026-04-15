@@ -162,6 +162,11 @@ class ServerCapabilities:
         return self.type_has_field("Folder", "sub_folders")
 
     @property
+    def has_scraped_tag_parent(self) -> bool:
+        """ScrapedTag gained parent field for tag hierarchy (stashapp/stash#6620, introspection-gated)."""
+        return self.type_has_field("ScrapedTag", "parent")
+
+    @property
     def uses_new_duplication_type(self) -> bool:
         """Whether the server uses DuplicationCriterionInput (vs PHashDuplicationCriterionInput)."""
         return self.has_type("DuplicationCriterionInput")

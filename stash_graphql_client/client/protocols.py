@@ -98,6 +98,23 @@ class StashClientProtocol(Protocol):
         """
         ...
 
+    async def execute_batch(
+        self,
+        operations: list[Any],
+        *,
+        max_batch_size: int = 250,
+    ) -> Any:
+        """Execute multiple mutations in a single aliased GraphQL request.
+
+        Args:
+            operations: List of BatchOperation instances
+            max_batch_size: Maximum operations per HTTP request
+
+        Returns:
+            BatchResult with per-operation results/errors
+        """
+        ...
+
     # Helper methods used by mixins
     def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
         """Parse an object into an ID.

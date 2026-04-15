@@ -24,7 +24,9 @@ from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
-from tests.fixtures import dump_graphql_calls
+from tests.fixtures import (
+    dump_graphql_calls,
+)
 
 
 class TestChangeTracking:
@@ -33,7 +35,7 @@ class TestChangeTracking:
     def test_changed_fields_with_field_not_in_current(self, respx_entity_store) -> None:
         """Test changed_fields() when tracked field not in current state - covers line 669."""
         # Create a tag with tracked fields
-        tag = Tag.from_graphql({"id": "tag-1", "name": "Original"})
+        tag = Tag.from_graphql({"id": "1", "name": "Original"})
         tag.mark_clean()  # Take snapshot
 
         # Manually add a field to __tracked_fields__ that doesn't exist
@@ -47,7 +49,7 @@ class TestChangeTracking:
     def test_changed_fields_with_new_field_added(self, respx_entity_store) -> None:
         """Test changed_fields() detects field in current but not in snapshot - covers lines 671-672."""
         # Create tag and take snapshot
-        tag = Tag.from_graphql({"id": "tag-2", "name": "Test"})
+        tag = Tag.from_graphql({"id": "2", "name": "Test"})
         tag.mark_clean()
 
         # Set up scenario: field is tracked and in current, but NOT in snapshot
@@ -71,7 +73,7 @@ class TestChangeTracking:
 
     def test_mark_dirty_clears_snapshot(self, respx_entity_store) -> None:
         """Test mark_dirty() clears snapshot - covers line 694."""
-        tag = Tag.from_graphql({"id": "tag-3", "name": "Test"})
+        tag = Tag.from_graphql({"id": "3", "name": "Test"})
         tag.mark_clean()
 
         # Verify snapshot exists
@@ -90,8 +92,8 @@ class TestObjectComparison:
     def test_hash(self, respx_entity_store) -> None:
         """Test __hash__() method - covers line 1107."""
         # Use from_graphql to avoid validator issues
-        tag1 = Tag.from_graphql({"id": "tag-hash", "name": "Test"})
-        tag2 = Tag.from_graphql({"id": "tag-hash", "name": "Different Name"})
+        tag1 = Tag.from_graphql({"id": "10", "name": "Test"})
+        tag2 = Tag.from_graphql({"id": "10", "name": "Different Name"})
 
         # Since they have the same ID, tag2 should be the same cached instance as tag1
         assert tag1 is tag2  # Identity map returns same instance
@@ -100,12 +102,12 @@ class TestObjectComparison:
         assert hash(tag1) == hash(tag2)
 
         # Create a different tag to test hash
-        tag3 = Tag.from_graphql({"id": "tag-different", "name": "Other"})
+        tag3 = Tag.from_graphql({"id": "11", "name": "Other"})
         assert hash(tag1) != hash(tag3)
 
     def test_eq_with_non_stash_object(self, respx_entity_store) -> None:
         """Test __eq__() returns NotImplemented for non-StashObject - covers line 1119."""
-        tag = Tag.from_graphql({"id": "tag-eq", "name": "Test"})
+        tag = Tag.from_graphql({"id": "12", "name": "Test"})
 
         # Comparison with non-StashObject should return NotImplemented
         result = tag.__eq__("not a stash object")
@@ -227,20 +229,20 @@ class TestFindById:
             __field_names__: ClassVar[set[str]] = {"id", "name"}
 
         # Mock response
-        response_data = {"data": {"findCustomType": {"id": "custom-1", "name": "Test"}}}
+        response_data = {"data": {"findCustomType": {"id": "13", "name": "Test"}}}
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             return_value=httpx.Response(200, json=response_data)
         )
 
         # Call find_by_id - should build fallback query since CustomType not in query_map
         try:
-            result = await CustomType.find_by_id(respx_stash_client, "custom-1")
+            result = await CustomType.find_by_id(respx_stash_client, "13")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         # Should return the object
         assert result is not None
-        assert result.id == "custom-1"
+        assert result.id == "13"
 
 
 class TestSaveMethod:
@@ -377,7 +379,7 @@ class TestSaveMethod:
                 json={
                     "data": {
                         "tagCreate": {
-                            "id": "server-assigned-123",
+                            "id": "9001",
                             "name": "New Tag",
                         }
                     }
@@ -392,7 +394,7 @@ class TestSaveMethod:
             dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was updated from UUID to server ID
-        assert tag.id == "server-assigned-123"
+        assert tag.id == "9001"
         assert tag.id != original_id
         assert not tag.is_new()
 
@@ -405,7 +407,7 @@ class TestSaveMethod:
     ) -> None:
         """Test save() skips update_id for existing objects - covers lines 1192->1196."""
         # Create an existing tag (not new)
-        tag = Tag.from_graphql({"id": "existing-123", "name": "Existing Tag"})
+        tag = Tag.from_graphql({"id": "9002", "name": "Existing Tag"})
         tag.mark_clean()
 
         # Modify the tag to make it dirty
@@ -420,7 +422,7 @@ class TestSaveMethod:
                 json={
                     "data": {
                         "tagUpdate": {
-                            "id": "existing-123",
+                            "id": "9002",
                             "name": "Updated Tag",
                         }
                     }
@@ -435,7 +437,7 @@ class TestSaveMethod:
             dump_graphql_calls(graphql_route.calls)
 
         # Verify ID was NOT changed
-        assert tag.id == "existing-123"
+        assert tag.id == "9002"
 
         # Verify object is marked clean
         assert not tag.is_dirty()
@@ -447,8 +449,8 @@ class TestGetId:
     @pytest.mark.asyncio
     async def test_get_id_with_dict(self) -> None:
         """Test _get_id() with dict input - covers line 845."""
-        result = await Tag._get_id({"id": "dict-id", "name": "Test"})
-        assert result == "dict-id"
+        result = await Tag._get_id({"id": "14", "name": "Test"})
+        assert result == "14"
 
     @pytest.mark.asyncio
     async def test_get_id_with_awaitable_attrs(self, respx_entity_store) -> None:
@@ -593,8 +595,8 @@ class TestProcessRelationships:
 
         # Create scene with tags (list relationship)
         scene = Scene.new(title="Test")
-        tag1 = Tag.from_graphql({"id": "tag-1", "name": "Tag1"})
-        tag2 = Tag.from_graphql({"id": "tag-2", "name": "Tag2"})
+        tag1 = Tag.from_graphql({"id": "1", "name": "Tag1"})
+        tag2 = Tag.from_graphql({"id": "2", "name": "Tag2"})
         scene.tags = [tag1, tag2]
 
         # Process relationships
@@ -602,7 +604,7 @@ class TestProcessRelationships:
 
         # Should have processed the list
         assert "tag_ids" in result
-        assert result["tag_ids"] == ["tag-1", "tag-2"]
+        assert result["tag_ids"] == ["1", "2"]
 
     @pytest.mark.asyncio
     async def test_process_relationships_with_none_value(
@@ -746,7 +748,7 @@ class TestProcessFields:
     ) -> None:
         """Test _process_fields() skips fields not in __field_conversions__ - covers line 1344."""
         # Create a tag
-        tag = Tag.from_graphql({"id": "tag-1", "name": "Test", "favorite": False})
+        tag = Tag.from_graphql({"id": "1", "name": "Test", "favorite": False})
         tag.mark_clean()
 
         # Modify a field that's tracked but NOT in __field_conversions__
@@ -794,13 +796,13 @@ class TestCircularReferenceProtection:
         """Test is_dirty() doesn't fail when bidirectional relationships exist."""
         # Create scene and performer with bidirectional relationship
         scene = Scene.model_construct(
-            id="scene-1",
+            id="401",
             title="Test Scene",
             urls=[],
             performers=[],
         )
         performer = Performer.model_construct(
-            id="perf-1",
+            id="101",
             name="Test Performer",
             tags=[],
             scenes=[],
@@ -837,7 +839,7 @@ class TestCircularReferenceProtection:
         """Test get_changed_fields() works with bidirectional relationships."""
         # Create scene with snapshot
         scene = Scene.model_construct(
-            id="scene-2",
+            id="402",
             title="Original Title",
             urls=[],
             performers=[],
@@ -848,7 +850,7 @@ class TestCircularReferenceProtection:
 
         # Create performer and link bidirectionally
         performer = Performer.model_construct(
-            id="perf-2",
+            id="102",
             name="Test Performer",
             tags=[],
             parents=[],
@@ -875,13 +877,13 @@ class TestCircularReferenceProtection:
         """Test mark_clean() works with bidirectional relationships."""
         # Create bidirectional relationship
         scene = Scene.model_construct(
-            id="scene-3",
+            id="403",
             title="Test",
             urls=[],
             performers=[],
         )
         performer = Performer.model_construct(
-            id="perf-3",
+            id="103",
             name="Test",
             tags=[],
             parents=[],

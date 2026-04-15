@@ -8,10 +8,11 @@ from pydantic import BaseModel
 
 from .base import (
     BulkUpdateIds,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
 )
 from .unset import UNSET, UnsetType
 
@@ -117,31 +118,9 @@ class SceneMarker(StashObject):
     }
 
     __relationships__ = {
-        "scene": RelationshipMetadata(
-            target_field="scene_id",
-            is_list=False,
-            query_field="scene",
-            inverse_type="Scene",
-            inverse_query_field="scene_markers",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs scene_marker.scene and scene.scene_markers",
-        ),
-        "primary_tag": RelationshipMetadata(
-            target_field="primary_tag_id",
-            is_list=False,
-            query_field="primary_tag",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Primary tag for this scene marker",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Backend auto-syncs scene_marker.tags and tag.scene_markers",
-        ),
+        "scene": belongs_to("Scene", inverse_query_field="scene_markers"),
+        "primary_tag": belongs_to("Tag"),
+        "tags": habtm("Tag", inverse_query_field="scene_markers"),
     }
 
     # Convenience Helper Methods

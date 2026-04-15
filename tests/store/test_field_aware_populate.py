@@ -54,7 +54,7 @@ class TestPopulateWithFieldsParameter:
         # Initial fetch with minimal fields
         initial_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -64,10 +64,10 @@ class TestPopulateWithFieldsParameter:
         # Second fetch with additional fields
         populate_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
-                "performers": [{"id": "p1", "name": "Alice", "gender": "FEMALE"}],
+                "studio": {"id": "201", "name": "Test Studio"},
+                "performers": [{"id": "101", "name": "Alice", "gender": "FEMALE"}],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -82,7 +82,7 @@ class TestPopulateWithFieldsParameter:
 
         # Initial get - only has id, title
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene is not None
 
             # Verify initial _received_fields
@@ -125,9 +125,9 @@ class TestPopulateWithFieldsParameter:
         # Fetch scene with studio already included
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -136,13 +136,13 @@ class TestPopulateWithFieldsParameter:
         # Single mock that handles BOTH the initial get AND any populate calls
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
-                # Call 1: Initial store.get(Scene, "s1")
+                # Call 1: Initial store.get(Scene, "1")
                 httpx.Response(200, json={"data": scene_data}),
             ]
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene is not None
 
             # Try to populate with field that's already received
@@ -174,7 +174,7 @@ class TestPopulateWithFieldsParameter:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -186,7 +186,7 @@ class TestPopulateWithFieldsParameter:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
 
             # Populate with empty fields
             scene_after = await store.populate(scene, fields=[])
@@ -206,7 +206,7 @@ class TestPopulateWithFieldsParameter:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -218,7 +218,7 @@ class TestPopulateWithFieldsParameter:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
 
             # Populate with fields=None (default)
             scene_after = await store.populate(scene, fields=None)
@@ -246,7 +246,7 @@ class TestFieldMergingOnRefetch:
         # Initial fetch with minimal fields
         initial_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -256,10 +256,10 @@ class TestFieldMergingOnRefetch:
         # Populate with additional fields
         populate_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "rating100": 85,
             }
         }
@@ -272,7 +272,7 @@ class TestFieldMergingOnRefetch:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             initial_received: set[str] = getattr(
                 scene, "_received_fields", set()
             ).copy()
@@ -310,9 +310,9 @@ class TestFieldMergingOnRefetch:
         # Initial fetch with studio
         initial_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -321,10 +321,10 @@ class TestFieldMergingOnRefetch:
         # Populate with performers (GraphQL might not return studio in this response)
         populate_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
-                "performers": [{"id": "p1", "name": "Alice", "gender": "FEMALE"}],
+                "performers": [{"id": "101", "name": "Alice", "gender": "FEMALE"}],
             }
         }
 
@@ -336,7 +336,7 @@ class TestFieldMergingOnRefetch:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert "studio" in getattr(scene, "_received_fields", set())
 
             # Populate with performers
@@ -368,9 +368,9 @@ class TestForceRefetchParameter:
         # Initial fetch
         initial_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Original Title",
-                "studio": {"id": "st1", "name": "Original Studio"},
+                "studio": {"id": "201", "name": "Original Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -379,9 +379,9 @@ class TestForceRefetchParameter:
         # Force refetch returns updated data
         refetch_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Updated Title",
-                "studio": {"id": "st1", "name": "Updated Studio"},
+                "studio": {"id": "201", "name": "Updated Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -395,7 +395,7 @@ class TestForceRefetchParameter:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene.title == "Original Title"
             assert scene.studio is not None
             assert scene.studio.name == "Original Studio"
@@ -423,7 +423,7 @@ class TestForceRefetchParameter:
 
         initial_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Original",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -435,7 +435,7 @@ class TestForceRefetchParameter:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene.title == "Original"
 
             # Force refetch with empty fields
@@ -458,9 +458,9 @@ class TestForceRefetchParameter:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -469,13 +469,13 @@ class TestForceRefetchParameter:
         # Single mock handles both initial get AND populate calls
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
-                # Call 1: Initial store.get(Scene, "s1")
+                # Call 1: Initial store.get(Scene, "1")
                 httpx.Response(200, json={"data": scene_data}),
             ]
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
 
             # Populate with already-received field and force_refetch=False
             await store.populate(scene, fields=["studio"], force_refetch=False)
@@ -499,9 +499,9 @@ class TestHasFieldsHelper:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "rating100": 85,
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -513,7 +513,7 @@ class TestHasFieldsHelper:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -531,7 +531,7 @@ class TestHasFieldsHelper:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -543,7 +543,7 @@ class TestHasFieldsHelper:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -558,7 +558,7 @@ class TestHasFieldsHelper:
         store = respx_entity_store
 
         # Create object directly without _received_fields
-        scene = SceneFactory.build(id="s1", title="Test")
+        scene = SceneFactory.build(id="1", title="Test")
 
         # Should return False (no _received_fields means nothing received)
         assert not store.has_fields(scene, "title")
@@ -577,9 +577,9 @@ class TestMissingFieldsHelper:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -590,7 +590,7 @@ class TestMissingFieldsHelper:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -608,7 +608,7 @@ class TestMissingFieldsHelper:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -620,7 +620,7 @@ class TestMissingFieldsHelper:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -639,7 +639,7 @@ class TestMissingFieldsHelper:
         store = respx_entity_store
 
         # Create object directly without _received_fields
-        scene = SceneFactory.build(id="s1", title="Test")
+        scene = SceneFactory.build(id="1", title="Test")
 
         # All queried fields should be considered missing
         missing = store.missing_fields(scene, "title", "studio")
@@ -665,9 +665,9 @@ class TestPopulateIntegrationWithPhase2:
         # Initial scene fetch with minimal studio
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -676,7 +676,7 @@ class TestPopulateIntegrationWithPhase2:
         # Populate studio with additional fields
         studio_data = {
             "findStudio": {
-                "id": "st1",
+                "id": "201",
                 "name": "Test Studio",
                 "urls": ["http://test.com"],
                 "details": "Studio details",
@@ -693,7 +693,7 @@ class TestPopulateIntegrationWithPhase2:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene.studio is not None
 
             # Populate the nested studio directly
@@ -726,9 +726,9 @@ class TestPopulateIntegrationWithPhase2:
         # Initial scene with minimal performer data
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "performers": [{"id": "p1", "name": "Alice", "gender": "FEMALE"}],
+                "performers": [{"id": "101", "name": "Alice", "gender": "FEMALE"}],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -737,7 +737,7 @@ class TestPopulateIntegrationWithPhase2:
         # Populate performer with additional fields
         performer_data = {
             "findPerformer": {
-                "id": "p1",
+                "id": "101",
                 "name": "Alice",
                 "gender": "FEMALE",
                 "birthdate": "1990-01-01",
@@ -755,7 +755,7 @@ class TestPopulateIntegrationWithPhase2:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert len(scene.performers) >= 1
 
             # Populate the first performer
@@ -783,9 +783,9 @@ class TestPopulateIntegrationWithPhase2:
         # Two scenes with same studio
         scene1_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene 1",
-                "studio": {"id": "st1", "name": "Shared Studio"},
+                "studio": {"id": "201", "name": "Shared Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -793,9 +793,9 @@ class TestPopulateIntegrationWithPhase2:
 
         scene2_data = {
             "findScene": {
-                "id": "s2",
+                "id": "2",
                 "title": "Scene 2",
-                "studio": {"id": "st1", "name": "Shared Studio"},
+                "studio": {"id": "201", "name": "Shared Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -804,7 +804,7 @@ class TestPopulateIntegrationWithPhase2:
         # Populate studio with URLs
         studio_data = {
             "findStudio": {
-                "id": "st1",
+                "id": "201",
                 "name": "Shared Studio",
                 "urls": ["http://shared.com"],
                 "created_at": "2024-01-01T00:00:00Z",
@@ -821,8 +821,8 @@ class TestPopulateIntegrationWithPhase2:
         )
 
         try:
-            scene1 = await store.get(Scene, "s1")
-            scene2 = await store.get(Scene, "s2")
+            scene1 = await store.get(Scene, "1")
+            scene2 = await store.get(Scene, "2")
 
             # Populate studio through scene1
             assert scene1.studio is not None
@@ -855,9 +855,9 @@ class TestSelectiveFieldLoading:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -868,7 +868,7 @@ class TestSelectiveFieldLoading:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -901,7 +901,7 @@ class TestSelectiveFieldLoading:
         # Initial fetch - minimal/fast
         minimal_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "rating100": 85,
                 "created_at": "2024-01-01T00:00:00Z",
@@ -912,18 +912,18 @@ class TestSelectiveFieldLoading:
         # Expensive populate - relationships
         expensive_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
                 "performers": [
-                    {"id": "p1", "name": "Alice", "gender": "FEMALE"},
-                    {"id": "p2", "name": "Bob", "gender": "MALE"},
+                    {"id": "101", "name": "Alice", "gender": "FEMALE"},
+                    {"id": "102", "name": "Bob", "gender": "MALE"},
                 ],
                 "tags": [
-                    {"id": "t1", "name": "Tag 1"},
-                    {"id": "t2", "name": "Tag 2"},
+                    {"id": "301", "name": "Tag 1"},
+                    {"id": "302", "name": "Tag 2"},
                 ],
-                "studio": {"id": "st1", "name": "Studio"},
+                "studio": {"id": "201", "name": "Studio"},
             }
         }
 
@@ -936,7 +936,7 @@ class TestSelectiveFieldLoading:
 
         # Fast initial fetch
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
             assert scene.title == "Test Scene"
             assert scene.rating100 == 85
 

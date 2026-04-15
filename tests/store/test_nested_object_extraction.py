@@ -41,7 +41,7 @@ class TestNestedSingleObjectExtraction:
 
         When a Scene is fetched with nested Studio data, the Studio should be:
         - Extracted from the nested dict during validation
-        - Cached in store with key ("Studio", "st1")
+        - Cached in store with key ("Studio", "201")
         - Accessible via scene.studio as a Studio instance
         - Retrievable from cache independently
         """
@@ -50,10 +50,10 @@ class TestNestedSingleObjectExtraction:
         # Mock GraphQL response with nested studio
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "studio": {
-                    "id": "st1",
+                    "id": "201",
                     "name": "Test Studio",
                     "url": "http://test.com",
                 },
@@ -67,27 +67,27 @@ class TestNestedSingleObjectExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         # Verify scene was created
         assert scene is not None
-        assert scene.id == "s1"
+        assert scene.id == "1"
         assert scene.studio is not None
 
         # Verify nested studio is a Studio instance (not a dict)
         assert isinstance(scene.studio, Studio)
-        assert scene.studio.id == "st1"
+        assert scene.studio.id == "201"
         assert scene.studio.name == "Test Studio"
 
         # Verify studio is cached in the store
-        assert store.is_cached(Studio, "st1")
+        assert store.is_cached(Studio, "201")
 
         # Verify we can retrieve studio from cache independently
-        cached_studio = await store.get(Studio, "st1")
+        cached_studio = await store.get(Studio, "201")
         assert cached_studio is not None
-        assert cached_studio.id == "st1"
+        assert cached_studio.id == "201"
         assert cached_studio.name == "Test Studio"
 
     @pytest.mark.asyncio
@@ -98,7 +98,7 @@ class TestNestedSingleObjectExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene without studio",
                 "studio": None,
                 "created_at": "2024-01-01T00:00:00Z",
@@ -111,7 +111,7 @@ class TestNestedSingleObjectExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -130,7 +130,7 @@ class TestIdentityMapSingleObjects:
     ) -> None:
         """Test identity map: two scenes with same studio ID share the same Studio instance.
 
-        When Scene1 and Scene2 both reference Studio(id="st1"),
+        When Scene1 and Scene2 both reference Studio(id="201"),
         both scene.studio should point to the SAME object instance (same id()).
         This is the core identity map pattern.
         """
@@ -139,9 +139,9 @@ class TestIdentityMapSingleObjects:
         # Mock responses for two different scenes with the same studio
         scene1_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene 1",
-                "studio": {"id": "st1", "name": "Shared Studio"},
+                "studio": {"id": "201", "name": "Shared Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -149,9 +149,9 @@ class TestIdentityMapSingleObjects:
 
         scene2_data = {
             "findScene": {
-                "id": "s2",
+                "id": "2",
                 "title": "Scene 2",
-                "studio": {"id": "st1", "name": "Shared Studio"},
+                "studio": {"id": "201", "name": "Shared Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -165,8 +165,8 @@ class TestIdentityMapSingleObjects:
         )
 
         try:
-            scene1 = await store.get(Scene, "s1")
-            scene2 = await store.get(Scene, "s2")
+            scene1 = await store.get(Scene, "1")
+            scene2 = await store.get(Scene, "2")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -193,9 +193,9 @@ class TestIdentityMapSingleObjects:
 
         scene1_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene 1",
-                "studio": {"id": "st1", "name": "Original Name"},
+                "studio": {"id": "201", "name": "Original Name"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -203,9 +203,9 @@ class TestIdentityMapSingleObjects:
 
         scene2_data = {
             "findScene": {
-                "id": "s2",
+                "id": "2",
                 "title": "Scene 2",
-                "studio": {"id": "st1", "name": "Original Name"},
+                "studio": {"id": "201", "name": "Original Name"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -219,8 +219,8 @@ class TestIdentityMapSingleObjects:
         )
 
         try:
-            scene1 = await store.get(Scene, "s1")
-            scene2 = await store.get(Scene, "s2")
+            scene1 = await store.get(Scene, "1")
+            scene2 = await store.get(Scene, "2")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -246,9 +246,9 @@ class TestIdentityMapSingleObjects:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -259,14 +259,14 @@ class TestIdentityMapSingleObjects:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         assert scene.studio is not None
 
         # Fetch studio from cache (no GraphQL call needed)
-        cached_studio = await store.get(Studio, "st1")
+        cached_studio = await store.get(Studio, "201")
         assert cached_studio is not None
 
         # Should be the exact same object
@@ -293,12 +293,12 @@ class TestNestedListObjectExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "performers": [
-                    {"id": "p1", "name": "Alice", "gender": "FEMALE"},
-                    {"id": "p2", "name": "Bob", "gender": "MALE"},
-                    {"id": "p3", "name": "Charlie", "gender": "MALE"},
+                    {"id": "101", "name": "Alice", "gender": "FEMALE"},
+                    {"id": "102", "name": "Bob", "gender": "MALE"},
+                    {"id": "103", "name": "Charlie", "gender": "MALE"},
                 ],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -310,7 +310,7 @@ class TestNestedListObjectExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -324,12 +324,12 @@ class TestNestedListObjectExtraction:
             assert isinstance(performer, Performer)
 
         # Verify all performers are cached individually
-        assert store.is_cached(Performer, "p1")
-        assert store.is_cached(Performer, "p2")
-        assert store.is_cached(Performer, "p3")
+        assert store.is_cached(Performer, "101")
+        assert store.is_cached(Performer, "102")
+        assert store.is_cached(Performer, "103")
 
         # Verify we can retrieve each performer from cache
-        cached_p1 = await store.get(Performer, "p1")
+        cached_p1 = await store.get(Performer, "101")
         assert cached_p1 is not None
         assert cached_p1.name == "Alice"
 
@@ -341,7 +341,7 @@ class TestNestedListObjectExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene without performers",
                 "performers": [],
                 "created_at": "2024-01-01T00:00:00Z",
@@ -354,7 +354,7 @@ class TestNestedListObjectExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -373,7 +373,7 @@ class TestIdentityMapListObjects:
     ) -> None:
         """Test identity map: same performer in two scenes shares the same Performer instance.
 
-        If Scene1 and Scene2 both have Performer(id="p1") in their performers list,
+        If Scene1 and Scene2 both have Performer(id="101") in their performers list,
         both should point to the same cached Performer instance.
         """
         store = respx_entity_store
@@ -381,11 +381,11 @@ class TestIdentityMapListObjects:
         # Two scenes with overlapping performers
         scene1_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene 1",
                 "performers": [
-                    {"id": "p1", "name": "Alice", "gender": "FEMALE"},
-                    {"id": "p2", "name": "Bob", "gender": "MALE"},
+                    {"id": "101", "name": "Alice", "gender": "FEMALE"},
+                    {"id": "102", "name": "Bob", "gender": "MALE"},
                 ],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -394,11 +394,15 @@ class TestIdentityMapListObjects:
 
         scene2_data = {
             "findScene": {
-                "id": "s2",
+                "id": "2",
                 "title": "Scene 2",
                 "performers": [
-                    {"id": "p1", "name": "Alice", "gender": "FEMALE"},  # Same performer
-                    {"id": "p3", "name": "Charlie", "gender": "MALE"},
+                    {
+                        "id": "101",
+                        "name": "Alice",
+                        "gender": "FEMALE",
+                    },  # Same performer
+                    {"id": "103", "name": "Charlie", "gender": "MALE"},
                 ],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -413,14 +417,14 @@ class TestIdentityMapListObjects:
         )
 
         try:
-            scene1 = await store.get(Scene, "s1")
-            scene2 = await store.get(Scene, "s2")
+            scene1 = await store.get(Scene, "1")
+            scene2 = await store.get(Scene, "2")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         # Find Alice in both scenes
-        alice_in_scene1 = next(p for p in scene1.performers if p.id == "p1")
-        alice_in_scene2 = next(p for p in scene2.performers if p.id == "p1")
+        alice_in_scene1 = next(p for p in scene1.performers if p.id == "101")
+        alice_in_scene2 = next(p for p in scene2.performers if p.id == "101")
 
         # KEY TEST: Both should be the SAME object (identity map)
         assert alice_in_scene1 is alice_in_scene2
@@ -440,10 +444,10 @@ class TestIdentityMapListObjects:
 
         scene1_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene 1",
                 "performers": [
-                    {"id": "p1", "name": "Original Name", "gender": "FEMALE"}
+                    {"id": "101", "name": "Original Name", "gender": "FEMALE"}
                 ],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -452,10 +456,10 @@ class TestIdentityMapListObjects:
 
         scene2_data = {
             "findScene": {
-                "id": "s2",
+                "id": "2",
                 "title": "Scene 2",
                 "performers": [
-                    {"id": "p1", "name": "Original Name", "gender": "FEMALE"}
+                    {"id": "101", "name": "Original Name", "gender": "FEMALE"}
                 ],
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -470,8 +474,8 @@ class TestIdentityMapListObjects:
         )
 
         try:
-            scene1 = await store.get(Scene, "s1")
-            scene2 = await store.get(Scene, "s2")
+            scene1 = await store.get(Scene, "1")
+            scene2 = await store.get(Scene, "2")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -500,9 +504,9 @@ class TestStoreContextInjection:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -513,13 +517,13 @@ class TestStoreContextInjection:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         # The fact that studio is cached proves context was passed
         assert scene is not None
-        assert store.is_cached(Studio, "st1")
+        assert store.is_cached(Studio, "201")
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -534,15 +538,15 @@ class TestStoreContextInjection:
         with patch.object(StashObject, "_store", None):
             # Create scene directly, bypassing store
             scene_dict: dict[str, object] = {
-                "id": "s1",
+                "id": "1",
                 "title": "Direct Scene",
-                "studio": {"id": "st1", "name": "Direct Studio"},
+                "studio": {"id": "201", "name": "Direct Studio"},
             }
 
             scene = Scene(**scene_dict)  # type: ignore[arg-type]
 
             # Scene should be created
-            assert scene.id == "s1"
+            assert scene.id == "1"
             assert scene.studio is not None
 
             # Studio should be a Studio instance
@@ -570,12 +574,12 @@ class TestDeeplyNestedExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Scene with nested studio",
                 "studio": {
-                    "id": "st1",
+                    "id": "201",
                     "name": "Child Studio",
-                    "parent_studio": {"id": "st0", "name": "Parent Studio"},
+                    "parent_studio": {"id": "200", "name": "Parent Studio"},
                 },
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -587,19 +591,19 @@ class TestDeeplyNestedExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
         # Studio should be cached
-        assert store.is_cached(Studio, "st1")
+        assert store.is_cached(Studio, "201")
 
         # Document expected behavior for parent_studio:
         # - If recursive extraction: parent_studio should also be cached
         # - If one-level extraction: parent_studio would be a dict or shallow Studio
         #
         # For this test, we expect recursive extraction to be performed
-        assert store.is_cached(Studio, "st0")
+        assert store.is_cached(Studio, "200")
 
         # Verify the full chain is accessible
         assert scene.studio is not None
@@ -625,9 +629,9 @@ class TestReceivedFieldsWithNestedExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
-                "studio": {"id": "st1", "name": "Test Studio"},
+                "studio": {"id": "201", "name": "Test Studio"},
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }
@@ -638,7 +642,7 @@ class TestReceivedFieldsWithNestedExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 
@@ -659,10 +663,10 @@ class TestReceivedFieldsWithNestedExtraction:
 
         scene_data = {
             "findScene": {
-                "id": "s1",
+                "id": "1",
                 "title": "Test Scene",
                 "studio": {
-                    "id": "st1",
+                    "id": "201",
                     "name": "Test Studio",
                     "url": "http://test.com",
                 },
@@ -676,7 +680,7 @@ class TestReceivedFieldsWithNestedExtraction:
         )
 
         try:
-            scene = await store.get(Scene, "s1")
+            scene = await store.get(Scene, "1")
         finally:
             dump_graphql_calls(graphql_route.calls)
 

@@ -182,13 +182,185 @@ class RelationshipMetadata:
             f"strategy={self.query_strategy!r})"
         )
 
-    def to_tuple(self) -> tuple[str, bool, Callable[[Any], Any] | None]:
-        """Convert to legacy tuple format for backward compatibility.
 
-        Returns:
-            (target_field, is_list, transform)
-        """
-        return (self.target_field, self.is_list, self.transform)
+# ─── Sentinel for deferred field resolution ─────────────────────────
+_DEFERRED = object()
+
+# ─── Singularization for target_field derivation ────────────────────
+_IRREGULAR_PLURALS = {"children": "child", "galleries": "gallery"}
+
+
+def _singularize(plural: str) -> str:
+    """Convert a plural field name to singular (e.g., galleries → gallery)."""
+    if plural in _IRREGULAR_PLURALS:
+        return _IRREGULAR_PLURALS[plural]
+    if plural.endswith("ies"):
+        return plural[:-3] + "y"  # galleries → gallery (fallback)
+    if plural.endswith("s") and not plural.endswith("ss"):
+        return plural[:-1]  # tags → tag, scenes → scene
+    return plural
+
+
+def _pluralize(singular: str) -> str:
+    """Convert a singular type name to plural for GraphQL operations."""
+    if singular.endswith("y") and not singular.endswith("ey"):
+        return singular[:-1] + "ies"  # Gallery → Galleries
+    return singular + "s"  # Scene → Scenes, Tag → Tags
+
+
+def _to_snake_case(name: str) -> str:
+    """Convert PascalCase/camelCase to snake_case (e.g., SceneMarker → scene_marker)."""
+    import re
+
+    return re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", name).lower()
+
+
+def _build_filter_query_hint(
+    inverse_type: str, owner_type: str, query_field: str
+) -> str:
+    """Auto-generate filter_query_hint from relationship metadata.
+
+    Examples:
+        Tag + "Scene" + "scenes" → findScenes(scene_filter={tags: {value: [tag_id]}})
+        Scene + "Studio" + "studio" → findScenes(scene_filter={studios: {value: [studio_id]}})
+        Tag + "SceneMarker" + "scene_markers" → findSceneMarkers(scene_marker_filter={tags: ...})
+    """
+    inverse_plural = _pluralize(inverse_type)  # SceneMarker → SceneMarkers
+    inverse_snake = _to_snake_case(inverse_type)  # SceneMarker → scene_marker
+    owner_snake = _to_snake_case(owner_type)  # Tag → tag
+    owner_plural_snake = _pluralize(owner_snake)  # tag → tags
+    return (
+        f"find{inverse_plural}("
+        f"{inverse_snake}_filter={{{owner_plural_snake}: "
+        f"{{value: [{owner_snake}_id]}}}})"
+    )
+
+
+# ─── ActiveRecord-style relationship helpers ────────────────────────
+
+
+def belongs_to(
+    inverse_type: str,
+    *,
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    transform: Callable[[Any], Any] | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """FK side of a many-to-one. Owns the write (studio_id, scene_id, etc.).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: key + "_id" (studio → studio_id)
+        - filter_query_hint: when inverse_query_field is set
+
+    Examples:
+        "studio": belongs_to("Studio", inverse_query_field="scenes")
+        "parent_studio": belongs_to("Studio", inverse_query_field="child_studios")
+        "scene": belongs_to("Scene", inverse_query_field="scene_markers")
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=False,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="direct_field",
+        notes=notes,
+    )
+
+
+def habtm(
+    inverse_type: str,
+    *,
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    transform: Callable[[Any], Any] | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Many-to-many join. Owns the write (tag_ids, performer_ids, etc.).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: singularize(key) + "_ids" (galleries → gallery_ids)
+
+    Examples:
+        "tags": habtm("Tag", inverse_query_field="scenes")
+        "performers": habtm("Performer", inverse_query_field="scenes")
+        "parents": habtm("Tag", inverse_query_field="children")
+        "stash_ids": habtm("StashID", transform=lambda s: StashIDInput(...))
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=True,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="direct_field",
+        notes=notes,
+    )
+
+
+def has_many(
+    inverse_type: str,
+    *,
+    inverse_query_field: str | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Inverse/read-only side. No mutation input — populated via inverse sync or filter_query.
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: "" (read-only)
+        - query_strategy: "filter_query"
+        - filter_query_hint: from inverse_type + owner type
+
+    Examples:
+        "scenes": has_many("Scene", inverse_query_field="tags")
+        "child_studios": has_many("Studio", inverse_query_field="parent_studio")
+    """
+    return RelationshipMetadata(
+        target_field="",  # Read-only — no mutation input
+        is_list=True,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="filter_query",
+        filter_query_hint=_DEFERRED,  # type: ignore[arg-type]
+        notes=notes,
+    )
+
+
+def has_many_through(
+    inverse_type: str,
+    *,
+    transform: Callable[[Any], Any],
+    target_field: str | None = None,
+    inverse_query_field: str | None = None,
+    notes: str = "",
+) -> RelationshipMetadata:
+    """Ordered/metadata relationship via wrapper type (e.g., SceneGroup, GroupDescription).
+
+    Auto-derives (via __init_subclass__):
+        - query_field: from dict key
+        - target_field: key as-is (groups → groups)
+
+    Examples:
+        "groups": has_many_through("Group", transform=lambda g: SceneGroupInput(...),
+                                    inverse_query_field="scenes")
+    """
+    return RelationshipMetadata(
+        target_field=target_field or _DEFERRED,  # type: ignore[arg-type]
+        is_list=True,
+        transform=transform,
+        query_field=_DEFERRED,  # type: ignore[arg-type]
+        inverse_type=inverse_type,
+        inverse_query_field=inverse_query_field,
+        query_strategy="complex_object",
+        notes=notes,
+    )
 
 
 class FromGraphQLMixin:
@@ -282,6 +454,25 @@ class FromGraphQLMixin:
                 # For List[Type]
                 if origin is list and args and isinstance(value, list):
                     item_type = args[0]
+
+                    # Union-typed list (e.g. list[VideoFile | ImageFile]):
+                    # dispatch by __typename to the correct StashObject subclass
+                    if isinstance(item_type, types.UnionType):
+                        union_types = {
+                            t.__name__: t
+                            for t in get_args(item_type)
+                            if isinstance(t, type) and issubclass(t, StashObject)
+                        }
+                        if union_types:
+                            processed[field_name] = [
+                                union_types[item["__typename"]].from_graphql(item)
+                                if isinstance(item, dict)
+                                and item.get("__typename") in union_types
+                                else item
+                                for item in value
+                            ]
+                            continue
+
                     if isinstance(item_type, type) and issubclass(
                         item_type, StashObject
                     ):
@@ -368,7 +559,7 @@ class StashInput(BaseModel):
         """Emit deprecation warning for unknown fields.
 
         In v0.11.0, we emit warnings for unknown fields to help users identify typos.
-        In v0.12.0+, unknown fields will be rejected with ValidationError (extra="forbid").
+        In v0.13.0+, unknown fields will be rejected with ValidationError (extra="forbid").
 
         This gives users at least one full release cycle to fix field name typos
         before they become hard errors.
@@ -391,7 +582,7 @@ class StashInput(BaseModel):
 
         if extra_fields:
             warnings.warn(
-                f"{cls.__name__}: Unknown fields will be rejected in v0.12.0: "
+                f"{cls.__name__}: Unknown fields will be rejected in v0.13.0: "
                 f"{', '.join(sorted(extra_fields))}. "
                 f"Please check for typos or outdated field names. "
                 f"Common mistakes: 'tag_id' should be 'tag_ids' (plural), "
@@ -532,6 +723,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Class-level store reference (set by StashContext during initialization)
     # This enables identity map pattern without context propagation issues
     _store: ClassVar[StashEntityStore | None] = None
+    _handler_nondict_calls: ClassVar[
+        dict[str, int]
+    ] = {}  # Profiling: handler(non-dict) calls
 
     # GraphQL type name (e.g., "Scene", "Performer")
     __type_name__: ClassVar[str]
@@ -561,13 +755,18 @@ class StashObject(FromGraphQLMixin, BaseModel):
     # Fields to track for changes
     __tracked_fields__: ClassVar[set[str]] = set()
 
-    # Relationship mappings for converting to input types
-    __relationships__: ClassVar[
-        dict[
-            str,
-            tuple[str, bool, Callable[[Any], Any] | None] | RelationshipMetadata,
-        ]
+    # Side mutations: fields that are dirty-tracked but persisted via separate
+    # GraphQL mutations instead of the main create/update input.
+    # Maps field name → async callable(client, obj) that fires the side mutation.
+    # Handlers are called AFTER the main save mutation (so new objects have real IDs).
+    # When the field value is None (reset), the handler is still called — it is the
+    # handler's responsibility to distinguish set vs. reset semantics.
+    __side_mutations__: ClassVar[
+        dict[str, Callable[[StashClient, StashObject], Any]]
     ] = {}
+
+    # Relationship mappings for converting to input types
+    __relationships__: ClassVar[dict[str, RelationshipMetadata]] = {}
 
     # Field conversion functions
     __field_conversions__: ClassVar[dict[str, Callable[[Any], Any]]] = {}
@@ -577,6 +776,65 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
     # Max items to show in list-of-StashObject repr before truncating
     _SHORT_REPR_LIST_LIMIT: ClassVar[int] = 2
+
+    # ─── Resolve deferred relationship metadata ────────────────────
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Resolve deferred fields in __relationships__ from dict keys.
+
+        When ActiveRecord-style helpers (belongs_to, habtm, has_many, etc.)
+        are used, they set query_field and target_field to _DEFERRED.
+        This hook resolves them from the dict key after class creation.
+        """
+        super().__init_subclass__(**kwargs)
+
+        relationships = cls.__dict__.get("__relationships__")
+        if not relationships:
+            return
+
+        owner_type = getattr(cls, "__type_name__", cls.__name__)
+
+        for key, meta in relationships.items():
+            if not isinstance(meta, RelationshipMetadata):
+                continue
+
+            # Resolve deferred query_field
+            if meta.query_field is _DEFERRED:
+                meta.query_field = key
+
+            # Resolve deferred target_field
+            if meta.target_field is _DEFERRED:
+                if not meta.is_list:
+                    # belongs_to: studio → studio_id, parent_studio → parent_id
+                    if key.startswith("parent_"):
+                        meta.target_field = "parent_id"
+                    else:
+                        meta.target_field = f"{key}_id"
+                elif meta.query_strategy == "complex_object":
+                    # has_many_through: groups → groups (key as-is)
+                    meta.target_field = key
+                # habtm: galleries → gallery_ids, tags → tag_ids
+                # But stash_ids → stash_ids (already has _ids suffix)
+                elif key.endswith("_ids"):
+                    meta.target_field = key
+                else:
+                    singular = _singularize(key)
+                    meta.target_field = f"{singular}_ids"
+
+            # Resolve deferred filter_query_hint
+            if (
+                meta.filter_query_hint is _DEFERRED
+                and meta.query_strategy == "filter_query"
+                and meta.inverse_type
+            ):
+                meta.filter_query_hint = _build_filter_query_hint(
+                    inverse_type=meta.inverse_type
+                    if isinstance(meta.inverse_type, str)
+                    else meta.inverse_type.__name__,
+                    owner_type=owner_type,
+                    query_field=meta.query_field,
+                )
+            elif meta.filter_query_hint is _DEFERRED:
+                meta.filter_query_hint = None
 
     # Pydantic configuration
     model_config = ConfigDict(
@@ -590,6 +848,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
     _snapshot: dict = PrivateAttr(default_factory=dict)
     _is_new: bool = PrivateAttr(default=False)
     _received_fields: set = PrivateAttr(default_factory=set)
+    _pending_side_ops: list = PrivateAttr(default_factory=list)
 
     id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
@@ -687,14 +946,30 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Get current inverse value
         current_inverse = getattr(related_obj, inverse_field, UNSET)
 
-        # Skip if UNSET (not loaded)
+        # If UNSET and it's a list relationship, initialize to [] so the
+        # inverse sync can populate it. This enables bidirectional sync
+        # for filter_query relationships (e.g., Tag.scenes) during preload
+        # when entities are loaded in any order.
         if isinstance(current_inverse, UnsetType):
-            return
+            from .base import RelationshipMetadata
+
+            inverse_meta = related_obj.__relationships__.get(inverse_field)
+            if isinstance(inverse_meta, RelationshipMetadata) and inverse_meta.is_list:
+                current_inverse = []
+                related_obj.__dict__[inverse_field] = current_inverse
+                # Add to _received_fields so populate() knows it's loaded
+                received = getattr(related_obj, "_received_fields", set())
+                related_obj._received_fields = received | {inverse_field}
+            else:
+                return
 
         # Handle list inverse fields
         if isinstance(current_inverse, list):
             if self not in current_inverse:
                 current_inverse.append(self)
+                # Snapshot the list so inverse-sync additions aren't considered
+                # dirty (this is server-derived data, not user intent)
+                related_obj._update_snapshot_for_fields({inverse_field})
         # Handle single object inverse fields
         else:
             # Use object.__setattr__ to avoid triggering another sync
@@ -749,12 +1024,35 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # 3. If UNSET, fetch from store
         if isinstance(current_value, UnsetType):
             if self._store is None:
+                if metadata.query_strategy == "filter_query":
+                    raise StashIntegrationError(
+                        f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                        f"this relationship uses filter_query strategy and requires "
+                        f"a store connection to populate. Either initialize the field "
+                        f"manually (e.g., obj.{field_name} = []) or assign the "
+                        f"relationship from the other side."
+                    )
                 raise StashIntegrationError(
                     f"Cannot add to '{field_name}': store not available. "
                     f"Ensure the {self.__type_name__} was loaded through a StashEntityStore."
                 )
             await self._store.populate(self, fields=[field_name])
             current_value = getattr(self, field_name)
+
+            # populate() may not resolve filter_query fields
+            if isinstance(current_value, UnsetType):
+                if metadata.query_strategy == "filter_query":
+                    raise StashIntegrationError(
+                        f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                        f"field uses filter_query strategy and could not be populated "
+                        f"from the store. Initialize the field manually "
+                        f"(e.g., obj.{field_name} = []) or assign the relationship "
+                        f"from the other side."
+                    )
+                raise StashIntegrationError(
+                    f"Cannot add to '{field_name}' on {self.__type_name__}: "
+                    f"field is still UNSET after populate."
+                )
 
         # 4. Initialize to [] if None (for list relationships)
         if current_value is None and metadata.is_list:
@@ -768,11 +1066,32 @@ class StashObject(FromGraphQLMixin, BaseModel):
 
             if isinstance(inverse_value, UnsetType):
                 if related_obj._store is None:
+                    inverse_meta = related_obj.__relationships__.get(inverse_field)
+                    strategy = (
+                        inverse_meta.query_strategy
+                        if isinstance(inverse_meta, RelationshipMetadata)
+                        else "unknown"
+                    )
+                    if strategy == "filter_query":
+                        raise StashIntegrationError(
+                            f"Cannot sync inverse '{inverse_field}' on "
+                            f"{type(related_obj).__name__}: this relationship uses "
+                            f"filter_query strategy and requires a store connection. "
+                            f"Either initialize the field manually "
+                            f"(e.g., obj.{inverse_field} = []) or assign the "
+                            f"relationship from the other side."
+                        )
                     raise StashIntegrationError(
                         f"Cannot sync inverse '{inverse_field}': store not available. "
-                        f"Ensure the {metadata.inverse_type} was loaded through a StashEntityStore."
+                        f"Ensure the {metadata.inverse_type} was loaded through "
+                        f"a StashEntityStore."
                     )
                 await related_obj._store.populate(related_obj, fields=[inverse_field])
+                # If still UNSET after populate, skip inverse sync gracefully
+                # — the field simply isn't available in the store's fragment
+                inverse_value = getattr(related_obj, inverse_field, UNSET)
+                if isinstance(inverse_value, UnsetType):
+                    inverse_value = None  # skip inverse init below
 
             # Initialize inverse to [] if None
             inverse_value = getattr(related_obj, inverse_field)
@@ -1022,6 +1341,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         # Skip identity map if no store or not a dict
         if not cls._store or not isinstance(data, dict):
+            _key = f"{cls.__name__}:{type(data).__name__}"
+            StashObject._handler_nondict_calls[_key] = (
+                StashObject._handler_nondict_calls.get(_key, 0) + 1
+            )
             return handler(data)
 
         # Check cache for current object if it has an ID
@@ -1036,18 +1359,54 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     log.debug(
                         f"Identity map: returning cached {cls.__type_name__} {data['id']}"
                     )
-                    # Merge new fields from data into cached instance
-                    # Track old and new received fields
+                    # Merge strategy: call handler() to get a properly
+                    # validated fresh instance (field validators run, union
+                    # types discriminated), then merge validated values into
+                    # cached_obj and RETURN cached_obj (preserves identity).
+                    #
+                    # To prevent pydantic-core's post-validator pipeline from
+                    # overwriting __dict__ with raw input data (Pydantic v2
+                    # regression on union-typed list fields), we mutate the
+                    # input `data` dict in-place with validated values before
+                    # returning.  pydantic-core holds a reference to (not a
+                    # copy of) the Python dict, so the overwrite becomes
+                    # harmless — it writes back already-validated values.
                     old_received: set[str] = cached_obj._received_fields
                     new_fields = set(data.keys())
 
-                    # Process nested lookups for new data
+                    # Process nested lookups, then let handler fully validate
                     processed_data = cls._process_nested_cache_lookups(data)
+                    fresh = handler(
+                        processed_data,
+                        info.context if info.context else None,
+                    )
 
-                    # Update field values from new data
-                    for field_name, field_value in processed_data.items():
-                        if hasattr(cached_obj, field_name):
-                            setattr(cached_obj, field_name, field_value)
+                    # Merge validated values from fresh into cached via
+                    # direct __dict__ writes (bypasses validate_assignment
+                    # to avoid the ~42M duplicate-copy memory leak).
+                    merged_fields: set[str] = set()
+                    cached_dict = cached_obj.__dict__
+                    fresh_dict = fresh.__dict__
+                    for field_name in new_fields:
+                        if field_name not in cached_dict:
+                            continue
+                        fresh_val = fresh_dict.get(field_name)
+                        current = cached_dict[field_name]
+                        if current is fresh_val or current == fresh_val:
+                            continue
+                        cached_dict[field_name] = fresh_val
+                        merged_fields.add(field_name)
+                        # Sync inverse relationships (bypassed by __dict__ write)
+                        if field_name in cached_obj.__relationships__:
+                            cached_obj._sync_inverse_relationship(field_name, fresh_val)
+
+                    # Inoculate the input dict: replace raw values with
+                    # validated ones so pydantic-core's post-validator
+                    # pipeline writes back correct types (not raw dicts)
+                    # when it touches union-typed list fields.
+                    for k in data:
+                        if k in fresh_dict:
+                            data[k] = fresh_dict[k]
 
                     # Merge received fields
                     merged_received = old_received | new_fields
@@ -1056,7 +1415,8 @@ class StashObject(FromGraphQLMixin, BaseModel):
                     # Selectively update snapshot for merged fields only.
                     # Fields the user modified locally that weren't in this merge
                     # remain dirty and will still be saved.
-                    cached_obj._update_snapshot_for_fields(set(processed_data.keys()))
+                    if merged_fields:
+                        cached_obj._update_snapshot_for_fields(merged_fields)
 
                     log.debug(
                         f"Identity map: merged {len(new_fields)} new fields into cached "
@@ -1142,22 +1502,45 @@ class StashObject(FromGraphQLMixin, BaseModel):
                 if args and isinstance(value, list):
                     # Process list of potential StashObjects
                     item_type = args[0]
-                    if isinstance(item_type, type) and issubclass(
-                        item_type, StashObject
-                    ):
+
+                    # Build a __typename → StashObject subclass map for
+                    # union-typed list items (e.g. list[VideoFile | ImageFile])
+                    typename_map: dict[str, type[StashObject]] | None = None
+                    if isinstance(item_type, types.UnionType):
+                        union_members = [
+                            t
+                            for t in get_args(item_type)
+                            if isinstance(t, type) and issubclass(t, StashObject)
+                        ]
+                        if union_members:
+                            typename_map = {t.__type_name__: t for t in union_members}
+
+                    if (
+                        isinstance(item_type, type)
+                        and issubclass(item_type, StashObject)
+                    ) or typename_map:
                         processed_list = []
                         for item in value:
                             if isinstance(item, dict) and "id" in item:
-                                # Check cache for this item
-                                cache_key = (item_type.__type_name__, item["id"])
-                                if cache_key in cls._store._cache:
-                                    cached_entry = cls._store._cache[cache_key]
-                                    if not cached_entry.is_expired():
-                                        log.debug(
-                                            f"Identity map: using cached {item_type.__type_name__} {item['id']} for nested list"
-                                        )
-                                        processed_list.append(cached_entry.entity)
-                                        continue
+                                # Resolve the concrete type for cache lookup
+                                if typename_map:
+                                    tn = item.get("__typename", "")
+                                    concrete = typename_map.get(tn)
+                                else:
+                                    concrete = item_type  # type: ignore[assignment]
+                                if concrete is not None:
+                                    cache_key = (
+                                        concrete.__type_name__,
+                                        item["id"],
+                                    )
+                                    if cache_key in cls._store._cache:
+                                        cached_entry = cls._store._cache[cache_key]
+                                        if not cached_entry.is_expired():
+                                            log.debug(
+                                                f"Identity map: using cached {concrete.__type_name__} {item['id']} for nested list"
+                                            )
+                                            processed_list.append(cached_entry.entity)
+                                            continue
                             processed_list.append(item)
                         processed[field_name] = processed_list
                 continue
@@ -1258,7 +1641,8 @@ class StashObject(FromGraphQLMixin, BaseModel):
     def mark_clean(self) -> None:
         """Mark object as having no unsaved changes.
 
-        Updates the snapshot to match the current state.
+        Updates the snapshot to match the current state and clears
+        any pending queued side operations.
         """
         # Capture current field values directly to avoid circular reference errors
         # Use _snapshot_value to copy mutable collections (lists)
@@ -1266,6 +1650,7 @@ class StashObject(FromGraphQLMixin, BaseModel):
             field: self._snapshot_value(getattr(self, field, UNSET))
             for field in self.__tracked_fields__
         }
+        self._pending_side_ops.clear()
 
     def _update_snapshot_for_fields(
         self, field_names: set[str] | frozenset[str]
@@ -1288,6 +1673,114 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Clears the snapshot to force all tracked fields to be considered dirty.
         """
         self._snapshot = {}
+
+    def _queue_side_op(self, op: Callable[[StashClient, StashObject], Any]) -> None:
+        """Queue an async operation to fire during save().
+
+        Queued operations fire AFTER the main create/update mutation and AFTER
+        field-based side mutations, so the object has its real server ID.
+
+        Args:
+            op: Async callable ``(client, obj) -> Any``. Use closures to
+                capture arguments::
+
+                    def increment_o(self):
+                        async def _op(client, obj):
+                            result = await client.execute(MUTATION, {"id": obj.id})
+                            obj.o_counter = result["imageIncrementO"]
+                        self._queue_side_op(_op)
+        """
+        self._pending_side_ops.append(op)
+
+    # Default batch size for bulk update side mutations.
+    # SQLite's SQLITE_MAX_VARIABLE_NUMBER defaults to 999, so keep batches
+    # well under that to avoid query failures on large relationship sets.
+    _BULK_BATCH_SIZE: ClassVar[int] = 500
+
+    @staticmethod
+    def _make_bulk_relationship_handler(
+        field_name: str,
+        bulk_method_name: str,
+        id_field: str,
+        *,
+        use_bulk_ids: bool = True,
+        batch_size: int = 500,
+    ) -> Callable[[StashClient, StashObject], Any]:
+        """Factory for bulk-update side mutation handlers.
+
+        Creates a handler that computes the diff between the current and
+        snapshot values of ``field_name``, then fires the client's bulk update
+        method to add/remove items.  Large diffs are automatically split into
+        batches to stay within SQLite's parameter limits.
+
+        Args:
+            field_name: Field name on the entity to diff (e.g., ``"scenes"``).
+            bulk_method_name: Name of the client method (e.g.,
+                ``"bulk_scene_update"``).
+            id_field: Field name in the bulk update input (e.g.,
+                ``"performer_ids"``, ``"studio_id"``).
+            use_bulk_ids: If ``True`` (default), uses ``BulkUpdateIds`` with
+                ``mode: ADD/REMOVE``.  If ``False``, uses a scalar value
+                (``entity.id`` for adds, ``None`` for removes).
+            batch_size: Maximum number of IDs per bulk update call.  Defaults
+                to 500 to stay within SQLite's parameter limits.
+
+        Returns:
+            Async callable ``(client, entity) -> None`` suitable for
+            ``__side_mutations__``.
+        """
+
+        async def handler(client: StashClient, entity: StashObject) -> None:
+            current = getattr(entity, field_name)
+            current = current if is_set(current) else []
+            snapshot = entity._snapshot.get(field_name, [])
+
+            current_ids = {obj.id for obj in current} if current else set()
+            snapshot_ids = {obj.id for obj in snapshot} if snapshot else set()
+
+            added = list(current_ids - snapshot_ids)
+            removed = list(snapshot_ids - current_ids)
+
+            bulk_method = getattr(client, bulk_method_name)
+
+            # Process in batches to stay within SQLite parameter limits.
+            # Use return_fields="id" to avoid the server resolving the full
+            # entity fragment for every item in the batch (massive perf win
+            # for large batches — avoids N*M relationship SELECTs).
+            for i in range(0, max(len(added), 1), batch_size):
+                batch = added[i : i + batch_size]
+                if not batch:
+                    break
+                if use_bulk_ids:
+                    await bulk_method(
+                        {"ids": batch, id_field: {"ids": [entity.id], "mode": "ADD"}},
+                        return_fields="id __typename",
+                    )
+                else:
+                    await bulk_method(
+                        {"ids": batch, id_field: entity.id},
+                        return_fields="id __typename",
+                    )
+
+            for i in range(0, max(len(removed), 1), batch_size):
+                batch = removed[i : i + batch_size]
+                if not batch:
+                    break
+                if use_bulk_ids:
+                    await bulk_method(
+                        {
+                            "ids": batch,
+                            id_field: {"ids": [entity.id], "mode": "REMOVE"},
+                        },
+                        return_fields="id __typename",
+                    )
+                else:
+                    await bulk_method(
+                        {"ids": batch, id_field: None},
+                        return_fields="id __typename",
+                    )
+
+        return handler
 
     @classmethod
     def _get_field_names(cls) -> set[str]:
@@ -1367,60 +1860,84 @@ class StashObject(FromGraphQLMixin, BaseModel):
         For existing objects, this performs an update operation, but only if
         there are dirty (changed) fields.
 
+        Side mutations (__side_mutations__) are fired AFTER the main mutation
+        so that new objects already have their server-assigned ID. Side-mutation
+        fields are excluded from the main create/update input. When multiple
+        fields map to the same handler (e.g., resume_time and play_duration
+        both map to _save_activity), the handler is deduplicated and fires once.
+
+        Queued operations (_pending_side_ops) fire after field-based side
+        mutations. These are closures queued by entity methods like
+        ``increment_o()`` or ``reset_play_count()``.
+
         Args:
             client: StashClient instance
 
         Raises:
             ValueError: If save fails
         """
-        # Skip save if object is not dirty and not new
-        if not self.is_dirty() and not self.is_new():
+        # Skip save if object is not dirty, not new, and has no queued ops
+        if not self.is_dirty() and not self.is_new() and not self._pending_side_ops:
             return
 
-        # Get input data
+        # Identify dirty side-mutation fields before building input
+        dirty_fields = set(self.get_changed_fields().keys())
+        dirty_side_fields = dirty_fields & set(self.__side_mutations__.keys())
+
         try:
+            # --- Main mutation ---
             input_data = await self.to_input()
-            # Ensure input_data is a plain dict
             if not isinstance(input_data, dict):
                 raise ValueError(
                     f"to_input() must return a dict, got {type(input_data)}"
                 )
 
-            # For existing objects, if only ID is present, no actual changes to save
-            if not self.is_new() and set(input_data.keys()) <= {"id"}:
-                log.debug(f"No changes to save for {self.__type_name__} {self.id}")
-                self.mark_clean()  # Mark as clean since there are no changes
-                return
+            # Determine if there are real (non-side) changes for the main mutation
+            has_main_changes = self.is_new() or set(input_data.keys()) > {"id"}
 
-            is_update = not self.is_new()
-            operation = "Update" if is_update else "Create"
-            type_name = self.__type_name__
+            if has_main_changes:
+                is_update = not self.is_new()
+                operation = "Update" if is_update else "Create"
+                type_name = self.__type_name__
 
-            # Generate consistent camelCase operation key
-            operation_key = f"{type_name[0].lower()}{type_name[1:]}{operation}"
-            mutation = f"""
-                mutation {operation}{type_name}($input: {type_name}{operation}Input!) {{
-                    {operation_key}(input: $input) {{
-                        id
+                operation_key = f"{type_name[0].lower()}{type_name[1:]}{operation}"
+                mutation = f"""
+                    mutation {operation}{type_name}($input: {type_name}{operation}Input!) {{
+                        {operation_key}(input: $input) {{
+                            id
+                        }}
                     }}
-                }}
-            """
+                """
 
-            result = await client.execute(mutation, {"input": input_data})
+                result = await client.execute(mutation, {"input": input_data})
 
-            # Extract the result using the same camelCase key
-            if operation_key not in result:
-                raise ValueError(f"Missing '{operation_key}' in response: {result}")
+                if operation_key not in result:
+                    raise ValueError(f"Missing '{operation_key}' in response: {result}")
 
-            operation_result = result[operation_key]
-            if operation_result is None:
-                raise ValueError(f"{operation} operation returned None")
+                operation_result = result[operation_key]
+                if operation_result is None:
+                    raise ValueError(f"{operation} operation returned None")
 
-            # Update ID for new objects using the dedicated method
-            if not is_update:
-                self.update_id(operation_result["id"])
+                # Update ID for new objects using the dedicated method
+                if not is_update:
+                    self.update_id(operation_result["id"])
 
-            # Mark object as clean after successful save
+            # --- Field-based side mutations (fire AFTER main mutation so ID is real) ---
+            # Deduplicate handlers: multiple fields may map to the same handler
+            # (e.g., resume_time and play_duration both → _save_activity)
+            seen_handlers: set[int] = set()
+            for field_name in dirty_side_fields:
+                handler = self.__side_mutations__[field_name]
+                handler_id = id(handler)
+                if handler_id not in seen_handlers:
+                    seen_handlers.add(handler_id)
+                    await handler(client, self)
+
+            # --- Queued side operations ---
+            for op in self._pending_side_ops:
+                await op(client, self)
+
+            # Mark object as clean after all mutations succeed
             self.mark_clean()
 
         except Exception as e:
@@ -1685,8 +2202,14 @@ class StashObject(FromGraphQLMixin, BaseModel):
                 else:
                     transformed = transform(item)
                 if transformed:
-                    # Ensure we append a string to the list
-                    items.append(str(transformed))
+                    # For BaseModel results (complex objects), convert to dict;
+                    # for simple results (IDs), convert to string.
+                    if isinstance(transformed, BaseModel):
+                        items.append(
+                            transformed.model_dump(exclude_unset=True, by_alias=True)
+                        )
+                    else:
+                        items.append(str(transformed))
         return items
 
     async def _process_relationships(
@@ -1830,11 +2353,16 @@ class StashObject(FromGraphQLMixin, BaseModel):
         Raises:
             ValueError: If creation is not supported and object is new
         """
-        # Process all fields
-        data = await self._process_fields(set(self.__field_conversions__.keys()))
+        # Process all fields (excluding side-mutation fields)
+        side_keys = set(self.__side_mutations__.keys())
+        data = await self._process_fields(
+            set(self.__field_conversions__.keys()) - side_keys
+        )
 
-        # Process all relationships
-        rel_data = await self._process_relationships(set(self.__relationships__.keys()))
+        # Process all relationships (excluding side-mutation fields)
+        rel_data = await self._process_relationships(
+            set(self.__relationships__.keys()) - side_keys
+        )
         data.update(rel_data)
 
         # Determine if this is a create or update operation
@@ -1877,6 +2405,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
         # Get dirty fields using snapshot comparison
         # This leverages Pydantic's model_dump() for accurate change detection
         dirty_fields = set(self.get_changed_fields().keys())
+
+        # Exclude side-mutation fields — they are persisted by separate handlers
+        dirty_fields -= set(self.__side_mutations__.keys())
 
         # Process dirty regular fields
         field_data = await self._process_fields(dirty_fields)

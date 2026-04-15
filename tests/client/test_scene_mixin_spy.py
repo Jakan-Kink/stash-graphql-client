@@ -28,12 +28,9 @@ from tests.fixtures import (
 )
 
 
-# Configure logging to TRACE level
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(levelname)s [%(name)s] %(message)s",
-)
+# Configure module-level logger only (not root logger)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 @pytest.mark.asyncio

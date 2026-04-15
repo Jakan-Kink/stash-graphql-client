@@ -106,18 +106,24 @@ class TestTagSelfReferentialSync:
         assert grandchild.parents[0].parents[0] == parent
         assert grandchild.parents[0].parents[0].parents[0] == grandparent
 
-    def test_unset_relationships_not_synced(self):
-        """Test that UNSET relationships don't trigger sync."""
+    def test_unset_list_relationships_auto_initialized_on_sync(self):
+        """Test that UNSET list relationships are auto-initialized during sync.
 
+        When child sets parents=[parent], the inverse sync detects that
+        parent.children is UNSET but is a list relationship, initializes
+        it to [], and appends the child. This enables bidirectional sync
+        during preload regardless of entity load order.
+        """
         parent = Tag(name="Parent")  # parents/children default to UNSET
         child = Tag(name="Child", parents=[])  # Explicitly set to empty list
 
-        # This should not crash even though parent.children is UNSET
+        # This should auto-initialize parent.children and add child
         child.parents = [parent]
 
-        # parent.children is still UNSET, so sync is skipped
-        # (This is expected behavior - can't sync to UNSET fields)
-        assert isinstance(parent.children, UnsetType)
+        # parent.children was UNSET but auto-initialized to [child]
+        assert isinstance(parent.children, list)
+        assert len(parent.children) == 1
+        assert parent.children[0] is child
 
     def test_duplicate_prevention(self):
         """Test that setting the same relationship twice doesn't create duplicates."""
@@ -201,7 +207,7 @@ class TestInverseSyncEdgeCases:
         This covers line 505: continue when isinstance(related_obj, StashObject) is False.
         """
         # Create tags with explicit parents/children to enable inverse sync
-        child = Tag(id="child-1", name="Child", parents=[], children=[])
+        child = Tag(id="301", name="Child", parents=[], children=[])
 
         # Create a mixed list with StashObject and non-StashObject items
         mixed_list = [
@@ -210,7 +216,7 @@ class TestInverseSyncEdgeCases:
             123,  # Int - should be skipped at line 505
         ]
 
-        tag_with_mixed = Tag(id="mixed-1", name="Mixed", parents=[], children=[])
+        tag_with_mixed = Tag(id="302", name="Mixed", parents=[], children=[])
 
         # Manually call _sync_inverse_relationship (singular!) to test line 505
         tag_with_mixed._sync_inverse_relationship("children", mixed_list)
@@ -229,10 +235,10 @@ class TestInverseSyncEdgeCases:
         # So let's create a custom scenario by directly manipulating metadata
 
         # Create mock Gallery with scenes list
-        gallery = Gallery(id="gal-1", title="Gallery", scenes=[])
+        gallery = Gallery(id="501", title="Gallery", scenes=[])
 
         # Create Scene and manually trigger single-object sync
-        scene = Scene(id="scene-1", title="Scene", galleries=[], performers=[], tags=[])
+        scene = Scene(id="401", title="Scene", galleries=[], performers=[], tags=[])
 
         # Temporarily modify Scene's relationship metadata to treat galleries as single-object
         # Save original metadata
@@ -271,10 +277,10 @@ class TestInverseSyncEdgeCases:
         """
         # Create scenes with IDs
         scene1 = Scene.model_construct(
-            id="scene-1", title="Scene 1", galleries=[], performers=[], tags=[]
+            id="401", title="Scene 1", galleries=[], performers=[], tags=[]
         )
         scene2 = Scene.model_construct(
-            id="scene-2", title="Scene 2", galleries=[], performers=[], tags=[]
+            id="402", title="Scene 2", galleries=[], performers=[], tags=[]
         )
 
         # Manually set scene1.studio to a non-list value (simulating single-object inverse)
@@ -307,10 +313,10 @@ class TestInverseSyncEdgeCases:
         This covers line 509->exit: when new_value is None for single-object relationship.
         """
         # Create Gallery with scenes list
-        gallery = Gallery(id="gal-1", title="Gallery", scenes=[])
+        gallery = Gallery(id="501", title="Gallery", scenes=[])
 
         # Create Scene with a single-object relationship metadata
-        scene = Scene(id="scene-1", title="Scene", galleries=[], performers=[], tags=[])
+        scene = Scene(id="401", title="Scene", galleries=[], performers=[], tags=[])
 
         # Save original metadata
         original_metadata = scene.__relationships__.get("galleries")

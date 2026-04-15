@@ -22,9 +22,16 @@ class TestGalleryRelationshipMetadata:
                 f"Gallery.{rel_name} should be RelationshipMetadata, not {type(rel_meta)}"
             )
 
-    def test_gallery_has_four_relationships(self):
-        """Test that Gallery has exactly 4 relationships."""
-        expected_relationships = {"studio", "performers", "tags", "scenes"}
+    def test_gallery_has_six_relationships(self):
+        """Test that Gallery has exactly 6 relationships."""
+        expected_relationships = {
+            "studio",
+            "performers",
+            "tags",
+            "scenes",
+            "images",
+            "chapters",
+        }
         actual_relationships = set(Gallery.__relationships__.keys())
 
         assert actual_relationships == expected_relationships, (
@@ -51,9 +58,9 @@ class TestGalleryStudioRelationship:
         assert rel.is_list is False
 
     def test_studio_query_strategy(self):
-        """Test studio uses filter_query strategy."""
+        """Test studio uses direct_field strategy (belongs_to)."""
         rel = Gallery.__relationships__["studio"]
-        assert rel.query_strategy == "filter_query"
+        assert rel.query_strategy == "direct_field"
 
     def test_studio_query_field(self):
         """Test studio query field is 'studio'."""
@@ -64,8 +71,8 @@ class TestGalleryStudioRelationship:
         """Test studio has inverse relationship metadata."""
         rel = Gallery.__relationships__["studio"]
         assert rel.inverse_type == "Studio"
-        # Studio doesn't have a direct 'galleries' field, uses filter query
-        assert rel.query_strategy == "filter_query"
+        # belongs_to uses direct_field strategy
+        assert rel.query_strategy == "direct_field"
 
     def test_studio_auto_sync(self):
         """Test studio relationship has auto_sync enabled."""
@@ -104,9 +111,7 @@ class TestGalleryPerformersRelationship:
         """Test performers has inverse relationship metadata."""
         rel = Gallery.__relationships__["performers"]
         assert rel.inverse_type == "Performer"
-        assert (
-            rel.inverse_query_field is None
-        )  # Performer has gallery_count, not galleries list
+        assert rel.inverse_query_field == "galleries"
 
     def test_performers_auto_sync(self):
         """Test performers relationship has auto_sync enabled."""
@@ -216,7 +221,7 @@ class TestGalleryRelationshipMetadataIntegration:
 
         assert "RelationshipMetadata" in repr_str
         assert "studio_id" in repr_str
-        assert "filter_query" in repr_str
+        assert "direct_field" in repr_str
 
     def test_query_field_auto_derivation(self):
         """Test that query_field is auto-derived from target_field."""

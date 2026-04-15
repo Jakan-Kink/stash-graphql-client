@@ -51,7 +51,7 @@ class TestGalleryChapterGalleryRelationship:
         assert rel.is_list is False
 
     def test_gallery_query_strategy(self):
-        """Test gallery uses direct_field strategy."""
+        """Test gallery uses direct_field strategy (belongs_to)."""
         rel = GalleryChapter.__relationships__["gallery"]
         assert rel.query_strategy == "direct_field"
 
@@ -70,13 +70,6 @@ class TestGalleryChapterGalleryRelationship:
         """Test gallery relationship has auto_sync enabled."""
         rel = GalleryChapter.__relationships__["gallery"]
         assert rel.auto_sync is True
-
-    def test_gallery_backward_compatibility(self):
-        """Test gallery RelationshipMetadata can convert to legacy tuple."""
-        rel = GalleryChapter.__relationships__["gallery"]
-        legacy_tuple = rel.to_tuple()
-
-        assert legacy_tuple == ("gallery_id", False, None)
 
 
 class TestGalleryChapterRelationshipMetadataIntegration:

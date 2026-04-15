@@ -153,6 +153,7 @@ nav:
       - UNSET Pattern: guide/unset-pattern.md
       - Fuzzy Dates: guide/fuzzy-dates.md
       - Usage Examples: guide/usage-examples.md
+      - Batched Mutations: guide/batched-mutations.md
   - Architecture:
       - Overview: architecture/overview.md
       - Identity Map: architecture/identity-map.md
@@ -165,6 +166,7 @@ nav:
   - API Reference:
       - Client: api/client.md
       - Context: api/context.md
+      - Batch Operations: api/batch.md
       - Entity Store: api/store.md
       - Errors: api/errors.md
       - Schema: api/schema.md

@@ -1,6 +1,6 @@
 """Marker-related client functionality."""
 
-from typing import Any
+from typing import Any, overload
 
 from ... import fragments
 from ...fragments import fragment_store
@@ -208,39 +208,38 @@ class MarkerClientMixin(StashClientProtocol):
             self.log.error(f"Failed to delete scene markers: {e}")
             raise
 
+    @overload
+    async def bulk_scene_marker_update(
+        self, input_data: BulkSceneMarkerUpdateInput | dict[str, Any]
+    ) -> list[SceneMarker]: ...
+
+    @overload
     async def bulk_scene_marker_update(
         self,
         input_data: BulkSceneMarkerUpdateInput | dict[str, Any],
-    ) -> list[SceneMarker]:
+        *,
+        return_fields: str,
+    ) -> list[dict[str, Any]]: ...
+
+    async def bulk_scene_marker_update(
+        self,
+        input_data: BulkSceneMarkerUpdateInput | dict[str, Any],
+        *,
+        return_fields: str | None = None,
+    ) -> list[SceneMarker] | list[dict[str, Any]]:
         """Bulk update scene markers.
 
         Args:
             input_data: BulkSceneMarkerUpdateInput object or dictionary containing:
                 - ids: List of scene marker IDs to update (optional)
                 - And any fields to update (e.g., primary_tag_id, tag_ids, etc.)
+            return_fields: If provided, use a minimal inline mutation requesting
+                only these fields (e.g. ``"id"``).  Returns raw dicts instead
+                of SceneMarker objects.
 
         Returns:
-            List of updated SceneMarker objects
-
-        Examples:
-            Update multiple markers' primary tag:
-            ```python
-            markers = await client.bulk_scene_marker_update({
-                "ids": ["1", "2", "3"],
-                "primary_tag_id": "tag123"
-            })
-            ```
-
-            Add tags to multiple markers:
-            ```python
-            from stash_graphql_client.types import BulkSceneMarkerUpdateInput, BulkUpdateIds
-
-            input_data = BulkSceneMarkerUpdateInput(
-                ids=["1", "2", "3"],
-                tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode="ADD")
-            )
-            markers = await client.bulk_scene_marker_update(input_data)
-            ```
+            List of updated SceneMarker objects (default), or list of dicts when
+            ``return_fields`` is provided.
         """
         try:
             # Convert BulkSceneMarkerUpdateInput to dict if needed
@@ -255,6 +254,13 @@ class MarkerClientMixin(StashClientProtocol):
                     )
                 validated = BulkSceneMarkerUpdateInput(**input_data)
                 input_dict = validated.to_graphql()
+
+            if return_fields is not None:
+                mutation = f"""mutation BulkSceneMarkerUpdate($input: BulkSceneMarkerUpdateInput!) {{
+                    bulkSceneMarkerUpdate(input: $input) {{ {return_fields} }}
+                }}"""
+                result = await self.execute(mutation, {"input": input_dict})
+                return result.get("bulkSceneMarkerUpdate") or []
 
             result = await self.execute(
                 fragments.BULK_SCENE_MARKER_UPDATE_MUTATION,

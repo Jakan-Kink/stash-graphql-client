@@ -281,7 +281,7 @@ async def test_create_group(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    group = Group(id="new", name="New Group", duration=7200, director="Test Director")
+    group = Group(id="9999", name="New Group", duration=7200, director="Test Director")
     try:
         created = await respx_stash_client.create_group(group)
     finally:
@@ -301,7 +301,7 @@ async def test_create_group(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_create_group_with_tags(respx_stash_client: StashClient) -> None:
     """Test creating a group with tags."""
-    tag_data = create_tag_dict(id="tag1", name="Action")
+    tag_data = create_tag_dict(id="301", name="Action")
     group_data = create_group_dict(
         id="123",
         name="Action Movie",
@@ -314,7 +314,7 @@ async def test_create_group_with_tags(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    group = Group(id="new", name="Action Movie")
+    group = Group(id="9999", name="Action Movie")
     created = await respx_stash_client.create_group(group)
 
     assert created.id == "123"
@@ -344,7 +344,7 @@ async def test_create_group_error_raises(respx_stash_client: StashClient) -> Non
         ]
     )
 
-    group = Group(id="temp", name="New Group")
+    group = Group(id="9998", name="New Group")
 
     try:
         with pytest.raises(StashGraphQLError, match="unknown field"):
@@ -640,8 +640,8 @@ async def test_add_group_sub_groups_with_input_type(
     )
 
     input_data = GroupSubGroupAddInput(
-        containing_group_id="parent_123",
-        sub_groups=[GroupDescriptionInput(group_id="child_456")],
+        containing_group_id="10",
+        sub_groups=[GroupDescriptionInput(group_id="11")],
         insert_index=0,
     )
     result = await respx_stash_client.add_group_sub_groups(input_data)
@@ -715,7 +715,7 @@ async def test_remove_group_sub_groups_with_input_type(
     )
 
     input_data = GroupSubGroupRemoveInput(
-        containing_group_id="parent_123",
+        containing_group_id="10",
         sub_group_ids=["child_456", "child_789"],
     )
     result = await respx_stash_client.remove_group_sub_groups(input_data)
@@ -785,9 +785,9 @@ async def test_reorder_sub_groups_with_input_type(
     )
 
     input_data = ReorderSubGroupsInput(
-        group_id="parent_123",
+        group_id="10",
         sub_group_ids=["child_1", "child_2"],
-        insert_at_id="child_1",
+        insert_at_id="12",
         insert_after=False,
     )
     result = await respx_stash_client.reorder_sub_groups(input_data)

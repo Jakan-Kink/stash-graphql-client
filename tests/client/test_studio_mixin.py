@@ -246,7 +246,7 @@ async def test_create_studio(respx_stash_client: StashClient) -> None:
     This covers lines 96-103: successful creation.
     """
     created_studio_data = create_studio_dict(
-        id="new_studio_123",
+        id="9001",
         name="New Studio",
     )
 
@@ -258,14 +258,14 @@ async def test_create_studio(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    studio = Studio(id="new", name="New Studio")
+    studio = Studio(id="9999", name="New Studio")
     try:
         result = await respx_stash_client.create_studio(studio)
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "new_studio_123"
+    assert result.id == "9001"
     assert result.name == "New Studio"
 
     assert len(graphql_route.calls) == 1
@@ -286,7 +286,7 @@ async def test_create_studio_error_raises(respx_stash_client: StashClient) -> No
         ]
     )
 
-    studio = Studio(id="new", name="Will Fail")
+    studio = Studio(id="9999", name="Will Fail")
 
     try:
         with pytest.raises(StashGraphQLError):
@@ -502,9 +502,9 @@ async def test_bulk_studio_update_with_dict(respx_stash_client: StashClient) -> 
     This covers lines 231-232: else branch when input_data is a dict.
     """
     updated_studios_data = [
-        create_studio_dict(id="s1", name="Studio 1"),
-        create_studio_dict(id="s2", name="Studio 2"),
-        create_studio_dict(id="s3", name="Studio 3"),
+        create_studio_dict(id="1", name="Studio 1"),
+        create_studio_dict(id="2", name="Studio 2"),
+        create_studio_dict(id="3", name="Studio 3"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -517,7 +517,7 @@ async def test_bulk_studio_update_with_dict(respx_stash_client: StashClient) -> 
     )
 
     input_dict = {
-        "ids": ["s1", "s2", "s3"],
+        "ids": ["1", "2", "3"],
         "rating100": 80,
     }
 
@@ -527,14 +527,14 @@ async def test_bulk_studio_update_with_dict(respx_stash_client: StashClient) -> 
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0].id == "s1"
-    assert result[1].id == "s2"
-    assert result[2].id == "s3"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkStudioUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["s1", "s2", "s3"]
+    assert req["variables"]["input"]["ids"] == ["1", "2", "3"]
 
 
 @pytest.mark.asyncio
@@ -547,8 +547,8 @@ async def test_bulk_studio_update_with_input_type(
     This covers lines 229-230: if isinstance(input_data, BulkStudioUpdateInput).
     """
     updated_studios_data = [
-        create_studio_dict(id="s1", name="Studio 1"),
-        create_studio_dict(id="s2", name="Studio 2"),
+        create_studio_dict(id="1", name="Studio 1"),
+        create_studio_dict(id="2", name="Studio 2"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -561,7 +561,7 @@ async def test_bulk_studio_update_with_input_type(
     )
 
     input_data = BulkStudioUpdateInput(
-        ids=["s1", "s2"],
+        ids=["1", "2"],
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
@@ -571,13 +571,13 @@ async def test_bulk_studio_update_with_input_type(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
-    assert result[0].id == "s1"
-    assert result[1].id == "s2"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkStudioUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["s1", "s2"]
+    assert req["variables"]["input"]["ids"] == ["1", "2"]
     # Schema uses snake_case for this field
     assert req["variables"]["input"]["tag_ids"]["ids"] == ["tag1", "tag2"]
 
@@ -596,7 +596,7 @@ async def test_bulk_studio_update_error_raises(respx_stash_client: StashClient) 
     )
 
     input_data = BulkStudioUpdateInput(
-        ids=["s1", "s2"],
+        ids=["1", "2"],
         rating100=80,
     )
 
@@ -625,12 +625,12 @@ async def test_find_studio_hierarchy_multi_level(
     This covers lines 267-283: the full hierarchy traversal.
     """
     # Create nested studio hierarchy
-    root_studio = create_studio_dict(id="root", name="Root Studio", parent_studio=None)
+    root_studio = create_studio_dict(id="10", name="Root Studio", parent_studio=None)
     parent_studio = create_studio_dict(
-        id="parent", name="Parent Studio", parent_studio=root_studio
+        id="11", name="Parent Studio", parent_studio=root_studio
     )
     child_studio = create_studio_dict(
-        id="child", name="Child Studio", parent_studio=parent_studio
+        id="12", name="Child Studio", parent_studio=parent_studio
     )
 
     # Mock responses for each level of traversal
@@ -644,24 +644,24 @@ async def test_find_studio_hierarchy_multi_level(
     )
 
     try:
-        hierarchy = await respx_stash_client.find_studio_hierarchy("child")
+        hierarchy = await respx_stash_client.find_studio_hierarchy("12")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Verify hierarchy is ordered from root to child
     assert len(hierarchy) == 3
-    assert hierarchy[0].id == "root"
+    assert hierarchy[0].id == "10"
     assert hierarchy[0].name == "Root Studio"
-    assert hierarchy[1].id == "parent"
+    assert hierarchy[1].id == "11"
     assert hierarchy[1].name == "Parent Studio"
-    assert hierarchy[2].id == "child"
+    assert hierarchy[2].id == "12"
     assert hierarchy[2].name == "Child Studio"
 
     # Verify request
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "findStudio" in req["query"]
-    assert req["variables"]["id"] == "child"
+    assert req["variables"]["id"] == "12"
 
 
 @pytest.mark.asyncio
@@ -674,7 +674,7 @@ async def test_find_studio_hierarchy_single_studio(
     This covers line 277-280: checking if parent_studio exists.
     """
     # Studio with no parent
-    studio_data = create_studio_dict(id="solo", name="Solo Studio", parent_studio=None)
+    studio_data = create_studio_dict(id="13", name="Solo Studio", parent_studio=None)
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -683,13 +683,13 @@ async def test_find_studio_hierarchy_single_studio(
     )
 
     try:
-        hierarchy = await respx_stash_client.find_studio_hierarchy("solo")
+        hierarchy = await respx_stash_client.find_studio_hierarchy("13")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Should return single studio
     assert len(hierarchy) == 1
-    assert hierarchy[0].id == "solo"
+    assert hierarchy[0].id == "13"
     assert hierarchy[0].name == "Solo Studio"
 
     assert len(graphql_route.calls) == 1
@@ -732,12 +732,12 @@ async def test_find_studio_root_from_child(respx_stash_client: StashClient) -> N
     This covers lines 315-316: returning hierarchy[0].
     """
     # Create nested hierarchy
-    root_studio = create_studio_dict(id="root", name="Root Studio", parent_studio=None)
+    root_studio = create_studio_dict(id="10", name="Root Studio", parent_studio=None)
     parent_studio = create_studio_dict(
-        id="parent", name="Parent Studio", parent_studio=root_studio
+        id="11", name="Parent Studio", parent_studio=root_studio
     )
     child_studio = create_studio_dict(
-        id="child", name="Child Studio", parent_studio=parent_studio
+        id="12", name="Child Studio", parent_studio=parent_studio
     )
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -749,13 +749,13 @@ async def test_find_studio_root_from_child(respx_stash_client: StashClient) -> N
     )
 
     try:
-        root = await respx_stash_client.find_studio_root("child")
+        root = await respx_stash_client.find_studio_root("12")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Should return the root studio
     assert root is not None
-    assert root.id == "root"
+    assert root.id == "10"
     assert root.name == "Root Studio"
 
     assert len(graphql_route.calls) == 1
@@ -769,9 +769,7 @@ async def test_find_studio_root_already_root(respx_stash_client: StashClient) ->
     This covers lines 315-316: same studio returned when no parent.
     """
     # Studio with no parent
-    studio_data = create_studio_dict(
-        id="already_root", name="Already Root", parent_studio=None
-    )
+    studio_data = create_studio_dict(id="14", name="Already Root", parent_studio=None)
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -780,13 +778,13 @@ async def test_find_studio_root_already_root(respx_stash_client: StashClient) ->
     )
 
     try:
-        root = await respx_stash_client.find_studio_root("already_root")
+        root = await respx_stash_client.find_studio_root("14")
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     # Should return itself
     assert root is not None
-    assert root.id == "already_root"
+    assert root.id == "14"
     assert root.name == "Already Root"
 
     assert len(graphql_route.calls) == 1
@@ -828,8 +826,8 @@ async def test_map_studio_ids_string_input(respx_stash_client: StashClient) -> N
 
     This covers lines 386-403: string input handling.
     """
-    studio1 = create_studio_dict(id="s1", name="Studio One")
-    studio2 = create_studio_dict(id="s2", name="Studio Two")
+    studio1 = create_studio_dict(id="1", name="Studio One")
+    studio2 = create_studio_dict(id="2", name="Studio Two")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -860,8 +858,8 @@ async def test_map_studio_ids_string_input(respx_stash_client: StashClient) -> N
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 2
-    assert studio_ids[0] == "s1"
-    assert studio_ids[1] == "s2"
+    assert studio_ids[0] == "1"
+    assert studio_ids[1] == "2"
 
     # Verify both queries were made
     assert len(graphql_route.calls) == 2
@@ -878,7 +876,7 @@ async def test_map_studio_ids_dict_input(respx_stash_client: StashClient) -> Non
 
     This covers lines 406-423: dict input handling.
     """
-    studio_data = create_studio_dict(id="s1", name="Dict Studio")
+    studio_data = create_studio_dict(id="1", name="Dict Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -898,7 +896,7 @@ async def test_map_studio_ids_dict_input(respx_stash_client: StashClient) -> Non
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "s1"
+    assert studio_ids[0] == "1"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -915,12 +913,12 @@ async def test_map_studio_ids_studio_object_with_id(
     This covers lines 377-381: Studio object with ID.
     """
     # No GraphQL calls needed - just extract ID
-    studio_obj = Studio(id="existing_id", name="Test Studio")
+    studio_obj = Studio(id="17", name="Test Studio")
 
     studio_ids = await respx_stash_client.map_studio_ids([studio_obj])
 
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "existing_id"
+    assert studio_ids[0] == "17"
 
 
 @pytest.mark.asyncio
@@ -932,7 +930,7 @@ async def test_map_studio_ids_studio_object_new_searches_by_name(
 
     This covers lines 380-384: Studio object with is_new() True falls through to name search.
     """
-    studio_data = create_studio_dict(id="found_id", name="Test Studio")
+    studio_data = create_studio_dict(id="18", name="Test Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -954,7 +952,7 @@ async def test_map_studio_ids_studio_object_new_searches_by_name(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "found_id"
+    assert studio_ids[0] == "18"
 
     # Should search by name
     assert len(graphql_route.calls) == 1
@@ -969,7 +967,7 @@ async def test_map_studio_ids_create_missing(respx_stash_client: StashClient) ->
 
     This covers lines 395-399, 417-419: auto-creation paths.
     """
-    created_studio = create_studio_dict(id="new_id", name="New Studio")
+    created_studio = create_studio_dict(id="19", name="New Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -995,7 +993,7 @@ async def test_map_studio_ids_create_missing(respx_stash_client: StashClient) ->
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "new_id"
+    assert studio_ids[0] == "19"
 
     # Verify search and create were both called
     assert len(graphql_route.calls) == 2
@@ -1046,8 +1044,8 @@ async def test_map_studio_ids_mixed_types(respx_stash_client: StashClient) -> No
 
     This covers all input type branches together.
     """
-    studio_from_name = create_studio_dict(id="s1", name="String Studio")
-    studio_from_dict = create_studio_dict(id="s2", name="Dict Studio")
+    studio_from_name = create_studio_dict(id="1", name="String Studio")
+    studio_from_dict = create_studio_dict(id="2", name="Dict Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1071,7 +1069,7 @@ async def test_map_studio_ids_mixed_types(respx_stash_client: StashClient) -> No
     )
 
     # Mix of Studio object with ID, string, and dict
-    studio_obj = Studio(id="s0", name="Object Studio")
+    studio_obj = Studio(id="15", name="Object Studio")
     try:
         studio_ids = await respx_stash_client.map_studio_ids(
             [studio_obj, "String Studio", {"name": "Dict Studio"}]
@@ -1080,9 +1078,9 @@ async def test_map_studio_ids_mixed_types(respx_stash_client: StashClient) -> No
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 3
-    assert studio_ids[0] == "s0"  # Direct from object
-    assert studio_ids[1] == "s1"  # From search
-    assert studio_ids[2] == "s2"  # From search
+    assert studio_ids[0] == "15"  # Direct from object
+    assert studio_ids[1] == "1"  # From search
+    assert studio_ids[2] == "2"  # From search
 
     # Only 2 GraphQL calls (object didn't need search)
     assert len(graphql_route.calls) == 2
@@ -1095,7 +1093,7 @@ async def test_map_studio_ids_error_handling(respx_stash_client: StashClient) ->
 
     This covers lines 425-427: exception handling.
     """
-    studio_ok = create_studio_dict(id="s_ok", name="OK Studio")
+    studio_ok = create_studio_dict(id="16", name="OK Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1121,7 +1119,7 @@ async def test_map_studio_ids_error_handling(respx_stash_client: StashClient) ->
 
     # Should skip error studio and continue
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "s_ok"
+    assert studio_ids[0] == "16"
 
     assert len(graphql_route.calls) == 2
 
@@ -1133,7 +1131,7 @@ async def test_map_studio_ids_create_from_dict(respx_stash_client: StashClient) 
 
     This covers lines 417-419: create from dict branch.
     """
-    created_studio = create_studio_dict(id="new_dict_id", name="New Dict Studio")
+    created_studio = create_studio_dict(id="20", name="New Dict Studio")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1159,7 +1157,7 @@ async def test_map_studio_ids_create_from_dict(respx_stash_client: StashClient) 
         dump_graphql_calls(graphql_route.calls)
 
     assert len(studio_ids) == 1
-    assert studio_ids[0] == "new_dict_id"
+    assert studio_ids[0] == "20"
 
     assert len(graphql_route.calls) == 2
 
@@ -1255,7 +1253,7 @@ async def test_map_studio_ids_exception_handling_patched(
     This covers lines 429-431: exception caught, logged, continue processing.
     Uses patch to bypass find_studios' internal exception handler.
     """
-    studio_data = create_studio_dict(id="good_studio", name="GoodStudio")
+    studio_data = create_studio_dict(id="21", name="GoodStudio")
 
     # Mock find_studios to raise exception for first call, succeed for second
     original_find_studios = respx_stash_client.find_studios
@@ -1295,7 +1293,7 @@ async def test_map_studio_ids_exception_handling_patched(
 
     # First studio failed (exception caught at lines 429-431), second succeeded
     assert len(result) == 1
-    assert result[0] == "good_studio"
+    assert result[0] == "21"
 
     assert call_count == 2  # Both calls were attempted
 
@@ -1333,3 +1331,39 @@ async def test_map_studio_ids_studio_object_with_id_but_name_unset(
 
     # Verify NO HTTP calls were made (name lookup was skipped)
     assert len(graphql_route.calls) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_bulk_studio_update_with_return_fields(
+    respx_stash_client: StashClient,
+) -> None:
+    """Test bulk_studio_update with return_fields uses minimal mutation."""
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "bulkStudioUpdate",
+                    [{"id": "1"}, {"id": "2"}],
+                ),
+            )
+        ]
+    )
+
+    try:
+        result = await respx_stash_client.bulk_studio_update(
+            {"ids": ["1", "2"], "rating100": 80},
+            return_fields="id",
+        )
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    # Returns raw dicts, not Studio objects
+    assert result == [{"id": "1"}, {"id": "2"}]
+
+    # Verify the minimal mutation was used (no full fragment)
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "bulkStudioUpdate" in req["query"]
+    # Should NOT contain full studio fields like "image_path" or "child_studios"
+    assert "child_studios" not in req["query"]

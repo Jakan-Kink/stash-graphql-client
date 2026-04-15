@@ -3,25 +3,28 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field, field_validator
 
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
 )
 from .files import ImageFile, VideoFile
 from .metadata import CustomFieldsInput
 from .scalars import Map
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
 
 
 if TYPE_CHECKING:
+    from stash_graphql_client.client import StashClient
+
     from .gallery import Gallery
     from .performer import Performer
     from .studio import Studio
@@ -104,7 +107,7 @@ class Image(StashObject):
     __bulk_destroy_input_type__ = ImagesDestroyInput
     # No __create_input_type__ - images can only be updated
 
-    # Fields to track for changes - only fields that can be written via input types
+    # Fields to track for changes
     __tracked_fields__ = {
         "title",  # ImageUpdateInput
         "code",  # ImageUpdateInput
@@ -117,6 +120,13 @@ class Image(StashObject):
         "galleries",  # mapped to gallery_ids
         "tags",  # mapped to tag_ids
         "performers",  # mapped to performer_ids
+        # Side-mutation field
+        "o_counter",  # imageIncrementO/imageDecrementO/imageResetO
+    }
+
+    # Side mutations: o_counter is managed via increment/decrement/reset mutations
+    __side_mutations__: ClassVar[dict] = {
+        "o_counter": lambda client, obj: Image._save_o_counter(client, obj),  # noqa: PLW0108
     }
 
     # Optional fields
@@ -149,41 +159,10 @@ class Image(StashObject):
 
     # Relationship definitions with their mappings
     __relationships__ = {
-        # Pattern B: Filter query relationship (many-to-one)
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            query_strategy="filter_query",
-            filter_query_hint="findImages(image_filter={studios: {value: [studio_id]}})",
-            notes="Studio has image_count and filter queries, not direct images field",
-        ),
-        # Pattern A: Direct field relationships (many-to-many)
-        "performers": RelationshipMetadata(
-            target_field="performer_ids",
-            is_list=True,
-            query_field="performers",
-            inverse_type="Performer",
-            query_strategy="direct_field",
-            notes="Performer has image_count resolver, not direct images list",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Tag has image_count resolver, not direct images list",
-        ),
-        "galleries": RelationshipMetadata(
-            target_field="gallery_ids",
-            is_list=True,
-            query_field="galleries",
-            inverse_type="Gallery",
-            query_strategy="direct_field",
-            notes="Gallery has image_count and image(index) method, not direct images list",
-        ),
+        "studio": belongs_to("Studio", inverse_query_field="images"),
+        "performers": habtm("Performer", inverse_query_field="images"),
+        "tags": habtm("Tag", inverse_query_field="images"),
+        "galleries": habtm("Gallery", inverse_query_field="images"),
     }
 
     # Field definitions with their conversion functions
@@ -205,6 +184,39 @@ class Image(StashObject):
             )
         ),
     }
+
+    @staticmethod
+    async def _save_o_counter(client: StashClient, image: Image) -> None:
+        """Side-mutation handler for o_counter.
+
+        Computes delta between current and snapshot o_counter, then fires
+        the appropriate client mixin methods. Updates the local o_counter
+        from the mutation's returned Int!.
+        """
+        current = image.o_counter if is_set(image.o_counter) else 0
+        snapshot = image._snapshot.get("o_counter", 0)
+        # Treat UNSET/None snapshot as 0
+        if not isinstance(snapshot, int):
+            snapshot = 0
+        if not isinstance(current, int):
+            current = 0
+
+        # Reset takes priority if current is explicitly 0
+        if current == 0 and snapshot != 0:
+            image.o_counter = await client.image_reset_o(image.id)
+            return
+
+        delta = current - snapshot
+        if delta > 0:
+            new_count = current
+            for _ in range(delta):
+                new_count = await client.image_increment_o(image.id)
+            image.o_counter = new_count
+        elif delta < 0:
+            new_count = current
+            for _ in range(abs(delta)):
+                new_count = await client.image_decrement_o(image.id)
+            image.o_counter = new_count
 
     async def add_performer(self, performer: Performer) -> None:
         """Add performer (syncs inverse automatically, call save() to persist)."""
@@ -256,8 +268,12 @@ class Image(StashObject):
                 typename = item["__typename"]
                 file_type = type_map.get(typename)
                 if file_type:
-                    # Construct the correct type from the dict
-                    result.append(file_type.model_validate(item))
+                    # Construct with from_graphql context so _received_fields
+                    # is populated (fallback path when _process_nested_graphql
+                    # didn't handle the item, e.g. via validate_assignment)
+                    result.append(
+                        file_type.model_validate(item, context={"from_graphql": True})
+                    )
                 else:
                     # Unknown typename, skip
                     continue

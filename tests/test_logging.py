@@ -24,74 +24,97 @@ def test_configure_logging_with_defaults() -> None:
 
     This covers lines 41-49 in logging.py - default format_string and handler creation.
     """
-    # Clear any existing handlers
+    original_handlers = stash_logger.handlers[:]
+    original_level = stash_logger.level
     stash_logger.handlers.clear()
 
-    # Call with defaults
-    configure_logging()
+    try:
+        # Call with defaults
+        configure_logging()
 
-    # Verify handler was added
-    assert len(stash_logger.handlers) == 1
-    handler = stash_logger.handlers[0]
+        # Verify handler was added
+        assert len(stash_logger.handlers) == 1
+        handler = stash_logger.handlers[0]
 
-    # Verify it's a StreamHandler to stderr
-    assert isinstance(handler, logging.StreamHandler)
-    assert handler.stream == sys.stderr
+        # Verify it's a StreamHandler to stderr
+        assert isinstance(handler, logging.StreamHandler)
+        assert handler.stream == sys.stderr
 
-    # Verify formatter was set with default format
-    assert handler.formatter is not None
-    fmt = handler.formatter._fmt
-    assert fmt is not None
-    assert "%(asctime)s" in fmt
-    assert "%(name)s" in fmt
-    assert "%(levelname)s" in fmt
-    assert "%(message)s" in fmt
+        # Verify formatter was set with default format
+        assert handler.formatter is not None
+        fmt = handler.formatter._fmt
+        assert fmt is not None
+        assert "%(asctime)s" in fmt
+        assert "%(name)s" in fmt
+        assert "%(levelname)s" in fmt
+        assert "%(message)s" in fmt
 
-    # Verify level was set
-    assert stash_logger.level == logging.INFO
+        # Verify level was set
+        assert stash_logger.level == logging.INFO
+    finally:
+        stash_logger.handlers[:] = original_handlers
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
 def test_configure_logging_with_custom_level() -> None:
     """Test configure_logging() with custom level."""
+    original_handlers = stash_logger.handlers[:]
+    original_level = stash_logger.level
     stash_logger.handlers.clear()
 
-    configure_logging(level=logging.DEBUG)
+    try:
+        configure_logging(level=logging.DEBUG)
 
-    assert stash_logger.level == logging.DEBUG
+        assert stash_logger.level == logging.DEBUG
+    finally:
+        stash_logger.handlers[:] = original_handlers
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
 def test_configure_logging_with_custom_format() -> None:
     """Test configure_logging() with custom format string."""
+    original_handlers = stash_logger.handlers[:]
+    original_level = stash_logger.level
     stash_logger.handlers.clear()
 
-    custom_format = "%(levelname)s - %(message)s"
-    configure_logging(format_string=custom_format)
+    try:
+        custom_format = "%(levelname)s - %(message)s"
+        configure_logging(format_string=custom_format)
 
-    handler = stash_logger.handlers[0]
-    assert handler.formatter is not None
-    assert handler.formatter._fmt == custom_format
+        handler = stash_logger.handlers[0]
+        assert handler.formatter is not None
+        assert handler.formatter._fmt == custom_format
+    finally:
+        stash_logger.handlers[:] = original_handlers
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
 def test_configure_logging_with_custom_handler() -> None:
     """Test configure_logging() with custom handler."""
+    original_handlers = stash_logger.handlers[:]
+    original_level = stash_logger.level
     stash_logger.handlers.clear()
 
-    # Create custom handler
-    custom_stream = StringIO()
-    custom_handler = logging.StreamHandler(custom_stream)
+    try:
+        # Create custom handler
+        custom_stream = StringIO()
+        custom_handler = logging.StreamHandler(custom_stream)
 
-    configure_logging(handler=custom_handler)
+        configure_logging(handler=custom_handler)
 
-    # Verify custom handler was used
-    assert len(stash_logger.handlers) == 1
-    assert stash_logger.handlers[0] is custom_handler
-    # Type narrow to StreamHandler to access stream attribute
-    handler = stash_logger.handlers[0]
-    assert isinstance(handler, logging.StreamHandler)
-    assert handler.stream is custom_stream
+        # Verify custom handler was used
+        assert len(stash_logger.handlers) == 1
+        assert stash_logger.handlers[0] is custom_handler
+        # Type narrow to StreamHandler to access stream attribute
+        handler = stash_logger.handlers[0]
+        assert isinstance(handler, logging.StreamHandler)
+        assert handler.stream is custom_stream
+    finally:
+        stash_logger.handlers[:] = original_handlers
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -105,6 +128,7 @@ def test_debug_print_with_client_logger() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     client_logger.addHandler(handler)
+    original_level = client_logger.level
     client_logger.setLevel(logging.DEBUG)
 
     try:
@@ -117,6 +141,7 @@ def test_debug_print_with_client_logger() -> None:
         assert "42" in output
     finally:
         client_logger.removeHandler(handler)
+        client_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -129,6 +154,7 @@ def test_debug_print_with_processing_logger() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     processing_logger.addHandler(handler)
+    original_level = processing_logger.level
     processing_logger.setLevel(logging.DEBUG)
 
     try:
@@ -140,6 +166,7 @@ def test_debug_print_with_processing_logger() -> None:
         assert "True" in output
     finally:
         processing_logger.removeHandler(handler)
+        processing_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -153,6 +180,7 @@ def test_debug_print_with_custom_logger_name() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     custom_logger.addHandler(handler)
+    original_level = custom_logger.level
     custom_logger.setLevel(logging.DEBUG)
 
     try:
@@ -164,6 +192,7 @@ def test_debug_print_with_custom_logger_name() -> None:
         assert "logger" in output
     finally:
         custom_logger.removeHandler(handler)
+        custom_logger.setLevel(original_level)
 
 
 @pytest.mark.unit
@@ -176,6 +205,7 @@ def test_debug_print_with_no_logger_name() -> None:
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     stash_logger.addHandler(handler)
+    original_level = stash_logger.level
     stash_logger.setLevel(logging.DEBUG)
 
     try:
@@ -187,6 +217,7 @@ def test_debug_print_with_no_logger_name() -> None:
         assert "logger" in output
     finally:
         stash_logger.removeHandler(handler)
+        stash_logger.setLevel(original_level)
 
 
 @pytest.mark.unit

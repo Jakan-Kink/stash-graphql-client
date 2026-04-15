@@ -36,7 +36,7 @@ def test_find_files_result_discriminates_video_file():
                 "id": "1",
                 "path": "/videos/test.mp4",
                 "basename": "test.mp4",
-                "parent_folder": {"id": "folder1", "path": "/videos"},
+                "parent_folder": {"id": "901", "path": "/videos"},
                 "zip_file": None,
                 "size": 1000000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -78,7 +78,7 @@ def test_find_files_result_discriminates_image_file():
                 "id": "2",
                 "path": "/images/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "folder2", "path": "/images"},
+                "parent_folder": {"id": "902", "path": "/images"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -115,7 +115,7 @@ def test_find_files_result_discriminates_gallery_file():
                 "id": "3",
                 "path": "/galleries/archive.zip",
                 "basename": "archive.zip",
-                "parent_folder": {"id": "folder3", "path": "/galleries"},
+                "parent_folder": {"id": "903", "path": "/galleries"},
                 "zip_file": None,
                 "size": 50000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -146,7 +146,7 @@ def test_find_files_result_discriminates_basic_file():
                 "id": "4",
                 "path": "/docs/readme.txt",
                 "basename": "readme.txt",
-                "parent_folder": {"id": "folder4", "path": "/docs"},
+                "parent_folder": {"id": "904", "path": "/docs"},
                 "zip_file": None,
                 "size": 1024,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -177,7 +177,7 @@ def test_find_files_result_handles_multiple_file_types():
                 "id": "1",
                 "path": "/test.mp4",
                 "basename": "test.mp4",
-                "parent_folder": {"id": "f1", "path": "/"},
+                "parent_folder": {"id": "801", "path": "/"},
                 "zip_file": None,
                 "size": 1000000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -198,7 +198,7 @@ def test_find_files_result_handles_multiple_file_types():
                 "id": "2",
                 "path": "/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "f2", "path": "/"},
+                "parent_folder": {"id": "802", "path": "/"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -214,7 +214,7 @@ def test_find_files_result_handles_multiple_file_types():
                 "id": "3",
                 "path": "/archive.zip",
                 "basename": "archive.zip",
-                "parent_folder": {"id": "f3", "path": "/"},
+                "parent_folder": {"id": "803", "path": "/"},
                 "zip_file": None,
                 "size": 50000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -227,7 +227,7 @@ def test_find_files_result_handles_multiple_file_types():
                 "id": "4",
                 "path": "/readme.txt",
                 "basename": "readme.txt",
-                "parent_folder": {"id": "f4", "path": "/"},
+                "parent_folder": {"id": "804", "path": "/"},
                 "zip_file": None,
                 "size": 1024,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -255,7 +255,7 @@ def test_find_files_result_handles_multiple_file_types():
 def test_image_visual_files_discriminates_image_file():
     """Test that visual_files correctly discriminates ImageFile."""
     data = {
-        "id": "img1",
+        "id": "601",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -263,10 +263,10 @@ def test_image_visual_files_discriminates_image_file():
         "visual_files": [
             {
                 "__typename": "ImageFile",
-                "id": "file1",
+                "id": "701",
                 "path": "/images/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "folder1", "path": "/images"},
+                "parent_folder": {"id": "901", "path": "/images"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -294,7 +294,7 @@ def test_image_visual_files_discriminates_image_file():
 def test_image_visual_files_discriminates_video_file():
     """Test that visual_files correctly discriminates VideoFile (for animated GIFs)."""
     data = {
-        "id": "img2",
+        "id": "602",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -302,10 +302,10 @@ def test_image_visual_files_discriminates_video_file():
         "visual_files": [
             {
                 "__typename": "VideoFile",
-                "id": "file2",
+                "id": "702",
                 "path": "/images/animated.gif",
                 "basename": "animated.gif",
-                "parent_folder": {"id": "folder2", "path": "/images"},
+                "parent_folder": {"id": "902", "path": "/images"},
                 "zip_file": None,
                 "size": 1000000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -339,7 +339,7 @@ def test_image_visual_files_discriminates_video_file():
 def test_image_visual_files_handles_mixed_types():
     """Test that visual_files handles both ImageFile and VideoFile."""
     data = {
-        "id": "img3",
+        "id": "603",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -347,10 +347,10 @@ def test_image_visual_files_handles_mixed_types():
         "visual_files": [
             {
                 "__typename": "ImageFile",
-                "id": "file1",
+                "id": "701",
                 "path": "/photo.jpg",
                 "basename": "photo.jpg",
-                "parent_folder": {"id": "f1", "path": "/"},
+                "parent_folder": {"id": "801", "path": "/"},
                 "zip_file": None,
                 "size": 500000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -363,10 +363,10 @@ def test_image_visual_files_handles_mixed_types():
             },
             {
                 "__typename": "VideoFile",
-                "id": "file2",
+                "id": "702",
                 "path": "/animated.gif",
                 "basename": "animated.gif",
-                "parent_folder": {"id": "f2", "path": "/"},
+                "parent_folder": {"id": "802", "path": "/"},
                 "zip_file": None,
                 "size": 1000000,
                 "mod_time": "2024-01-01T12:00:00Z",
@@ -399,7 +399,7 @@ def test_image_visual_files_handles_mixed_types():
 def test_image_visual_files_handles_empty_list():
     """Test that visual_files handles empty list correctly."""
     data = {
-        "id": "img4",
+        "id": "604",
         "created_at": "2024-01-01T12:00:00Z",
         "updated_at": "2024-01-01T12:00:00Z",
         "urls": [],
@@ -434,7 +434,7 @@ def test_typename_in_file_fields_enables_discrimination():
                 "id": "1",
                 "path": "/test.mp4",
                 "basename": "test.mp4",
-                "parent_folder": {"id": "f1", "path": "/"},
+                "parent_folder": {"id": "801", "path": "/"},
                 "zip_file": None,
                 "size": 1000000,
                 "mod_time": "2024-01-01T12:00:00Z",

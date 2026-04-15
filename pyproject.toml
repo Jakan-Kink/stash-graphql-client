@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.11.2"
+version = "0.12.0"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -35,9 +35,7 @@ classifiers = [
 ]
 dependencies = [
     "gql[httpx,websockets] (>=4.0.0)",
-    "websocket-client (>=1.8.0)",
     "httpx[http2] (>=0.28.1)",
-    "websockets (>=15.0.0)",
     "httpx-retries (>=0.4.3)",
     "pydantic (>=2.6.4)",
     "pydantic-extra-types (>=2.10.6)",
@@ -250,6 +248,7 @@ addopts = [
     "--cov=.",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
+    "--cov-report=xml:coverage.xml",
     "--cov-config=pyproject.toml",
     "--cov-context=test",
 ]
@@ -263,6 +262,7 @@ python_functions = ["test_*"]
 xfail_strict = true
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+log_level = "WARNING"
 filterwarnings = [
     "ignore::ResourceWarning",
 ]

@@ -415,7 +415,7 @@ async def test_create_performer(respx_stash_client: StashClient) -> None:
     This covers lines 307-313: successful creation.
     """
     created_performer_data = create_performer_dict(
-        id="new_performer_123",
+        id="9001",
         name="New Performer",
         gender="FEMALE",
     )
@@ -429,14 +429,14 @@ async def test_create_performer(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    performer = Performer(id="new", name="New Performer", gender=GenderEnum.FEMALE)
+    performer = Performer(id="9999", name="New Performer", gender=GenderEnum.FEMALE)
     try:
         result = await respx_stash_client.create_performer(performer)
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "new_performer_123"
+    assert result.id == "9001"
     assert result.name == "New Performer"
     assert result.gender == "FEMALE"
 
@@ -455,7 +455,7 @@ async def test_create_performer_already_exists_fallback(
     This covers lines 316-351: when performer already exists error.
     """
     existing_performer_data = create_performer_dict(
-        id="existing_123",
+        id="9002",
         name="Existing Performer",
     )
 
@@ -492,14 +492,14 @@ async def test_create_performer_already_exists_fallback(
         side_effect=mock_response
     )
 
-    performer = Performer(id="new", name="Existing Performer")
+    performer = Performer(id="9999", name="Existing Performer")
     try:
         result = await respx_stash_client.create_performer(performer)
     finally:
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "existing_123"
+    assert result.id == "9002"
     assert result.name == "Existing Performer"
 
     # Should have made 2 calls - create then find
@@ -519,7 +519,7 @@ async def test_create_performer_error_raises(respx_stash_client: StashClient) ->
         ]
     )
 
-    performer = Performer(id="new", name="Will Fail")
+    performer = Performer(id="9999", name="Will Fail")
 
     try:
         with pytest.raises(StashGraphQLError):
@@ -571,7 +571,7 @@ async def test_create_performer_already_exists_but_not_found_raises(
         side_effect=mock_response
     )
 
-    performer = Performer(id="new", name="Ghost Performer")
+    performer = Performer(id="9999", name="Ghost Performer")
 
     # Should re-raise the original exception since performer wasn't found
     try:
@@ -869,9 +869,9 @@ async def test_bulk_performer_update_with_dict(respx_stash_client: StashClient) 
     This covers lines 590-591: else branch when input_data is a dict.
     """
     updated_performers_data = [
-        create_performer_dict(id="p1", name="Performer 1", gender="FEMALE"),
-        create_performer_dict(id="p2", name="Performer 2", gender="FEMALE"),
-        create_performer_dict(id="p3", name="Performer 3", gender="FEMALE"),
+        create_performer_dict(id="1", name="Performer 1", gender="FEMALE"),
+        create_performer_dict(id="2", name="Performer 2", gender="FEMALE"),
+        create_performer_dict(id="3", name="Performer 3", gender="FEMALE"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -886,7 +886,7 @@ async def test_bulk_performer_update_with_dict(respx_stash_client: StashClient) 
     )
 
     input_dict = {
-        "ids": ["p1", "p2", "p3"],
+        "ids": ["1", "2", "3"],
         "gender": "FEMALE",
     }
 
@@ -896,14 +896,14 @@ async def test_bulk_performer_update_with_dict(respx_stash_client: StashClient) 
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0].id == "p1"
-    assert result[1].id == "p2"
-    assert result[2].id == "p3"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkPerformerUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["p1", "p2", "p3"]
+    assert req["variables"]["input"]["ids"] == ["1", "2", "3"]
 
 
 @pytest.mark.asyncio
@@ -916,8 +916,8 @@ async def test_bulk_performer_update_with_input_type(
     This covers lines 588-589: if isinstance(input_data, BulkPerformerUpdateInput).
     """
     updated_performers_data = [
-        create_performer_dict(id="p1", name="Performer 1"),
-        create_performer_dict(id="p2", name="Performer 2"),
+        create_performer_dict(id="1", name="Performer 1"),
+        create_performer_dict(id="2", name="Performer 2"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -932,7 +932,7 @@ async def test_bulk_performer_update_with_input_type(
     )
 
     input_data = BulkPerformerUpdateInput(
-        ids=["p1", "p2"],
+        ids=["1", "2"],
         tag_ids=BulkUpdateIds(ids=["tag1", "tag2"], mode=BulkUpdateIdMode.ADD),
     )
 
@@ -942,13 +942,13 @@ async def test_bulk_performer_update_with_input_type(
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 2
-    assert result[0].id == "p1"
-    assert result[1].id == "p2"
+    assert result[0].id == "1"
+    assert result[1].id == "2"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
     assert "bulkPerformerUpdate" in req["query"]
-    assert req["variables"]["input"]["ids"] == ["p1", "p2"]
+    assert req["variables"]["input"]["ids"] == ["1", "2"]
     assert req["variables"]["input"]["tag_ids"]["ids"] == [
         "tag1",
         "tag2",
@@ -971,7 +971,7 @@ async def test_bulk_performer_update_error_raises(
     )
 
     input_data = BulkPerformerUpdateInput(
-        ids=["p1", "p2"],
+        ids=["1", "2"],
         gender=GenderEnum.FEMALE,
     )
 
@@ -997,9 +997,9 @@ async def test_all_performers(respx_stash_client: StashClient) -> None:
     This covers lines 506-512: successful retrieval.
     """
     performers_data = [
-        create_performer_dict(id="p1", name="Performer 1"),
-        create_performer_dict(id="p2", name="Performer 2"),
-        create_performer_dict(id="p3", name="Performer 3"),
+        create_performer_dict(id="1", name="Performer 1"),
+        create_performer_dict(id="2", name="Performer 2"),
+        create_performer_dict(id="3", name="Performer 3"),
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
@@ -1017,10 +1017,10 @@ async def test_all_performers(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert len(result) == 3
-    assert result[0].id == "p1"
+    assert result[0].id == "1"
     assert result[0].name == "Performer 1"
-    assert result[1].id == "p2"
-    assert result[2].id == "p3"
+    assert result[1].id == "2"
+    assert result[2].id == "3"
 
     assert len(graphql_route.calls) == 1
     req = json.loads(graphql_route.calls[0].request.content)
@@ -1065,7 +1065,7 @@ async def test_map_performer_ids_string_input_found_by_name(
 
     This covers lines 640-646: string input, name search successful.
     """
-    performer_data = create_performer_dict(id="p1", name="John Doe")
+    performer_data = create_performer_dict(id="1", name="John Doe")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1084,7 +1084,7 @@ async def test_map_performer_ids_string_input_found_by_name(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
     # Verify request searched by name
@@ -1102,7 +1102,7 @@ async def test_map_performer_ids_string_input_found_by_alias(
 
     This covers lines 648-657: name search fails, alias search succeeds.
     """
-    performer_data = create_performer_dict(id="p2", name="Jane Smith")
+    performer_data = create_performer_dict(id="2", name="Jane Smith")
 
     call_count = 0
 
@@ -1136,7 +1136,7 @@ async def test_map_performer_ids_string_input_found_by_alias(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p2"]
+    assert result == ["2"]
     assert len(graphql_route.calls) == 2
 
     # Verify first request searched by name
@@ -1158,8 +1158,8 @@ async def test_map_performer_ids_string_input_multiple_matches_return_first(
 
     This covers lines 666-670: multiple matches with on_multiple=RETURN_FIRST.
     """
-    performer1_data = create_performer_dict(id="p1", name="Common Name")
-    performer2_data = create_performer_dict(id="p2", name="Common Name")
+    performer1_data = create_performer_dict(id="1", name="Common Name")
+    performer2_data = create_performer_dict(id="2", name="Common Name")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1182,7 +1182,7 @@ async def test_map_performer_ids_string_input_multiple_matches_return_first(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]  # Returns first match
+    assert result == ["1"]  # Returns first match
     assert len(graphql_route.calls) == 1
 
 
@@ -1195,8 +1195,8 @@ async def test_map_performer_ids_string_input_multiple_matches_return_none(
 
     This covers lines 661-665: multiple matches with on_multiple=RETURN_NONE.
     """
-    performer1_data = create_performer_dict(id="p1", name="Ambiguous Name")
-    performer2_data = create_performer_dict(id="p2", name="Ambiguous Name")
+    performer1_data = create_performer_dict(id="1", name="Ambiguous Name")
+    performer2_data = create_performer_dict(id="2", name="Ambiguous Name")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1232,8 +1232,8 @@ async def test_map_performer_ids_string_input_multiple_matches_default_fallback(
 
     This covers lines 672-676: else branch (default fallback to first match).
     """
-    performer1_data = create_performer_dict(id="p1", name="Multiple Name")
-    performer2_data = create_performer_dict(id="p2", name="Multiple Name")
+    performer1_data = create_performer_dict(id="1", name="Multiple Name")
+    performer2_data = create_performer_dict(id="2", name="Multiple Name")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1257,7 +1257,7 @@ async def test_map_performer_ids_string_input_multiple_matches_default_fallback(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]  # Falls back to first match
+    assert result == ["1"]  # Falls back to first match
     assert len(graphql_route.calls) == 1
 
 
@@ -1270,7 +1270,7 @@ async def test_map_performer_ids_string_input_single_match(
 
     This covers lines 678-679: single match, append ID.
     """
-    performer_data = create_performer_dict(id="p1", name="Single Match")
+    performer_data = create_performer_dict(id="1", name="Single Match")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1289,7 +1289,7 @@ async def test_map_performer_ids_string_input_single_match(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
 
@@ -1343,7 +1343,7 @@ async def test_map_performer_ids_string_input_not_found_create_true(
 
     This covers lines 680-688: not found, create=True, create new performer.
     """
-    new_performer_data = create_performer_dict(id="new_p1", name="New Performer")
+    new_performer_data = create_performer_dict(id="9003", name="New Performer")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1378,7 +1378,7 @@ async def test_map_performer_ids_string_input_not_found_create_true(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["new_p1"]
+    assert result == ["9003"]
     assert len(graphql_route.calls) == 3
 
     # Verify create request
@@ -1396,7 +1396,7 @@ async def test_map_performer_ids_dict_input_found(
 
     This covers lines 694-716: dict input with name, single match.
     """
-    performer_data = create_performer_dict(id="p1", name="Dict Performer")
+    performer_data = create_performer_dict(id="1", name="Dict Performer")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1417,7 +1417,7 @@ async def test_map_performer_ids_dict_input_found(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
     # Verify request
@@ -1434,8 +1434,8 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_none(
 
     This covers lines 704-709: dict input, multiple matches, RETURN_NONE.
     """
-    performer1_data = create_performer_dict(id="p1", name="Dict Multiple")
-    performer2_data = create_performer_dict(id="p2", name="Dict Multiple")
+    performer1_data = create_performer_dict(id="1", name="Dict Multiple")
+    performer2_data = create_performer_dict(id="2", name="Dict Multiple")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1471,8 +1471,8 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_first(
 
     This covers lines 710-714: dict input, multiple matches, RETURN_FIRST.
     """
-    performer1_data = create_performer_dict(id="p1", name="Dict First")
-    performer2_data = create_performer_dict(id="p2", name="Dict First")
+    performer1_data = create_performer_dict(id="1", name="Dict First")
+    performer2_data = create_performer_dict(id="2", name="Dict First")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1495,7 +1495,7 @@ async def test_map_performer_ids_dict_input_multiple_matches_return_first(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
 
@@ -1508,7 +1508,7 @@ async def test_map_performer_ids_dict_input_not_found_create_true(
 
     This covers lines 717-722: dict input, not found, create=True.
     """
-    new_performer_data = create_performer_dict(id="new_p1", name="New Dict")
+    new_performer_data = create_performer_dict(id="9003", name="New Dict")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1535,7 +1535,7 @@ async def test_map_performer_ids_dict_input_not_found_create_true(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["new_p1"]
+    assert result == ["9003"]
     assert len(graphql_route.calls) == 2
 
 
@@ -1580,12 +1580,12 @@ async def test_map_performer_ids_performer_object_with_id(
 
     This covers lines 631-635: Performer object with ID, use directly.
     """
-    performer = Performer(id="p1", name="Has ID")
+    performer = Performer(id="1", name="Has ID")
 
     # No HTTP calls should be made - ID is used directly
     result = await respx_stash_client.map_performer_ids([performer])
 
-    assert result == ["p1"]
+    assert result == ["1"]
 
 
 @pytest.mark.asyncio
@@ -1598,7 +1598,7 @@ async def test_map_performer_ids_performer_object_without_id(
     This covers lines 638-644: Performer object without ID, search by name.
     """
     performer = Performer(name="No ID Performer")
-    performer_data = create_performer_dict(id="p1", name="No ID Performer")
+    performer_data = create_performer_dict(id="1", name="No ID Performer")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1617,7 +1617,7 @@ async def test_map_performer_ids_performer_object_without_id(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
     # Verify it searched by name
@@ -1637,7 +1637,7 @@ async def test_map_performer_ids_error_handling_continues(
     Note: When a string performer errors, both name and alias searches fail (2 calls),
     then the exception handler catches it and continues to the next performer.
     """
-    performer1_data = create_performer_dict(id="p1", name="Good Performer")
+    performer1_data = create_performer_dict(id="1", name="Good Performer")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1667,7 +1667,7 @@ async def test_map_performer_ids_error_handling_continues(
         dump_graphql_calls(graphql_route.calls)
 
     # Should have one ID from successful performer (error was caught and continued)
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 3  # 2 failed calls + 1 success
 
 
@@ -1680,9 +1680,9 @@ async def test_map_performer_ids_mixed_input_types(
 
     This covers the full loop processing different input types.
     """
-    performer1_data = create_performer_dict(id="p1", name="String Input")
-    performer2_data = create_performer_dict(id="p2", name="Dict Input")
-    performer_with_id = Performer(id="p3", name="Has ID")
+    performer1_data = create_performer_dict(id="1", name="String Input")
+    performer2_data = create_performer_dict(id="2", name="Dict Input")
+    performer_with_id = Performer(id="3", name="Has ID")
 
     call_count = 0
 
@@ -1720,7 +1720,7 @@ async def test_map_performer_ids_mixed_input_types(
     finally:
         dump_graphql_calls(graphql_route.calls)
 
-    assert result == ["p1", "p2", "p3"]
+    assert result == ["1", "2", "3"]
     assert len(graphql_route.calls) == 2
 
 
@@ -1763,8 +1763,8 @@ async def test_map_performer_ids_dict_input_multiple_matches_else_default(
     When results.count > 1 and on_multiple is neither RETURN_NONE nor RETURN_FIRST,
     the else branch defaults to using the first match.
     """
-    performer1_data = create_performer_dict(id="p1", name="Dict Multiple")
-    performer2_data = create_performer_dict(id="p2", name="Dict Multiple")
+    performer1_data = create_performer_dict(id="1", name="Dict Multiple")
+    performer2_data = create_performer_dict(id="2", name="Dict Multiple")
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
@@ -1789,7 +1789,7 @@ async def test_map_performer_ids_dict_input_multiple_matches_else_default(
         dump_graphql_calls(graphql_route.calls)
 
     # Else branch defaults to first match (lines 719-724)
-    assert result == ["p1"]
+    assert result == ["1"]
     assert len(graphql_route.calls) == 1
 
 
@@ -1824,7 +1824,7 @@ async def test_map_performer_ids_exception_handling(
     We trigger an exception by returning malformed data that causes an AttributeError
     when accessing .id on the performer object.
     """
-    performer_data = create_performer_dict(id="p1", name="Valid Performer")
+    performer_data = create_performer_dict(id="1", name="Valid Performer")
 
     # Mock find_performers to raise an exception for the first call
     original_find_performers = respx_stash_client.find_performers
@@ -1865,7 +1865,7 @@ async def test_map_performer_ids_exception_handling(
 
     # First performer was skipped due to exception (caught at lines 736-738)
     # Second performer succeeded
-    assert result == ["p1"]
+    assert result == ["1"]
     assert call_count == 2  # Both calls were attempted
 
     # Verify the HTTP route was called
@@ -2109,7 +2109,7 @@ async def test_performer_merge_with_input_type(
     This covers the successful merge path using PerformerMergeInput object.
     """
     merged_performer_data = create_performer_dict(
-        id="destination-123",
+        id="9010",
         name="Merged Performer",
         alias_list=["Source Alias 1", "Source Alias 2"],
     )
@@ -2125,7 +2125,7 @@ async def test_performer_merge_with_input_type(
 
     input_data = PerformerMergeInput(
         source=["source-1", "source-2"],
-        destination="destination-123",
+        destination="9010",
     )
 
     try:
@@ -2134,7 +2134,7 @@ async def test_performer_merge_with_input_type(
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "destination-123"
+    assert result.id == "9010"
     assert result.name == "Merged Performer"
 
     # Verify request
@@ -2142,7 +2142,7 @@ async def test_performer_merge_with_input_type(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "performerMerge" in req["query"]
     assert req["variables"]["input"]["source"] == ["source-1", "source-2"]
-    assert req["variables"]["input"]["destination"] == "destination-123"
+    assert req["variables"]["input"]["destination"] == "9010"
 
 
 @pytest.mark.asyncio
@@ -2155,7 +2155,7 @@ async def test_performer_merge_with_dict_input(
     This covers the merge path using dict instead of PerformerMergeInput.
     """
     merged_performer_data = create_performer_dict(
-        id="dest-456",
+        id="9011",
         name="Merged Via Dict",
     )
 
@@ -2170,7 +2170,7 @@ async def test_performer_merge_with_dict_input(
 
     input_dict = {
         "source": ["src-1", "src-2", "src-3"],
-        "destination": "dest-456",
+        "destination": "9011",
     }
 
     try:
@@ -2179,7 +2179,7 @@ async def test_performer_merge_with_dict_input(
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "dest-456"
+    assert result.id == "9011"
     assert result.name == "Merged Via Dict"
 
     # Verify request
@@ -2187,7 +2187,7 @@ async def test_performer_merge_with_dict_input(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "performerMerge" in req["query"]
     assert req["variables"]["input"]["source"] == ["src-1", "src-2", "src-3"]
-    assert req["variables"]["input"]["destination"] == "dest-456"
+    assert req["variables"]["input"]["destination"] == "9011"
 
 
 @pytest.mark.asyncio
@@ -2200,7 +2200,7 @@ async def test_performer_merge_with_values_override(
     This covers the merge path with additional values to apply during merge.
     """
     merged_performer_data = create_performer_dict(
-        id="dest-789",
+        id="9012",
         name="Override Name",
         gender="FEMALE",
         birthdate="1995-05-15",
@@ -2217,9 +2217,9 @@ async def test_performer_merge_with_values_override(
 
     input_data = PerformerMergeInput(
         source=["src-a", "src-b"],
-        destination="dest-789",
+        destination="9012",
         values=PerformerUpdateInput(
-            id="dest-789",
+            id="9012",
             name="Override Name",
             gender=GenderEnum.FEMALE,
             birthdate="1995-05-15",
@@ -2232,7 +2232,7 @@ async def test_performer_merge_with_values_override(
         dump_graphql_calls(graphql_route.calls)
 
     assert result is not None
-    assert result.id == "dest-789"
+    assert result.id == "9012"
     assert result.name == "Override Name"
     assert result.gender == "FEMALE"
     assert result.birthdate == "1995-05-15"
@@ -2242,7 +2242,7 @@ async def test_performer_merge_with_values_override(
     req = json.loads(graphql_route.calls[0].request.content)
     assert "performerMerge" in req["query"]
     assert req["variables"]["input"]["source"] == ["src-a", "src-b"]
-    assert req["variables"]["input"]["destination"] == "dest-789"
+    assert req["variables"]["input"]["destination"] == "9012"
     assert "values" in req["variables"]["input"]
     assert req["variables"]["input"]["values"]["name"] == "Override Name"
 

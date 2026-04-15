@@ -9,10 +9,13 @@ from pydantic import BaseModel, Field
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
-    RelationshipMetadata,
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
+    has_many_through,
 )
 from .enums import BulkUpdateIdMode
 from .metadata import CustomFieldsInput
@@ -181,50 +184,26 @@ class Group(StashObject):
     }
 
     __relationships__ = {
-        "studio": RelationshipMetadata(
-            target_field="studio_id",
-            is_list=False,
-            query_field="studio",
-            inverse_type="Studio",
-            query_strategy="filter_query",
-            filter_query_hint="findGroups(group_filter={studios: {value: [studio_id]}})",
-            notes="Studio has group_count and filter queries, not direct groups field",
-        ),
-        "tags": RelationshipMetadata(
-            target_field="tag_ids",
-            is_list=True,
-            query_field="tags",
-            inverse_type="Tag",
-            query_strategy="direct_field",
-            notes="Tag has group_count resolver, not direct groups list",
-        ),
+        "studio": belongs_to("Studio", inverse_query_field="groups"),
+        "tags": habtm("Tag", inverse_query_field="groups"),
         # Pattern C: Complex objects with metadata
-        "containing_groups": RelationshipMetadata(
-            target_field="containing_groups",
-            is_list=True,
+        "containing_groups": has_many_through(
+            "Group",
             transform=lambda g: GroupDescriptionInput(
                 group_id=g.group.id if hasattr(g, "group") else g.id,
                 description=g.description if hasattr(g, "description") else None,
             ),
-            query_field="containing_groups",
-            inverse_type="Group",
             inverse_query_field="sub_groups",
-            query_strategy="complex_object",
-            notes="Uses GroupDescription wrapper with nested group + description metadata",
         ),
-        "sub_groups": RelationshipMetadata(
-            target_field="sub_groups",
-            is_list=True,
+        "sub_groups": has_many_through(
+            "Group",
             transform=lambda g: GroupDescriptionInput(
                 group_id=g.group.id if hasattr(g, "group") else g.id,
                 description=g.description if hasattr(g, "description") else None,
             ),
-            query_field="sub_groups",
-            inverse_type="Group",
             inverse_query_field="containing_groups",
-            query_strategy="complex_object",
-            notes="Uses GroupDescription wrapper with nested group + description metadata",
         ),
+        "scenes": has_many("Scene", inverse_query_field="groups"),
     }
 
     async def add_sub_group(

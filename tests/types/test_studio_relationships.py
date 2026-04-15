@@ -20,12 +20,22 @@ class TestStudioRelationshipMetadata:
 
     def test_studio_relationships_count(self):
         """Test that Studio has expected number of relationships."""
-        # Studio has 4 relationships: parent_studio, child_studios, tags, stash_ids
-        assert len(Studio.__relationships__) == 4
+        # Studio has 8 relationships: parent_studio, child_studios, tags, stash_ids,
+        # scenes, images, galleries, groups (side-mutation relationships)
+        assert len(Studio.__relationships__) == 8
 
     def test_studio_relationships_keys(self):
         """Test that Studio has expected relationship keys."""
-        expected_keys = {"parent_studio", "child_studios", "tags", "stash_ids"}
+        expected_keys = {
+            "parent_studio",
+            "child_studios",
+            "tags",
+            "stash_ids",
+            "scenes",
+            "images",
+            "galleries",
+            "groups",
+        }
         assert set(Studio.__relationships__.keys()) == expected_keys
 
 
@@ -118,32 +128,6 @@ class TestStudioStashIDsRelationship:
         assert isinstance(result, StashIDInput)
         assert result.endpoint == "https://stashdb.org"
         assert result.stash_id == "456def"
-
-
-class TestStudioRelationshipBackwardCompatibility:
-    """Test backward compatibility with legacy tuple format."""
-
-    def test_to_tuple_conversion_for_parent_studio(self):
-        """Test that parent_studio RelationshipMetadata converts to tuple."""
-        rel = Studio.__relationships__["parent_studio"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "parent_id"
-        assert legacy_tuple[1] is False
-        assert legacy_tuple[2] is None
-
-    def test_to_tuple_conversion_for_tags(self):
-        """Test that tags RelationshipMetadata converts to tuple."""
-        rel = Studio.__relationships__["tags"]
-        legacy_tuple = rel.to_tuple()
-
-        assert isinstance(legacy_tuple, tuple)
-        assert len(legacy_tuple) == 3
-        assert legacy_tuple[0] == "tag_ids"
-        assert legacy_tuple[1] is True
-        assert legacy_tuple[2] is None
 
 
 class TestStudioRelationshipUsage:

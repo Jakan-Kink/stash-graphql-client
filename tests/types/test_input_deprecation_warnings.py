@@ -1,7 +1,7 @@
 """Tests for StashInput deprecation warnings for unknown fields.
 
 These tests verify that v0.11.0 emits DeprecationWarning for unknown fields
-to help users identify typos before v0.12.0 enforcement (extra="forbid").
+to help users identify typos before v0.13.0 enforcement (extra="forbid").
 """
 
 import contextlib
@@ -19,7 +19,7 @@ class TestStashInputDeprecationWarnings:
 
     def test_extra_field_emits_deprecation_warning(self):
         """Unknown field should emit DeprecationWarning with helpful message."""
-        with pytest.warns(DeprecationWarning, match=r"v0\.12\.0.*tag_id"):
+        with pytest.warns(DeprecationWarning, match=r"v0\.13\.0.*tag_id"):
             # Common typo: singular instead of plural
             BulkSceneMarkerUpdateInput(
                 ids=["1", "2"],
