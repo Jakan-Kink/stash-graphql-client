@@ -77,6 +77,7 @@ class ScrapedTag(FromGraphQLMixin, BaseModel):
     )
     description: str | None | UnsetType = UNSET  # String (appSchema >= 84)
     alias_list: list[str] | None | UnsetType = UNSET  # [String!] (appSchema >= 84)
+    parent: ScrapedTag | None | UnsetType = UNSET  # ScrapedTag
 
 
 class ScrapedStudio(FromGraphQLMixin, BaseModel):

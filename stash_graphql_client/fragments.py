@@ -2386,6 +2386,12 @@ class FragmentStore:
             )
         self.FOLDER_FIELDS = folder
 
+        # -- Scraped Tag (parent gated via introspection) --
+        scraped_tag = _BASE_SCRAPED_TAG_FIELDS
+        if caps.has_scraped_tag_parent:
+            scraped_tag += "    parent {\n        stored_id\n        name\n    }\n"
+        self.SCRAPED_TAG_FIELDS = scraped_tag
+
         # -- Scraped Performer (career_start/career_end gated at appSchema >= 78) --
         scraped_performer = _BASE_SCRAPED_PERFORMER_FIELDS
         if caps.has_performer_career_start_end:

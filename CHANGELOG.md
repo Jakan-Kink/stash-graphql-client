@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b9] - 2026-04-15
+
+### Fixed
+
+- **Missing `ScrapedTag.parent` field**: Added `parent: ScrapedTag` to `ScrapedTag` type and
+  `parent { stored_id name }` to `SCRAPED_TAG_FIELDS` fragment. Field was present in the
+  upstream schema since stashapp/stash#6620 but never wired up in the Python types.
+  Introspection-gated via `has_scraped_tag_parent` capability since the upstream commit did
+  not bump appSchema
+
 ## [0.12.0b8] - 2026-04-15
 
 ### Added
@@ -823,7 +833,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b8...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b9...HEAD
+[0.12.0b9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b8...v0.12.0b9
 [0.12.0b8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b7...v0.12.0b8
 [0.12.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b6...v0.12.0b7
 [0.12.0b6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b5...v0.12.0b6
