@@ -568,6 +568,14 @@ async def test_fragment_store_folder_fields_match_capabilities(
             assert "basename" not in query
             assert "parent_folders" not in query
 
+        if caps.has_folder_sub_folders:
+            assert "sub_folders" in query, (
+                "Server reports Folder.sub_folders but FIND_FOLDERS_QUERY "
+                "is missing sub_folders"
+            )
+        else:
+            assert "sub_folders" not in query
+
 
 # =============================================================================
 # Mutation fragment string spot-checks
@@ -941,6 +949,15 @@ async def test_folder_basename_propagates_from_server(
             )
             assert folder.parent_folders is UNSET, (
                 f"parent_folders should remain UNSET when appSchema={caps.app_schema} < 84"
+            )
+
+        if caps.has_folder_sub_folders:
+            assert is_set(folder.sub_folders), (
+                "sub_folders should be non-UNSET when server reports Folder.sub_folders"
+            )
+        else:
+            assert folder.sub_folders is UNSET, (
+                "sub_folders should remain UNSET when server lacks Folder.sub_folders"
             )
 
 
@@ -1430,6 +1447,9 @@ async def test_fresh_client_detects_same_capabilities(
                 original_caps.has_image_custom_fields
             )
             assert fresh_caps.has_folder_basename == (original_caps.has_folder_basename)
+            assert fresh_caps.has_folder_sub_folders == (
+                original_caps.has_folder_sub_folders
+            )
             assert fresh_caps.has_performer_career_date_strings == (
                 original_caps.has_performer_career_date_strings
             )

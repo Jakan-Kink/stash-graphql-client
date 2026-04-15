@@ -288,6 +288,29 @@ class TestFragmentStoreRebuild:
         assert "fragment FolderFields on Folder" in store.FOLDER_FIELDS
         assert store.FOLDER_FIELDS.rstrip().endswith("}")
 
+    @pytest.mark.unit
+    def test_rebuild_folder_sub_folders(self) -> None:
+        """sub_folders injected when introspection reports the field on Folder."""
+        store = FragmentStore()
+        caps = make_server_capabilities(
+            85,
+            type_fields={"Folder": frozenset({"sub_folders"})},
+        )
+        store.rebuild(caps)
+
+        assert "sub_folders" in store.FOLDER_FIELDS
+        assert "fragment FolderFields on Folder" in store.FOLDER_FIELDS
+        assert store.FOLDER_FIELDS.rstrip().endswith("}")
+
+    @pytest.mark.unit
+    def test_rebuild_folder_sub_folders_absent(self) -> None:
+        """sub_folders NOT injected when introspection lacks the field."""
+        store = FragmentStore()
+        caps = make_server_capabilities(85)
+        store.rebuild(caps)
+
+        assert "sub_folders" not in store.FOLDER_FIELDS
+
 
 # ---------------------------------------------------------------------------
 # Query string assembly after rebuild

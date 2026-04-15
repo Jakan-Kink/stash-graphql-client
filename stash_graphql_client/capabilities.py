@@ -157,6 +157,11 @@ class ServerCapabilities:
         return self.app_schema >= 85
 
     @property
+    def has_folder_sub_folders(self) -> bool:
+        """Folders gained sub_folders field (appSchema >= 85, introspection-gated)."""
+        return self.type_has_field("Folder", "sub_folders")
+
+    @property
     def uses_new_duplication_type(self) -> bool:
         """Whether the server uses DuplicationCriterionInput (vs PHashDuplicationCriterionInput)."""
         return self.has_type("DuplicationCriterionInput")

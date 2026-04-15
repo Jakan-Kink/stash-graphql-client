@@ -247,6 +247,9 @@ class Folder(StashObject):
         UNSET  # [Folder!] (appSchema >= 84)
     )
 
+    # Capability-gated fields (appSchema >= 85, introspection-gated)
+    sub_folders: list[Folder] | None | UnsetType = UNSET  # [Folder!]! (appSchema >= 85)
+
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input.
 

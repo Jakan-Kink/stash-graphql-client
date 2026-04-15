@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0b8] - 2026-04-15
+
+### Added
+
+- **`plugins` field on `ConfigResult`**: Exposes the `plugins: PluginConfigMap` field
+  from the GraphQL schema, allowing retrieval of per-plugin configuration maps via
+  `get_configuration()`. Also added to the `CONFIGURATION_QUERY` fragment (closes #25,
+  ports PR #26)
+- **FDNG integration test suite**: Four integration test files migrated from
+  fansly-downloader-ng covering complex multi-entity workflows, data management
+  (tag hierarchy, studio hierarchy, duplicate detection), error recovery, and scene
+  lifecycle with subscriptions
+- **Architecture design history document**: `docs/architecture/design-history.md`
+
+### Changed
+
+- Bumped ruff pre-commit hook v0.15.7 → v0.15.10
+
 ## [0.12.0b7] - 2026-03-30
 
 ### Fixed
@@ -181,6 +199,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Delayed `StashInput` unknown-field enforcement (`extra="forbid"`) from v0.12.0 to v0.13.0;
   deprecation warnings updated accordingly
+
+## [0.11.2] - 2026-04-03
+
+### Changed
+
+- Updated Stash GraphQL schema from upstream (v0.31.0)
+- Added `Folder.sub_folders` field (introspection-gated via `type_has_field`; upstream added as a
+  pure resolver with no appSchema bump)
+- Added `has_folder_sub_folders` capability property to `ServerCapabilities`
+- `FragmentStore` conditionally injects `sub_folders` into `FolderFields` fragment when server
+  reports the field
 
 ## [0.11.1] - 2026-03-21
 
@@ -794,12 +823,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b5...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b8...HEAD
+[0.12.0b8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b7...v0.12.0b8
+[0.12.0b7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b6...v0.12.0b7
+[0.12.0b6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b5...v0.12.0b6
 [0.12.0b5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b4...v0.12.0b5
 [0.12.0b4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b3...v0.12.0b4
 [0.12.0b3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b2...v0.12.0b3
 [0.12.0b2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0b1...v0.12.0b2
-[0.12.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.12.0b1
+[0.12.0b1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.2...v0.12.0b1
+[0.11.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.14...v0.11.0
 [0.10.14]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.10.13...v0.10.14
