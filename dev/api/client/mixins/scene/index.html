@@ -718,6 +718,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/side-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Side Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/relationship-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3761,10 +3817,8 @@ of Scene objects.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>SceneHashInput object or dictionary containing:
-- checksum: MD5 checksum of the file (optional)
-- oshash: OSHash of the file (optional)</p>
-<p>Note: At least one hash must be provided</p>
+                <p>SceneHashInput object or dictionary. At least one
+hash (checksum or oshash) must be provided.</p>
               </div>
             </td>
             <td>
@@ -3865,10 +3919,7 @@ of Scene objects.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>SceneDestroyInput object or dictionary containing:
-- id: Scene ID to delete (required)
-- delete_file: Whether to delete the scene's file (optional, default: False)
-- delete_generated: Whether to delete generated files (optional, default: True)</p>
+                <p>SceneDestroyInput object or dictionary.</p>
               </div>
             </td>
             <td>
@@ -4009,10 +4060,7 @@ of Scene objects.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>ScenesDestroyInput object or dictionary containing:
-- ids: List of scene IDs to delete (required)
-- delete_file: Whether to delete the scenes' files (optional, default: False)
-- delete_generated: Whether to delete generated files (optional, default: True)</p>
+                <p>ScenesDestroyInput object or dictionary.</p>
               </div>
             </td>
             <td>
@@ -4153,12 +4201,7 @@ of Scene objects.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>SceneMergeInput object or dictionary containing:
-- source: List of source scene IDs to merge (required)
-- destination: Destination scene ID (required)
-- values: Optional SceneUpdateInput with values to apply to merged scene
-- play_history: Whether to merge play history (optional, default: False)
-- o_history: Whether to merge o-count history (optional, default: False)</p>
+                <p>SceneMergeInput object or dictionary.</p>
               </div>
             </td>
             <td>

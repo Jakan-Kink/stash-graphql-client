@@ -718,6 +718,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/side-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Side Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../guide/relationship-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3037,8 +3093,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>GenerateAPIKeyInput object or dictionary containing:
-- clear: Whether to clear existing API key (optional)</p>
+                <p>GenerateAPIKeyInput object or dictionary.</p>
               </div>
             </td>
             <td>
@@ -3369,7 +3424,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>StashBoxInput object or dictionary containing endpoint and api_key</p>
+                <p>StashBoxInput object or dictionary.</p>
               </div>
             </td>
             <td>
@@ -3762,13 +3817,7 @@
             </td>
             <td>
               <div class="doc-md-description">
-                <p>ConfigResult containing all configuration sections:
-- general: General settings (paths, logging, parallel tasks, etc.)
-- interface: UI/UX settings (language, menus, previews, etc.)
-- dlna: DLNA server configuration
-- scraping: Scraper settings (user agent, cert check, etc.)
-- defaults: Default settings for scan/identify/generate operations
-- ui: UI customization settings (plugin configs, etc.)</p>
+                <p>ConfigResult with all server configuration sections.</p>
               </div>
             </td>
           </tr>
@@ -3802,22 +3851,22 @@
 <p><span class="doc-section-title">Examples:</span></p>
     <p>Get full configuration:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">config</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_configuration</span><span class="p">()</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">databasePath</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">database_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Language: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">language</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DLNA enabled: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">dlna</span><span class="o">.</span><span class="n">enabled</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
 <p>Check specific settings:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">config</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_configuration</span><span class="p">()</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">parallelTasks</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">general</span><span class="o">.</span><span class="n">parallel_tasks</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Consider increasing parallel tasks for better performance&quot;</span><span class="p">)</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">scraping</span><span class="o">.</span><span class="n">scraperCertCheck</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">scraping</span><span class="o">.</span><span class="n">scraper_cert_check</span><span class="p">:</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: SSL certificate checking is disabled!&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
-<p>Inspect plugin UI settings:
+<p>Inspect plugin configurations:
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_configuration</span><span class="p">()</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">ui</span><span class="p">:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">for</span> <span class="n">plugin_id</span><span class="p">,</span> <span class="n">settings</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">ui</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">plugins</span><span class="p">:</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="k">for</span> <span class="n">plugin_id</span><span class="p">,</span> <span class="n">settings</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">plugins</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Plugin </span><span class="si">{</span><span class="n">plugin_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">settings</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div></p>
 

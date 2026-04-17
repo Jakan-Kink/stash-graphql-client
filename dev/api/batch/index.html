@@ -718,6 +718,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/side-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Side Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/relationship-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2219,7 +2275,19 @@
 
 
 <h1 id="batch-operations">Batch Operations<a class="headerlink" href="#batch-operations" title="Permanent link">&para;</a></h1>
-<p>Data structures and helpers for batched GraphQL mutations.</p>
+<p>Data structures and helpers for batched GraphQL mutations. These low-level
+primitives underlie the three-layer batch API:</p>
+<ul>
+<li><strong><code>client.execute_batch(operations)</code></strong> — executes a list of <code>BatchOperation</code>s
+  in a single aliased GraphQL request. Handles chunking (default 250 ops),
+  aliasing, and partial-failure propagation. Returns a <code>BatchResult</code>.</li>
+<li><strong><code>store.save_batch(entities)</code></strong> — takes entity objects and builds the
+  appropriate operations automatically, including any queued side-mutations.</li>
+<li><strong><code>store.save_all()</code></strong> — flushes every dirty or new entity the store is
+  currently tracking.</li>
+</ul>
+<p>For end-to-end usage patterns, see the
+<a href="../../guide/batched-mutations/">Batched Mutations guide</a>.</p>
 
 
 <div class="doc doc-object doc-module">

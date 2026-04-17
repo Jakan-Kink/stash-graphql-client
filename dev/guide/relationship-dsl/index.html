@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/api/schema/">
+        <link rel="canonical" href="https://jakan-kink.github.io/stash-graphql-client/dev/guide/relationship-dsl/">
       
       
-        <link rel="prev" href="../errors/">
+        <link rel="prev" href="../side-mutations/">
       
       
-        <link rel="next" href="../types/">
+        <link rel="next" href="../../architecture/overview/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Schema - Stash GraphQL Client</title>
+        <title>Relationship DSL - Stash GraphQL Client</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#schema" class="md-skip">
+        <a href="#relationship-dsl" class="md-skip">
           Skip to content
         </a>
       
@@ -120,7 +120,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Schema
+              Relationship DSL
             
           </span>
         </div>
@@ -252,7 +252,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../guide/getting-started/" class="md-tabs__link">
+      <a href="../getting-started/" class="md-tabs__link">
         
   
   
@@ -269,11 +269,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../guide/overview/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../overview/" class="md-tabs__link">
           
   
   
@@ -309,13 +311,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../client/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../api/client/" class="md-tabs__link">
           
   
   
@@ -448,7 +448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/getting-started/" class="md-nav__link">
+      <a href="../getting-started/" class="md-nav__link">
         
   
   
@@ -472,28 +472,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -511,7 +514,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -529,7 +532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/overview/" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         
   
   
@@ -557,7 +560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/usage-patterns/" class="md-nav__link">
+      <a href="../usage-patterns/" class="md-nav__link">
         
   
   
@@ -585,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/advanced-filtering/" class="md-nav__link">
+      <a href="../advanced-filtering/" class="md-nav__link">
         
   
   
@@ -613,7 +616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/unset-pattern/" class="md-nav__link">
+      <a href="../unset-pattern/" class="md-nav__link">
         
   
   
@@ -641,7 +644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/fuzzy-dates/" class="md-nav__link">
+      <a href="../fuzzy-dates/" class="md-nav__link">
         
   
   
@@ -669,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/usage-examples/" class="md-nav__link">
+      <a href="../usage-examples/" class="md-nav__link">
         
   
   
@@ -697,7 +700,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/batched-mutations/" class="md-nav__link">
+      <a href="../batched-mutations/" class="md-nav__link">
         
   
   
@@ -725,7 +728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guide/side-mutations/" class="md-nav__link">
+      <a href="../side-mutations/" class="md-nav__link">
         
   
   
@@ -750,10 +753,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../guide/relationship-dsl/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -769,6 +799,142 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Four Helpers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Four Helpers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#belongs_toinverse_type-inverse_query_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        belongs_to(inverse_type, *, inverse_query_field=...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#habtminverse_type-inverse_query_field-transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        habtm(inverse_type, *, inverse_query_field=..., transform=...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#has_manyinverse_type-inverse_query_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        has_many(inverse_type, *, inverse_query_field=...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#has_many_throughinverse_type-transform-inverse_query_field" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        has_many_through(inverse_type, *, transform, inverse_query_field=...)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-helper-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which Helper to Use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auto-derivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auto-Derivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interaction-with-save-and-side-mutations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction with Save and Side Mutations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1070,31 +1236,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1112,7 +1275,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1130,7 +1293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/" class="md-nav__link">
+      <a href="../../api/client/" class="md-nav__link">
         
   
   
@@ -1158,7 +1321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../context/" class="md-nav__link">
+      <a href="../../api/context/" class="md-nav__link">
         
   
   
@@ -1186,7 +1349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../batch/" class="md-nav__link">
+      <a href="../../api/batch/" class="md-nav__link">
         
   
   
@@ -1214,7 +1377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/" class="md-nav__link">
+      <a href="../../api/store/" class="md-nav__link">
         
   
   
@@ -1242,7 +1405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../errors/" class="md-nav__link">
+      <a href="../../api/errors/" class="md-nav__link">
         
   
   
@@ -1267,19 +1430,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../api/schema/" class="md-nav__link">
         
   
   
@@ -1295,7 +1449,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1308,7 +1461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../types/" class="md-nav__link">
+      <a href="../../api/types/" class="md-nav__link">
         
   
   
@@ -1342,13 +1495,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -1357,7 +1507,7 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_8" >
         
           
-          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
             
   
   
@@ -1393,7 +1543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/scene/" class="md-nav__link">
+      <a href="../../api/client/mixins/scene/" class="md-nav__link">
         
   
   
@@ -1421,7 +1571,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/gallery/" class="md-nav__link">
+      <a href="../../api/client/mixins/gallery/" class="md-nav__link">
         
   
   
@@ -1449,7 +1599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/image/" class="md-nav__link">
+      <a href="../../api/client/mixins/image/" class="md-nav__link">
         
   
   
@@ -1477,7 +1627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/group/" class="md-nav__link">
+      <a href="../../api/client/mixins/group/" class="md-nav__link">
         
   
   
@@ -1505,7 +1655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/performer/" class="md-nav__link">
+      <a href="../../api/client/mixins/performer/" class="md-nav__link">
         
   
   
@@ -1533,7 +1683,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/studio/" class="md-nav__link">
+      <a href="../../api/client/mixins/studio/" class="md-nav__link">
         
   
   
@@ -1561,7 +1711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/tag/" class="md-nav__link">
+      <a href="../../api/client/mixins/tag/" class="md-nav__link">
         
   
   
@@ -1589,7 +1739,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/marker/" class="md-nav__link">
+      <a href="../../api/client/mixins/marker/" class="md-nav__link">
         
   
   
@@ -1617,7 +1767,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/file/" class="md-nav__link">
+      <a href="../../api/client/mixins/file/" class="md-nav__link">
         
   
   
@@ -1645,7 +1795,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/metadata/" class="md-nav__link">
+      <a href="../../api/client/mixins/metadata/" class="md-nav__link">
         
   
   
@@ -1673,7 +1823,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/jobs/" class="md-nav__link">
+      <a href="../../api/client/mixins/jobs/" class="md-nav__link">
         
   
   
@@ -1701,7 +1851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/config/" class="md-nav__link">
+      <a href="../../api/client/mixins/config/" class="md-nav__link">
         
   
   
@@ -1729,7 +1879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/filter/" class="md-nav__link">
+      <a href="../../api/client/mixins/filter/" class="md-nav__link">
         
   
   
@@ -1757,7 +1907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/plugin/" class="md-nav__link">
+      <a href="../../api/client/mixins/plugin/" class="md-nav__link">
         
   
   
@@ -1785,7 +1935,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/scraper/" class="md-nav__link">
+      <a href="../../api/client/mixins/scraper/" class="md-nav__link">
         
   
   
@@ -1813,7 +1963,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/package/" class="md-nav__link">
+      <a href="../../api/client/mixins/package/" class="md-nav__link">
         
   
   
@@ -1841,7 +1991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/subscription/" class="md-nav__link">
+      <a href="../../api/client/mixins/subscription/" class="md-nav__link">
         
   
   
@@ -1869,7 +2019,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/system_query/" class="md-nav__link">
+      <a href="../../api/client/mixins/system_query/" class="md-nav__link">
         
   
   
@@ -1897,7 +2047,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../client/mixins/version/" class="md-nav__link">
+      <a href="../../api/client/mixins/version/" class="md-nav__link">
         
   
   
@@ -2159,9 +2309,193 @@
   
 
 
-<h1 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h1>
-<p>The <code>schema/</code> directory contains GraphQL schema files pulled directly from the upstream <a href="https://github.com/stashapp/stash">stashapp/stash</a> repository for local reference.</p>
-<p>These files define the official Stash GraphQL API schema and are used as the source of truth for type generation.</p>
+<h1 id="relationship-dsl">Relationship DSL<a class="headerlink" href="#relationship-dsl" title="Permanent link">&para;</a></h1>
+<p>Every <code>StashObject</code> subclass declares its relationships to other entities via
+a <code>__relationships__</code> class attribute. The DSL — four helper factories —
+produces <code>RelationshipMetadata</code> entries that drive save mutations, inverse
+synchronisation, lazy population, and <code>filter_and_populate</code> queries.</p>
+<h2 id="the-four-helpers">The Four Helpers<a class="headerlink" href="#the-four-helpers" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">belongs_to</span><span class="p">,</span> <span class="n">habtm</span><span class="p">,</span> <span class="n">has_many</span><span class="p">,</span> <span class="n">has_many_through</span>
+</span></code></pre></div>
+<h3 id="belongs_toinverse_type-inverse_query_field"><code>belongs_to(inverse_type, *, inverse_query_field=...)</code><a class="headerlink" href="#belongs_toinverse_type-inverse_query_field" title="Permanent link">&para;</a></h3>
+<p>The FK side of a many-to-one. The entity <em>owns the write</em> through a <code>*_id</code>
+field on its update input type.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="s2">&quot;studio&quot;</span><span class="p">:</span> <span class="n">belongs_to</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="s2">&quot;parent_studio&quot;</span><span class="p">:</span> <span class="n">belongs_to</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;child_studios&quot;</span><span class="p">),</span>
+</span></code></pre></div>
+<p>The client writes <code>studio_id=&lt;id&gt;</code> on save. The inverse side (Studio.scenes)
+is auto-populated by the server after any scene update, so no coordination
+between sides is needed.</p>
+<h3 id="habtminverse_type-inverse_query_field-transform"><code>habtm(inverse_type, *, inverse_query_field=..., transform=...)</code><a class="headerlink" href="#habtminverse_type-inverse_query_field-transform" title="Permanent link">&para;</a></h3>
+<p>Many-to-many written as a <strong>list of IDs</strong>. The entity owns the write through
+a <code>*_ids</code> field on its update input.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Tag&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s2">&quot;performers&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Performer&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s2">&quot;parents&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Tag&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;children&quot;</span><span class="p">),</span>  <span class="c1"># self-referential</span>
+</span></code></pre></div>
+<p>The client writes <code>tag_ids=[...]</code>, <code>performer_ids=[...]</code>, and so on.
+<code>transform</code> converts the in-memory object into the exact input shape when the
+wire format isn't a plain ID list — see <code>Scene.stash_ids</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="s2">&quot;stash_ids&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">&quot;StashID&quot;</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">StashIDInput</span><span class="p">(</span><span class="n">endpoint</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">stash_id</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">stash_id</span><span class="p">),</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">),</span>
+</span></code></pre></div>
+<h3 id="has_manyinverse_type-inverse_query_field"><code>has_many(inverse_type, *, inverse_query_field=...)</code><a class="headerlink" href="#has_manyinverse_type-inverse_query_field" title="Permanent link">&para;</a></h3>
+<p>The <strong>read-only inverse side</strong> of a relationship. No mutation input exists on
+this entity's update type; the field is populated by issuing a filter query
+against the inverse type.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Scene&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;tags&quot;</span><span class="p">),</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s2">&quot;child_studios&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;parent_studio&quot;</span><span class="p">),</span>
+</span></code></pre></div>
+<p>To fetch <code>tag.scenes</code>, the store calls
+<code>find_scenes(scene_filter={"tags": {"value": [tag.id], ...}})</code>. <code>populate()</code>
+and <code>filter_and_populate()</code> use this strategy automatically.</p>
+<p>The <code>query_strategy</code> stored in the metadata is <code>"filter_query"</code>, and the
+<code>filter_query_hint</code> is auto-derived.</p>
+<h3 id="has_many_throughinverse_type-transform-inverse_query_field"><code>has_many_through(inverse_type, *, transform, inverse_query_field=...)</code><a class="headerlink" href="#has_many_throughinverse_type-transform-inverse_query_field" title="Permanent link">&para;</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Not Rails <code>through: :model</code></p>
+</div>
+<p>This helper is <strong>not</strong> the Rails <code>has_many :through:</code> pattern. It does
+not name an intermediate model that joins two sides. It means
+<strong>"through a wrapper input type that carries relationship-level metadata"</strong>
+— ordering, descriptions, or similar per-edge data.</p>
+<p>Used when the relationship <em>itself</em> has data attached. The wire format is a
+list of wrapper objects instead of a list of IDs.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Scene.groups — each relation carries a scene_index (ordering)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s2">&quot;groups&quot;</span><span class="p">:</span> <span class="n">has_many_through</span><span class="p">(</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">sg</span><span class="p">:</span> <span class="n">SceneGroupInput</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>        <span class="n">group_id</span><span class="o">=</span><span class="n">sg</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">scene_index</span><span class="o">=</span><span class="n">sg</span><span class="o">.</span><span class="n">scene_index</span><span class="p">,</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="p">),</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="p">),</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Group.sub_groups / containing_groups — each carries a description</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="s2">&quot;sub_groups&quot;</span><span class="p">:</span> <span class="n">has_many_through</span><span class="p">(</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">g</span><span class="p">:</span> <span class="n">GroupDescriptionInput</span><span class="p">(</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>        <span class="n">group_id</span><span class="o">=</span><span class="n">g</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">g</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="p">),</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;containing_groups&quot;</span><span class="p">,</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">),</span>
+</span></code></pre></div>
+<p><code>transform</code> is <strong>required</strong> here (unlike <code>habtm</code> where it's optional) because
+the wrapper input must be constructed explicitly. <code>query_strategy</code> is
+<code>"complex_object"</code>.</p>
+<h2 id="which-helper-to-use">Which Helper to Use<a class="headerlink" href="#which-helper-to-use" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Helper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Does this entity's update input take a single <code>*_id</code> field?</td>
+<td><code>belongs_to</code></td>
+</tr>
+<tr>
+<td>Does it take a <code>*_ids</code> list field?</td>
+<td><code>habtm</code></td>
+</tr>
+<tr>
+<td>Does it take a list of wrapper objects with metadata?</td>
+<td><code>has_many_through</code></td>
+</tr>
+<tr>
+<td>Is there <em>no</em> input field for this relationship here? (written from the other side)</td>
+<td><code>has_many</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="auto-derivation">Auto-Derivation<a class="headerlink" href="#auto-derivation" title="Permanent link">&para;</a></h2>
+<p><code>RelationshipMetadata</code> has several fields you don't supply — they're resolved
+in <code>__init_subclass__</code> from the dict key and sibling metadata:</p>
+<ul>
+<li><strong><code>query_field</code></strong> — the dict key itself (<code>"studio"</code> → <code>query_field="studio"</code>).</li>
+<li><strong><code>target_field</code></strong> — auto-derived by helper:</li>
+<li><code>belongs_to</code>: key + <code>"_id"</code> (e.g. <code>studio</code> → <code>studio_id</code>)</li>
+<li><code>habtm</code>: singularize(key) + <code>"_ids"</code> (e.g. <code>tags</code> → <code>tag_ids</code>, <code>galleries</code> → <code>gallery_ids</code>)</li>
+<li><code>has_many_through</code>: key as-is (the wrapper list field keeps its plural name)</li>
+<li><code>has_many</code>: <code>""</code> (no mutation input — read-only)</li>
+<li><strong><code>filter_query_hint</code></strong> (for <code>has_many</code>) — derived from <code>inverse_type</code> +
+  owner type to produce the right <code>find_X_filter={"owner_field": {...}}</code> shape.</li>
+</ul>
+<p>You can override any of these explicitly when the convention doesn't fit, but
+the idiomatic code relies on the derivation.</p>
+<h2 id="full-example">Full Example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h2>
+<p>A hypothetical <code>Author</code> entity demonstrating all four patterns:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">StashObject</span><span class="p">,</span> <span class="n">belongs_to</span><span class="p">,</span> <span class="n">habtm</span><span class="p">,</span> <span class="n">has_many</span><span class="p">,</span> <span class="n">has_many_through</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">Author</span><span class="p">(</span><span class="n">StashObject</span><span class="p">):</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">__type_name__</span> <span class="o">=</span> <span class="s2">&quot;Author&quot;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="c1"># Simple fields</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">bio</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="c1"># Relationship fields</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">publisher</span><span class="p">:</span> <span class="n">Publisher</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>      <span class="c1"># many-to-one</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">genres</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Genre</span><span class="p">]</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>              <span class="c1"># many-to-many (IDs)</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="n">books</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">AuthoredBook</span><span class="p">]</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>        <span class="c1"># many-to-many + order</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">reviews</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Review</span><span class="p">]</span> <span class="o">|</span> <span class="n">UnsetType</span> <span class="o">=</span> <span class="n">UNSET</span>            <span class="c1"># inverse (read-only)</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">__relationships__</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        <span class="s2">&quot;publisher&quot;</span><span class="p">:</span> <span class="n">belongs_to</span><span class="p">(</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>            <span class="s2">&quot;Publisher&quot;</span><span class="p">,</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>            <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;authors&quot;</span><span class="p">,</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>        <span class="p">),</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>        <span class="s2">&quot;genres&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>            <span class="s2">&quot;Genre&quot;</span><span class="p">,</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>            <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;authors&quot;</span><span class="p">,</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>        <span class="p">),</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>        <span class="s2">&quot;books&quot;</span><span class="p">:</span> <span class="n">has_many_through</span><span class="p">(</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>            <span class="s2">&quot;Book&quot;</span><span class="p">,</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>            <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ab</span><span class="p">:</span> <span class="n">AuthoredBookInput</span><span class="p">(</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>                <span class="n">book_id</span><span class="o">=</span><span class="n">ab</span><span class="o">.</span><span class="n">book</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">author_order</span><span class="o">=</span><span class="n">ab</span><span class="o">.</span><span class="n">author_order</span><span class="p">,</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>            <span class="p">),</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>            <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;authors&quot;</span><span class="p">,</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>        <span class="p">),</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>        <span class="s2">&quot;reviews&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>            <span class="s2">&quot;Review&quot;</span><span class="p">,</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>            <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;author&quot;</span><span class="p">,</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a>        <span class="p">),</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a>    <span class="p">}</span>
+</span></code></pre></div>
+<p>With this declaration alone, the following all work:</p>
+<ul>
+<li><code>author.genres.append(sci_fi)</code> then <code>author.save(client)</code> → sends
+  <code>genre_ids</code> on the author update.</li>
+<li><code>author.publisher = new_pub; author.save(client)</code> → sends <code>publisher_id</code>.</li>
+<li><code>await store.populate(author, ["reviews"])</code> → issues
+  <code>find_reviews(filter={"author": {"value": [author.id]}})</code> and attaches the
+  results to <code>author.reviews</code>.</li>
+<li><code>await store.filter_and_populate(Author, filter={...}, fields=["books__book__title"])</code>
+  → batched filter + nested population across the <code>has_many_through</code>.</li>
+</ul>
+<h2 id="interaction-with-save-and-side-mutations">Interaction with Save and Side Mutations<a class="headerlink" href="#interaction-with-save-and-side-mutations" title="Permanent link">&para;</a></h2>
+<p>For most relationship fields, <code>save()</code> just translates the relationship list
+into its <code>target_field</code> on the update input. Some fields — content
+relationships on <code>Tag</code>, <code>cover</code> on <code>Gallery</code> — are declared as
+<code>has_many</code> (read-only) here because the <em>owning</em> entity writes them, but the
+user experience needs to feel writable. Those fields are handled by
+<a href="../side-mutations/">side mutations</a>: assignments trigger bulk-update calls on
+the inverse entity.</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../side-mutations/">Side Mutations</a> — the mechanism that backs
+  "writable" <code>has_many</code> fields like <code>Tag.scenes</code>.</li>
+<li><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a>
+  — architectural rationale for how these relationships stay in sync without
+  dual mutations.</li>
+<li><a href="../batched-mutations/">Batched Mutations</a> — how relationship updates batch
+  when multiple entities are saved together.</li>
+</ul>
 
 
 
@@ -2199,7 +2533,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../errors/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Errors">
+          <a href="../side-mutations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Side Mutations">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -2209,20 +2543,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Errors
+                Side Mutations
               </div>
             </div>
           </a>
         
         
           
-          <a href="../types/" class="md-footer__link md-footer__link--next" aria-label="Next: Types">
+          <a href="../../architecture/overview/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Types
+                Overview
               </div>
             </div>
             <div class="md-footer__button md-icon">

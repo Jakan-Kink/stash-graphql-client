@@ -718,6 +718,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/side-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Side Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/relationship-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -8297,7 +8353,15 @@ by its position in the gallery.</p>
 
 
 
-        <p>Image type from schema.</p>
+        <p>A single image or video-as-image file managed by Stash.</p>
+<p><code>visual_files</code> holds the underlying files as <code>list[VisualFile]</code> — a
+discriminated union of <code>VideoFile | ImageFile</code>.</p>
+<p><code>o_counter</code> uses a side-mutation handler (<code>_save_o_counter</code>). Set it
+to a new value and call <code>save()</code>; the client fires
+<code>imageIncrementO</code> / <code>imageDecrementO</code> / <code>imageResetO</code> mutations to
+reach the target value.</p>
+<p>Images are created by Stash's scanner, not this client — there is no
+<code>ImageCreateInput</code>, only updates and destroys.</p>
 
 
 
@@ -10835,7 +10899,13 @@ by its position in the gallery.</p>
 
 
 
-        <p>Tag type from schema/types/tag.graphql.</p>
+        <p>A label attachable to most entity types, with hierarchy support.</p>
+<p><code>parents</code> and <code>children</code> are self-referential habtm lists.
+<code>*_count</code> fields are server-side resolvers — read-only.</p>
+<p>Content relationship list fields are queryable here but writable only via
+the owning entity's bulk update mutations; assignments fire bulk-update
+side mutations on <code>save()</code> (see <code>__side_mutations__</code> and the Side
+Mutations guide).</p>
 
 
 
@@ -12230,7 +12300,11 @@ by its position in the gallery.</p>
 
 
 
-        <p>Scene marker type from schema/types/scene-marker.graphql.</p>
+        <p>A timestamp marker on a Scene (title, seconds, optional end_seconds).</p>
+<p>Construct using relationship objects, not IDs:
+<code>SceneMarker(scene=Scene(id="1"), primary_tag=Tag(id="10"), seconds=42.0)</code>.
+<code>scene_id</code> / <code>primary_tag_id</code> exist only on <code>SceneMarkerCreateInput</code>;
+<code>to_input()</code> extracts IDs from the relationship objects automatically.</p>
 
 
 
@@ -30275,11 +30349,6 @@ fields in the schema, matching the common pattern.</p>
 
 
         <p>Result type for finding scenes from schema/types/scene.graphql.</p>
-<p>Fields:
-count: Total number of scenes
-duration: Total duration in seconds
-filesize: Total file size in bytes
-scenes: List of scenes</p>
 
 
 

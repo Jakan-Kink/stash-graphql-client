@@ -718,6 +718,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/side-mutations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Side Mutations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/relationship-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Relationship DSL
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2180,7 +2236,18 @@
 
 
 <h1 id="entity-store">Entity Store<a class="headerlink" href="#entity-store" title="Permanent link">&para;</a></h1>
-<p>Identity map and caching for Stash entities.</p>
+<p>Identity map and caching for Stash entities. Same-ID objects returned from any
+query share a single Python reference, so updates made anywhere propagate
+everywhere. See the <a href="../../architecture/overview/">Architecture Overview</a> for
+design rationale.</p>
+<p>The store also provides batched and bulk operations:</p>
+<ul>
+<li><strong><code>save_batch(entities)</code></strong> — persist many entities in a single GraphQL
+  round-trip, respecting creates-before-updates ordering and side-mutations.</li>
+<li><strong><code>save_all()</code></strong> — flush every dirty or new entity the store is tracking.</li>
+<li><strong><code>filter_and_populate(...)</code></strong> — query with filter + batched relationship
+  population in one call, with nested field specs (e.g. <code>files__path</code>).</li>
+</ul>
 
 
 <div class="doc doc-object doc-class">
