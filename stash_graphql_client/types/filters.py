@@ -96,7 +96,11 @@ class StashIDsCriterionInput(StashInput):
 
 
 class CustomFieldCriterionInput(StashInput):
-    """Input for custom field criterion."""
+    """Custom-field criterion.
+
+    ``field`` is the custom field's name. ``value`` is the value(s) to
+    match, typed at runtime according to that custom field's definition.
+    """
 
     field: str  # String!
     value: list[Any] | None | UnsetType = UNSET  # [Any!]
@@ -104,14 +108,23 @@ class CustomFieldCriterionInput(StashInput):
 
 
 class StringCriterionInput(StashInput):
-    """Input for string criterion."""
+    """String value criterion.
+
+    ``MATCHES_REGEX`` / ``NOT_MATCHES_REGEX`` modifiers interpret ``value``
+    as a regex pattern; other modifiers treat it as a literal string.
+    See ``CriterionModifier`` for the full modifier set.
+    """
 
     value: str  # String!
     modifier: CriterionModifier  # CriterionModifier!
 
 
 class IntCriterionInput(StashInput):
-    """Input for integer criterion."""
+    """Integer value criterion.
+
+    For ``BETWEEN`` / ``NOT_BETWEEN`` modifiers, ``value`` is the lower bound
+    and ``value2`` is the upper bound. Other modifiers use only ``value``.
+    """
 
     value: int  # Int!
     value2: int | None | UnsetType = UNSET  # Int
@@ -119,7 +132,11 @@ class IntCriterionInput(StashInput):
 
 
 class FloatCriterionInput(StashInput):
-    """Input for float criterion."""
+    """Float value criterion.
+
+    For ``BETWEEN`` / ``NOT_BETWEEN`` modifiers, ``value`` is the lower bound
+    and ``value2`` is the upper bound. Other modifiers use only ``value``.
+    """
 
     value: float  # Float!
     value2: float | None | UnsetType = UNSET  # Float
@@ -127,7 +144,11 @@ class FloatCriterionInput(StashInput):
 
 
 class MultiCriterionInput(StashInput):
-    """Input for multi criterion."""
+    """Multi-value criterion for list-typed fields (e.g. tags, performers).
+
+    ``value`` lists IDs to match; ``excludes`` lists IDs to filter out.
+    Combine with ``INCLUDES`` (any of) or ``INCLUDES_ALL`` (all of) modifiers.
+    """
 
     value: list[str] | None | UnsetType = UNSET  # [ID!]
     modifier: CriterionModifier  # CriterionModifier!
@@ -150,7 +171,12 @@ class CircumcisionCriterionInput(StashInput):
 
 
 class HierarchicalMultiCriterionInput(StashInput):
-    """Input for hierarchical multi criterion."""
+    """Multi-value criterion for hierarchical fields (tags, studios).
+
+    ``value`` lists IDs to match; ``excludes`` lists IDs to filter out.
+    ``depth`` controls descendant inclusion — server-defined semantics,
+    commonly ``0`` = exact match only and ``-1`` = all descendants.
+    """
 
     value: list[str]  # [ID!]!
     modifier: CriterionModifier  # CriterionModifier!
@@ -159,7 +185,11 @@ class HierarchicalMultiCriterionInput(StashInput):
 
 
 class DateCriterionInput(StashInput):
-    """Input for date criterion."""
+    """Date criterion (YYYY-MM-DD or fuzzy-date format).
+
+    For ``BETWEEN`` / ``NOT_BETWEEN`` modifiers, ``value`` is the lower bound
+    and ``value2`` is the upper bound.
+    """
 
     value: str  # String!
     value2: str | None | UnsetType = UNSET  # String
@@ -167,7 +197,12 @@ class DateCriterionInput(StashInput):
 
 
 class TimestampCriterionInput(StashInput):
-    """Input for timestamp criterion."""
+    """Timestamp criterion (RFC3339, or relative form like ``<4h``, ``>5m``).
+
+    For ``BETWEEN`` / ``NOT_BETWEEN`` modifiers, ``value`` is the lower bound
+    and ``value2`` is the upper bound. See the ``Timestamp`` scalar for the
+    full set of accepted formats.
+    """
 
     value: str  # String!
     value2: str | None | UnsetType = UNSET  # String
@@ -175,7 +210,11 @@ class TimestampCriterionInput(StashInput):
 
 
 class PhashDistanceCriterionInput(StashInput):
-    """Input for phash distance criterion."""
+    """Perceptual-hash (phash) distance criterion.
+
+    ``value`` is the phash to match against. ``distance`` is the allowed
+    Hamming distance — ``0`` for exact match, higher values widen tolerance.
+    """
 
     value: str  # String!
     modifier: CriterionModifier  # CriterionModifier!

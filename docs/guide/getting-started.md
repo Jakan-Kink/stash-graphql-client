@@ -5,7 +5,7 @@ This guide will walk you through installing and using stash-graphql-client for t
 ## Prerequisites
 
 - **Python 3.12 or higher**
-- **Stash server** running and accessible (tested with v0.25.0+)
+- **Stash server** v0.30.0 or later (appSchema 75+). Newer features are gated via introspection; currently tracking v0.31.x.
 - **Poetry** (optional, for development)
 
 ## Installation

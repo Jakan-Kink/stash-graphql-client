@@ -334,8 +334,7 @@ class ConfigClientMixin(StashClientProtocol):
         """Generate a new API key.
 
         Args:
-            input_data: GenerateAPIKeyInput object or dictionary containing:
-                - clear: Whether to clear existing API key (optional)
+            input_data: GenerateAPIKeyInput object or dictionary.
 
         Returns:
             Generated API key string
@@ -464,7 +463,7 @@ class ConfigClientMixin(StashClientProtocol):
         """Validate StashBox credentials.
 
         Args:
-            input_data: StashBoxInput object or dictionary containing endpoint and api_key
+            input_data: StashBoxInput object or dictionary.
 
         Returns:
             StashBoxValidationResult with validation status
@@ -633,13 +632,7 @@ class ConfigClientMixin(StashClientProtocol):
         """Get complete Stash configuration.
 
         Returns:
-            ConfigResult containing all configuration sections:
-                - general: General settings (paths, logging, parallel tasks, etc.)
-                - interface: UI/UX settings (language, menus, previews, etc.)
-                - dlna: DLNA server configuration
-                - scraping: Scraper settings (user agent, cert check, etc.)
-                - defaults: Default settings for scan/identify/generate operations
-                - ui: UI customization settings (plugin configs, etc.)
+            ConfigResult with all server configuration sections.
 
         Raises:
             gql.TransportError: If the GraphQL request fails
@@ -648,7 +641,7 @@ class ConfigClientMixin(StashClientProtocol):
             Get full configuration:
             ```python
             config = await client.get_configuration()
-            print(f"Database: {config.general.databasePath}")
+            print(f"Database: {config.general.database_path}")
             print(f"Language: {config.interface.language}")
             print(f"DLNA enabled: {config.dlna.enabled}")
             ```
@@ -656,18 +649,18 @@ class ConfigClientMixin(StashClientProtocol):
             Check specific settings:
             ```python
             config = await client.get_configuration()
-            if config.general.parallelTasks < 4:
+            if config.general.parallel_tasks < 4:
                 print("Consider increasing parallel tasks for better performance")
 
-            if not config.scraping.scraperCertCheck:
+            if not config.scraping.scraper_cert_check:
                 print("WARNING: SSL certificate checking is disabled!")
             ```
 
-            Inspect plugin UI settings:
+            Inspect plugin configurations:
             ```python
             config = await client.get_configuration()
-            if config.ui:
-                for plugin_id, settings in config.ui.items():
+            if config.plugins:
+                for plugin_id, settings in config.plugins.items():
                     print(f"Plugin {plugin_id}: {settings}")
             ```
         """

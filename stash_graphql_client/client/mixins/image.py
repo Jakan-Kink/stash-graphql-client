@@ -58,9 +58,7 @@ class ImageClientMixin(StashClientProtocol):
             q: Optional search query (alternative to filter_["q"])
 
         Returns:
-            FindImagesResultType containing:
-                - count: Total number of matching images
-                - images: List of Image objects
+            FindImagesResultType.
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
@@ -141,10 +139,7 @@ class ImageClientMixin(StashClientProtocol):
         """Delete an image.
 
         Args:
-            input_data: ImageDestroyInput object or dictionary containing:
-                - id: Image ID to delete (required)
-                - delete_file: Whether to delete the image's file (optional, default: False)
-                - delete_generated: Whether to delete generated files (optional, default: True)
+            input_data: ImageDestroyInput object or dictionary.
 
         Returns:
             True if the image was successfully deleted
@@ -183,10 +178,7 @@ class ImageClientMixin(StashClientProtocol):
         """Delete multiple images.
 
         Args:
-            input_data: ImagesDestroyInput object or dictionary containing:
-                - ids: List of image IDs to delete (required)
-                - delete_file: Whether to delete the images' files (optional, default: False)
-                - delete_generated: Whether to delete generated files (optional, default: True)
+            input_data: ImagesDestroyInput object or dictionary.
 
         Returns:
             True if the images were successfully deleted
@@ -241,9 +233,7 @@ class ImageClientMixin(StashClientProtocol):
         """Bulk update images.
 
         Args:
-            input_data: BulkImageUpdateInput object or dictionary containing:
-                - ids: List of image IDs to update (optional)
-                - And any fields to update (e.g., organized, rating100, etc.)
+            input_data: BulkImageUpdateInput object or dictionary with fields to update.
             return_fields: If provided, use a minimal inline mutation requesting
                 only these fields (e.g. ``"id"``).  Avoids the full fragment
                 response, which is significantly faster for fire-and-forget

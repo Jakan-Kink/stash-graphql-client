@@ -52,11 +52,7 @@ class TagClientMixin(StashClientProtocol):
             q: Optional search query (alternative to filter_["q"])
 
         Returns:
-            FindTagsResultType containing:
-                - count: Total number of matching tags
-                - tags: List of Tag objects
-
-        Note:
+            FindTagsResultType.
         """
         if filter_ is None:
             filter_ = {"per_page": -1}
@@ -229,8 +225,7 @@ class TagClientMixin(StashClientProtocol):
         """Delete a tag.
 
         Args:
-            input_data: TagDestroyInput object or dictionary containing:
-                - id: Tag ID to delete (required)
+            input_data: TagDestroyInput object or dictionary.
 
         Returns:
             True if the tag was successfully deleted

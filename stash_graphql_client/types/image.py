@@ -98,7 +98,19 @@ class ImagesDestroyInput(StashInput):
 
 
 class Image(StashObject):
-    """Image type from schema."""
+    """A single image or video-as-image file managed by Stash.
+
+    ``visual_files`` holds the underlying files as ``list[VisualFile]`` — a
+    discriminated union of ``VideoFile | ImageFile``.
+
+    ``o_counter`` uses a side-mutation handler (``_save_o_counter``). Set it
+    to a new value and call ``save()``; the client fires
+    ``imageIncrementO`` / ``imageDecrementO`` / ``imageResetO`` mutations to
+    reach the target value.
+
+    Images are created by Stash's scanner, not this client — there is no
+    ``ImageCreateInput``, only updates and destroys.
+    """
 
     __type_name__ = "Image"
     __short_repr_fields__ = ("title",)

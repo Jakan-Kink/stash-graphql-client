@@ -94,9 +94,7 @@ class GroupClientMixin(StashClientProtocol):
             q: Optional search query (alternative to filter_["q"])
 
         Returns:
-            FindGroupsResultType containing:
-                - count: Total number of matching groups
-                - groups: List of Group objects
+            FindGroupsResultType.
 
         Examples:
             Find all groups:
@@ -385,15 +383,7 @@ class GroupClientMixin(StashClientProtocol):
         """Bulk update multiple groups.
 
         Args:
-            input_data: BulkGroupUpdateInput or dict with:
-                - ids: List of group IDs to update
-                - rating100: Optional rating (1-100)
-                - studio_id: Optional studio ID
-                - director: Optional director name
-                - urls: Optional list of URLs
-                - tag_ids: Optional list of tag IDs
-                - containing_groups: Optional groups that contain these groups
-                - sub_groups: Optional sub-groups
+            input_data: BulkGroupUpdateInput or dict with fields to update.
             return_fields: If provided, use a minimal inline mutation requesting
                 only these fields (e.g. ``"id"``).  Returns raw dicts instead
                 of Group objects.
@@ -589,8 +579,8 @@ class GroupClientMixin(StashClientProtocol):
             input_data = ReorderSubGroupsInput(
                 group_id="parent_123",
                 sub_group_ids=["child_2", "child_3"],
-                "insert_at_id": "child_1",
-                insert_after=False
+                insert_at_id="child_1",
+                insert_after=False,
             )
             result = await client.reorder_sub_groups(input_data)
             ```

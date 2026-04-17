@@ -99,7 +99,16 @@ class TagsMergeInput(StashInput):
 
 
 class Tag(StashObject):
-    """Tag type from schema/types/tag.graphql."""
+    """A label attachable to most entity types, with hierarchy support.
+
+    ``parents`` and ``children`` are self-referential habtm lists.
+    ``*_count`` fields are server-side resolvers — read-only.
+
+    Content relationship list fields are queryable here but writable only via
+    the owning entity's bulk update mutations; assignments fire bulk-update
+    side mutations on ``save()`` (see ``__side_mutations__`` and the Side
+    Mutations guide).
+    """
 
     __type_name__ = "Tag"
     __short_repr_fields__ = ("name",)

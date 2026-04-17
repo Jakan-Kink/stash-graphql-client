@@ -13,6 +13,7 @@ from stash_graphql_client.errors import StashIntegrationError
 # Type aliases for simple scalars
 Map = dict[str, Any]
 BoolMap = dict[str, bool]
+# Outer key: plugin ID. Inner dict: that plugin's configuration (arbitrary settings).
 PluginConfigMap = dict[str, dict[str, Any]]
 Int64 = int
 

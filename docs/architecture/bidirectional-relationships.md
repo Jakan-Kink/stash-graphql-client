@@ -3,6 +3,14 @@
 **Last Updated:** 2025-12-14
 **Status:** Implemented - Tier 1 (Automatic Backend Sync)
 
+!!! tip "User-facing guides"
+This document covers the **architectural rationale** for bidirectional
+sync. For how to _declare_ relationships in your entity classes, see the
+[Relationship DSL guide](../guide/relationship-dsl.md)
+(`belongs_to` / `habtm` / `has_many` / `has_many_through`). For how
+non-updateable fields like `Tag.scenes` or `Gallery.cover` get persisted,
+see the [Side Mutations guide](../guide/side-mutations.md).
+
 ## Executive Summary
 
 Empirical testing confirms that **Stash's backend automatically maintains bidirectional referential integrity for ALL relationship types**. No dual mutation coordination is required. This document details the findings and implementation approach.
@@ -11,16 +19,16 @@ Empirical testing confirms that **Stash's backend automatically maintains bidire
 
 All tests passed (8/8) confirming automatic bidirectional synchronization:
 
-| Test | Relationship | Pattern | Result |
-|------|-------------|---------|--------|
-| Gallery → Scene (forward) | Many-to-Many | Direct field | ✅ Auto-sync |
-| Scene → Gallery (reverse) | Many-to-Many | Direct field | ✅ Auto-sync |
-| Tag Parent → Child | Self-referential | Direct field | ✅ Auto-sync |
-| Scene → Performer | Many-to-Many | Direct field | ✅ Auto-sync |
-| Scene → Studio | Many-to-One | Filter query | ✅ Auto-sync |
-| Group Hierarchy | Complex metadata | Nested objects | ✅ Auto-sync |
-| **Edge Case:** Removal | Deletion propagation | N/A | ✅ Auto-sync |
-| **Edge Case:** Bulk Update | Multiple relationships | N/A | ✅ Auto-sync |
+| Test                       | Relationship           | Pattern        | Result       |
+| -------------------------- | ---------------------- | -------------- | ------------ |
+| Gallery → Scene (forward)  | Many-to-Many           | Direct field   | ✅ Auto-sync |
+| Scene → Gallery (reverse)  | Many-to-Many           | Direct field   | ✅ Auto-sync |
+| Tag Parent → Child         | Self-referential       | Direct field   | ✅ Auto-sync |
+| Scene → Performer          | Many-to-Many           | Direct field   | ✅ Auto-sync |
+| Scene → Studio             | Many-to-One            | Filter query   | ✅ Auto-sync |
+| Group Hierarchy            | Complex metadata       | Nested objects | ✅ Auto-sync |
+| **Edge Case:** Removal     | Deletion propagation   | N/A            | ✅ Auto-sync |
+| **Edge Case:** Bulk Update | Multiple relationships | N/A            | ✅ Auto-sync |
 
 ### Test Details
 
@@ -29,6 +37,7 @@ All tests passed (8/8) confirming automatic bidirectional synchronization:
 **Stash Version:** Latest (as of test date)
 
 Each test:
+
 1. Created entities with relationships
 2. Updated one side of the relationship
 3. Verified the inverse side automatically updated
@@ -41,10 +50,12 @@ Each test:
 **Used by:** Gallery, Performer, Tag, Group
 
 **Reading:**
+
 ```graphql
 query {
   findGallery(id: "123") {
-    scenes {        # Direct field returns [Scene!]!
+    scenes {
+      # Direct field returns [Scene!]!
       id
       title
     }
@@ -53,12 +64,15 @@ query {
 ```
 
 **Writing:**
+
 ```graphql
 mutation {
-  sceneUpdate(input: {
-    id: "456"
-    gallery_ids: ["123"]  # Updates scene → gallery link
-  }) {
+  sceneUpdate(
+    input: {
+      id: "456"
+      gallery_ids: ["123"] # Updates scene → gallery link
+    }
+  ) {
     id
   }
 }
@@ -66,6 +80,7 @@ mutation {
 ```
 
 **Python Example:**
+
 ```python
 # Reading
 scene = await client.find_scene("456")
@@ -82,20 +97,17 @@ await scene.save(client)
 **Used by:** Studio (and potentially others)
 
 **Why this pattern?**
+
 - More flexible (supports pagination, sorting, complex filters)
 - Studio doesn't have a direct `scenes` field
 - Instead, query scenes BY studio using filters
 
 **Reading:**
+
 ```graphql
 query {
   findScenes(
-    scene_filter: {
-      studios: {
-        value: ["studio_id"]
-        modifier: INCLUDES
-      }
-    }
+    scene_filter: { studios: { value: ["studio_id"], modifier: INCLUDES } }
   ) {
     count
     scenes {
@@ -107,12 +119,10 @@ query {
 ```
 
 **Writing:**
+
 ```graphql
 mutation {
-  sceneUpdate(input: {
-    id: "456"
-    studio_id: "studio_id"
-  }) {
+  sceneUpdate(input: { id: "456", studio_id: "studio_id" }) {
     id
   }
 }
@@ -120,6 +130,7 @@ mutation {
 ```
 
 **Python Example:**
+
 ```python
 # Reading - use filter query
 scenes = await client.find_scenes(
@@ -137,14 +148,16 @@ await scene.save(client)
 **Used by:** Group hierarchies
 
 **Why this pattern?**
+
 - Relationships have additional metadata (e.g., description)
 - Not just a simple ID list
 
 **Schema:**
+
 ```graphql
 type GroupDescription {
-  group: Group!         # The related group
-  description: String   # Metadata about this relationship
+  group: Group! # The related group
+  description: String # Metadata about this relationship
 }
 
 type Group {
@@ -154,6 +167,7 @@ type Group {
 ```
 
 **Reading:**
+
 ```graphql
 query {
   findGroup(id: "123") {
@@ -162,22 +176,22 @@ query {
         id
         name
       }
-      description  # Why this sub-group exists
+      description # Why this sub-group exists
     }
   }
 }
 ```
 
 **Writing:**
+
 ```graphql
 mutation {
-  groupUpdate(input: {
-    id: "123"
-    sub_groups: [{
-      group_id: "456"
-      description: "Season 1"
-    }]
-  }) {
+  groupUpdate(
+    input: {
+      id: "123"
+      sub_groups: [{ group_id: "456", description: "Season 1" }]
+    }
+  ) {
     id
   }
 }
@@ -185,6 +199,7 @@ mutation {
 ```
 
 **Python Example:**
+
 ```python
 # Reading - nested structure
 group = await client.find_group("123")

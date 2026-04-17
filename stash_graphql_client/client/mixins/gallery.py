@@ -463,9 +463,7 @@ class GalleryClientMixin(StashClientProtocol):
         """Bulk update galleries.
 
         Args:
-            input_data: BulkGalleryUpdateInput object or dictionary containing:
-                - ids: List of gallery IDs to update (optional)
-                - And any fields to update (e.g., organized, rating100, etc.)
+            input_data: BulkGalleryUpdateInput object or dictionary with fields to update.
             return_fields: If provided, use a minimal inline mutation requesting
                 only these fields (e.g. ``"id"``).  Returns raw dicts instead
                 of Gallery objects.

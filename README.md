@@ -34,11 +34,16 @@ Async Python client for [Stash](https://stashapp.cc) GraphQL API.
 ### Quick Example
 
 ```python
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import Scene, UNSET
+import asyncio
 
+from stash_graphql_client import StashContext
+from stash_graphql_client.types import UNSET, Scene
+
+
+async def main():
     context = StashContext(conn={"Host": "localhost", "Port": 9999})
     client = context.client
+
     # Find and update a scene
     scene = await client.find_scene("scene-id")
     scene.rating100 = 95
@@ -48,6 +53,9 @@ from stash_graphql_client.types import Scene, UNSET
     # Django-style filtering via the context's store
     store = context.store
     top_rated = await store.find(Scene, rating100__gte=90)
+
+
+asyncio.run(main())
 ```
 
 ---

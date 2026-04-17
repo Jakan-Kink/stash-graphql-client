@@ -450,8 +450,7 @@ class PerformerClientMixin(StashClientProtocol):
         """Delete a performer.
 
         Args:
-            input_data: PerformerDestroyInput object or dictionary containing:
-                - id: Performer ID to delete (required)
+            input_data: PerformerDestroyInput object or dictionary.
 
         Returns:
             True if the performer was successfully deleted
@@ -561,9 +560,7 @@ class PerformerClientMixin(StashClientProtocol):
         """Bulk update performers.
 
         Args:
-            input_data: BulkPerformerUpdateInput object or dictionary containing:
-                - ids: List of performer IDs to update (optional)
-                - And any fields to update (e.g., gender, birthdate, tags, etc.)
+            input_data: BulkPerformerUpdateInput object or dictionary with fields to update.
 
         Returns:
             List of updated Performer objects
@@ -631,10 +628,7 @@ class PerformerClientMixin(StashClientProtocol):
         commit 65e82a0+). Older Stash versions will raise a GraphQL error.
 
         Args:
-            input_data: PerformerMergeInput object or dictionary containing:
-                - source: List of performer IDs to merge (required)
-                - destination: ID of the performer to merge into (required)
-                - values: Optional PerformerUpdateInput to override destination values
+            input_data: PerformerMergeInput object or dictionary.
 
         Returns:
             The merged Performer object

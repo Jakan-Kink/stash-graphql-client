@@ -154,6 +154,8 @@ nav:
       - Fuzzy Dates: guide/fuzzy-dates.md
       - Usage Examples: guide/usage-examples.md
       - Batched Mutations: guide/batched-mutations.md
+      - Side Mutations: guide/side-mutations.md
+      - Relationship DSL: guide/relationship-dsl.md
   - Architecture:
       - Overview: architecture/overview.md
       - Identity Map: architecture/identity-map.md

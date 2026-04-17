@@ -680,7 +680,7 @@ class ConfigScrapingInput(StashInput):
     )  # [String!]
 
 
-class ConfigScrapingResult(BaseModel):
+class ConfigScrapingResult(FromGraphQLMixin, BaseModel):
     """Result type for scraping configuration."""
 
     scraper_user_agent: str | None | UnsetType = Field(

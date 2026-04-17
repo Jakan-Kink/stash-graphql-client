@@ -136,8 +136,7 @@ class StudioClientMixin(StashClientProtocol):
         """Delete a studio.
 
         Args:
-            input_data: StudioDestroyInput object or dictionary containing:
-                - id: Studio ID to delete (required)
+            input_data: StudioDestroyInput object or dictionary.
 
         Returns:
             True if the studio was successfully deleted
@@ -215,9 +214,7 @@ class StudioClientMixin(StashClientProtocol):
         """Bulk update studios.
 
         Args:
-            input_data: BulkStudioUpdateInput object or dictionary containing:
-                - ids: List of studio IDs to update (optional)
-                - And any fields to update (e.g., url, rating100, etc.)
+            input_data: BulkStudioUpdateInput object or dictionary with fields to update.
             return_fields: If provided, use a minimal inline mutation requesting
                 only these fields (e.g. ``"id"``).  Returns raw dicts instead
                 of Studio objects.

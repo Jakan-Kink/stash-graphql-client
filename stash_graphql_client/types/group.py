@@ -429,15 +429,7 @@ class BulkGroupUpdateInput(StashInput):
 
 
 class ReorderSubGroupsInput(StashInput):
-    """Input for reordering sub groups from schema/types/group.graphql.
-
-    Fields:
-        group_id: str of the group to reorder sub groups for
-        sub_group_ids: strs of the sub groups to reorder. These must be a subset of the current sub groups.
-            Sub groups will be inserted in this order at the insert_index.
-        insert_at_id: The sub-group ID at which to insert the sub groups
-        insert_after: If true, the sub groups will be inserted after the insert_index,
-            otherwise they will be inserted before"""
+    """Input for reordering sub groups from schema/types/group.graphql."""
 
     group_id: str | UnsetType = UNSET  # ID!
     sub_group_ids: list[str] | UnsetType = UNSET  # [ID!]!
@@ -453,13 +445,7 @@ class FindGroupsResultType(StashResult):
 
 
 class GroupSubGroupAddInput(StashInput):
-    """Input for adding sub groups from schema/types/group.graphql.
-
-    Fields:
-        containing_group_id: str of the group to add sub groups to
-        sub_groups: List of sub groups to add
-        insert_index: The index at which to insert the sub groups. If not provided,
-            the sub groups will be appended to the end"""
+    """Input for adding sub groups from schema/types/group.graphql."""
 
     containing_group_id: str | UnsetType = UNSET  # ID!
     sub_groups: list[GroupDescriptionInput] | UnsetType = (

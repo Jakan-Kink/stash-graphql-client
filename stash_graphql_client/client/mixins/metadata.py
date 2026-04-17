@@ -243,9 +243,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Clean metadata and remove orphaned database entries.
 
         Args:
-            input_data: CleanMetadataInput object or dictionary containing:
-                - paths: List of paths to clean (optional)
-                - dry_run: Whether to perform a dry run (optional, default: False)
+            input_data: CleanMetadataInput object or dictionary.
 
         Returns:
             Job ID for the clean operation
@@ -302,14 +300,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Clean generated files (sprites, previews, screenshots, etc.).
 
         Args:
-            input_data: CleanGeneratedInput object or dictionary containing:
-                - blobFiles: Clean blob files (optional)
-                - dryRun: Whether to perform a dry run (optional, default: False)
-                - imageThumbnails: Clean image thumbnails (optional)
-                - markers: Clean marker files (optional)
-                - screenshots: Clean screenshot files (optional)
-                - sprites: Clean sprite files (optional)
-                - transcodes: Clean transcode files (optional)
+            input_data: CleanGeneratedInput object or dictionary.
 
         Returns:
             Job ID for the clean operation
@@ -374,11 +365,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Start auto-tagging metadata task.
 
         Args:
-            input_data: AutoTagMetadataInput object or dictionary containing:
-                - paths: List of paths to tag, None for all files (optional)
-                - performers: List of performer IDs to tag with, or ["*"] for all (optional)
-                - studios: List of studio IDs to tag with, or ["*"] for all (optional)
-                - tags: List of tag IDs to tag with, or ["*"] for all (optional)
+            input_data: AutoTagMetadataInput object or dictionary.
 
         Returns:
             Job ID for the auto-tagging task
@@ -434,11 +421,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Start metadata identification task using scrapers.
 
         Args:
-            input_data: IdentifyMetadataInput object or dictionary containing:
-                - sources: List of scraper sources to use (required)
-                - options: Identification options (optional)
-                - sceneIDs: List of scene IDs to identify (optional)
-                - paths: List of scene paths to identify (optional, ignored if sceneIDs set)
+            input_data: IdentifyMetadataInput object or dictionary.
 
         Returns:
             Job ID for the identification task
@@ -559,35 +542,11 @@ class MetadataClientMixin(StashClientProtocol):
         """Export objects to a downloadable file.
 
         Args:
-            input_data: ExportObjectsInput object or dictionary containing:
-                - ids: List of object IDs to export (optional)
-                - all: Export all objects (optional, default: False)
-                - type: Object type to export (required)
-                - format: Export format (optional)
+            input_data: ExportObjectsInput object or dictionary. See
+                ExportObjectsInput for per-entity-type export options.
 
         Returns:
             Download token for the exported file
-
-        Examples:
-            Export all scenes:
-            ```python
-            token = await client.export_objects({
-                "all": True,
-                "type": "SCENE"
-            })
-            download_url = f"{client.url}/downloads/{token}"
-            ```
-
-            Export specific performers:
-            ```python
-            from stash_graphql_client.types import ExportObjectsInput
-
-            input_data = ExportObjectsInput(
-                ids=["1", "2", "3"],
-                type="PERFORMER"
-            )
-            token = await client.export_objects(input_data)
-            ```
         """
         # Validate input type before try block so TypeError propagates
         if isinstance(input_data, ExportObjectsInput):
@@ -618,10 +577,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Import objects from a file.
 
         Args:
-            input_data: ImportObjectsInput object or dictionary containing:
-                - file: File to import from (required)
-                - duplicateBehaviour: How to handle duplicates (optional)
-                - missingRefBehaviour: How to handle missing references (optional)
+            input_data: ImportObjectsInput object or dictionary.
 
         Returns:
             Import job ID
@@ -675,8 +631,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Create a database backup.
 
         Args:
-            input_data: BackupDatabaseInput object or dictionary containing:
-                - download: Whether to download the backup (optional, default: True)
+            input_data: BackupDatabaseInput object or dictionary.
 
         Returns:
             Backup file path or download token
@@ -726,8 +681,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Anonymise the database by removing identifying information.
 
         Args:
-            input_data: AnonymiseDatabaseInput object or dictionary containing:
-                - download: Whether to download the anonymised backup (optional, default: True)
+            input_data: AnonymiseDatabaseInput object or dictionary.
 
         Returns:
             Anonymised backup file path or download token
@@ -777,8 +731,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Migrate database to the latest schema version.
 
         Args:
-            input_data: MigrateInput object or dictionary containing:
-                - backupPath: Path to create backup before migration (required)
+            input_data: MigrateInput object or dictionary.
 
         Returns:
             Migration job ID
@@ -850,9 +803,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Migrate scene screenshots to the latest storage format.
 
         Args:
-            input_data: MigrateSceneScreenshotsInput object or dictionary containing:
-                - deleteFiles: Delete old screenshot files (optional)
-                - overwriteExisting: Overwrite existing screenshots (optional)
+            input_data: MigrateSceneScreenshotsInput object or dictionary.
 
         Returns:
             Migration job ID
@@ -907,8 +858,7 @@ class MetadataClientMixin(StashClientProtocol):
         """Migrate blobs to the latest storage format.
 
         Args:
-            input_data: MigrateBlobsInput object or dictionary containing:
-                - deleteOld: Delete old blob files after migration (optional)
+            input_data: MigrateBlobsInput object or dictionary.
 
         Returns:
             Migration job ID

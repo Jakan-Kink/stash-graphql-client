@@ -17,13 +17,7 @@ class FilterClientMixin(StashClientProtocol):
         """Save or update a filter.
 
         Args:
-            input_data: SaveFilterInput object or dictionary containing:
-                - mode: FilterMode (required) - Type of filter (SCENES, PERFORMERS, etc.)
-                - name: str (required) - Name of the filter
-                - id: str (optional) - If provided, updates existing filter
-                - find_filter: FindFilterType (optional) - General filter parameters
-                - object_filter: dict (optional) - Type-specific filter criteria
-                - ui_options: dict (optional) - UI display options
+            input_data: SaveFilterInput object or dictionary.
 
         Returns:
             SavedFilter object with the saved filter data
@@ -82,8 +76,7 @@ class FilterClientMixin(StashClientProtocol):
         """Delete a saved filter.
 
         Args:
-            input_data: DestroyFilterInput object or dictionary containing:
-                - id: Filter ID to delete (required)
+            input_data: DestroyFilterInput object or dictionary.
 
         Returns:
             True if the filter was successfully deleted

@@ -1,6 +1,15 @@
 """GraphQL fragments for Stash queries.
 
-These fragments match the ones defined in schema/fragments.graphql.
+This module defines the fragment strings used by client mixin queries and
+mutations. Each fragment enumerates the fields fetched for a given type and
+corresponds to a shape declared in ``schema/fragments.graphql``.
+
+As of v0.12.0, the module also exposes ``FragmentStore`` — a per-client
+fragment registry that conditionally includes version- or capability-gated
+fields based on ``ServerCapabilities`` (detected via GraphQL introspection at
+connect time). Version-gated fragments (e.g. ``ScrapedTag.parent``, ``Folder``
+v0.31.0 additions) are injected only when the server supports them, so the
+same client code works across a range of Stash versions.
 """
 
 from __future__ import annotations

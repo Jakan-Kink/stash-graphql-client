@@ -548,11 +548,8 @@ class SceneClientMixin(StashClientProtocol):
         """Find a scene by its hash (checksum or oshash).
 
         Args:
-            input_data: SceneHashInput object or dictionary containing:
-                - checksum: MD5 checksum of the file (optional)
-                - oshash: OSHash of the file (optional)
-
-                Note: At least one hash must be provided
+            input_data: SceneHashInput object or dictionary. At least one
+                hash (checksum or oshash) must be provided.
 
         Returns:
             Scene object if found, None otherwise
@@ -614,10 +611,7 @@ class SceneClientMixin(StashClientProtocol):
         """Delete a scene.
 
         Args:
-            input_data: SceneDestroyInput object or dictionary containing:
-                - id: Scene ID to delete (required)
-                - delete_file: Whether to delete the scene's file (optional, default: False)
-                - delete_generated: Whether to delete generated files (optional, default: True)
+            input_data: SceneDestroyInput object or dictionary.
 
         Returns:
             True if the scene was successfully deleted
@@ -688,10 +682,7 @@ class SceneClientMixin(StashClientProtocol):
         """Delete multiple scenes.
 
         Args:
-            input_data: ScenesDestroyInput object or dictionary containing:
-                - ids: List of scene IDs to delete (required)
-                - delete_file: Whether to delete the scenes' files (optional, default: False)
-                - delete_generated: Whether to delete generated files (optional, default: True)
+            input_data: ScenesDestroyInput object or dictionary.
 
         Returns:
             True if the scenes were successfully deleted
@@ -762,12 +753,7 @@ class SceneClientMixin(StashClientProtocol):
         """Merge multiple scenes into one destination scene.
 
         Args:
-            input_data: SceneMergeInput object or dictionary containing:
-                - source: List of source scene IDs to merge (required)
-                - destination: Destination scene ID (required)
-                - values: Optional SceneUpdateInput with values to apply to merged scene
-                - play_history: Whether to merge play history (optional, default: False)
-                - o_history: Whether to merge o-count history (optional, default: False)
+            input_data: SceneMergeInput object or dictionary.
 
         Returns:
             Updated destination Scene object

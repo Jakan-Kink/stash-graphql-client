@@ -230,9 +230,7 @@ class MarkerClientMixin(StashClientProtocol):
         """Bulk update scene markers.
 
         Args:
-            input_data: BulkSceneMarkerUpdateInput object or dictionary containing:
-                - ids: List of scene marker IDs to update (optional)
-                - And any fields to update (e.g., primary_tag_id, tag_ids, etc.)
+            input_data: BulkSceneMarkerUpdateInput object or dictionary with fields to update.
             return_fields: If provided, use a minimal inline mutation requesting
                 only these fields (e.g. ``"id"``).  Returns raw dicts instead
                 of SceneMarker objects.

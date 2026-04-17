@@ -1,3 +1,17 @@
+"""Shared helper utilities for the Stash client.
+
+Reusable primitives used across client mixins, the entity store, and type
+serialization:
+
+- ``async_lru_cache`` — LRU cache decorator for coroutines (stdlib ``functools.lru_cache``
+  does not support async functions).
+- ``normalize_str`` / ``str_compare`` — case- and punctuation-insensitive string
+  comparison helpers used by entity-matching logic.
+- ``AsyncCachedFunction`` — typing ``Protocol`` for decorated coroutines so
+  IDEs preserve signature, docstring, and ``cache_clear`` / ``cache_info``
+  attributes.
+"""
+
 import functools
 import json
 import re

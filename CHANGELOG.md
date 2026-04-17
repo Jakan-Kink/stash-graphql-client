@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Side Mutations user guide** (`docs/guide/side-mutations.md`): comprehensive coverage of
+  the `__side_mutations__` dict, `_queue_side_op()`, built-in handlers, bulk relationship
+  handler factory, interaction with `save_batch`, and custom handler subclassing
+- **Relationship DSL user guide** (`docs/guide/relationship-dsl.md`): covers `belongs_to` /
+  `habtm` / `has_many` / `has_many_through` with decision tree, auto-derivation behavior,
+  and an explicit note that `has_many_through` is **not** Rails-style `through: :model` —
+  here it means "through a wrapper input type carrying relationship-level metadata"
+  (e.g., `SceneGroupInput` with `scene_index`, `GroupDescriptionInput` with `description`)
+- **Narrative intros** on `docs/api/batch.md` and `docs/api/store.md` explaining the
+  three-layer batch API (`execute_batch` → `save_batch` → `save_all`) and cross-linking
+  the relevant guides
+- **"See also" admonition** at the top of
+  `docs/architecture/bidirectional-relationships.md` pointing readers at the new user-facing
+  DSL and side-mutations guides
+- **Module-level docstring** on `stash_graphql_client/client_helpers.py` describing
+  `async_lru_cache`, `normalize_str` / `str_compare`, and the `AsyncCachedFunction` protocol
+- `FromGraphQLMixin` added to `ConfigScrapingResult`, bringing it in line with all sibling
+  `ConfigXxxResult` classes (previously the only one without it)
+- `BatchResult.__getitem__` / `__len__` / `__iter__`: one-line docstrings
+
+### Changed
+
+- **Project-wide docstring rule**: `Returns:` and `Args:` sections for methods that
+  accept or return Pydantic types now name the type without bulleting its fields. The
+  type definition is the single source of truth. Eliminates the drift class that caused
+  issue #25 (`get_configuration()` docstring listed 6 of 7 `ConfigResult` fields, silently
+  omitting `plugins` after PR #26). Applied across ~35 mixin methods and 4 class-level
+  docstrings
+- **Entity class docstrings** for `SceneMarker`, `Tag`, `Image` rewritten from schema-echo
+  one-liners to behavioral-quirk summaries (relationship-object construction, hierarchical
+  - bulk-update side mutations, `visual_files` union + `o_counter` side handler +
+    scanner-only creation, respectively)
+- **Filter criterion class docstrings** (`IntCriterionInput`, `FloatCriterionInput`,
+  `StringCriterionInput`, `DateCriterionInput`, `TimestampCriterionInput`,
+  `MultiCriterionInput`, `HierarchicalMultiCriterionInput`, `PhashDistanceCriterionInput`,
+  `CustomFieldCriterionInput`) now describe modifier semantics, `value2` / `depth` /
+  `distance` meaning, and cross-reference `CriterionModifier`
+- **`fragments.py` module docstring** expanded to reflect the v0.12 `FragmentStore`
+  architecture and introspection-based version gating
+- **`PluginConfigMap` scalar alias**: inline comment documents the structure — outer key
+  is plugin ID, inner dict is that plugin's configuration
+- **`ScrapedTag.parent` inline comment** now annotates the field's introspection-gated
+  status (`ServerCapabilities.has_scraped_tag_parent`), consistent with sibling
+  `appSchema >=` annotations on the same class
+- Navigation entries for the new user guides registered in `mkdocs.yml`
+
+### Fixed
+
+- `get_configuration()` docstring: `plugins` field now surfaced via the type reference
+  (previously omitted — the plugin-inspection example mis-directed users to `config.ui`,
+  the exact misdirection reported in issue #25)
+- `get_configuration()` examples: `databasePath` / `parallelTasks` / `scraperCertCheck`
+  corrected to snake_case attribute names (previous camelCase would raise `AttributeError`
+  at runtime — those are Pydantic serialization aliases, not accessors)
+- `Scene.rating100` and `Scene.o_counter`: removed misleading
+  `# not used in this client` inline comments. `rating100` IS used via
+  `__field_conversions__`; `o_counter` IS managed via the `_save_o` side handler
+- `reorder_sub_groups()` docstring example: syntax error (dict-key string mixed into a
+  keyword-argument call) corrected — would have raised `SyntaxError` if copy-pasted
+- `find_tags()` docstring: empty trailing `Note:` block removed
+- `README.md` Quick Example: wrapped in `async def main()` + `asyncio.run(main())` with
+  correct indentation (previously would not run — bare `await` at module scope)
+- `docs/guide/getting-started.md` Stash version floor: raised from "v0.25.0+" to
+  "v0.30.0+ (appSchema 75+); currently tracking v0.31.x" to match the hard floor in
+  `capabilities.MIN_SUPPORTED_APP_SCHEMA = 75`
+- `tests/integration/test_subscription_integration`: assertion no longer requires
+  `JobStatus.FINISHED` — any terminal state (`FINISHED` / `CANCELLED` / `FAILED`) passes,
+  since `metadata_generate(covers=True)` against an empty test Stash legitimately ends
+  `CANCELLED`. Also collapsed a dead-code branch in the break logic
+- `tests/integration/test_find_scenes_with_pagination`: removed racy cross-query count
+  comparison. Per-query invariants (`page size ≤ per_page`, `count ≥ page size`) replace
+  the tolerance-based total-count check that couldn't survive parallel test activity
+
 ## [0.12.0] - 2026-04-15
 
 ### Added

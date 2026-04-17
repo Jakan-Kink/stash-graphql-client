@@ -72,7 +72,13 @@ class BulkSceneMarkerUpdateInput(StashInput):
 
 
 class SceneMarker(StashObject):
-    """Scene marker type from schema/types/scene-marker.graphql."""
+    """A timestamp marker on a Scene (title, seconds, optional end_seconds).
+
+    Construct using relationship objects, not IDs:
+    ``SceneMarker(scene=Scene(id="1"), primary_tag=Tag(id="10"), seconds=42.0)``.
+    ``scene_id`` / ``primary_tag_id`` exist only on ``SceneMarkerCreateInput``;
+    ``to_input()`` extracts IDs from the relationship objects automatically.
+    """
 
     __type_name__ = "SceneMarker"
     __short_repr_fields__ = ("title",)

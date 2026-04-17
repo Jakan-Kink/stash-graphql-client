@@ -234,10 +234,10 @@ class Scene(StashObject):
     date: str | None | UnsetType = UNSET  # String
     rating100: int | None | UnsetType = Field(
         default=UNSET, ge=0, le=100
-    )  # Int (1-100), not used in this client
+    )  # Int (1-100)
     o_counter: int | None | UnsetType = Field(
         default=UNSET, ge=0
-    )  # Int, not used in this client
+    )  # Int (managed via _save_o side handler)
     studio: Studio | None | UnsetType = UNSET  # Studio
     interactive: bool | None | UnsetType = UNSET  # Boolean
     interactive_speed: int | None | UnsetType = UNSET  # Int
@@ -490,14 +490,7 @@ class SceneParserInput(StashInput):
 
 
 class FindScenesResultType(StashResult):
-    """Result type for finding scenes from schema/types/scene.graphql.
-
-    Fields:
-    count: Total number of scenes
-    duration: Total duration in seconds
-    filesize: Total file size in bytes
-    scenes: List of scenes
-    """
+    """Result type for finding scenes from schema/types/scene.graphql."""
 
     count: int | UnsetType = UNSET  # Int!
     duration: float | UnsetType = UNSET  # Float!

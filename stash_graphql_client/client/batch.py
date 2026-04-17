@@ -86,12 +86,15 @@ class BatchResult:
         return len(self.failed) == 0
 
     def __getitem__(self, index: int) -> BatchOperation:
+        """Return the operation at ``index``."""
         return self.operations[index]
 
     def __len__(self) -> int:
+        """Return the number of operations in the batch."""
         return len(self.operations)
 
     def __iter__(self):
+        """Iterate operations in submission order."""
         return iter(self.operations)
 
 

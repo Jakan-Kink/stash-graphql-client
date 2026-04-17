@@ -170,13 +170,8 @@ class FileClientMixin(StashClientProtocol):
         """Move files to a new location.
 
         Args:
-            input_data: MoveFilesInput object or dictionary containing:
-                - ids: List of file IDs to move (required)
-                - destination_folder: Destination folder path (optional)
-                - destination_folder_id: Destination folder ID (optional)
-                - destination_basename: New basename for single file (optional)
-
-                Note: Either destination_folder or destination_folder_id must be provided
+            input_data: MoveFilesInput object or dictionary. Either
+                destination_folder or destination_folder_id must be provided.
 
         Returns:
             True if the move was successful, False otherwise
@@ -236,11 +231,7 @@ class FileClientMixin(StashClientProtocol):
         """Set fingerprints for a file.
 
         Args:
-            input_data: FileSetFingerprintsInput object or dictionary containing:
-                - id: File ID (required)
-                - fingerprints: List of SetFingerprintsInput objects with:
-                    - type: Fingerprint type (required)
-                    - value: Fingerprint value (optional)
+            input_data: FileSetFingerprintsInput object or dictionary.
 
         Returns:
             True if the operation was successful, False otherwise
@@ -296,9 +287,7 @@ class FileClientMixin(StashClientProtocol):
         """Assign a file to a scene.
 
         Args:
-            input_data: AssignSceneFileInput object or dictionary containing:
-                - scene_id: Scene ID (required)
-                - file_id: File ID (required)
+            input_data: AssignSceneFileInput object or dictionary.
 
         Returns:
             True if the assignment was successful, False otherwise
