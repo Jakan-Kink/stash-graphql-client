@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
@@ -131,6 +131,16 @@ class Group(StashObject):
         "studio",  # mapped to studio_id
         "director",  # GroupCreateInput/GroupUpdateInput
         "synopsis",  # GroupCreateInput/GroupUpdateInput
+        "custom_fields",  # groupUpdate via CustomFieldsInput diff (appSchema >= 82)
+    }
+
+    # Side mutations: only custom_fields needs an asymmetric handler
+    # (Map read shape vs CustomFieldsInput write shape).
+    __side_mutations__: ClassVar[dict] = {
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_group_custom_fields",
+            update_method_name="update_group",
+        ),
     }
 
     # Required fields

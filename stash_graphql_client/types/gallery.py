@@ -193,6 +193,7 @@ class Gallery(StashObject):
         "studio",
         "cover",
         "images",
+        "custom_fields",  # galleryUpdate via CustomFieldsInput diff (appSchema >= 81)
     }
 
     # Side mutations: fields persisted via separate GraphQL mutations
@@ -200,6 +201,10 @@ class Gallery(StashObject):
     __side_mutations__: ClassVar[dict] = {
         "cover": lambda client, obj: Gallery._save_cover(client, obj),  # noqa: PLW0108
         "images": lambda client, obj: Gallery._save_images(client, obj),  # noqa: PLW0108
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_gallery_custom_fields",
+            update_method_name="update_gallery",
+        ),
     }
 
     # Optional fields

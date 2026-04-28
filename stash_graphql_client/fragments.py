@@ -439,8 +439,11 @@ _BASE_TAG_FIELDS = """
     created_at
     updated_at
     name
+    sort_name
     description
     aliases
+    favorite
+    ignore_auto_tag
     image_path
     stash_ids {
         __typename
@@ -685,6 +688,7 @@ _BASE_GALLERY_FIELDS = """
     urls
     details
     photographer
+    rating100
     organized
     studio {
         __typename
@@ -703,6 +707,14 @@ _BASE_GALLERY_FIELDS = """
         __typename
         id
         name
+    }
+    cover {
+        __typename
+        id
+    }
+    chapters {
+        __typename
+        id
     }
     files {
         ...GalleryFileFields
@@ -846,6 +858,8 @@ _BASE_IMAGE_FIELDS = """
     urls
     details
     photographer
+    rating100
+    o_counter
     studio {
         __typename
         id

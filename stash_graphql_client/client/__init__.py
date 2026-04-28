@@ -61,6 +61,17 @@ class StashClient(
 
     _capabilities: ServerCapabilities | None
 
+    @property
+    def capabilities(self) -> ServerCapabilities | None:
+        """The detected server capabilities, or ``None`` before ``initialize()``.
+
+        Exposed so callers can introspect the connected server's appSchema-driven
+        feature set — e.g., to gate optional features that only newer Stash
+        versions support, or to drive client-side decisions that mirror the
+        fragment store's capability injection logic.
+        """
+        return self._capabilities
+
     def __init__(
         self,
         conn: dict[str, Any] | None = None,

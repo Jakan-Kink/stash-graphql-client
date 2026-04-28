@@ -23,7 +23,12 @@ from importlib.metadata import PackageNotFoundError, version
 from stash_graphql_client.capabilities import ServerCapabilities
 from stash_graphql_client.client import BatchOperation, BatchResult, StashClient
 from stash_graphql_client.context import StashContext
-from stash_graphql_client.errors import StashBatchError, StashError, StashVersionError
+from stash_graphql_client.errors import (
+    StashBatchError,
+    StashCapabilityError,
+    StashError,
+    StashVersionError,
+)
 from stash_graphql_client.logging import (
     client_logger,
     configure_logging,
@@ -83,6 +88,7 @@ __all__ = [
     "ServerCapabilities",
     # Errors
     "StashBatchError",
+    "StashCapabilityError",
     "StashError",
     "StashVersionError",
     # Store

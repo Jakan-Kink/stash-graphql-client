@@ -134,11 +134,16 @@ class Image(StashObject):
         "performers",  # mapped to performer_ids
         # Side-mutation field
         "o_counter",  # imageIncrementO/imageDecrementO/imageResetO
+        "custom_fields",  # imageUpdate via CustomFieldsInput diff (appSchema >= 83)
     }
 
     # Side mutations: o_counter is managed via increment/decrement/reset mutations
     __side_mutations__: ClassVar[dict] = {
         "o_counter": lambda client, obj: Image._save_o_counter(client, obj),  # noqa: PLW0108
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_image_custom_fields",
+            update_method_name="update_image",
+        ),
     }
 
     # Optional fields

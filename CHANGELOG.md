@@ -9,6 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-04-28
+
+### Added
+
+- `custom_fields` side-mutation handler for Scene, Studio, Tag, Performer,
+  Image, Gallery, and Group — `entity.custom_fields = {...}` then `save()`
+  now diffs against snapshot and emits `CustomFieldsInput(partial=..., remove=...)`
+  via `__side_mutations__` (was silently dropped before)
+- `CustomFieldsInput` validators mirroring `pkg/sqlite/custom_fields.go`:
+  64-byte UTF-8 key limit, no whitespace, scalar-only values (rejects
+  dict/list with a `json.dumps()` hint), `full`+`partial` and `partial`+`remove`
+  conflicts rejected at construction
+- `StashCapabilityError` for per-feature appSchema gaps (distinct from
+  connect-time `StashVersionError`)
+- `StashClient.capabilities` public property (was `_capabilities`-only)
+- Base-fragment fields that exist at the v0.30.0 floor (no gate needed):
+  `sort_name`/`favorite`/`ignore_auto_tag` on Tag, `rating100`/`cover`/`chapters`
+  on Gallery, `rating100`/`o_counter` on Image
+- Invariant test: every `StashObject` subclass with a `custom_fields` field
+  must register the handler in both `__tracked_fields__` and `__side_mutations__`
+
+### Changed
+
+- `_snapshot_value()` shallow-copies dicts (not just lists) so in-place
+  `entity.custom_fields[k] = v` mutation is detectable
+- `BulkStudioUpdateInput.organized` appSchema annotation corrected `>=84` → `>=80`
+
+### Fixed
+
+- **#28**: `Foo(id='1')` direct construction emitted Pydantic
+  `UserWarning: A custom validator is returning a value other than 'self'`
+  AND silently bypassed the identity-map (returned a fresh instance instead
+  of the cached one). New `_StashObjectMeta.__call__` intercepts the id-only
+  stub shape before Pydantic's pipeline runs. Multi-field `Foo(id='1', name='x')`
+  still falls through — use `from_dict` / `from_graphql` for those
+
 ## [0.12.1] - 2026-04-22
 
 ### Added
@@ -806,7 +842,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.1...v0.12.2
+[0.12.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.0...v0.11.1

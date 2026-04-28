@@ -175,6 +175,96 @@ class TestIdentityMapValidator:
         assert scene2 is not scene1
 
 
+class TestIdentityMapInitShortcut:
+    """Regression coverage for GitHub issue #28.
+
+    Direct ``Foo(id=...)`` construction used to slip past the identity map:
+    Pydantic v2's wrap-validator return value is silently discarded by
+    ``__init__`` (it has no return), so the cached instance was thrown away
+    AND a `UserWarning: A custom validator is returning a value other than
+    'self'` was emitted on every cache hit.
+
+    The fix is a metaclass ``__call__`` override that intercepts id-only stub
+    construction before Pydantic's pipeline runs — restoring the identity
+    promise and silencing the warning.
+    """
+
+    @pytest.mark.asyncio
+    async def test_id_only_init_returns_cached_instance(
+        self, respx_entity_store
+    ) -> None:
+        """``Performer(id='X')`` returns the cached instance for that ID."""
+        from stash_graphql_client.types.performer import Performer
+
+        assert Performer._store is not None
+
+        # Populate the cache via the from_graphql / model_validate path.
+        cached = Performer.from_graphql({"id": "5001", "name": "Cached Performer"})
+        assert ("Performer", "5001") in Performer._store._cache
+
+        # Direct __init__ stub construction must hit cache, not a fresh instance.
+        stub = Performer(id="5001")
+        assert stub is cached, (
+            "Performer(id=...) should return the cached instance via metaclass shortcut"
+        )
+
+    @pytest.mark.asyncio
+    async def test_id_only_init_emits_no_pydantic_warning(
+        self, respx_entity_store
+    ) -> None:
+        """No ``UserWarning`` from Pydantic when stub construction hits the cache."""
+        import warnings
+
+        from stash_graphql_client.types.performer import Performer
+
+        assert Performer._store is not None
+        Performer.from_graphql({"id": "5002", "name": "Cached"})
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Performer(id="5002")
+
+        pydantic_warnings = [
+            w
+            for w in caught
+            if "validator is returning a value other than" in str(w.message)
+        ]
+        assert not pydantic_warnings, (
+            f"unexpected Pydantic warning(s): {[str(w.message) for w in pydantic_warnings]}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_id_only_init_misses_cache_falls_through(
+        self, respx_entity_store
+    ) -> None:
+        """When the id isn't cached, normal construction proceeds (no shortcut)."""
+        from stash_graphql_client.types.performer import Performer
+
+        # No prior from_graphql for this id → cache miss
+        p = Performer(id="9999")
+        assert p.id == "9999"
+
+    @pytest.mark.asyncio
+    async def test_multi_field_init_falls_through_to_pydantic(
+        self, respx_entity_store
+    ) -> None:
+        """Multi-field ``__init__`` is NOT shortcut — only id-only stubs are.
+
+        Consumers passing additional fields are presumed to want fresh
+        validation (e.g., a brand-new entity), so the metaclass shortcut
+        only fires for the strict ``Foo(id=...)`` shape.
+        """
+        from stash_graphql_client.types.performer import Performer
+
+        cached = Performer.from_graphql({"id": "5003", "name": "Cached"})
+
+        # Caller passing extra fields → falls through to Pydantic. The
+        # cache-hit semantics for this path are intentionally outside the
+        # shortcut's scope (use from_dict to incorporate new server data).
+        p = Performer(id="5003", name="Different")
+        assert p is not cached  # fell through
+
+
 class TestFromGraphQLMixin:
     """Test FromGraphQLMixin._process_nested_graphql behavior."""
 

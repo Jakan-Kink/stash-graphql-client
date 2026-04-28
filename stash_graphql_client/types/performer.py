@@ -238,6 +238,7 @@ class Performer(StashObject):
         "ignore_auto_tag",  # PerformerCreateInput/PerformerUpdateInput
         "career_start",  # PerformerUpdateInput (appSchema >= 78)
         "career_end",  # PerformerUpdateInput (appSchema >= 78)
+        "custom_fields",  # performerUpdate via CustomFieldsInput diff (pre-floor: migration 71)
         # Side-mutation fields (excluded from to_input, handled by bulk updates)
         "scenes",  # bulkSceneUpdate with performer_ids
         "galleries",  # bulkGalleryUpdate with performer_ids
@@ -262,6 +263,12 @@ class Performer(StashObject):
             "images",
             "bulk_image_update",
             "performer_ids",
+        ),
+        # Performer custom_fields predates the appSchema 75 floor (migration 71),
+        # so no capability gate is needed — every supported server has it.
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr=None,
+            update_method_name="update_performer",
         ),
     }
 

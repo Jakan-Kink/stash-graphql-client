@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from .base import FromGraphQLMixin, StashInput
 from .enums import (
@@ -16,7 +16,13 @@ from .enums import (
     PreviewPreset,
     SystemStatusEnum,
 )
-from .unset import UNSET, UnsetType
+from .unset import UNSET, UnsetType, is_set
+
+
+# Server-side limit from pkg/sqlite/custom_fields.go (maxCustomFieldNameLength).
+# Length is checked in BYTES (Go's len()) — UTF-8 multi-byte chars count for
+# more than one. We mirror that to avoid surprising server-side rejections.
+_CUSTOM_FIELD_NAME_MAX_BYTES = 64
 
 
 if TYPE_CHECKING:
@@ -425,8 +431,58 @@ class MigrateInput(StashInput):
     backup_path: str | UnsetType = Field(default=UNSET, alias="backupPath")  # String!
 
 
+def _validate_custom_field_name(name: str) -> None:
+    """Mirror server-side validation in customFieldsStore.validateCustomFieldName.
+
+    Raises ValueError when the key would be rejected by the Stash backend.
+    """
+    if not isinstance(name, str):
+        raise ValueError(
+            f"custom field name must be a string, got {type(name).__name__}"
+        )
+    if not name.strip():
+        raise ValueError("custom field name cannot be empty or whitespace-only")
+    if name != name.strip():
+        raise ValueError(
+            f"custom field name {name!r} cannot have leading or trailing whitespace"
+        )
+    if len(name.encode("utf-8")) > _CUSTOM_FIELD_NAME_MAX_BYTES:
+        raise ValueError(
+            f"custom field name {name!r} exceeds {_CUSTOM_FIELD_NAME_MAX_BYTES} "
+            f"bytes (UTF-8); Stash rejects longer field names"
+        )
+
+
+def _validate_custom_field_value(name: str, value: Any) -> None:
+    """Mirror server-side rejection in getSQLValueFromCustomFieldInput.
+
+    The Stash backend explicitly rejects nested structures (arrays / objects)
+    because the BLOB column stores scalars and the maintainers haven't solved
+    the JSON-string-vs-regular-string disambiguation. Consumers needing
+    structured data must json.dumps() themselves on write and json.loads()
+    on read (see MMsD's _mm_d watermark pattern).
+    """
+    if isinstance(value, (list, dict)):
+        raise TypeError(
+            f"custom field {name!r}: values must be scalar "
+            f"(str/int/float/bool/None); got {type(value).__name__}. "
+            f"Use json.dumps() for nested structures."
+        )
+
+
 class CustomFieldsInput(StashInput):
-    """Input for custom fields from schema/types/metadata.graphql."""
+    """Input for custom fields from schema/types/metadata.graphql.
+
+    Validates against the server-side rules in
+    ``stash-server/pkg/sqlite/custom_fields.go``:
+
+    - Field names: non-empty, no leading/trailing whitespace, ≤64 UTF-8 bytes.
+    - Values: scalars only (str/int/float/bool/None); nested structures rejected.
+    - ``full`` and ``partial`` are mutually exclusive — when both are sent the
+      server silently picks ``full`` and drops ``partial``, which is a footgun.
+    - Keys cannot appear in both ``partial`` and ``remove`` (server raises
+      ``"cannot be in both values and delete keys"``).
+    """
 
     full: dict[str, Any] | None | UnsetType = (
         UNSET  # Map (If populated, the entire custom fields map will be replaced with this value)
@@ -437,6 +493,43 @@ class CustomFieldsInput(StashInput):
     remove: list[str] | None | UnsetType = (
         UNSET  # [String!] (If populated, these keys will be removed from the custom fields)
     )
+
+    @field_validator("full", "partial", mode="after")
+    @classmethod
+    def _check_keys_and_values(cls, v: Any) -> Any:
+        if not isinstance(v, dict):
+            return v
+        for k, val in v.items():
+            _validate_custom_field_name(k)
+            _validate_custom_field_value(k, val)
+        return v
+
+    @field_validator("remove", mode="after")
+    @classmethod
+    def _check_remove_keys(cls, v: Any) -> Any:
+        if not isinstance(v, list):
+            return v
+        for k in v:
+            _validate_custom_field_name(k)
+        return v
+
+    @model_validator(mode="after")
+    def _check_mode_combinations(self) -> CustomFieldsInput:
+        full_set = is_set(self.full) and self.full is not None
+        partial_set = is_set(self.partial) and self.partial is not None
+        if full_set and partial_set:
+            raise ValueError(
+                "CustomFieldsInput.full and partial are mutually exclusive — "
+                "the server silently picks full and drops partial."
+            )
+        if partial_set and is_set(self.remove) and self.remove:
+            partial_keys = set(self.partial or {})  # type: ignore[arg-type]
+            overlap = partial_keys & set(self.remove)  # type: ignore[arg-type]
+            if overlap:
+                raise ValueError(
+                    f"keys cannot appear in both partial and remove: {sorted(overlap)}"
+                )
+        return self
 
 
 class IdentifySourceInput(StashInput):

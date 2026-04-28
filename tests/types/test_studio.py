@@ -109,6 +109,7 @@ def test_studio_class_variables() -> None:
         "favorite",
         "ignore_auto_tag",
         "organized",
+        "custom_fields",
         # Side-mutation fields
         "scenes",
         "images",

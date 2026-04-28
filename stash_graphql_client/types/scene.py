@@ -209,6 +209,7 @@ class Scene(StashObject):
         "o_history",  # sceneAddO/sceneDeleteO
         "play_count",  # sceneAddPlay/sceneDeletePlay/sceneResetPlayCount
         "play_history",  # sceneAddPlay/sceneDeletePlay
+        "custom_fields",  # sceneUpdate via CustomFieldsInput diff (appSchema >= 79)
     }
 
     # Side mutations: fields persisted via separate GraphQL mutations.
@@ -224,6 +225,10 @@ class Scene(StashObject):
         "o_history": _sm_o,
         "play_count": _sm_play,
         "play_history": _sm_play,
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_scene_custom_fields",
+            update_method_name="update_scene",
+        ),
     }
 
     # Optional fields

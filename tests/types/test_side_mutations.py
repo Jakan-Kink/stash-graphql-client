@@ -286,7 +286,7 @@ class TestSideMutations:
         assert StashObject.__side_mutations__ == {}
 
     def test_tag_has_side_mutations(self) -> None:
-        """Tag has side mutations for all content types."""
+        """Tag has side mutations for all content types and custom_fields."""
         assert set(Tag.__side_mutations__.keys()) == {
             "scenes",
             "images",
@@ -294,6 +294,7 @@ class TestSideMutations:
             "performers",
             "groups",
             "scene_markers",
+            "custom_fields",
         }
 
     @pytest.mark.asyncio
@@ -1196,20 +1197,22 @@ class TestBulkRelationshipHandler:
     # ── Metadata registration ────────────────────────────────────────
 
     def test_performer_has_side_mutations(self) -> None:
-        """Performer has side mutations for scenes, galleries, images."""
+        """Performer has side mutations for scenes, galleries, images, custom_fields."""
         assert set(Performer.__side_mutations__.keys()) == {
             "scenes",
             "galleries",
             "images",
+            "custom_fields",
         }
 
     def test_studio_has_side_mutations(self) -> None:
-        """Studio has side mutations for scenes, images, galleries, groups."""
+        """Studio has side mutations for content relationships and custom_fields."""
         assert set(Studio.__side_mutations__.keys()) == {
             "scenes",
             "images",
             "galleries",
             "groups",
+            "custom_fields",
         }
 
     def test_performer_groups_not_in_side_mutations(self) -> None:

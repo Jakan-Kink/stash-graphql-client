@@ -103,6 +103,7 @@ class Studio(StashObject):
         "favorite",  # StudioCreateInput/StudioUpdateInput
         "ignore_auto_tag",  # StudioCreateInput/StudioUpdateInput
         "organized",  # StudioUpdateInput (appSchema >= 80)
+        "custom_fields",  # studioUpdate via CustomFieldsInput diff (appSchema >= 76)
         # Side-mutation fields (excluded from to_input, handled by bulk updates)
         "scenes",  # bulkSceneUpdate with studio_id
         "images",  # bulkImageUpdate with studio_id
@@ -136,6 +137,10 @@ class Studio(StashObject):
             "bulk_group_update",
             "studio_id",
             use_bulk_ids=False,
+        ),
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_studio_custom_fields",
+            update_method_name="update_studio",
         ),
     }
 

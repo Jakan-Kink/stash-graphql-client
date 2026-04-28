@@ -51,6 +51,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic._internal._model_construction import ModelMetaclass
 
 from stash_graphql_client import fragments
 from stash_graphql_client.errors import StashIntegrationError, StashUnmappedFieldWarning
@@ -695,7 +696,55 @@ class StashResult(FromGraphQLMixin, BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class StashObject(FromGraphQLMixin, BaseModel):
+class _StashObjectMeta(ModelMetaclass):
+    """Metaclass that intercepts direct ``Foo(id=...)`` construction for the
+    identity-map cache.
+
+    Why a metaclass: Pydantic v2's `mode='wrap'` model validator can return a
+    cached instance for the ``model_validate`` / ``from_dict`` paths, but when
+    invoked via ``__init__`` (e.g. ``Performer(id='1')``) Pydantic discards the
+    validator's returned instance — Python's ``__init__`` has no return value,
+    so the cached object is silently thrown away **and** Pydantic emits a
+    "validator returning value other than `self`" UserWarning every time.
+
+    The metaclass's ``__call__`` runs BEFORE ``__new__`` / ``__init__``, so we
+    can short-circuit the entire construction pipeline on a stub-construction
+    cache hit — preserving the same-id-yields-same-object guarantee and
+    suppressing the warning.
+
+    Scope: only the *id-only stub* shape is shortcut here
+    (e.g. ``Performer(id='1')``). Multi-field ``__init__`` still falls
+    through to Pydantic's normal pipeline; consumers who pass new field data
+    are presumed to want fresh validation, not cache substitution. For
+    incorporating new server data into a cached entity, use ``from_dict`` /
+    ``from_graphql`` (which run through ``model_validate`` and exercise the
+    full merge logic in the wrap validator).
+    """
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        # In a metaclass `__call__`, `self` is the class being instantiated
+        # (e.g. `Performer`). Named `self` to satisfy N805 — the body still
+        # uses it as the class object below.
+        # Identity-map shortcut for stub construction — only when:
+        #   1. A store is registered on the class
+        #   2. The caller passed exactly `id=<value>` and nothing else
+        #   3. That id is in the cache and not expired
+        if (
+            getattr(self, "_store", None) is not None
+            and not args
+            and set(kwargs) == {"id"}
+            and "id" in kwargs
+            and getattr(self, "__type_name__", None)
+        ):
+            cache_key = (self.__type_name__, kwargs["id"])  # type: ignore[attr-defined]
+            cache = self._store._cache  # type: ignore[attr-defined]
+            entry = cache.get(cache_key)
+            if entry is not None and not entry.is_expired():
+                return entry.entity
+        return super().__call__(*args, **kwargs)
+
+
+class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
     """Base interface for our Stash model implementations.
 
     While this is not a schema interface, it represents a common pattern in the
@@ -715,9 +764,13 @@ class StashObject(FromGraphQLMixin, BaseModel):
     - mark_dirty: Mark object as having unsaved changes
 
     Identity Map Integration:
-    - Uses mode='wrap' validator to check cache before construction
-    - Returns cached instance if entity already exists in store
-    - Automatically caches new instances after construction
+    - Direct ``Foo(id=...)`` stub construction is intercepted at the metaclass
+      level (``_StashObjectMeta.__call__``) for cache lookup, restoring the
+      same-id-yields-same-object guarantee for ``__init__`` callers and
+      eliminating Pydantic's "validator returning non-self" warning.
+    - For multi-field construction or new server data, ``from_dict`` /
+      ``from_graphql`` use ``model_validate`` and run the wrap validator's
+      full merge logic.
     """
 
     # Class-level store reference (set by StashContext during initialization)
@@ -1568,8 +1621,9 @@ class StashObject(FromGraphQLMixin, BaseModel):
     def _snapshot_value(value: Any) -> Any:
         """Create a snapshot copy of a field value for dirty tracking.
 
-        Mutable collections (lists) are shallow copied to detect in-place modifications.
-        Immutables, StashObjects, and special values (None, UNSET) are stored by reference.
+        Mutable collections (lists, dicts) are shallow copied to detect in-place
+        modifications. Immutables, StashObjects, and special values (None, UNSET)
+        are stored by reference.
 
         Args:
             value: Field value to snapshot
@@ -1579,6 +1633,10 @@ class StashObject(FromGraphQLMixin, BaseModel):
         """
         # Lists need shallow copy to detect append/extend/remove operations
         if isinstance(value, list):
+            return value.copy()
+        # Dicts need shallow copy too (e.g. custom_fields Map fields) so
+        # in-place mutation (`obj.custom_fields["k"] = v`) is detectable.
+        if isinstance(value, dict):
             return value.copy()
         # Primitives, StashObjects, None, UNSET can be stored by reference
         return value
@@ -1779,6 +1837,158 @@ class StashObject(FromGraphQLMixin, BaseModel):
                         {"ids": batch, id_field: None},
                         return_fields="id __typename",
                     )
+
+        return handler
+
+    @staticmethod
+    def _diff_custom_fields(entity: StashObject) -> Any:
+        """Compute the CustomFieldsInput payload for a dirty ``custom_fields`` field.
+
+        Compares the current value against the snapshot and produces a
+        ``CustomFieldsInput`` with ``partial`` (added / changed keys) and
+        ``remove`` (deleted keys). Returns ``None`` when there is nothing to send.
+
+        Snapshot semantics:
+        - snapshot is UNSET / None (field was never read): emit ``partial`` only.
+          We can't know which keys to remove because we don't have ground truth.
+        - snapshot is dict: emit ``partial`` for added/changed keys plus
+          ``remove`` for keys present in snapshot but absent in current.
+
+        Server upsert semantics (``partial`` mode) only touch the keys we send,
+        leaving untouched keys alone — safe even when snapshot is incomplete.
+
+        Args:
+            entity: A StashObject instance with a dirty ``custom_fields`` field.
+
+        Returns:
+            ``CustomFieldsInput`` instance describing the diff, or ``None`` if
+            no payload is needed.
+        """
+        # Local import avoids a circular dependency: metadata imports from base.
+        from .metadata import CustomFieldsInput
+
+        current = getattr(entity, "custom_fields", UNSET)
+        if not is_set(current) or current is None:
+            return None
+        if not isinstance(current, dict):
+            return None
+
+        snapshot = entity._snapshot.get("custom_fields", UNSET)
+
+        if not is_set(snapshot) or snapshot is None:
+            # Field was never read; can't compute removes safely.
+            if not current:
+                return None
+            return CustomFieldsInput(partial=dict(current))
+
+        if not isinstance(snapshot, dict):
+            # Defensive: unexpected snapshot type — fall back to partial-only.
+            if not current:
+                return None
+            return CustomFieldsInput(partial=dict(current))
+
+        if snapshot == current:
+            return None
+
+        partial: dict[str, Any] = {
+            k: v for k, v in current.items() if k not in snapshot or snapshot[k] != v
+        }
+        remove: list[str] = sorted(set(snapshot.keys()) - set(current.keys()))
+
+        if not partial and not remove:  # pragma: no cover
+            # Defensive: logically unreachable. snapshot != current (line above
+            # returned early on equality) implies dict diff is non-empty under
+            # standard dict.__eq__ semantics, but a pathological dict subclass
+            # with broken __eq__ could land here. Avoid emitting an empty
+            # CustomFieldsInput in that case.
+            return None
+
+        kwargs: dict[str, Any] = {}
+        if partial:
+            kwargs["partial"] = partial
+        if remove:
+            kwargs["remove"] = remove
+        return CustomFieldsInput(**kwargs)
+
+    @staticmethod
+    def _make_custom_fields_handler(
+        *,
+        capability_attr: str | None,
+        update_method_name: str,
+    ) -> Callable[[StashClient, StashObject], Any]:
+        """Factory for the ``custom_fields`` side-mutation handler.
+
+        Each entity that supports custom_fields registers
+        ``"custom_fields": StashObject._make_custom_fields_handler(...)``
+        in its ``__side_mutations__`` dict. The handler:
+
+        1. (Optionally) checks that the connected server supports custom_fields
+           for this entity (via ``client.capabilities.<capability_attr>``).
+        2. Computes the partial+remove diff between snapshot and current.
+        3. Fires the entity's ``<entity>Update`` mutation with just
+           ``{id, custom_fields: <CustomFieldsInput>}``.
+
+        Args:
+            capability_attr: Name of the property on ``client.capabilities``
+                that gates this entity's custom_fields support — e.g.,
+                ``"has_scene_custom_fields"``. Pass ``None`` for entities
+                whose custom_fields predate the appSchema floor (Performer,
+                where the ``performer_custom_fields`` table was added in
+                migration 71, below the appSchema 75 floor).
+            update_method_name: Unused (reserved for future use). The handler
+                builds and executes the update mutation directly to bypass
+                ``to_input()``'s side-mutation field stripping.
+
+        Returns:
+            Async handler ``(client, entity) -> None`` suitable for
+            ``__side_mutations__``.
+
+        Raises:
+            StashCapabilityError: When ``capability_attr`` is non-None and
+                ``capabilities.<capability_attr>`` is falsy at handler-fire time.
+        """
+        # update_method_name is currently unused but kept in the signature so
+        # callers self-document which client method is the conceptual target;
+        # this also reserves it for a future optimization that batches
+        # custom_fields with other tracked-field changes.
+        del update_method_name
+
+        async def handler(client: StashClient, entity: StashObject) -> None:
+            from stash_graphql_client.errors import StashCapabilityError
+
+            if capability_attr is not None:
+                caps = getattr(client, "capabilities", None)
+                if caps is None or not getattr(caps, capability_attr, False):
+                    raise StashCapabilityError(
+                        f"{type(entity).__name__}.custom_fields requires "
+                        f"capabilities.{capability_attr} (server appSchema too old)"
+                    )
+
+            cfi = StashObject._diff_custom_fields(entity)
+            if cfi is None:
+                return
+
+            type_name = entity.__type_name__
+            operation_key = f"{type_name[0].lower()}{type_name[1:]}Update"
+            mutation = f"""
+                mutation Update{type_name}CustomFields($input: {type_name}UpdateInput!) {{
+                    {operation_key}(input: $input) {{
+                        id
+                    }}
+                }}
+            """
+
+            # Serialize via to_graphql() — strips UNSET, applies aliases, and
+            # produces the wire-shape dict the server expects.
+            cfi_payload = (
+                cfi.to_graphql()
+                if hasattr(cfi, "to_graphql")
+                else cfi.model_dump(
+                    by_alias=True, exclude_unset=True, exclude_defaults=True
+                )
+            )
+            input_dict = {"id": entity.id, "custom_fields": cfi_payload}
+            await client.execute(mutation, {"input": input_dict})
 
         return handler
 

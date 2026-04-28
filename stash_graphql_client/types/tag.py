@@ -128,6 +128,7 @@ class Tag(StashObject):
         "favorite",  # TagCreateInput/TagUpdateInput
         "ignore_auto_tag",  # TagCreateInput/TagUpdateInput
         "stash_ids",  # TagCreateInput/TagUpdateInput
+        "custom_fields",  # tagUpdate via CustomFieldsInput diff (appSchema >= 77)
         # Side-mutation fields (excluded from to_input, handled by bulk updates)
         "scenes",  # bulkSceneUpdate with tag_ids
         "images",  # bulkImageUpdate with tag_ids
@@ -169,6 +170,10 @@ class Tag(StashObject):
             "scene_markers",
             "bulk_scene_marker_update",
             "tag_ids",
+        ),
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_tag_custom_fields",
+            update_method_name="update_tag",
         ),
     }
 

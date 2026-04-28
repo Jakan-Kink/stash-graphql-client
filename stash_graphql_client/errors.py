@@ -152,8 +152,23 @@ class StashVersionError(StashError):
         super().__init__(*args)
 
 
+class StashCapabilityError(StashError):
+    """Raised when a feature is requested that the connected server's appSchema doesn't support.
+
+    Distinct from :class:`StashVersionError` (which fires at connect time when the
+    server is below the absolute minimum). This error fires per-feature at use time
+    when a capability the consumer is exercising isn't available on this particular
+    server — e.g., assigning ``scene.custom_fields`` against a server below appSchema
+    79, or ``performer.career_start`` below appSchema 78.
+    """
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+
+
 __all__ = [
     "StashBatchError",
+    "StashCapabilityError",
     "StashCleanupWarning",
     "StashConfigurationError",
     "StashConnectionError",
