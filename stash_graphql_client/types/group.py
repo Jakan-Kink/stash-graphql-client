@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
+from stash_graphql_client.errors import StashIntegrationError
+
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
@@ -225,8 +227,6 @@ class Group(StashObject):
             sub_group: Either a Group object or a GroupDescription object
             description: Optional description for the relationship (only used if sub_group is a Group)
         """
-        from stash_graphql_client.errors import StashIntegrationError
-
         # Get current sub_groups value
         current = self.sub_groups
 
@@ -311,8 +311,6 @@ class Group(StashObject):
             containing_group: Either a Group object (will be wrapped with None description)
                              or a GroupDescription object (used as-is)
         """
-        from stash_graphql_client.errors import StashIntegrationError
-
         # Get current containing_groups value
         current = self.containing_groups
 

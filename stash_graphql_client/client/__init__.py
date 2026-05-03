@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from ..capabilities import detect_capabilities
+from ..fragments import fragment_store
 from ..logging import client_logger
 from .base import StashClientBase
 from .batch import BatchOperation, BatchResult
@@ -162,9 +164,6 @@ class StashClient(
         await super().initialize()
 
         # Detect server capabilities and rebuild fragment store
-        from ..capabilities import detect_capabilities
-        from ..fragments import fragment_store
-
         self._capabilities = await detect_capabilities(self._raw_execute, self.log)
         fragment_store.rebuild(self._capabilities)
 

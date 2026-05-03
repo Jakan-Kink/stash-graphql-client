@@ -1878,9 +1878,7 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
             no payload is needed.
         """
         # Local import avoids a circular dependency: metadata imports from base.
-        from .metadata import (  # circular: metadata imports from base
-            CustomFieldsInput,
-        )
+        from .metadata import CustomFieldsInput  # noqa: PLC0415, I001  # circular: metadata imports from base
 
         current = getattr(entity, "custom_fields", UNSET)
         if not is_set(current) or current is None:

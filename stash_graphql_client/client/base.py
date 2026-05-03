@@ -26,7 +26,7 @@ from ..errors import (
 from ..logging import client_logger
 from ..types.enums import SortDirectionEnum
 from ..types.unset import UnsetType
-from .batch import BatchOperation, BatchResult
+from .batch import BatchOperation, BatchResult, build_batch_document
 from .utils import sanitize_model_data
 
 
@@ -519,8 +519,6 @@ class StashClientBase:
             StashConnectionError: On network/transport failures.
             StashServerError: On server-side 5xx errors.
         """
-        from .batch import build_batch_document
-
         # Fast path: empty batch
         if not operations:
             return BatchResult(operations=[], raw_response=None)

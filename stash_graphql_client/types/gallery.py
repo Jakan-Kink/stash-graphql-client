@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
+from stash_graphql_client.fragments import fragment_store
+
 from .base import (
     BulkUpdateIds,
     RelationshipMetadata,
@@ -261,9 +263,6 @@ class Gallery(StashObject):
                 last_image = await gallery.image(gallery.image_count - 1)
             ```
         """
-        from stash_graphql_client.fragments import fragment_store
-        from stash_graphql_client.types.unset import is_set
-
         # Validate gallery has ID
         if not is_set(self.id) or self.id is None:
             raise ValueError("Cannot get image: gallery ID is not set")
