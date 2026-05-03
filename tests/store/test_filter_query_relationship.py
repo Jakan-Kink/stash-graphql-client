@@ -86,7 +86,12 @@ class TestFetchFilterQueryRelationship:
         assert "scene_filter" in query
         assert "tags" in query
         assert "__typename" in query
-        assert "201" in query  # entity ID substituted
+        # Entity ID is bound as a GraphQL variable, not interpolated.
+        # Closes the f-string injection that the previous query had.
+        assert request_body["variables"]["id"] == "201"
+        assert "$id: ID!" in query
+        assert "$page: Int!" in query
+        assert "$per_page: Int!" in query
 
         # Verify results
         assert len(result) == 1
@@ -345,6 +350,155 @@ class TestFetchFilterQueryRelationship:
         assert "scenes" in tag._received_fields
         # And missing_fields_nested should NOT report it as missing
         assert not store.missing_fields_nested(tag, "scenes")
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_idempotent_skips_refetch_when_already_populated(
+        self, respx_entity_store
+    ) -> None:
+        """A second call to _fetch_filter_query_relationship for the same
+        field returns the existing list without issuing another GraphQL
+        request — _received_fields gates re-fetching."""
+        store = respx_entity_store
+
+        scene = Scene.from_graphql(
+            {
+                "id": "301",
+                "title": "Idempotent Scene",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+            }
+        )
+        store._cache_entity(scene)
+
+        tag = Tag.from_graphql(
+            {
+                "id": "301",
+                "name": "Idempotent Tag",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+                "parents": [],
+                "children": [],
+            }
+        )
+        store._cache_entity(tag)
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={
+                        "data": {
+                            "findScenes": {
+                                "count": 1,
+                                "scenes": [{"__typename": "Scene", "id": "301"}],
+                            }
+                        }
+                    },
+                ),
+            ]
+        )
+
+        try:
+            first = await store._fetch_filter_query_relationship(tag, "scenes")
+            # Second call must NOT issue a request (mock has no second response).
+            second = await store._fetch_filter_query_relationship(tag, "scenes")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert len(graphql_route.calls) == 1, (
+            "second call should hit the idempotent fast-exit, not re-fetch"
+        )
+        # Identity-mapped contents survive both paths; the list itself may be
+        # rebuilt by Pydantic's validate_assignment, so compare by element.
+        assert len(first) == len(second) == 1
+        assert first[0] is second[0] is scene
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_paginates_across_multiple_pages(self, respx_entity_store) -> None:
+        """When server returns a full page, populate fetches the next one;
+        loop terminates when a short page comes back."""
+        store = respx_entity_store
+
+        # Use a small page size so we can exercise pagination without
+        # mocking thousands of items.
+        with patch.object(type(store), "STUB_QUERY_BATCH", 2):
+            for sid in ("401", "402", "403"):
+                store._cache_entity(
+                    Scene.from_graphql(
+                        {
+                            "id": sid,
+                            "title": f"Scene {sid}",
+                            "created_at": "2024-01-01T00:00:00Z",
+                            "updated_at": "2024-01-01T00:00:00Z",
+                        }
+                    )
+                )
+
+            tag = Tag.from_graphql(
+                {
+                    "id": "401",
+                    "name": "Paginated Tag",
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "parents": [],
+                    "children": [],
+                }
+            )
+            store._cache_entity(tag)
+
+            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json={
+                            "data": {
+                                "findScenes": {
+                                    "count": 3,
+                                    "scenes": [
+                                        {"__typename": "Scene", "id": "401"},
+                                        {"__typename": "Scene", "id": "402"},
+                                    ],
+                                }
+                            }
+                        },
+                    ),
+                    httpx.Response(
+                        200,
+                        json={
+                            "data": {
+                                "findScenes": {
+                                    "count": 3,
+                                    "scenes": [
+                                        {"__typename": "Scene", "id": "403"},
+                                    ],
+                                }
+                            }
+                        },
+                    ),
+                ]
+            )
+
+            try:
+                result = await store._fetch_filter_query_relationship(tag, "scenes")
+            finally:
+                dump_graphql_calls(graphql_route.calls)
+
+            assert len(graphql_route.calls) == 2, "should fetch two pages"
+            page_1_vars = json.loads(graphql_route.calls[0].request.content)[
+                "variables"
+            ]
+            page_2_vars = json.loads(graphql_route.calls[1].request.content)[
+                "variables"
+            ]
+            assert page_1_vars["page"] == 1
+            assert page_2_vars["page"] == 2
+            assert page_1_vars["per_page"] == 2
+            assert page_2_vars["per_page"] == 2
+
+            assert len(result) == 3
+            assert {s.id for s in result} == {"401", "402", "403"}
 
 
 class TestPopulateFilterQueryIntegration:

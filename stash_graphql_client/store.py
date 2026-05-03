@@ -6,6 +6,7 @@ and query capabilities for Stash GraphQL entities.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import threading
 import time
@@ -15,11 +16,14 @@ from datetime import timedelta
 from itertools import batched
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
+from .client.batch import BatchOperation, BatchResult
 from .client.utils import sanitize_model_data
 from .errors import StashBatchError, StashError, StashIntegrationError
 from .fragments import fragment_store
 from .logging import client_logger as log
-from .types.base import StashObject
+from .types.base import RelationshipMetadata, StashObject
+from .types.files import BaseFile, ImageFile, VideoFile
+from .types.unset import UnsetType
 
 
 if TYPE_CHECKING:
@@ -119,6 +123,10 @@ class StashEntityStore:
     DEFAULT_QUERY_BATCH = 40
     DEFAULT_TTL = timedelta(minutes=30)
     FIND_LIMIT = 1000  # Max results for find() before requiring find_iter()
+    # Page size for relationship-populate stub queries (id + __typename only).
+    # Larger than DEFAULT_QUERY_BATCH because the per-row payload is tiny —
+    # fewer round trips for the same wire cost.
+    STUB_QUERY_BATCH = 1000
 
     def __init__(
         self,
@@ -146,6 +154,12 @@ class StashEntityStore:
         self._type_ttls: dict[str, timedelta | None] = {}
         # Thread-safety lock (reentrant to allow nested calls)
         self._lock = threading.RLock()
+        # Per-(type_name, id, field_name) async locks for relationship
+        # populate calls. Prevents concurrent populates of the same field
+        # from doing duplicate paginated fetches; the second waiter checks
+        # _received_fields post-acquire and returns the already-populated
+        # list. Bounded by entity-count x field-count in practice.
+        self._populate_locks: dict[tuple[str, str, str], asyncio.Lock] = {}
 
     # ─── Cache-only lookup (sync) ─────────────────────────────
 
@@ -597,8 +611,6 @@ class StashEntityStore:
             )
 
             # Populate in batches to avoid overwhelming the server
-            import asyncio
-
             for batch in batched(to_populate, batch_size):
                 # Populate concurrently within batch
                 await asyncio.gather(
@@ -720,8 +732,6 @@ class StashEntityStore:
                 f"{type_name} objects with fields {fields_set}"
             )
 
-            import asyncio
-
             for batch in batched(to_populate, batch_size):
                 await asyncio.gather(
                     *[
@@ -833,8 +843,6 @@ class StashEntityStore:
             return
 
         # Process in batches
-        import asyncio
-
         for i in range(0, len(all_cached), yield_batch):
             batch = all_cached[i : i + yield_batch]
 
@@ -887,8 +895,6 @@ class StashEntityStore:
         # Handle non-class types gracefully (defensive check)
         if not isinstance(entity_type, type):
             return None
-
-        from .types import BaseFile
 
         # Types with dedicated find queries (from types/base.py query_map)
         fetchable_type_names = {
@@ -944,8 +950,6 @@ class StashEntityStore:
 
         # Polymorphic type mapping for known cases
         # Import here to avoid circular imports
-        from .types import BaseFile, ImageFile, VideoFile
-
         type_map: dict[str, type[StashObject]] = {
             "ImageFile": ImageFile,
             "VideoFile": VideoFile,
@@ -1026,8 +1030,6 @@ class StashEntityStore:
         Returns:
             True if the entire path is populated (no UNSET values)
         """
-        from .types.unset import UnsetType
-
         if not field_path:
             return True
 
@@ -1221,8 +1223,6 @@ class StashEntityStore:
                     fields_to_fetch.remove(field_name)
 
         # Separate filter_query fields from regular fields
-        from .types.base import RelationshipMetadata
-
         filter_query_fields: list[str] = []
         direct_fields: list[str] = []
         for f in fields_to_fetch:
@@ -1714,8 +1714,6 @@ class StashEntityStore:
                 Successfully-saved objects still get their side mutations
                 and ``mark_clean()``; failed objects remain dirty.
         """
-        from .client.batch import BatchOperation, BatchResult
-
         # ── Phase 1: Pre-process ──────────────────────────────────
 
         # Metadata kept per-object for Phase 2/3
@@ -1928,8 +1926,6 @@ class StashEntityStore:
         Raises:
             StashBatchError: If any operation fails (see :meth:`save_batch`).
         """
-        from .client.batch import BatchResult
-
         new_objects: list[StashObject] = []
         dirty_objects: list[StashObject] = []
         with self._lock:
@@ -2312,8 +2308,6 @@ class StashEntityStore:
             ValueError: If the field isn't a filter_query relationship or
                 the hint can't be parsed.
         """
-        from .types.base import RelationshipMetadata
-
         # 1. Look up relationship metadata
         metadata = entity.__relationships__.get(field_name)
         if not isinstance(metadata, RelationshipMetadata):
@@ -2347,53 +2341,104 @@ class StashEntityStore:
         items_key = operation_name.removeprefix("find")
         items_key = items_key[0].lower() + items_key[1:]  # Scenes -> scenes
 
-        # 4. Build a lightweight GraphQL query
-        #    We use the GraphQL filter variable type names derived from the hint
-        query = f"""
-            query {{
-                {operation_name}(
-                    filter: {{per_page: -1}},
-                    {filter_var_name}: {{
-                        {criterion_field}: {{
-                            value: ["{entity.id}"],
-                            modifier: INCLUDES
+        # 4. Idempotent fast-exit: if the field is already populated, return
+        #    it without re-fetching. Avoids redundant network round trips
+        #    when populate() is called multiple times for the same field.
+        received: set[str] = getattr(entity, "_received_fields", set())
+        if field_name in received:
+            existing = getattr(entity, field_name, None)
+            if isinstance(existing, list):
+                return existing
+
+        # 5. Per-(type, id, field) async lock serializes concurrent populates
+        #    of the same relationship. Without it, two callers each pay the
+        #    full paginated-fetch cost; with it, the second waiter sees
+        #    _received_fields populated post-acquire and short-exits.
+        lock_key = (entity.__type_name__, entity.id, field_name)
+        lock = self._populate_locks.get(lock_key)
+        if lock is None:
+            lock = self._populate_locks.setdefault(lock_key, asyncio.Lock())
+
+        async with lock:
+            # Re-check after acquiring the lock — another coroutine may have
+            # completed the populate while we were waiting.
+            received = getattr(entity, "_received_fields", set())
+            if field_name in received:
+                existing = getattr(entity, field_name, None)
+                if isinstance(existing, list):
+                    return existing
+
+            # 6. Build a lightweight, parameterized GraphQL query.
+            #    Only the criterion-field name is interpolated (it comes
+            #    from the hint metadata, not user data); entity.id, page,
+            #    and per_page are bound as variables so the gql layer
+            #    handles escaping. Closes the latent f-string injection
+            #    that the previous `value: ["{entity.id}"]` opened up for
+            #    UUID-tagged unsaved entities.
+            query = f"""
+                query PopulateRelationship($id: ID!, $page: Int!, $per_page: Int!) {{
+                    {operation_name}(
+                        filter: {{page: $page, per_page: $per_page}},
+                        {filter_var_name}: {{
+                            {criterion_field}: {{
+                                value: [$id],
+                                modifier: INCLUDES
+                            }}
                         }}
-                    }}
-                ) {{
-                    count
-                    {items_key} {{
-                        __typename
-                        id
+                    ) {{
+                        count
+                        {items_key} {{ __typename id }}
                     }}
                 }}
-            }}
-        """
+            """
 
-        # 5. Execute and deserialize via identity map
-        result = await self._client.execute(query)
-        data = result.get(operation_name) or {}
-        raw_items = data.get(items_key) or []
+            # 7. Paginate and accumulate. Stub payloads are tiny (id +
+            #    typename only), so a larger per-page is appropriate vs.
+            #    find_iter's 40. Each await self._client.execute(...) yields
+            #    to the event loop, so concurrent populates of *different*
+            #    relationships interleave properly instead of being
+            #    serialized behind one giant per_page=-1 deserialization.
+            page_size = self.STUB_QUERY_BATCH
+            entity_cls = self._resolve_entity_type(metadata.inverse_type)
+            items: list[StashObject] = []
+            page = 1
 
-        # Resolve each item through from_graphql → identity map validator
-        # The inverse_type tells us which class to use
-        entity_cls = self._resolve_entity_type(metadata.inverse_type)
-        items: list[StashObject] = []
-        for raw in raw_items:
-            clean = sanitize_model_data(raw)
-            resolved = entity_cls.from_graphql(clean)
-            items.append(resolved)
+            while True:
+                result = await self._client.execute(
+                    query,
+                    {
+                        "id": entity.id,
+                        "page": page,
+                        "per_page": page_size,
+                    },
+                )
+                data = result.get(operation_name) or {}
+                raw_items = data.get(items_key) or []
 
-        # 6. Set the field on the entity and mark as received
-        setattr(entity, field_name, items)
-        received = getattr(entity, "_received_fields", set())
-        entity._received_fields = received | {field_name}
+                for raw in raw_items:
+                    clean = sanitize_model_data(raw)
+                    items.append(entity_cls.from_graphql(clean))
 
-        log.debug(
-            f"Fetched {len(items)} {field_name} for "
-            f"{entity.__type_name__} {entity.id} via filter_query"
-        )
+                if len(raw_items) < page_size:
+                    break
+                page += 1
 
-        return items
+            # 8. Atomically expose the fully-accumulated list. Setting the
+            #    attribute and updating _received_fields only after the
+            #    full traversal preserves the "either fully populated or
+            #    not populated" invariant — a partial relationship would
+            #    silently corrupt the entity graph.
+            setattr(entity, field_name, items)
+            current_received: set[str] = getattr(entity, "_received_fields", set())
+            entity._received_fields = current_received | {field_name}
+
+            log.debug(
+                f"Fetched {len(items)} {field_name} for "
+                f"{entity.__type_name__} {entity.id} via filter_query "
+                f"({page} page(s))"
+            )
+
+            return items
 
     def _resolve_entity_type(self, type_ref: str | type | None) -> type[StashObject]:
         """Resolve a type reference (string or class) to an entity class.
@@ -2415,7 +2460,7 @@ class StashEntityStore:
 
         if isinstance(type_ref, str):
             # Lazy import to avoid circular imports; lookup from type index
-            from . import types as types_module
+            from . import types as types_module  # noqa: PLC0415, I001  # circular: types package imports from store
 
             cls = getattr(types_module, type_ref, None)
             if (

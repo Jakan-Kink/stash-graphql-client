@@ -182,7 +182,6 @@ ignore = [
     "PTH202", # os.path.getsize (not always better than pathlib) - TODO: convert incrementally
     "PTH204", # os.path.getmtime (not always better than pathlib) - TODO: convert incrementally
     "G004",   # logging f-string (we use this extensively with loguru) - KEEP: intentional pattern
-    "PLC0415", # import outside top-level (intentional for error handling patterns) - KEEP: architectural choice
     "PLW0603", # global statement (used intentionally for module state) - KEEP: intentional pattern
     "B904",   # raise without from inside except (sometimes intentional) - TODO: review and fix
     "RUF006", # asyncio dangling task (tracked manually) - TODO: review and fix
@@ -206,7 +205,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 "stash_graphql_client/types/*.py" = ["N815", "A002", "RUF012"]
 # Tests intentionally use explicit loops to test async iterators
 # PERF401: Use list comprehension - False positive when testing iterators
-"tests/**/*.py" = ["PERF401"]
+"tests/**/*.py" = ["PERF401","PLC0415"]
 # Client code uses relative imports for internal module organization
 # TID252: relative imports from parent - acceptable for internal package structure
 # N802: function names match GraphQL schema (querySQL, execSQL, etc.)
