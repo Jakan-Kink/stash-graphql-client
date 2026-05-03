@@ -700,51 +700,63 @@ class StashResult(FromGraphQLMixin, BaseModel):
 
 
 class _StashObjectMeta(ModelMetaclass):
-    """Metaclass that intercepts direct ``Foo(id=...)`` construction for the
+    """Metaclass that intercepts direct ``Foo(...)`` construction for the
     identity-map cache.
 
-    Why a metaclass: Pydantic v2's `mode='wrap'` model validator can return a
-    cached instance for the ``model_validate`` / ``from_dict`` paths, but when
-    invoked via ``__init__`` (e.g. ``Performer(id='1')``) Pydantic discards the
-    validator's returned instance — Python's ``__init__`` has no return value,
-    so the cached object is silently thrown away **and** Pydantic emits a
-    "validator returning value other than `self`" UserWarning every time.
+    Why a metaclass: Pydantic v2's ``mode='wrap'`` model validator can return
+    a cached instance for the ``model_validate`` / ``from_dict`` paths, but
+    when invoked via ``__init__`` (e.g. ``Performer(id='1')``) Pydantic
+    discards the validator's returned instance — Python's ``__init__`` has
+    no return value, so the cached object is silently thrown away **and**
+    Pydantic emits a "validator returning value other than ``self``"
+    UserWarning every time.
 
-    The metaclass's ``__call__`` runs BEFORE ``__new__`` / ``__init__``, so we
-    can short-circuit the entire construction pipeline on a stub-construction
-    cache hit — preserving the same-id-yields-same-object guarantee and
-    suppressing the warning.
+    The metaclass's ``__call__`` runs BEFORE ``__new__`` / ``__init__``, so
+    cache-hit paths can be diverted around ``__init__`` entirely:
 
-    Scope: only the *id-only stub* shape is shortcut here
-    (e.g. ``Performer(id='1')``). Multi-field ``__init__`` still falls
-    through to Pydantic's normal pipeline; consumers who pass new field data
-    are presumed to want fresh validation, not cache substitution. For
-    incorporating new server data into a cached entity, use ``from_dict`` /
-    ``from_graphql`` (which run through ``model_validate`` and exercise the
-    full merge logic in the wrap validator).
+    * **Id-only stub** (``Foo(id='X')``) on cache hit → return the cached
+      entity directly. No validation needed.
+    * **Multi-field** (``Foo(id='X', name='Y')``) on cache hit → route
+      through ``self.model_validate(kwargs)`` instead of ``super().__call__()``.
+      The wrap validator's existing merge logic runs, returns the cached
+      entity with merged values, and ``model_validate`` honors the return
+      (unlike ``__init__``, which would discard it and emit the warning).
+
+    Both paths preserve same-id-yields-same-object identity. Cache misses
+    fall through to ``super().__call__()`` as before.
     """
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-        # In a metaclass `__call__`, `self` is the class being instantiated
-        # (e.g. `Performer`). Named `self` to satisfy N805 — the body still
-        # uses it as the class object below.
-        # Identity-map shortcut for stub construction — only when:
+        # In a metaclass ``__call__``, ``self`` is the class being
+        # instantiated (e.g. ``Performer``). Named ``self`` to satisfy N805 —
+        # the body still uses it as the class object below.
+        store = getattr(self, "_store", None)
+        type_name = getattr(self, "__type_name__", None)
+
+        # Conditions for cache-hit redirection:
         #   1. A store is registered on the class
-        #   2. The caller passed exactly `id=<value>` and nothing else
-        #   3. That id is in the cache and not expired
-        if (
-            getattr(self, "_store", None) is not None
-            and not args
-            and set(kwargs) == {"id"}
-            and "id" in kwargs
-            and getattr(self, "__type_name__", None)
-        ):
-            cache_key = (self.__type_name__, kwargs["id"])  # type: ignore[attr-defined]
-            cache = self._store._cache  # type: ignore[attr-defined]
-            entry = cache.get(cache_key)
-            if entry is not None and not entry.is_expired():
-                return entry.entity
-        return super().__call__(*args, **kwargs)
+        #   2. No positional args (model_validate accepts only the kwargs dict)
+        #   3. Caller passed an id kwarg
+        #   4. The id is in the cache and not expired
+        if store is None or not type_name or args or "id" not in kwargs:
+            return super().__call__(*args, **kwargs)
+
+        cache_key = (type_name, kwargs["id"])
+        entry = store._cache.get(cache_key)
+        if entry is None or entry.is_expired():
+            return super().__call__(*args, **kwargs)
+
+        # Id-only fast path: cached entity already has the id; return it.
+        if set(kwargs) == {"id"}:
+            return entry.entity
+
+        # Multi-field cache hit: route through model_validate so the wrap
+        # validator's merge path runs without ``__init__`` discarding its
+        # return (the cause of the UserWarning). At runtime ``self`` is
+        # the class being constructed (a BaseModel subclass), but mypy
+        # sees the metaclass type and can't resolve the inherited
+        # classmethod — same pattern as the ``_store._cache`` ignore above.
+        return self.model_validate(kwargs)  # type: ignore[attr-defined]
 
 
 class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):

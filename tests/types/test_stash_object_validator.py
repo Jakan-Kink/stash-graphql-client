@@ -245,24 +245,59 @@ class TestIdentityMapInitShortcut:
         assert p.id == "9999"
 
     @pytest.mark.asyncio
-    async def test_multi_field_init_falls_through_to_pydantic(
+    async def test_multi_field_init_returns_cached_with_merged_fields(
         self, respx_entity_store
     ) -> None:
-        """Multi-field ``__init__`` is NOT shortcut — only id-only stubs are.
+        """Multi-field ``__init__`` on cache hit returns the cached entity
+        (with new field values merged), matching ``from_graphql`` semantics.
 
-        Consumers passing additional fields are presumed to want fresh
-        validation (e.g., a brand-new entity), so the metaclass shortcut
-        only fires for the strict ``Foo(id=...)`` shape.
+        The metaclass routes multi-field cache hits through ``model_validate``
+        so the wrap validator's merge path runs without ``__init__``
+        discarding its return value (which previously emitted a
+        ``UserWarning`` and broke identity).
         """
         from stash_graphql_client.types.performer import Performer
 
         cached = Performer.from_graphql({"id": "5003", "name": "Cached"})
 
-        # Caller passing extra fields → falls through to Pydantic. The
-        # cache-hit semantics for this path are intentionally outside the
-        # shortcut's scope (use from_dict to incorporate new server data).
         p = Performer(id="5003", name="Different")
-        assert p is not cached  # fell through
+        assert p is cached, (
+            "multi-field cache hit must return cached entity (identity preserved)"
+        )
+        assert p.name == "Different", (
+            "the new field value must be merged into the cached entity"
+        )
+
+    @pytest.mark.asyncio
+    async def test_multi_field_init_emits_no_pydantic_warning(
+        self, respx_entity_store
+    ) -> None:
+        """No ``UserWarning`` when multi-field ``__init__`` hits the cache.
+
+        Closes the residual half of issue #28: id-only stubs were already
+        warning-free via the metaclass shortcut, but multi-field stubs were
+        falling through to ``super().__call__()`` which discarded the wrap
+        validator's cached return and triggered Pydantic's "validator
+        returning value other than ``self``" warning.
+        """
+        import warnings
+
+        from stash_graphql_client.types.performer import Performer
+
+        Performer.from_graphql({"id": "5004", "name": "Cached"})
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            Performer(id="5004", name="Updated")
+
+        pydantic_warnings = [
+            w
+            for w in caught
+            if "validator is returning a value other than" in str(w.message)
+        ]
+        assert not pydantic_warnings, (
+            f"unexpected Pydantic warning(s): {[str(w.message) for w in pydantic_warnings]}"
+        )
 
 
 class TestFromGraphQLMixin:
