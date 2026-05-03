@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-05-03
+
+### Fixed
+
+- **#28** (multi-field path, fully closes): `Foo(id='X', name='Y')` direct
+  construction on a cache hit now also returns the cached entity with
+  merged field values, matching `from_graphql` semantics. Previously,
+  only the id-only `Foo(id='X')` shape was identity-map-aware via
+  `_StashObjectMeta.__call__`; multi-field calls fell through to
+  `super().__call__()`, where Pydantic v2's `__init__` discarded the
+  wrap validator's cached return value and emitted the residual
+  `UserWarning: A custom validator is returning a value other than 'self'`.
+  The metaclass now routes multi-field cache hits through
+  `self.model_validate(kwargs)`, which honors the wrap validator's merge
+  return cleanly. Behavior change: callers who relied on multi-field
+  `__init__` returning a *fresh* instance (instead of the cached one)
+  will now receive the cached entity — consistent with the rest of the
+  identity-map contract.
+
 ## [0.12.3] - 2026-05-03
 
 ### Changed
@@ -72,12 +91,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **#28**: `Foo(id='1')` direct construction emitted Pydantic
+- **#28** (id-only path): `Foo(id='1')` direct construction emitted Pydantic
   `UserWarning: A custom validator is returning a value other than 'self'`
   AND silently bypassed the identity-map (returned a fresh instance instead
   of the cached one). New `_StashObjectMeta.__call__` intercepts the id-only
-  stub shape before Pydantic's pipeline runs. Multi-field `Foo(id='1', name='x')`
-  still falls through — use `from_dict` / `from_graphql` for those
+  stub shape before Pydantic's pipeline runs. The multi-field cache-hit case
+  is closed in v0.12.4.
 
 ## [0.12.1] - 2026-04-22
 
@@ -877,6 +896,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 70%+ test coverage requirement
 
 [Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...HEAD
+[0.12.4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0...v0.12.1
