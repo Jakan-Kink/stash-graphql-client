@@ -37,6 +37,7 @@ Example:
 from __future__ import annotations
 
 import inspect
+import re
 import types
 import uuid
 import warnings
@@ -54,7 +55,11 @@ from pydantic import (
 from pydantic._internal._model_construction import ModelMetaclass
 
 from stash_graphql_client import fragments
-from stash_graphql_client.errors import StashIntegrationError, StashUnmappedFieldWarning
+from stash_graphql_client.errors import (
+    StashCapabilityError,
+    StashIntegrationError,
+    StashUnmappedFieldWarning,
+)
 from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.logging import client_logger as log
 from stash_graphql_client.types.scalars import Time
@@ -211,8 +216,6 @@ def _pluralize(singular: str) -> str:
 
 def _to_snake_case(name: str) -> str:
     """Convert PascalCase/camelCase to snake_case (e.g., SceneMarker → scene_marker)."""
-    import re
-
     return re.sub(r"(?<=[a-z0-9])([A-Z])", r"_\1", name).lower()
 
 
@@ -1004,14 +1007,12 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
         # for filter_query relationships (e.g., Tag.scenes) during preload
         # when entities are loaded in any order.
         if isinstance(current_inverse, UnsetType):
-            from .base import RelationshipMetadata
-
             inverse_meta = related_obj.__relationships__.get(inverse_field)
             if isinstance(inverse_meta, RelationshipMetadata) and inverse_meta.is_list:
                 current_inverse = []
                 related_obj.__dict__[inverse_field] = current_inverse
                 # Add to _received_fields so populate() knows it's loaded
-                received = getattr(related_obj, "_received_fields", set())
+                received: set[str] = getattr(related_obj, "_received_fields", set())
                 related_obj._received_fields = received | {inverse_field}
             else:
                 return
@@ -1409,6 +1410,18 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
                 cached_entry = cls._store._cache[cache_key]
                 if not cached_entry.is_expired():
                     cached_obj = cached_entry.entity
+
+                    # Stub-data fast path: when the input only carries id /
+                    # __typename, there is nothing to merge — the cached
+                    # entity already has both. Skip the handler+merge cycle
+                    # so we don't pay the per-item Pydantic-init tax
+                    # (signature_no_eval over PrivateAttr default_factories)
+                    # for relationship-populate queries that fetch only IDs.
+                    if set(data.keys()) <= {"id", "__typename"}:
+                        if info.context and info.context.get("from_graphql"):
+                            cached_obj._received_fields |= {"id"}
+                        return cached_obj
+
                     log.debug(
                         f"Identity map: returning cached {cls.__type_name__} {data['id']}"
                     )
@@ -1865,7 +1878,9 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
             no payload is needed.
         """
         # Local import avoids a circular dependency: metadata imports from base.
-        from .metadata import CustomFieldsInput
+        from .metadata import (  # circular: metadata imports from base
+            CustomFieldsInput,
+        )
 
         current = getattr(entity, "custom_fields", UNSET)
         if not is_set(current) or current is None:
@@ -1954,8 +1969,6 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
         del update_method_name
 
         async def handler(client: StashClient, entity: StashObject) -> None:
-            from stash_graphql_client.errors import StashCapabilityError
-
             if capability_attr is not None:
                 caps = getattr(client, "capabilities", None)
                 if caps is None or not getattr(caps, capability_attr, False):
@@ -2390,7 +2403,7 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
 
     async def _process_list_relationship(
         self, value: list[Any], transform: Callable[[Any], Any] | None
-    ) -> list[str]:
+    ) -> list[str | dict[str, Any]]:
         """Process a list relationship.
 
         Args:
@@ -2398,12 +2411,13 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
             transform: Transform function to apply
 
         Returns:
-            List of transformed values
+            List of transformed values — strings for simple ID transforms,
+            dicts for BaseModel transforms (e.g., nested input shapes).
         """
         if not value:
             return []
 
-        items = []
+        items: list[str | dict[str, Any]] = []
         for item in value:
             if transform is not None:
                 # Check if transform is async or sync
