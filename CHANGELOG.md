@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-05-03
+
+### Changed
+
+- `StashEntityStore._fetch_filter_query_relationship` now paginates
+  internally (`STUB_QUERY_BATCH = 1000` per page) instead of issuing a
+  single `per_page: -1` query. Each page-fetch awaits, so concurrent
+  populates of different relationships actually interleave on the event
+  loop instead of being serialized behind one giant deserialization.
+- Relationship-populate queries are now parameterized GraphQL — entity
+  ID, page, and per_page are bound as `$id: ID!`, `$page: Int!`,
+  `$per_page: Int!` variables. Closes a latent f-string injection at
+  `value: ["{entity.id}"]` that was unsafe for UUID-tagged unsaved
+  entities or any ID containing quote/brace characters.
+
+### Fixed
+
+- Identity-map wrap validator now short-circuits when input data carries
+  only `{id, __typename}` — eliminates the per-item Pydantic-init tax
+  (`signature_no_eval` over four `PrivateAttr` `default_factory`
+  callables) for stub-shaped relationship-populate responses. Previously,
+  populating a 5,000-scene relationship paid the full handler+merge cycle
+  per item even though every item was a cache hit with nothing to merge.
+- `_fetch_filter_query_relationship` is now idempotent: a second call
+  for the same `(entity, field)` returns the existing list without
+  re-issuing a network request, gated on `_received_fields`.
+- Concurrent populates of the same relationship are serialized via
+  per-`(type_name, id, field_name)` `asyncio.Lock` with double-check
+  post-acquire — the second waiter sees the field already populated
+  and exits without a duplicate paginated fetch.
+- `_process_list_relationship` return annotation corrected to
+  `list[str | dict[str, Any]]` to match the actual mixed output
+  (strings for ID transforms, dicts for nested `BaseModel` transforms).
+
 ## [0.12.2] - 2026-04-28
 
 ### Added
@@ -843,6 +877,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 70%+ test coverage requirement
 
 [Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...HEAD
+[0.12.3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.11.2...v0.12.0
