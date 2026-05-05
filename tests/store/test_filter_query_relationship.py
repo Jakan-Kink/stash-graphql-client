@@ -11,6 +11,7 @@ This follows TESTING_REQUIREMENTS.md:
 - Use real Pydantic models
 """
 
+import asyncio
 import json
 from unittest.mock import patch
 
@@ -701,3 +702,153 @@ class TestResolveEntityType:
         store = respx_entity_store
         with pytest.raises(ValueError, match="Unexpected type_ref"):
             store._resolve_entity_type(42)  # type: ignore[arg-type]
+
+
+class TestConcurrentPopulate:
+    """Concurrency edge cases in _fetch_filter_query_relationship."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_second_caller_waits_then_returns_cached_result(
+        self, respx_entity_store
+    ) -> None:
+        """When two coroutines populate the same field concurrently, the second
+        finds the lock already in _populate_locks, waits for the first to finish,
+        then sees field_name in _received_fields and short-exits without re-fetching.
+
+        Covers: ``if lock is None`` False branch and the post-lock-acquire
+        ``if field_name in received`` True branch in
+        _fetch_filter_query_relationship.
+        """
+        store = respx_entity_store
+
+        scene = Scene.from_graphql(
+            {
+                "id": "501",
+                "title": "Shared scene",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+            }
+        )
+        store._cache_entity(scene)
+
+        tag = Tag.from_graphql(
+            {
+                "id": "601",
+                "name": "Shared tag",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+                "parents": [],
+                "children": [],
+            }
+        )
+        store._cache_entity(tag)
+
+        gate = asyncio.Event()
+        first_fetch_started = asyncio.Event()
+        call_count = 0
+
+        async def gated_response(request):
+            nonlocal call_count
+            call_count += 1
+            first_fetch_started.set()
+            await gate.wait()
+            return httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "findScenes": {
+                            "count": 1,
+                            "scenes": [{"__typename": "Scene", "id": "501"}],
+                        }
+                    }
+                },
+            )
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=gated_response
+        )
+
+        try:
+            task1 = asyncio.create_task(
+                store._fetch_filter_query_relationship(tag, "scenes")
+            )
+            await first_fetch_started.wait()
+            task2 = asyncio.create_task(
+                store._fetch_filter_query_relationship(tag, "scenes")
+            )
+            # Yield so task2 reaches the lock acquire and waits there
+            await asyncio.sleep(0)
+            gate.set()
+            result1, result2 = await asyncio.gather(task1, task2)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert call_count == 1
+        assert result1 == result2
+        assert len(result1) == 1
+        assert result1[0] is scene
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_field_in_received_but_value_not_list_falls_through_to_fetch(
+        self, respx_entity_store
+    ) -> None:
+        """Inconsistent state: _received_fields claims the field is loaded but the
+        attribute value is not a list. The pre-lock fast path declines to return
+        the non-list value and falls through to a normal fetch.
+
+        Covers: pre-lock ``if isinstance(existing, list)`` False branch.
+        """
+        store = respx_entity_store
+
+        scene = Scene.from_graphql(
+            {
+                "id": "701",
+                "title": "Recovery scene",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+            }
+        )
+        store._cache_entity(scene)
+
+        tag = Tag.from_graphql(
+            {
+                "id": "801",
+                "name": "Recovery tag",
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z",
+                "parents": [],
+                "children": [],
+            }
+        )
+        store._cache_entity(tag)
+
+        # Force the inconsistent state: claim scenes is loaded, but value is None.
+        tag._received_fields = tag._received_fields | {"scenes"}
+        tag.__dict__["scenes"] = None
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={
+                        "data": {
+                            "findScenes": {
+                                "count": 1,
+                                "scenes": [{"__typename": "Scene", "id": "701"}],
+                            }
+                        }
+                    },
+                ),
+            ]
+        )
+
+        try:
+            result = await store._fetch_filter_query_relationship(tag, "scenes")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert len(graphql_route.calls) == 1
+        assert len(result) == 1
+        assert result[0] is scene

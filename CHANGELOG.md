@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.5a0] - 2026-05-04
+
+### Fixed
+
+- **Per-instance allocation churn from `PrivateAttr` signature inspection.**
+  `StashObject._snapshot`, `_received_fields`, and `_pending_side_ops` now
+  use `PrivateAttr(default=None)` with materialization in `model_post_init`,
+  rather than `PrivateAttr(default_factory=dict|set|list)`. Pydantic 2.13's
+  `init_private_attributes` calls `inspect.signature` on every default
+  factory per instance to decide whether the factory takes a validated-data
+  argument; for C-implemented built-ins (`dict`/`set`/`list`) that lookup
+  falls into `inspect._signature_fromstr`, which allocates ~50 KB per call
+  and is not cached upstream. With three such factories on the base class,
+  every entity construction paid ~7-10 KB of throwaway signature-parsing
+  memory — multi-GB of churn at preload/find_iter scale.
+
+  Empirical impact (constructing 50,000 `Tag` instances through
+  `from_graphql`): peak tracemalloc dropped from 485 MB to 124 MB and
+  wall-clock time from 45.86 s to 2.56 s. Net retained memory is unchanged
+  — the recovery is entirely from eliminated allocation churn that
+  obmalloc was unable to return to the OS.
+
+### Added
+
+- Concurrency-edge tests for `_fetch_filter_query_relationship`: a
+  gated-mock concurrent-populate test that verifies the second caller
+  reuses the existing per-`(type, id, field)` `asyncio.Lock` and exits
+  via the post-lock `_received_fields` fast path, plus an inconsistent-
+  state test that covers the pre-lock fall-through when `_received_fields`
+  claims a field is loaded but the attribute value is not a list.
+
+### Changed
+
+- Coverage configuration omits `bench_*.py`. Benchmark scripts are not
+  production code and don't need to count against the project's branch
+  coverage target.
+
 ## [0.12.4] - 2026-05-03
 
 ### Fixed

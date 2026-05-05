@@ -913,10 +913,10 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
     )
 
     # Private attributes (stored in __pydantic_private__, survives validate_assignment)
-    _snapshot: dict = PrivateAttr(default_factory=dict)
+    _snapshot: dict = PrivateAttr(default=None)  # type: ignore[arg-type]
     _is_new: bool = PrivateAttr(default=False)
-    _received_fields: set = PrivateAttr(default_factory=set)
-    _pending_side_ops: list = PrivateAttr(default_factory=list)
+    _received_fields: set = PrivateAttr(default=None)  # type: ignore[arg-type]
+    _pending_side_ops: list = PrivateAttr(default=None)  # type: ignore[arg-type]
 
     id: str = ""  # Auto-generates UUID4 if empty/None in __init__
     created_at: Time | UnsetType = UNSET  # Time! - Stash internal
@@ -1675,6 +1675,9 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
         Args:
             _context: Pydantic context (unused but required by signature)
         """
+        self._received_fields = set()
+        self._pending_side_ops = []
+
         # Store snapshot of initial state by capturing field values directly
         # This avoids circular reference errors when model_dump() would recurse
         # into bidirectional relationships (e.g., Scene.performers ↔ Performer.scenes)

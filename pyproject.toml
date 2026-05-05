@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.12.4"
+version = "0.12.5a0"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -291,7 +291,8 @@ omit = [
     "*/.git/*",
     "*/.github/*",
     "*/htmlcov/*",
-    "stash/example.py"  # Example code, not production code
+    "stash/example.py",  # Example code, not production code
+    "bench_*.py",  # Benchmarks, not production code
 ]
 command_line = "-m pytest discover -s tests/"
 parallel = true
