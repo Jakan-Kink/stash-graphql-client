@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.12.5a0] - 2026-05-04
+## [0.12.5] - 2026-05-04
 
 ### Fixed
 
@@ -932,7 +932,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...HEAD
+[0.12.5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.1...v0.12.2
