@@ -113,6 +113,34 @@ class TestServerCapabilitiesProperties:
         assert caps.has_folder_sub_folders
 
     @pytest.mark.unit
+    def test_file_reverse_relationships_introspection_gated(self) -> None:
+        """has_file_reverse_relationships uses introspection, not appSchema.
+
+        stashapp/stash #6938 added VideoFile.scenes / ImageFile.images /
+        GalleryFile.galleries as resolvers with no migration, so even a high
+        appSchema is False until the three fields appear in introspection, and
+        all three must be present (combined gate).
+        """
+        # No reverse fields in introspection -> False even at high appSchema.
+        assert not make_server_capabilities(9999).has_file_reverse_relationships
+        # All three present -> True.
+        caps = make_server_capabilities(
+            85,
+            type_fields={
+                "VideoFile": frozenset({"scenes"}),
+                "ImageFile": frozenset({"images"}),
+                "GalleryFile": frozenset({"galleries"}),
+            },
+        )
+        assert caps.has_file_reverse_relationships
+        # Partial support (only one of three) -> still False.
+        partial = make_server_capabilities(
+            85,
+            type_fields={"VideoFile": frozenset({"scenes"})},
+        )
+        assert not partial.has_file_reverse_relationships
+
+    @pytest.mark.unit
     def test_performer_career_date_strings_boundary(self) -> None:
         """has_performer_career_date_strings flips at appSchema 85."""
         assert not make_server_capabilities(84).has_performer_career_date_strings

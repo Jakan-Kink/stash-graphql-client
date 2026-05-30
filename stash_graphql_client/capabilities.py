@@ -162,6 +162,20 @@ class ServerCapabilities:
         return self.type_has_field("Folder", "sub_folders")
 
     @property
+    def has_file_reverse_relationships(self) -> bool:
+        """File types gained reverse-relationship resolvers (introspection-gated).
+
+        VideoFile.scenes, ImageFile.images, GalleryFile.galleries — added upstream
+        in stashapp/stash (#6938). All three land together, so a single combined
+        check gates the whole feature.
+        """
+        return (
+            self.type_has_field("VideoFile", "scenes")
+            and self.type_has_field("ImageFile", "images")
+            and self.type_has_field("GalleryFile", "galleries")
+        )
+
+    @property
     def has_scraped_tag_parent(self) -> bool:
         """ScrapedTag gained parent field for tag hierarchy (stashapp/stash#6620, introspection-gated)."""
         return self.type_has_field("ScrapedTag", "parent")

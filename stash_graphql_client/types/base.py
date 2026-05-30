@@ -311,19 +311,35 @@ def has_many(
     inverse_type: str,
     *,
     inverse_query_field: str | None = None,
+    query_strategy: str = "filter_query",
     notes: str = "",
 ) -> RelationshipMetadata:
-    """Inverse/read-only side. No mutation input — populated via inverse sync or filter_query.
+    """Inverse/read-only side. No mutation input — populated via inverse sync,
+    a server resolver, or a synthesized filter query.
+
+    ``query_strategy`` selects how the inverse list is obtained:
+
+    - ``"filter_query"`` (default): the server exposes no list resolver for this
+      inverse (only a ``*_count``, e.g. ``Tag.scene_count``), so the client
+      synthesizes one via ``find{Type}(filter=...)``. A ``filter_query_hint`` is
+      auto-built from the inverse/owner types.
+    - ``"direct_field"``: the server resolves the inverse natively as a nested
+      list field (a real GraphQL resolver, e.g. ``VideoFile.scenes``). The data
+      arrives embedded in the parent's selection; no synthetic find query and no
+      ``filter_query_hint`` is built.
 
     Auto-derives (via __init_subclass__):
         - query_field: from dict key
         - target_field: "" (read-only)
-        - query_strategy: "filter_query"
-        - filter_query_hint: from inverse_type + owner type
+        - filter_query_hint: from inverse_type + owner type (filter_query only;
+          None for direct_field)
 
     Examples:
         "scenes": has_many("Scene", inverse_query_field="tags")
         "child_studios": has_many("Studio", inverse_query_field="parent_studio")
+        # resolver-backed read-only inverse (server resolves the nested list):
+        "scenes": has_many("Scene", inverse_query_field="files",
+                           query_strategy="direct_field")
     """
     return RelationshipMetadata(
         target_field="",  # Read-only — no mutation input
@@ -331,7 +347,7 @@ def has_many(
         query_field=_DEFERRED,  # type: ignore[arg-type]
         inverse_type=inverse_type,
         inverse_query_field=inverse_query_field,
-        query_strategy="filter_query",
+        query_strategy=query_strategy,
         filter_query_hint=_DEFERRED,  # type: ignore[arg-type]
         notes=notes,
     )

@@ -13,8 +13,12 @@ import respx
 
 from stash_graphql_client import StashClient, StashEntityStore
 from stash_graphql_client.context import StashContext
+from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.types.scene import Scene, SceneCreateInput
-from tests.fixtures.stash.graphql_responses import create_capability_response
+from tests.fixtures.stash.graphql_responses import (
+    create_capability_response,
+    make_server_capabilities,
+)
 
 
 __all__ = [
@@ -23,6 +27,7 @@ __all__ = [
     "stash_client",
     "respx_stash_client",
     "respx_entity_store",
+    "respx_entity_store_with_file_reverse_caps",
     "mock_entity_store",
     "stash_cleanup_tracker",
     "capture_graphql_calls",
@@ -269,6 +274,37 @@ async def respx_entity_store(
     if stash_context._store is None:
         raise RuntimeError("Store not initialized - this should not happen")
     return stash_context._store
+
+
+@pytest_asyncio.fixture
+async def respx_entity_store_with_file_reverse_caps(
+    respx_entity_store: StashEntityStore,
+) -> AsyncGenerator[StashEntityStore, None]:
+    """StashEntityStore whose capabilities advertise the file reverse-relationship
+    resolvers (VideoFile.scenes, ImageFile.images, GalleryFile.galleries).
+
+    Rebuilds the fragment_store singleton with introspection data containing the
+    three reverse fields, then restores the prior capabilities on teardown so the
+    global singleton is not polluted across tests. These resolvers are
+    introspection-gated (stashapp/stash #6938 added no migration; appSchema stays
+    at 85), so type_fields — not an appSchema bump — is what enables them.
+    """
+    original = fragment_store._capabilities
+    fragment_store.rebuild(
+        make_server_capabilities(
+            app_schema=85,
+            type_fields={
+                "VideoFile": frozenset({"scenes"}),
+                "ImageFile": frozenset({"images"}),
+                "GalleryFile": frozenset({"galleries"}),
+            },
+        )
+    )
+    try:
+        yield respx_entity_store
+    finally:
+        if original is not None:
+            fragment_store.rebuild(original)
 
 
 @pytest_asyncio.fixture

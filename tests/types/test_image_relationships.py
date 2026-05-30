@@ -20,12 +20,13 @@ class TestImageRelationshipMigration:
         """Test that all relationship entries use RelationshipMetadata objects."""
         relationships = Image.__relationships__
 
-        # Image should have 4 relationships
-        assert len(relationships) == 4
+        # Image should have 5 relationships
+        assert len(relationships) == 5
         assert "studio" in relationships
         assert "performers" in relationships
         assert "tags" in relationships
         assert "galleries" in relationships
+        assert "visual_files" in relationships
 
         # All should be RelationshipMetadata instances
         for rel_name, rel_meta in relationships.items():
@@ -120,12 +121,13 @@ class TestImageRelationshipPatterns:
             if rel.query_strategy == "direct_field"
         ]
 
-        # studio, performers, tags, galleries all use direct_field
-        assert len(direct_field_rels) == 4
+        # studio, performers, tags, galleries, visual_files all use direct_field
+        assert len(direct_field_rels) == 5
         assert "studio" in direct_field_rels
         assert "performers" in direct_field_rels
         assert "tags" in direct_field_rels
         assert "galleries" in direct_field_rels
+        assert "visual_files" in direct_field_rels
 
     def test_no_complex_object_relationships(self):
         """Test that Image has no complex_object relationships."""

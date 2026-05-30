@@ -47,7 +47,6 @@ async def test_version_returns_current_version(
         assert len(version.hash) > 0
         assert version.build_time is not None
         assert is_set(version.build_time)
-        assert len(version.build_time) > 0
 
         # Version may be empty on develop/untagged builds (only hash and build_time set)
         if version.version:

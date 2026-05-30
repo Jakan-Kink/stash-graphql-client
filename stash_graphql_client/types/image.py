@@ -15,6 +15,7 @@ from .base import (
     StashResult,
     belongs_to,
     habtm,
+    has_many,
 )
 from .files import ImageFile, VideoFile
 from .metadata import CustomFieldsInput
@@ -180,6 +181,12 @@ class Image(StashObject):
         "performers": habtm("Performer", inverse_query_field="images"),
         "tags": habtm("Tag", inverse_query_field="images"),
         "galleries": habtm("Gallery", inverse_query_field="images"),
+        # Read-only inverse: server resolves ImageFile.images natively (direct_field).
+        # Field is visual_files (union VideoFile|ImageFile); only ImageFile members
+        # carry the images back-ref — VideoFile members (e.g. animated images) do not.
+        "visual_files": has_many(
+            "ImageFile", inverse_query_field="images", query_strategy="direct_field"
+        ),
     }
 
     # Field definitions with their conversion functions

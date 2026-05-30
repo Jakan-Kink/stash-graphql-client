@@ -296,6 +296,11 @@ class Scene(StashObject):
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
         ),
         "scene_markers": has_many("SceneMarker", inverse_query_field="scene"),
+        # Read-only inverse: server resolves VideoFile.scenes natively (direct_field).
+        # No file_ids on SceneUpdateInput, so this is not user-writable here.
+        "files": has_many(
+            "VideoFile", inverse_query_field="scenes", query_strategy="direct_field"
+        ),
     }
 
     # Field definitions with their conversion functions

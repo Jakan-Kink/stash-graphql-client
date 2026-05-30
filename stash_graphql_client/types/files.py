@@ -3,13 +3,23 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .base import StashInput, StashObject, StashResult
+from .base import StashInput, StashObject, StashResult, has_many
 from .scalars import Time
 from .unset import UNSET, UnsetType
+
+
+if TYPE_CHECKING:
+    # Reverse-relationship targets. Imported only for type checking to avoid the
+    # import cycle (scene/image/gallery import from this module). Runtime
+    # resolution happens via model_rebuild() in types/__init__.py, which runs
+    # after these classes are imported.
+    from .gallery import Gallery
+    from .image import Image
+    from .scene import Scene
 
 
 def fingerprint_resolver(parent: BaseFile, type: str) -> str:
@@ -146,6 +156,19 @@ class ImageFile(BaseFile):
     width: int | UnsetType = UNSET  # Int!
     height: int | UnsetType = UNSET  # Int!
 
+    # Reverse relationship: images using this file (capability-gated; new field)
+    images: list[Image] | None | UnsetType = UNSET  # [Image!]!
+
+    # Read-only inverse: server resolves ImageFile.images natively (direct_field).
+    # Inverse is Image.visual_files (union list), not "images" — names differ.
+    __relationships__: ClassVar[dict] = {
+        "images": has_many(
+            "Image",
+            inverse_query_field="visual_files",
+            query_strategy="direct_field",
+        ),
+    }
+
 
 class VideoFile(BaseFile):
     """Video file type from schema/types/file.graphql.
@@ -164,6 +187,18 @@ class VideoFile(BaseFile):
     frame_rate: float | UnsetType = UNSET  # Float!  # frame_rate in schema
     bit_rate: int | UnsetType = UNSET  # Int!  # bit_rate in schema
 
+    # Reverse relationship: scenes using this file (capability-gated; new field)
+    scenes: list[Scene] | None | UnsetType = UNSET  # [Scene!]!
+
+    # Read-only inverse: server resolves VideoFile.scenes natively (direct_field).
+    __relationships__: ClassVar[dict] = {
+        "scenes": has_many(
+            "Scene",
+            inverse_query_field="files",
+            query_strategy="direct_field",
+        ),
+    }
+
 
 # Union type for VisualFile (VideoFile or ImageFile)
 VisualFile = VideoFile | ImageFile
@@ -176,6 +211,18 @@ class GalleryFile(BaseFile):
     """
 
     __type_name__ = "GalleryFile"
+
+    # Reverse relationship: galleries using this file (capability-gated; new field)
+    galleries: list[Gallery] | None | UnsetType = UNSET  # [Gallery!]!
+
+    # Read-only inverse: server resolves GalleryFile.galleries natively (direct_field).
+    __relationships__: ClassVar[dict] = {
+        "galleries": has_many(
+            "Gallery",
+            inverse_query_field="files",
+            query_strategy="direct_field",
+        ),
+    }
 
 
 # Populate BaseFile's subclass map now that all subtypes are defined

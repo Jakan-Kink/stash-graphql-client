@@ -416,6 +416,13 @@ class Gallery(StashObject):
             "Managed via addGalleryImages/removeGalleryImages side mutations.",
         ),
         "chapters": has_many("GalleryChapter", inverse_query_field="gallery"),
+        # Read-only inverse: server resolves GalleryFile.galleries natively (direct_field).
+        # No file_ids on GalleryUpdateInput, so this is not user-writable here.
+        "files": has_many(
+            "GalleryFile",
+            inverse_query_field="galleries",
+            query_strategy="direct_field",
+        ),
     }
 
 

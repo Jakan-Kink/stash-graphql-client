@@ -22,8 +22,8 @@ class TestGalleryRelationshipMetadata:
                 f"Gallery.{rel_name} should be RelationshipMetadata, not {type(rel_meta)}"
             )
 
-    def test_gallery_has_six_relationships(self):
-        """Test that Gallery has exactly 6 relationships."""
+    def test_gallery_has_seven_relationships(self):
+        """Test that Gallery has exactly 7 relationships."""
         expected_relationships = {
             "studio",
             "performers",
@@ -31,6 +31,7 @@ class TestGalleryRelationshipMetadata:
             "scenes",
             "images",
             "chapters",
+            "files",
         }
         actual_relationships = set(Gallery.__relationships__.keys())
 

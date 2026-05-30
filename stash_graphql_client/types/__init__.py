@@ -649,6 +649,12 @@ SceneMarker.model_rebuild()
 # File types
 Folder.model_rebuild()
 BaseFile.model_rebuild()
+# Concrete file subclasses carry reverse-relationship forward refs
+# (VideoFile.scenes, ImageFile.images, GalleryFile.galleries) that resolve
+# against Scene/Image/Gallery imported above.
+VideoFile.model_rebuild()
+ImageFile.model_rebuild()
+GalleryFile.model_rebuild()
 StashID.model_rebuild()
 StashIDInput.model_rebuild()
 

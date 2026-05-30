@@ -22,7 +22,7 @@ from .errors import StashBatchError, StashError, StashIntegrationError
 from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import RelationshipMetadata, StashObject
-from .types.files import BaseFile, ImageFile, VideoFile
+from .types.files import BaseFile, GalleryFile, ImageFile, VideoFile
 from .types.unset import UnsetType
 
 
@@ -31,6 +31,31 @@ if TYPE_CHECKING:
     from .client.batch import BatchResult
 
 T = TypeVar("T", bound=StashObject)
+
+
+def _build_file_reverse_field_map() -> dict[str, str]:
+    """Map each file-subtype reverse field to its concrete ``__typename``.
+
+    Derived from the file types' ``direct_field`` relationships so the inline
+    fragments emitted for ``findFile`` stay in sync with the type declarations
+    (``VideoFile.scenes``, ``ImageFile.images``, ``GalleryFile.galleries``).
+    ``findFile`` returns the ``BaseFile`` interface, on which these subtype-only
+    fields cannot be selected directly — they require a ``... on <Subtype>``.
+    """
+    mapping: dict[str, str] = {}
+    for cls in (VideoFile, ImageFile, GalleryFile):
+        for field_name, meta in cls.__relationships__.items():
+            # Guard excludes any future non-reverse file relationship from the
+            # inline-fragment map; today all file relationships are direct_field.
+            if (  # pragma: no branch
+                isinstance(meta, RelationshipMetadata)
+                and meta.query_strategy == "direct_field"
+            ):
+                mapping[field_name] = cls.__type_name__
+    return mapping
+
+
+_FILE_REVERSE_FIELDS: dict[str, str] = _build_file_reverse_field_map()
 
 
 @dataclass
@@ -1222,6 +1247,23 @@ class StashEntityStore:
                     log.warning(f"{obj.__type_name__} has no field '{field_name}'")
                     fields_to_fetch.remove(field_name)
 
+        # Adaptive file reverse-relationship strategy (VideoFile.scenes, etc.).
+        # Servers with the #6938 resolvers resolve these via the inline-fragment
+        # findFile path (left in fields_to_fetch -> direct_fields below). Servers
+        # without them fall back to a filter query keyed by the file's path so
+        # the feature still works on stable releases.
+        if isinstance(obj, BaseFile):
+            caps = fragment_store._capabilities
+            if not (caps and caps.has_file_reverse_relationships):
+                for rev_field in [
+                    f for f in fields_to_fetch if f in _FILE_REVERSE_FIELDS
+                ]:
+                    # Always drop from fields_to_fetch: an uncapable server would
+                    # reject the inline-fragment direct query for this field.
+                    fields_to_fetch.remove(rev_field)
+                    if await self._fetch_file_reverse_via_path(obj, rev_field):
+                        received.add(rev_field)
+
         # Separate filter_query fields from regular fields
         filter_query_fields: list[str] = []
         direct_fields: list[str] = []
@@ -2195,7 +2237,7 @@ class StashEntityStore:
         query_name = self._get_query_name(entity_type)
 
         # Build field selection from requested fields
-        field_selection = self._build_field_selection(fields)
+        field_selection = self._build_field_selection(fields, owner_type=entity_type)
 
         # Build the query
         query = f"""
@@ -2227,7 +2269,9 @@ class StashEntityStore:
             )
             return None
 
-    def _build_field_selection(self, fields: list[str]) -> str:
+    def _build_field_selection(
+        self, fields: list[str], owner_type: type | None = None
+    ) -> str:
         """Build GraphQL field selection string from field list.
 
         Handles both scalar fields and nested object/list fields by including
@@ -2235,6 +2279,10 @@ class StashEntityStore:
 
         Args:
             fields: List of field names
+            owner_type: The type being fetched. When it is the ``BaseFile``
+                interface (findFile), subtype-only reverse fields
+                (``scenes``/``images``/``galleries``) are emitted as
+                ``... on <Subtype>`` inline fragments rather than bare fields.
 
         Returns:
             GraphQL field selection string with nested selections for objects
@@ -2242,6 +2290,12 @@ class StashEntityStore:
         # Always include __typename, id, and timestamps
         base_fields = ["__typename", "id", "created_at", "updated_at"]
         all_fields = list(set(base_fields + fields))
+
+        # findFile resolves the BaseFile interface; reverse fields live only on
+        # the concrete subtypes and must be narrowed with an inline fragment.
+        wrap_reverse_fields = isinstance(owner_type, type) and issubclass(
+            owner_type, BaseFile
+        )
 
         # Map of relationship fields that need nested selections
         # Format: field_name -> nested fields to include
@@ -2267,7 +2321,13 @@ class StashEntityStore:
 
         selections = []
         for field_name in all_fields:
-            if field_name in relationship_fields:
+            if wrap_reverse_fields and field_name in _FILE_REVERSE_FIELDS:
+                # Subtype-only reverse field on the BaseFile interface — narrow
+                # with an inline fragment (e.g. ... on VideoFile { scenes }).
+                subtype = _FILE_REVERSE_FIELDS[field_name]
+                nested = relationship_fields.get(field_name, "__typename id")
+                selections.append(f"... on {subtype} {{ {field_name} {{ {nested} }} }}")
+            elif field_name in relationship_fields:
                 # Nested object/list - include sub-selection
                 nested = relationship_fields[field_name]
                 selections.append(f"{field_name} {{ {nested} }}")
@@ -2476,6 +2536,41 @@ class StashEntityStore:
             )
 
         raise ValueError(f"Unexpected type_ref: {type_ref!r}")
+
+    async def _fetch_file_reverse_via_path(
+        self, file_obj: StashObject, field_name: str
+    ) -> bool:
+        """Populate a file's reverse relationship by filtering the inverse type
+        on the file's path (fallback for servers without the #6938 resolvers).
+
+        A file's path is unique in Stash, so
+        ``find{Scenes,Images,Galleries}(filter={path: {value, EQUALS}})`` returns
+        the entities using this file. Path is the join key because it is the
+        identifier downstream consumers reliably hold — not oshash/checksum.
+
+        Returns:
+            True if the relationship was populated; False if it could not be
+            resolved (no path available), leaving the field UNSET.
+        """
+        # field_name is always a real key (sourced from _FILE_REVERSE_FIELDS).
+        meta = file_obj.__relationships__[field_name]
+        inverse_cls = self._resolve_entity_type(meta.inverse_type)
+
+        # The file's path is the join key; fetch it if not already present.
+        path = getattr(file_obj, "path", None)
+        if isinstance(path, UnsetType) or not path:
+            refreshed = await self.get(BaseFile, file_obj.id, fields=["path"])
+            path = getattr(refreshed, "path", None) if refreshed is not None else None
+        if not path:
+            log.debug(
+                f"Cannot populate {file_obj.__type_name__}.{field_name}: "
+                f"file has no path for the fallback filter query"
+            )
+            return False
+
+        results = await self.find(inverse_cls, path=path)
+        setattr(file_obj, field_name, results)
+        return True
 
     async def _execute_find(
         self,
