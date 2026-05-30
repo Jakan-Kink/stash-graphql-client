@@ -4,288 +4,154 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.12.6] - 2026-05-30
+
+### Added
+
+- **File reverse-relationship navigation (stashapp/stash #6938).**
+  `VideoFile.scenes`, `ImageFile.images`, and `GalleryFile.galleries` let a file navigate back to the entities using it. Populating these adapts to the server. When the resolvers are present — introspection-gated via `ServerCapabilities.has_file_reverse_relationships` (no appSchema bump, since #6938 adds no migration) — the field is fetched through `findFile` with a `... on VideoFile { scenes }` inline fragment, because the field is subtype-only and `findFile` returns the `BaseFile` interface. On servers that predate the resolvers it falls back to a filter query keyed by the file's `path` (`findScenes(scene_filter={path: {value, EQUALS}})`) — the join key downstream consumers reliably hold. Either way the reverse list is populated and bidirectionally synced (`video_file.scenes` back-references `scene.files`), so it works on stable v0.30.x as well as develop.
+- `ServerCapabilities.has_file_reverse_relationships` — introspection-gated (`type_has_field`) detection of the #6938 resolvers, used to choose the direct-resolver path versus the path-filter fallback.
+
+### Changed
+
+- `has_many()` gained a `query_strategy` parameter (`"filter_query"` default, or `"direct_field"`) so a read-only inverse side can be backed by a native server resolver instead of a synthesized filter query.
 
 ## [0.12.5] - 2026-05-04
 
 ### Fixed
 
 - **Per-instance allocation churn from `PrivateAttr` signature inspection.**
-  `StashObject._snapshot`, `_received_fields`, and `_pending_side_ops` now
-  use `PrivateAttr(default=None)` with materialization in `model_post_init`,
-  rather than `PrivateAttr(default_factory=dict|set|list)`. Pydantic 2.13's
-  `init_private_attributes` calls `inspect.signature` on every default
-  factory per instance to decide whether the factory takes a validated-data
-  argument; for C-implemented built-ins (`dict`/`set`/`list`) that lookup
-  falls into `inspect._signature_fromstr`, which allocates ~50 KB per call
-  and is not cached upstream. With three such factories on the base class,
-  every entity construction paid ~7-10 KB of throwaway signature-parsing
-  memory — multi-GB of churn at preload/find_iter scale.
+  `StashObject._snapshot`, `_received_fields`, and `_pending_side_ops` now use `PrivateAttr(default=None)` with materialization in `model_post_init`, rather than `PrivateAttr(default_factory=dict|set|list)`. Pydantic 2.13's `init_private_attributes` calls `inspect.signature` on every default factory per instance to decide whether the factory takes a validated-data argument; for C-implemented built-ins (`dict`/`set`/`list`) that lookup falls into `inspect._signature_fromstr`, which allocates ~50 KB per call and is not cached upstream. With three such factories on the base class, every entity construction paid ~7-10 KB of throwaway signature-parsing memory — multi-GB of churn at preload/find_iter scale.
 
-  Empirical impact (constructing 50,000 `Tag` instances through
-  `from_graphql`): peak tracemalloc dropped from 485 MB to 124 MB and
-  wall-clock time from 45.86 s to 2.56 s. Net retained memory is unchanged
-  — the recovery is entirely from eliminated allocation churn that
-  obmalloc was unable to return to the OS.
+  Empirical impact (constructing 50,000 `Tag` instances through `from_graphql`): peak tracemalloc dropped from 485 MB to 124 MB and wall-clock time from 45.86 s to 2.56 s. Net retained memory is unchanged — the recovery is entirely from eliminated allocation churn that obmalloc was unable to return to the OS.
 
 ### Added
 
-- Concurrency-edge tests for `_fetch_filter_query_relationship`: a
-  gated-mock concurrent-populate test that verifies the second caller
-  reuses the existing per-`(type, id, field)` `asyncio.Lock` and exits
-  via the post-lock `_received_fields` fast path, plus an inconsistent-
-  state test that covers the pre-lock fall-through when `_received_fields`
-  claims a field is loaded but the attribute value is not a list.
+- Concurrency-edge tests for `_fetch_filter_query_relationship`: a gated-mock concurrent-populate test that verifies the second caller reuses the existing per-`(type, id, field)` `asyncio.Lock` and exits via the post-lock `_received_fields` fast path, plus an inconsistent-state test that covers the pre-lock fall-through when `_received_fields` claims a field is loaded but the attribute value is not a list.
 
 ### Changed
 
-- Coverage configuration omits `bench_*.py`. Benchmark scripts are not
-  production code and don't need to count against the project's branch
-  coverage target.
+- Coverage configuration omits `bench_*.py`. Benchmark scripts are not production code and don't need to count against the project's branch coverage target.
 
 ## [0.12.4] - 2026-05-03
 
 ### Fixed
 
-- **#28** (multi-field path, fully closes): `Foo(id='X', name='Y')` direct
-  construction on a cache hit now also returns the cached entity with
-  merged field values, matching `from_graphql` semantics. Previously,
-  only the id-only `Foo(id='X')` shape was identity-map-aware via
-  `_StashObjectMeta.__call__`; multi-field calls fell through to
-  `super().__call__()`, where Pydantic v2's `__init__` discarded the
-  wrap validator's cached return value and emitted the residual
-  `UserWarning: A custom validator is returning a value other than 'self'`.
-  The metaclass now routes multi-field cache hits through
-  `self.model_validate(kwargs)`, which honors the wrap validator's merge
-  return cleanly. Behavior change: callers who relied on multi-field
-  `__init__` returning a *fresh* instance (instead of the cached one)
-  will now receive the cached entity — consistent with the rest of the
-  identity-map contract.
+- **#28** (multi-field path, fully closes): `Foo(id='X', name='Y')` direct construction on a cache hit now also returns the cached entity with merged field values, matching `from_graphql` semantics. Previously, only the id-only `Foo(id='X')` shape was identity-map-aware via `_StashObjectMeta.__call__`; multi-field calls fell through to `super().__call__()`, where Pydantic v2's `__init__` discarded the wrap validator's cached return value and emitted the residual `UserWarning: A custom validator is returning a value other than 'self'`. The metaclass now routes multi-field cache hits through `self.model_validate(kwargs)`, which honors the wrap validator's merge return cleanly. Behavior change: callers who relied on multi-field `__init__` returning a _fresh_ instance (instead of the cached one) will now receive the cached entity — consistent with the rest of the identity-map contract.
 
 ## [0.12.3] - 2026-05-03
 
 ### Changed
 
-- `StashEntityStore._fetch_filter_query_relationship` now paginates
-  internally (`STUB_QUERY_BATCH = 1000` per page) instead of issuing a
-  single `per_page: -1` query. Each page-fetch awaits, so concurrent
-  populates of different relationships actually interleave on the event
-  loop instead of being serialized behind one giant deserialization.
-- Relationship-populate queries are now parameterized GraphQL — entity
-  ID, page, and per_page are bound as `$id: ID!`, `$page: Int!`,
-  `$per_page: Int!` variables. Closes a latent f-string injection at
-  `value: ["{entity.id}"]` that was unsafe for UUID-tagged unsaved
-  entities or any ID containing quote/brace characters.
+- `StashEntityStore._fetch_filter_query_relationship` now paginates internally (`STUB_QUERY_BATCH = 1000` per page) instead of issuing a single `per_page: -1` query. Each page-fetch awaits, so concurrent populates of different relationships actually interleave on the event loop instead of being serialized behind one giant deserialization.
+- Relationship-populate queries are now parameterized GraphQL — entity ID, page, and per_page are bound as `$id: ID!`, `$page: Int!`, `$per_page: Int!` variables. Closes a latent f-string injection at `value: ["{entity.id}"]` that was unsafe for UUID-tagged unsaved entities or any ID containing quote/brace characters.
 
 ### Fixed
 
-- Identity-map wrap validator now short-circuits when input data carries
-  only `{id, __typename}` — eliminates the per-item Pydantic-init tax
-  (`signature_no_eval` over four `PrivateAttr` `default_factory`
-  callables) for stub-shaped relationship-populate responses. Previously,
-  populating a 5,000-scene relationship paid the full handler+merge cycle
-  per item even though every item was a cache hit with nothing to merge.
-- `_fetch_filter_query_relationship` is now idempotent: a second call
-  for the same `(entity, field)` returns the existing list without
-  re-issuing a network request, gated on `_received_fields`.
-- Concurrent populates of the same relationship are serialized via
-  per-`(type_name, id, field_name)` `asyncio.Lock` with double-check
-  post-acquire — the second waiter sees the field already populated
-  and exits without a duplicate paginated fetch.
-- `_process_list_relationship` return annotation corrected to
-  `list[str | dict[str, Any]]` to match the actual mixed output
-  (strings for ID transforms, dicts for nested `BaseModel` transforms).
+- Identity-map wrap validator now short-circuits when input data carries only `{id, __typename}` — eliminates the per-item Pydantic-init tax (`signature_no_eval` over four `PrivateAttr` `default_factory` callables) for stub-shaped relationship-populate responses. Previously, populating a 5,000-scene relationship paid the full handler+merge cycle per item even though every item was a cache hit with nothing to merge.
+- `_fetch_filter_query_relationship` is now idempotent: a second call for the same `(entity, field)` returns the existing list without re-issuing a network request, gated on `_received_fields`.
+- Concurrent populates of the same relationship are serialized via per-`(type_name, id, field_name)` `asyncio.Lock` with double-check post-acquire — the second waiter sees the field already populated and exits without a duplicate paginated fetch.
+- `_process_list_relationship` return annotation corrected to `list[str | dict[str, Any]]` to match the actual mixed output (strings for ID transforms, dicts for nested `BaseModel` transforms).
 
 ## [0.12.2] - 2026-04-28
 
 ### Added
 
-- `custom_fields` side-mutation handler for Scene, Studio, Tag, Performer,
-  Image, Gallery, and Group — `entity.custom_fields = {...}` then `save()`
-  now diffs against snapshot and emits `CustomFieldsInput(partial=..., remove=...)`
-  via `__side_mutations__` (was silently dropped before)
-- `CustomFieldsInput` validators mirroring `pkg/sqlite/custom_fields.go`:
-  64-byte UTF-8 key limit, no whitespace, scalar-only values (rejects
-  dict/list with a `json.dumps()` hint), `full`+`partial` and `partial`+`remove`
-  conflicts rejected at construction
-- `StashCapabilityError` for per-feature appSchema gaps (distinct from
-  connect-time `StashVersionError`)
+- `custom_fields` side-mutation handler for Scene, Studio, Tag, Performer, Image, Gallery, and Group — `entity.custom_fields = {...}` then `save()` now diffs against snapshot and emits `CustomFieldsInput(partial=..., remove=...)` via `__side_mutations__` (was silently dropped before)
+- `CustomFieldsInput` validators mirroring `pkg/sqlite/custom_fields.go`: 64-byte UTF-8 key limit, no whitespace, scalar-only values (rejects dict/list with a `json.dumps()` hint), `full`+`partial` and `partial`+`remove` conflicts rejected at construction
+- `StashCapabilityError` for per-feature appSchema gaps (distinct from connect-time `StashVersionError`)
 - `StashClient.capabilities` public property (was `_capabilities`-only)
-- Base-fragment fields that exist at the v0.30.0 floor (no gate needed):
-  `sort_name`/`favorite`/`ignore_auto_tag` on Tag, `rating100`/`cover`/`chapters`
-  on Gallery, `rating100`/`o_counter` on Image
-- Invariant test: every `StashObject` subclass with a `custom_fields` field
-  must register the handler in both `__tracked_fields__` and `__side_mutations__`
+- Base-fragment fields that exist at the v0.30.0 floor (no gate needed): `sort_name`/`favorite`/`ignore_auto_tag` on Tag, `rating100`/`cover`/`chapters` on Gallery, `rating100`/`o_counter` on Image
+- Invariant test: every `StashObject` subclass with a `custom_fields` field must register the handler in both `__tracked_fields__` and `__side_mutations__`
 
 ### Changed
 
-- `_snapshot_value()` shallow-copies dicts (not just lists) so in-place
-  `entity.custom_fields[k] = v` mutation is detectable
+- `_snapshot_value()` shallow-copies dicts (not just lists) so in-place `entity.custom_fields[k] = v` mutation is detectable
 - `BulkStudioUpdateInput.organized` appSchema annotation corrected `>=84` → `>=80`
 
 ### Fixed
 
-- **#28** (id-only path): `Foo(id='1')` direct construction emitted Pydantic
-  `UserWarning: A custom validator is returning a value other than 'self'`
-  AND silently bypassed the identity-map (returned a fresh instance instead
-  of the cached one). New `_StashObjectMeta.__call__` intercepts the id-only
-  stub shape before Pydantic's pipeline runs. The multi-field cache-hit case
-  is closed in v0.12.4.
+- **#28** (id-only path): `Foo(id='1')` direct construction emitted Pydantic `UserWarning: A custom validator is returning a value other than 'self'` AND silently bypassed the identity-map (returned a fresh instance instead of the cached one). New `_StashObjectMeta.__call__` intercepts the id-only stub shape before Pydantic's pipeline runs. The multi-field cache-hit case is closed in v0.12.4.
 
 ## [0.12.1] - 2026-04-22
 
 ### Added
 
-- **Side Mutations user guide** (`docs/guide/side-mutations.md`): comprehensive coverage of
-  the `__side_mutations__` dict, `_queue_side_op()`, built-in handlers, bulk relationship
-  handler factory, interaction with `save_batch`, and custom handler subclassing
-- **Relationship DSL user guide** (`docs/guide/relationship-dsl.md`): covers `belongs_to` /
-  `habtm` / `has_many` / `has_many_through` with decision tree, auto-derivation behavior,
-  and an explicit note that `has_many_through` is **not** Rails-style `through: :model` —
-  here it means "through a wrapper input type carrying relationship-level metadata"
-  (e.g., `SceneGroupInput` with `scene_index`, `GroupDescriptionInput` with `description`)
-- **Narrative intros** on `docs/api/batch.md` and `docs/api/store.md` explaining the
-  three-layer batch API (`execute_batch` → `save_batch` → `save_all`) and cross-linking
-  the relevant guides
-- **"See also" admonition** at the top of
-  `docs/architecture/bidirectional-relationships.md` pointing readers at the new user-facing
-  DSL and side-mutations guides
-- **Module-level docstring** on `stash_graphql_client/client_helpers.py` describing
-  `async_lru_cache`, `normalize_str` / `str_compare`, and the `AsyncCachedFunction` protocol
-- `FromGraphQLMixin` added to `ConfigScrapingResult`, bringing it in line with all sibling
-  `ConfigXxxResult` classes (previously the only one without it)
+- **Side Mutations user guide** (`docs/guide/side-mutations.md`): comprehensive coverage of the `__side_mutations__` dict, `_queue_side_op()`, built-in handlers, bulk relationship handler factory, interaction with `save_batch`, and custom handler subclassing
+- **Relationship DSL user guide** (`docs/guide/relationship-dsl.md`): covers `belongs_to` / `habtm` / `has_many` / `has_many_through` with decision tree, auto-derivation behavior, and an explicit note that `has_many_through` is **not** Rails-style `through: :model` — here it means "through a wrapper input type carrying relationship-level metadata" (e.g., `SceneGroupInput` with `scene_index`, `GroupDescriptionInput` with `description`)
+- **Narrative intros** on `docs/api/batch.md` and `docs/api/store.md` explaining the three-layer batch API (`execute_batch` → `save_batch` → `save_all`) and cross-linking the relevant guides
+- **"See also" admonition** at the top of `docs/architecture/bidirectional-relationships.md` pointing readers at the new user-facing DSL and side-mutations guides
+- **Module-level docstring** on `stash_graphql_client/client_helpers.py` describing `async_lru_cache`, `normalize_str` / `str_compare`, and the `AsyncCachedFunction` protocol
+- `FromGraphQLMixin` added to `ConfigScrapingResult`, bringing it in line with all sibling `ConfigXxxResult` classes (previously the only one without it)
 - `BatchResult.__getitem__` / `__len__` / `__iter__`: one-line docstrings
 
 ### Changed
 
-- **Project-wide docstring rule**: `Returns:` and `Args:` sections for methods that
-  accept or return Pydantic types now name the type without bulleting its fields. The
-  type definition is the single source of truth. Eliminates the drift class that caused
-  issue #25 (`get_configuration()` docstring listed 6 of 7 `ConfigResult` fields, silently
-  omitting `plugins` after PR #26). Applied across ~35 mixin methods and 4 class-level
-  docstrings
-- **Entity class docstrings** for `SceneMarker`, `Tag`, `Image` rewritten from schema-echo
-  one-liners to behavioral-quirk summaries (relationship-object construction, hierarchical
-  - bulk-update side mutations, `visual_files` union + `o_counter` side handler +
-    scanner-only creation, respectively)
-- **Filter criterion class docstrings** (`IntCriterionInput`, `FloatCriterionInput`,
-  `StringCriterionInput`, `DateCriterionInput`, `TimestampCriterionInput`,
-  `MultiCriterionInput`, `HierarchicalMultiCriterionInput`, `PhashDistanceCriterionInput`,
-  `CustomFieldCriterionInput`) now describe modifier semantics, `value2` / `depth` /
-  `distance` meaning, and cross-reference `CriterionModifier`
-- **`fragments.py` module docstring** expanded to reflect the v0.12 `FragmentStore`
-  architecture and introspection-based version gating
-- **`PluginConfigMap` scalar alias**: inline comment documents the structure — outer key
-  is plugin ID, inner dict is that plugin's configuration
-- **`ScrapedTag.parent` inline comment** now annotates the field's introspection-gated
-  status (`ServerCapabilities.has_scraped_tag_parent`), consistent with sibling
-  `appSchema >=` annotations on the same class
+- **Project-wide docstring rule**: `Returns:` and `Args:` sections for methods that accept or return Pydantic types now name the type without bulleting its fields. The type definition is the single source of truth. Eliminates the drift class that caused issue #25 (`get_configuration()` docstring listed 6 of 7 `ConfigResult` fields, silently omitting `plugins` after PR #26). Applied across ~35 mixin methods and 4 class-level docstrings
+- **Entity class docstrings** for `SceneMarker`, `Tag`, `Image` rewritten from schema-echo one-liners to behavioral-quirk summaries (relationship-object construction, hierarchical
+  - bulk-update side mutations, `visual_files` union + `o_counter` side handler + scanner-only creation, respectively)
+- **Filter criterion class docstrings** (`IntCriterionInput`, `FloatCriterionInput`, `StringCriterionInput`, `DateCriterionInput`, `TimestampCriterionInput`, `MultiCriterionInput`, `HierarchicalMultiCriterionInput`, `PhashDistanceCriterionInput`, `CustomFieldCriterionInput`) now describe modifier semantics, `value2` / `depth` / `distance` meaning, and cross-reference `CriterionModifier`
+- **`fragments.py` module docstring** expanded to reflect the v0.12 `FragmentStore` architecture and introspection-based version gating
+- **`PluginConfigMap` scalar alias**: inline comment documents the structure — outer key is plugin ID, inner dict is that plugin's configuration
+- **`ScrapedTag.parent` inline comment** now annotates the field's introspection-gated status (`ServerCapabilities.has_scraped_tag_parent`), consistent with sibling `appSchema >=` annotations on the same class
 - Navigation entries for the new user guides registered in `mkdocs.yml`
 
 ### Fixed
 
-- `get_configuration()` docstring: `plugins` field now surfaced via the type reference
-  (previously omitted — the plugin-inspection example mis-directed users to `config.ui`,
-  the exact misdirection reported in issue #25)
-- `get_configuration()` examples: `databasePath` / `parallelTasks` / `scraperCertCheck`
-  corrected to snake_case attribute names (previous camelCase would raise `AttributeError`
-  at runtime — those are Pydantic serialization aliases, not accessors)
-- `Scene.rating100` and `Scene.o_counter`: removed misleading
-  `# not used in this client` inline comments. `rating100` IS used via
-  `__field_conversions__`; `o_counter` IS managed via the `_save_o` side handler
-- `reorder_sub_groups()` docstring example: syntax error (dict-key string mixed into a
-  keyword-argument call) corrected — would have raised `SyntaxError` if copy-pasted
+- `get_configuration()` docstring: `plugins` field now surfaced via the type reference (previously omitted — the plugin-inspection example mis-directed users to `config.ui`, the exact misdirection reported in issue #25)
+- `get_configuration()` examples: `databasePath` / `parallelTasks` / `scraperCertCheck` corrected to snake_case attribute names (previous camelCase would raise `AttributeError` at runtime — those are Pydantic serialization aliases, not accessors)
+- `Scene.rating100` and `Scene.o_counter`: removed misleading `# not used in this client` inline comments. `rating100` IS used via `__field_conversions__`; `o_counter` IS managed via the `_save_o` side handler
+- `reorder_sub_groups()` docstring example: syntax error (dict-key string mixed into a keyword-argument call) corrected — would have raised `SyntaxError` if copy-pasted
 - `find_tags()` docstring: empty trailing `Note:` block removed
-- `README.md` Quick Example: wrapped in `async def main()` + `asyncio.run(main())` with
-  correct indentation (previously would not run — bare `await` at module scope)
-- `docs/guide/getting-started.md` Stash version floor: raised from "v0.25.0+" to
-  "v0.30.0+ (appSchema 75+); currently tracking v0.31.x" to match the hard floor in
-  `capabilities.MIN_SUPPORTED_APP_SCHEMA = 75`
-- `tests/integration/test_subscription_integration`: assertion no longer requires
-  `JobStatus.FINISHED` — any terminal state (`FINISHED` / `CANCELLED` / `FAILED`) passes,
-  since `metadata_generate(covers=True)` against an empty test Stash legitimately ends
-  `CANCELLED`. Also collapsed a dead-code branch in the break logic
-- `tests/integration/test_find_scenes_with_pagination`: removed racy cross-query count
-  comparison. Per-query invariants (`page size ≤ per_page`, `count ≥ page size`) replace
-  the tolerance-based total-count check that couldn't survive parallel test activity
+- `README.md` Quick Example: wrapped in `async def main()` + `asyncio.run(main())` with correct indentation (previously would not run — bare `await` at module scope)
+- `docs/guide/getting-started.md` Stash version floor: raised from "v0.25.0+" to "v0.30.0+ (appSchema 75+); currently tracking v0.31.x" to match the hard floor in `capabilities.MIN_SUPPORTED_APP_SCHEMA = 75`
+- `tests/integration/test_subscription_integration`: assertion no longer requires `JobStatus.FINISHED` — any terminal state (`FINISHED` / `CANCELLED` / `FAILED`) passes, since `metadata_generate(covers=True)` against an empty test Stash legitimately ends `CANCELLED`. Also collapsed a dead-code branch in the break logic
+- `tests/integration/test_find_scenes_with_pagination`: removed racy cross-query count comparison. Per-query invariants (`page size ≤ per_page`, `count ≥ page size`) replace the tolerance-based total-count check that couldn't survive parallel test activity
 
 ## [0.12.0] - 2026-04-15
 
 ### Added
 
-- **Generic `__side_mutations__` mechanism on `StashObject`**: Fields persisted via separate GraphQL
-  mutations instead of the main create/update input. Handlers fire AFTER the main mutation so new
-  objects have their real server ID. Multiple fields sharing the same handler are deduplicated by
-  identity
-- **Queued side operations** (`_pending_side_ops`): Entity methods can queue async closures via
-  `_queue_side_op()` that fire during `save()` after field-based side mutations. Enables operations
-  like `scene.reset_play_count()` or `scene.generate_screenshot()` that don't map to a trackable
-  field change
+- **Generic `__side_mutations__` mechanism on `StashObject`**: Fields persisted via separate GraphQL mutations instead of the main create/update input. Handlers fire AFTER the main mutation so new objects have their real server ID. Multiple fields sharing the same handler are deduplicated by identity
+- **Queued side operations** (`_pending_side_ops`): Entity methods can queue async closures via `_queue_side_op()` that fire during `save()` after field-based side mutations. Enables operations like `scene.reset_play_count()` or `scene.generate_screenshot()` that don't map to a trackable field change
 - **Side mutation implementations**:
   - `Gallery.cover`: `setGalleryCover` / `resetGalleryCover`
-  - `Gallery.images`: `addGalleryImages` / `removeGalleryImages` with `add_image()` /
-    `remove_image()` convenience methods and automatic inverse sync
+  - `Gallery.images`: `addGalleryImages` / `removeGalleryImages` with `add_image()` / `remove_image()` convenience methods and automatic inverse sync
   - `Scene.resume_time` + `Scene.play_duration`: `sceneSaveActivity` (deduplicated handler)
   - `Scene.o_counter` + `Scene.o_history`: `sceneAddO` / `sceneDeleteO` (list-diff handler)
   - `Scene.play_count` + `Scene.play_history`: `sceneAddPlay` / `sceneDeletePlay`
   - `Image.o_counter`: `imageIncrementO` / `imageDecrementO` / `imageResetO` (delta-computing)
-  - Scene queued operations: `reset_play_count()`, `reset_o()`, `reset_activity()`,
-    `generate_screenshot()`
-- **Bulk-update side mutations** for bidirectional relationship writes where the upstream API has
-  no direct write path from the entity's side:
+  - Scene queued operations: `reset_play_count()`, `reset_o()`, `reset_activity()`, `generate_screenshot()`
+- **Bulk-update side mutations** for bidirectional relationship writes where the upstream API has no direct write path from the entity's side:
   - `Performer`: `scenes` / `galleries` / `images` via bulk updates with `performer_ids`
   - `Studio`: `scenes` / `images` / `galleries` / `groups` via bulk updates with scalar `studio_id`
-  - `Tag`: `scenes` / `images` / `galleries` / `performers` / `groups` / `scene_markers` via bulk
-    updates with `tag_ids` — all 6 content types
-- **`_make_bulk_relationship_handler()` factory** on `StashObject`: shared diff + bulk-update logic
-  with configurable `batch_size` (default 500, respects SQLite's `SQLITE_MAX_VARIABLE_NUMBER`)
-- **`StashObject` ID validator**: `id` field now enforces numeric-string or UUID4 format via
-  `@field_validator`, matching actual Stash server behavior
+  - `Tag`: `scenes` / `images` / `galleries` / `performers` / `groups` / `scene_markers` via bulk updates with `tag_ids` — all 6 content types
+- **`_make_bulk_relationship_handler()` factory** on `StashObject`: shared diff + bulk-update logic with configurable `batch_size` (default 500, respects SQLite's `SQLITE_MAX_VARIABLE_NUMBER`)
+- **`StashObject` ID validator**: `id` field now enforces numeric-string or UUID4 format via `@field_validator`, matching actual Stash server behavior
 - **Batched GraphQL mutations** — collapse N individual mutations into a single aliased HTTP request:
-  - `client.execute_batch(operations)`: low-level API with automatic chunking (`max_batch_size=250`),
-    per-operation error mapping, and `_convert_datetime()` pre-processing
-  - `store.save_batch(objects)`: entity-aware batch save with cascade saves, creates-before-updates
-    ordering, UUID→real-ID cache key remapping, and sequential per-entity side mutations
-  - `store.save_all()`: ORM flush — scans identity map for dirty/new entities, delegates to
-    `save_batch()`
-- **`BatchOperation`**, **`BatchResult`**, and **`StashBatchError`** in
-  `stash_graphql_client.client.batch`
-- **`return_fields` override on all bulk update methods**: `bulk_image_update()`,
-  `bulk_scene_update()`, `bulk_gallery_update()`, `bulk_group_update()`,
-  `bulk_performer_update()`, `bulk_studio_update()`, `bulk_scene_marker_update()` now accept
-  an optional `return_fields` keyword argument, avoiding server-side resolution of all
-  relationship fields for every entity in the batch
-- **ActiveRecord-style relationship DSL**: new factory helpers `belongs_to()`, `habtm()`,
-  `has_many()`, and `has_many_through()` for declaring `__relationships__` with minimal
-  boilerplate. Auto-derives `target_field`, `query_field`, and `filter_query_hint` via
-  `__init_subclass__`
-- **`populate()` filter-query resolution**: `StashEntityStore.populate()` now detects
-  `filter_query` strategy relationships (e.g., `Tag.scenes`, `Studio.scenes`) and fetches
-  them via lightweight `find*` queries resolved through the identity map cache
-- **Configurable client timeout**: `StashClientBase` reads a `Timeout` key from the connection
-  dict (default 30s) and propagates it to all transports
-- **`plugins` field on `ConfigResult`**: Exposes `plugins: PluginConfigMap` from the GraphQL
-  schema for retrieval of per-plugin configuration maps (closes #25, ports PR #26)
-- **`ScrapedTag.parent` field**: Introspection-gated via `has_scraped_tag_parent` capability
-  for tag hierarchy support in scraped data (stashapp/stash#6620)
-- **`Folder.sub_folders` field**: Introspection-gated via `has_folder_sub_folders` capability
-  (Stash v0.31.0+, stashapp/stash#6494)
-- **Documentation**: Batched Mutations user guide, Batch Operations API reference,
-  architecture design history document
+  - `client.execute_batch(operations)`: low-level API with automatic chunking (`max_batch_size=250`), per-operation error mapping, and `_convert_datetime()` pre-processing
+  - `store.save_batch(objects)`: entity-aware batch save with cascade saves, creates-before-updates ordering, UUID→real-ID cache key remapping, and sequential per-entity side mutations
+  - `store.save_all()`: ORM flush — scans identity map for dirty/new entities, delegates to `save_batch()`
+- **`BatchOperation`**, **`BatchResult`**, and **`StashBatchError`** in `stash_graphql_client.client.batch`
+- **`return_fields` override on all bulk update methods**: `bulk_image_update()`, `bulk_scene_update()`, `bulk_gallery_update()`, `bulk_group_update()`, `bulk_performer_update()`, `bulk_studio_update()`, `bulk_scene_marker_update()` now accept an optional `return_fields` keyword argument, avoiding server-side resolution of all relationship fields for every entity in the batch
+- **ActiveRecord-style relationship DSL**: new factory helpers `belongs_to()`, `habtm()`, `has_many()`, and `has_many_through()` for declaring `__relationships__` with minimal boilerplate. Auto-derives `target_field`, `query_field`, and `filter_query_hint` via `__init_subclass__`
+- **`populate()` filter-query resolution**: `StashEntityStore.populate()` now detects `filter_query` strategy relationships (e.g., `Tag.scenes`, `Studio.scenes`) and fetches them via lightweight `find*` queries resolved through the identity map cache
+- **Configurable client timeout**: `StashClientBase` reads a `Timeout` key from the connection dict (default 30s) and propagates it to all transports
+- **`plugins` field on `ConfigResult`**: Exposes `plugins: PluginConfigMap` from the GraphQL schema for retrieval of per-plugin configuration maps (closes #25, ports PR #26)
+- **`ScrapedTag.parent` field**: Introspection-gated via `has_scraped_tag_parent` capability for tag hierarchy support in scraped data (stashapp/stash#6620)
+- **`Folder.sub_folders` field**: Introspection-gated via `has_folder_sub_folders` capability (Stash v0.31.0+, stashapp/stash#6494)
+- **Documentation**: Batched Mutations user guide, Batch Operations API reference, architecture design history document
 
 ### Changed
 
-- All entity types refactored from verbose `RelationshipMetadata(...)` declarations to the
-  new DSL helpers (`belongs_to`, `habtm`, `has_many`, `has_many_through`)
-- `populate()` now separates direct fields from filter-query fields, fetching each category
-  through the appropriate strategy
-- Side mutation handlers use `return_fields="id __typename"` for all bulk calls, significantly
-  reducing server load on large bulk relationship writes
-- Delayed `StashInput` unknown-field enforcement (`extra="forbid"`) from v0.12.0 to v0.13.0;
-  deprecation warnings updated accordingly
+- All entity types refactored from verbose `RelationshipMetadata(...)` declarations to the new DSL helpers (`belongs_to`, `habtm`, `has_many`, `has_many_through`)
+- `populate()` now separates direct fields from filter-query fields, fetching each category through the appropriate strategy
+- Side mutation handlers use `return_fields="id __typename"` for all bulk calls, significantly reducing server load on large bulk relationship writes
+- Delayed `StashInput` unknown-field enforcement (`extra="forbid"`) from v0.12.0 to v0.13.0; deprecation warnings updated accordingly
 - Bumped ruff pre-commit hook v0.15.7 → v0.15.10
 - CI: test matrix expanded to Python 3.14 and 3.15 (prerelease)
 - CI: `codecov/codecov-action` upgraded v5 → v6
@@ -879,7 +745,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...HEAD
+[0.12.6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.2...v0.12.3
