@@ -139,8 +139,11 @@ Until Stash removes or makes these arguments optional, `fetch_schema_from_transp
 | career_start/end (column change) | Config fields (sprite settings, disableCustomizations) |
 | Studio organized (column)        | Filter type renames (PHash -> Duplication)             |
 | Folder basename (column + index) | New scan options (imagePhashes)                        |
+| (resolver-only additions)        | File reverse resolvers (VideoFile.scenes, #6938)       |
 
 For non-appSchema features, the client now uses `__schema` introspection. Lookup methods on `ServerCapabilities` (`has_mutation()`, `has_query()`, `has_type()`, `type_has_field()`, `input_has_field()`) provide dynamic queries against the parsed schema data.
+
+Some capability properties are therefore **introspection-gated** rather than appSchema-derived — `has_folder_sub_folders`, `has_scraped_tag_parent`, and `has_file_reverse_relationships` each check `type_has_field(...)`. These features add GraphQL resolvers over existing data (no migration), so appSchema never moves for them; only introspection can detect them.
 
 ## Components
 

@@ -18,48 +18,52 @@ All type validation issues identified during the v0.10.7 investigation have been
 
 ### High Impact Issues (3/3 RESOLVED)
 
-| Issue | Status | Resolved In | Evidence |
-|-------|--------|-------------|----------|
-| **#1: Dict Structure Validation** | ✅ RESOLVED | v0.10.8 | All 50+ methods now validate dict inputs through Pydantic with type checking |
-| **#2: Path/String Confusion** | ✅ RESOLVED | v0.10.8 | Added OSError handling, Path support, and StashConfigurationError for protected paths |
-| **#3: CIMultiDict Type Mismatch** | ✅ RESOLVED | v0.10.8 | Converted to normalization-only usage, returns proper dict types |
+| Issue                             | Status      | Resolved In | Evidence                                                                              |
+| --------------------------------- | ----------- | ----------- | ------------------------------------------------------------------------------------- |
+| **#1: Dict Structure Validation** | ✅ RESOLVED | v0.10.8     | All 50+ methods now validate dict inputs through Pydantic with type checking          |
+| **#2: Path/String Confusion**     | ✅ RESOLVED | v0.10.8     | Added OSError handling, Path support, and StashConfigurationError for protected paths |
+| **#3: CIMultiDict Type Mismatch** | ✅ RESOLVED | v0.10.8     | Converted to normalization-only usage, returns proper dict types                      |
 
 ### Medium Impact Issues (3/3 RESOLVED)
 
-| Issue | Status | Resolved In | Evidence |
-|-------|--------|-------------|----------|
-| **#4: Bool Conversion Patterns** | ✅ RESOLVED | v0.10.8 | Standardized 40 methods to use `is True` identity checking |
-| **#5: _parse_obj_for_ID() Validation** | ✅ RESOLVED | Unknown | Added positive ID validation and proper error handling |
-| **#6: Optional/None Handling** | ✅ RESOLVED | v0.10.8, v0.10.10 | Config validation added, dict.get() patterns fixed across 25 instances |
+| Issue                                   | Status      | Resolved In       | Evidence                                                               |
+| --------------------------------------- | ----------- | ----------------- | ---------------------------------------------------------------------- |
+| **#4: Bool Conversion Patterns**        | ✅ RESOLVED | v0.10.8           | Standardized 40 methods to use `is True` identity checking             |
+| **#5: \_parse_obj_for_ID() Validation** | ✅ RESOLVED | Unknown           | Added positive ID validation and proper error handling                 |
+| **#6: Optional/None Handling**          | ✅ RESOLVED | v0.10.8, v0.10.10 | Config validation added, dict.get() patterns fixed across 25 instances |
 
 ### Low Impact Issues (5/5 RESOLVED)
 
-| Issue | Status | Resolved In | Evidence |
-|-------|--------|-------------|----------|
-| **#7: MIME Type Defaults** | ✅ RESOLVED | Unknown | Now validates file is image type instead of defaulting to "image/jpeg" |
-| **#8.1: Direction Validation** | ✅ RESOLVED | Unknown | Added `_normalize_sort_direction()` with enum and string validation |
-| **#8.2: SystemStatusEnum** | ✅ RESOLVED | N/A | False positive - Pydantic handles enum conversion correctly |
-| **#9: List Element Validation** | ✅ RESOLVED | Unknown | Changed from `list[str]` to `list[Timestamp]` with Pydantic validators |
-| **#10: Image Index Validation** | ✅ RESOLVED | Unknown | Added non-negative validation for image_index parameters |
-| **#11: verify_ssl Bool Wrapping** | ✅ RESOLVED | v0.10.8 | String coercion with validation for "true"/"false" strings |
+| Issue                             | Status      | Resolved In | Evidence                                                               |
+| --------------------------------- | ----------- | ----------- | ---------------------------------------------------------------------- |
+| **#7: MIME Type Defaults**        | ✅ RESOLVED | Unknown     | Now validates file is image type instead of defaulting to "image/jpeg" |
+| **#8.1: Direction Validation**    | ✅ RESOLVED | Unknown     | Added `_normalize_sort_direction()` with enum and string validation    |
+| **#8.2: SystemStatusEnum**        | ✅ RESOLVED | N/A         | False positive - Pydantic handles enum conversion correctly            |
+| **#9: List Element Validation**   | ✅ RESOLVED | Unknown     | Changed from `list[str]` to `list[Timestamp]` with Pydantic validators |
+| **#10: Image Index Validation**   | ✅ RESOLVED | Unknown     | Added non-negative validation for image_index parameters               |
+| **#11: verify_ssl Bool Wrapping** | ✅ RESOLVED | v0.10.8     | String coercion with validation for "true"/"false" strings             |
 
 ### Key Improvements Across All Versions
 
 **v0.10.8** - Systematic Validation Overhaul:
+
 - Dict input validation through Pydantic (50+ methods)
 - Config hardening (scheme, port, verify_ssl)
 - Protected path blocking with StashConfigurationError
 - Bool return pattern standardization (40 methods)
 
 **v0.10.9** - Documentation:
+
 - Updated CHANGELOG with v0.10.8 release notes
 
 **v0.10.10** - None-Handling Refinement:
+
 - Fixed 25 instances of incorrect `dict.get("field", None)` usage
 - GraphQL now correctly distinguishes explicit null from missing fields
 - 100% branch coverage achieved for validation patterns
 
 **Unknown Versions** - Additional Fixes:
+
 - ID validation with positive integer checks
 - MIME type validation for image files
 - Direction parameter validation
@@ -73,12 +77,14 @@ All type validation issues identified during the v0.10.7 investigation have been
 This document demonstrates the codebase's shift from "fail late at GraphQL" to "fail early with clear errors":
 
 **Before (v0.10.7 and earlier)**:
+
 - Accept any dict structure → silent GraphQL failures
 - No validation on IDs, ranges, or types
 - Inconsistent patterns across 40+ methods
 - Type coercion without validation
 
 **After (v0.10.10+)**:
+
 - Pydantic validation for all dict inputs
 - Positive validation for IDs and ranges
 - Consistent `is True` pattern for booleans
@@ -115,12 +121,14 @@ This document tracks non-critical type validation issues discovered during the v
 **Pattern**: Methods accept `SomeType | dict[str, Any]` but perform no structural validation.
 
 **Files Affected**:
+
 - `stash_graphql_client/client/mixins/marker.py` line 211
 - `stash_graphql_client/client/mixins/image.py` line 207
 - `stash_graphql_client/client/mixins/gallery.py` line 435
 - 17+ additional methods across other mixins
 
 **Problem** (Historical):
+
 ```python
 # marker.py:244-248
 if isinstance(input_data, BulkSceneMarkerUpdateInput):
@@ -132,6 +140,7 @@ else:
 **Impact**: Silent failures at GraphQL layer if dict has wrong keys or missing required fields.
 
 **Resolution (v0.10.8)**:
+
 ```python
 if isinstance(input_data, BulkSceneMarkerUpdateInput):
     input_dict = input_data.to_graphql()
@@ -148,6 +157,7 @@ else:
 ```
 
 **Benefits**:
+
 - Type checking prevents passing wrong types
 - Pydantic validation catches field type errors
 - Clear error messages for missing required fields
@@ -166,6 +176,7 @@ else:
 **File**: `stash_graphql_client/types/performer.py` lines 261-269
 
 **Resolution (v0.10.8)**:
+
 ```python
 # Convert path to Path object with error handling
 try:
@@ -179,6 +190,7 @@ except (OSError, TypeError) as e:
 ```
 
 **Benefits**:
+
 - Catches invalid path characters (null bytes, etc.) with clear error message
 - Validates path exists and is a file (not directory)
 - Proper error chaining with `from e`
@@ -195,6 +207,7 @@ except (OSError, TypeError) as e:
 **File**: `stash_graphql_client/client/mixins/system_query.py` lines 161-198
 
 **Resolution (v0.10.8)**:
+
 ```python
 async def directory(
     self, path: str | Path | None = None, locale: str = "en"
@@ -214,6 +227,7 @@ async def directory(
 ```
 
 **Benefits**:
+
 - Type annotation now accepts `str | Path | None`
 - Docstring clarifies Path object support
 - Automatic Path → string conversion for GraphQL
@@ -256,6 +270,7 @@ def _reject_path_modifications(self):
 **New Error Type**: Created `StashConfigurationError` in `errors.py` for configuration safety
 
 **Benefits**:
+
 - Prevents accidental path corruption during testing (addresses reported issue)
 - Clear error message directing users to Stash web UI
 - Protects 12 critical server-side paths from client modification
@@ -274,6 +289,7 @@ def _reject_path_modifications(self):
 **Original Concern**: CIMultiDict was stored and passed to StashClient, causing type checker mismatch.
 
 **Resolution**:
+
 - **v0.8.2** introduced CIMultiDict to fix case-sensitivity bug (lowercase `scheme`/`host`/`port`/`apikey` now work)
 - **v0.10.8** improved implementation: CIMultiDict now used only for normalization, converted to regular dict with canonical keys
 - Users can pass any case (`scheme`, `Scheme`, `SCHEME`), stored as canonical `Scheme`
@@ -281,6 +297,7 @@ def _reject_path_modifications(self):
 - Preserves v0.8.2 case-insensitive input behavior
 
 **Implementation**:
+
 ```python
 @staticmethod
 def _normalize_conn_keys(conn: dict[str, Any]) -> dict[str, Any]:
@@ -325,6 +342,7 @@ def _normalize_conn_keys(conn: dict[str, Any]) -> dict[str, Any]:
 **Pattern 3**: `bool(result[...])` - bracket access, could raise KeyError
 
 **Resolution (v0.10.8)**: All 40 methods now use **Pattern 1c** (identity checking):
+
 ```python
 def destroy_tag(self, id: str) -> bool:
     result = self._graphql_call(...)
@@ -332,6 +350,7 @@ def destroy_tag(self, id: str) -> bool:
 ```
 
 **Why Pattern 1c is best**:
+
 - **Identity checking**: Uses `is True` for exact boolean matching (not truthy values)
 - **No coercion**: Doesn't convert 1, "yes", or other truthy values to True
 - **Handles None**: `result.get("key")` returns None by default, `None is True` evaluates to False
@@ -343,13 +362,14 @@ def destroy_tag(self, id: str) -> bool:
 
 ---
 
-### 5. ~~_parse_obj_for_ID() Int Conversion~~ (RESOLVED)
+### 5. ~~\_parse_obj_for_ID() Int Conversion~~ (RESOLVED)
 
 **Status**: ✅ **RESOLVED** - ID validation with positive checks and error handling
 
 **File**: `stash_graphql_client/client/base.py` lines 505-516
 
 **Problem** (Historical):
+
 ```python
 def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
     if isinstance(param, str):
@@ -366,11 +386,13 @@ def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
 ```
 
 **Issues**:
+
 1. No validation that ID is positive
 2. `.get()` returns None if key missing, then `int(None)` raises TypeError
 3. Bracket notation `param["stored_id"]` after `.get()` check is redundant
 
 **Resolution**:
+
 ```python
 def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
     if isinstance(param, str):
@@ -396,6 +418,7 @@ def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
 ```
 
 **Benefits**:
+
 - Validates IDs are positive integers
 - Proper TypeError and ValueError handling
 - Error chaining with `from e`
@@ -414,6 +437,7 @@ def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
 **File**: `stash_graphql_client/client/base.py` lines 136-163
 
 **Resolution (v0.10.8)**:
+
 - **Scheme**: ✅ Validated (must be "http" or "https")
 - **Port**: ✅ Already validated in v0.10.7 (int or numeric string, 0-65535)
 - **verify_ssl**: ✅ Already validated in v0.10.8 (bool or string coercion)
@@ -421,6 +445,7 @@ def _parse_obj_for_ID(self, param: Any, str_key: str = "name") -> Any:
 - **Host**: ✅ No validation needed - can be IPv4, IPv6, shortname, or FQDN
 
 **Implementation**:
+
 ```python
 # Validate Scheme
 scheme = conn.get("Scheme", "http")
@@ -430,6 +455,7 @@ self.scheme = scheme
 ```
 
 **Logger Duck Typing Rationale**:
+
 - Logger only needs `.debug()`, `.info()`, `.warning()`, `.error()` methods
 - Validates `isinstance(logger, logging.Logger)` would prevent using loguru, structlog, etc.
 - Duck typing provides flexibility while maintaining safety
@@ -446,6 +472,7 @@ self.scheme = scheme
 **File**: `stash_graphql_client/client/mixins/marker.py` line 74
 
 **Analysis**:
+
 ```python
 async def find_markers(
     self,
@@ -461,6 +488,7 @@ async def find_markers(
 ```
 
 **Why it's OK**:
+
 - GraphQL transparently handles None values in variables
 - The `execute()` method filters out None values before sending to server
 - No TypeError occurs - this is expected behavior
@@ -478,6 +506,7 @@ async def find_markers(
 **File**: `stash_graphql_client/types/performer.py` lines 268-272
 
 **Problem** (Historical):
+
 ```python
 with open(path, "rb") as f:
     image_data = f.read()
@@ -490,6 +519,7 @@ mime = mimetypes.types_map.get(path.suffix, "image/jpeg")  # ❌ Default might b
 **Impact**: Very low (data URLs usually work regardless, browsers are forgiving)
 
 **Resolution**:
+
 ```python
 mime = mimetypes.types_map.get(path.suffix.lower())
 if not mime or not mime.startswith("image/"):
@@ -497,6 +527,7 @@ if not mime or not mime.startswith("image/"):
 ```
 
 **Benefits**:
+
 - No longer defaults to "image/jpeg"
 - Validates file has image MIME type
 - Case-insensitive suffix matching
@@ -514,6 +545,7 @@ if not mime or not mime.startswith("image/"):
 **Files**: Multiple mixins (tag.py, performer.py, etc.)
 
 **Problem** (Historical):
+
 - Documentation says "direction: SortDirectionEnum (ASC/DESC)"
 - But parameter typed as `str | None`
 - No validation that value is actually "ASC" or "DESC"
@@ -521,6 +553,7 @@ if not mime or not mime.startswith("image/"):
 **Impact**: User passes "ASCENDING" or "desc" (lowercase) → silent failure at GraphQL.
 
 **Resolution** (`base.py:552-568`):
+
 ```python
 def _normalize_sort_direction(self, filter_: dict[str, Any]) -> dict[str, Any]:
     if "direction" not in filter_:
@@ -542,6 +575,7 @@ def _normalize_sort_direction(self, filter_: dict[str, Any]) -> dict[str, Any]:
 ```
 
 **Benefits**:
+
 - Accepts SortDirectionEnum instances
 - Validates string values are exactly "ASC" or "DESC"
 - Clear error messages for invalid values
@@ -555,6 +589,7 @@ def _normalize_sort_direction(self, filter_: dict[str, Any]) -> dict[str, Any]:
 **File**: `stash_graphql_client/client/mixins/system_query.py` lines 80, 87
 
 **Problem**:
+
 ```python
 if status.status == SystemStatusEnum.NEEDS_MIGRATION:  # ❌ Assumes enum, might be string
 ```
@@ -574,6 +609,7 @@ if status.status == SystemStatusEnum.NEEDS_MIGRATION:  # ❌ Assumes enum, might
 **File**: `stash_graphql_client/client/mixins/scene.py` lines 774, 815, 981, 1022
 
 **Problem** (Historical):
+
 ```python
 async def scene_add_o(
     self,
@@ -585,6 +621,7 @@ async def scene_add_o(
 **Issue**: What format are the strings? Timestamps? ISO8601? No validation or documentation.
 
 **Resolution** (`scene.py:802-805`):
+
 ```python
 async def scene_add_o(
     self,
@@ -594,6 +631,7 @@ async def scene_add_o(
 ```
 
 **Timestamp Type** (`scalars.py:121-125`):
+
 ```python
 Timestamp = Annotated[
     datetime,
@@ -603,6 +641,7 @@ Timestamp = Annotated[
 ```
 
 **Benefits**:
+
 - Pydantic validates timestamp format
 - Supports RFC3339 strings
 - Supports relative times (e.g., "<4h" for 4 hours ago)
@@ -619,6 +658,7 @@ Timestamp = Annotated[
 **File**: `stash_graphql_client/client/mixins/gallery.py` lines 256, 309
 
 **Problem** (Historical):
+
 ```python
 async def gallery_chapter_create(
     self,
@@ -634,12 +674,14 @@ async def gallery_chapter_create(
 **Impact**: Negative or out-of-bounds indices might cause GraphQL errors.
 
 **Resolution** (`gallery.py:269-270`):
+
 ```python
 if image_index < 0:  # ✅ ADDED: Range validation
     raise ValueError(f"image_index must be non-negative, got {image_index}")
 ```
 
 **Benefits**:
+
 - Validates non-negative indices
 - Clear error messages
 - Fails early before GraphQL submission
@@ -657,6 +699,7 @@ if image_index < 0:  # ✅ ADDED: Range validation
 **Problem** (Historical): `bool(verify_ssl)` wrapper was redundant and couldn't handle string values correctly.
 
 **Resolution (v0.10.8)**: Implemented Option 2 - validate and coerce string values:
+
 ```python
 # Validate and convert verify_ssl to bool
 if isinstance(verify_ssl, str):
@@ -668,6 +711,7 @@ elif not isinstance(verify_ssl, bool):
 ```
 
 **Benefits**:
+
 - Accepts bool values: `True`, `False`
 - Accepts truthy strings: `"true"`, `"1"`, `"yes"` → True
 - Accepts falsy strings: `"false"`, `"0"`, `"no"`, etc. → False
@@ -680,21 +724,25 @@ elif not isinstance(verify_ssl, bool):
 ## Recommendations
 
 ### ~~Immediate Actions (Critical - Being Fixed)~~ ✅ COMPLETED
+
 1. ✅ Fix batch_size validation (ValueError prevention)
 2. ✅ Fix port type coercion (URL construction safety)
 3. ✅ Standardize bool return patterns (consistency + KeyError prevention)
 
 ### ~~Short-Term (Next Release)~~ ✅ COMPLETED
+
 4. ✅ Add dict structure validation for `SomeType | dict[str, Any]` parameters (v0.10.8)
 5. ✅ Fix Path/String confusion with better validation and error messages (v0.10.8)
 6. ✅ Validate config dict value types at initialization (v0.10.8)
 
 ### ~~Medium-Term (Future Releases)~~ ✅ COMPLETED
+
 7. ✅ Replace "direction: str" with actual Enum types (completed)
 8. ✅ Add validation for list element formats where critical (Timestamp type)
 9. ✅ Convert CIMultiDict to plain dict for type safety (v0.10.8)
 
 ### Long-Term (Technical Debt Cleanup) - ONGOING
+
 10. Consider using TypedDict for structured dict parameters
 11. Add mypy strict mode checks for parameter types
 12. Document expected types more explicitly in all docstrings
@@ -705,12 +753,14 @@ elif not isinstance(verify_ssl, bool):
 ## Testing Strategy
 
 For each fix:
+
 1. Add unit test with valid input (should pass)
 2. Add unit test with invalid input (should raise specific error)
 3. Add integration test if behavior affects GraphQL layer
 4. Document expected error messages in test names
 
 Example:
+
 ```python
 def test_batch_size_positive():
     """filter_and_populate should accept positive batch_size"""

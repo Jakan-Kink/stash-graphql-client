@@ -1,9 +1,6 @@
 # Relationship DSL
 
-Every `StashObject` subclass declares its relationships to other entities via
-a `__relationships__` class attribute. The DSL — four helper factories —
-produces `RelationshipMetadata` entries that drive save mutations, inverse
-synchronisation, lazy population, and `filter_and_populate` queries.
+Every `StashObject` subclass declares its relationships to other entities via a `__relationships__` class attribute. The DSL — four helper factories — produces `RelationshipMetadata` entries that drive save mutations, inverse synchronisation, lazy population, and `filter_and_populate` queries.
 
 ## The Four Helpers
 
@@ -13,22 +10,18 @@ from stash_graphql_client.types.base import belongs_to, habtm, has_many, has_man
 
 ### `belongs_to(inverse_type, *, inverse_query_field=...)`
 
-The FK side of a many-to-one. The entity _owns the write_ through a `*_id`
-field on its update input type.
+The FK side of a many-to-one. The entity _owns the write_ through a `*_id` field on its update input type.
 
 ```python
 "studio": belongs_to("Studio", inverse_query_field="scenes"),
 "parent_studio": belongs_to("Studio", inverse_query_field="child_studios"),
 ```
 
-The client writes `studio_id=<id>` on save. The inverse side (Studio.scenes)
-is auto-populated by the server after any scene update, so no coordination
-between sides is needed.
+The client writes `studio_id=<id>` on save. The inverse side (Studio.scenes) is auto-populated by the server after any scene update, so no coordination between sides is needed.
 
 ### `habtm(inverse_type, *, inverse_query_field=..., transform=...)`
 
-Many-to-many written as a **list of IDs**. The entity owns the write through
-a `*_ids` field on its update input.
+Many-to-many written as a **list of IDs**. The entity owns the write through a `*_ids` field on its update input.
 
 ```python
 "tags": habtm("Tag", inverse_query_field="scenes"),
@@ -36,9 +29,7 @@ a `*_ids` field on its update input.
 "parents": habtm("Tag", inverse_query_field="children"),  # self-referential
 ```
 
-The client writes `tag_ids=[...]`, `performer_ids=[...]`, and so on.
-`transform` converts the in-memory object into the exact input shape when the
-wire format isn't a plain ID list — see `Scene.stash_ids`:
+The client writes `tag_ids=[...]`, `performer_ids=[...]`, and so on. `transform` converts the in-memory object into the exact input shape when the wire format isn't a plain ID list — see `Scene.stash_ids`:
 
 ```python
 "stash_ids": habtm(
@@ -47,34 +38,41 @@ wire format isn't a plain ID list — see `Scene.stash_ids`:
 ),
 ```
 
-### `has_many(inverse_type, *, inverse_query_field=...)`
+### `has_many(inverse_type, *, inverse_query_field=..., query_strategy="filter_query")`
 
-The **read-only inverse side** of a relationship. No mutation input exists on
-this entity's update type; the field is populated by issuing a filter query
-against the inverse type.
+The **read-only inverse side** of a relationship. No mutation input exists on this entity's update type. `query_strategy` selects how the inverse list is read:
+
+- **`"filter_query"`** (default) — the server exposes no list resolver for this inverse (only a `*_count`, e.g. `Tag.scene_count`), so the client synthesizes one via `find{Type}(filter=...)`. A `filter_query_hint` is auto-derived.
+- **`"direct_field"`** — the server resolves the inverse natively as a nested list field (a real GraphQL resolver). The data arrives embedded in the parent's selection; no synthetic find query and no `filter_query_hint`.
 
 ```python
+# filter_query (default): Tag has scene_count only, no scenes resolver
 "scenes": has_many("Scene", inverse_query_field="tags"),
 "child_studios": has_many("Studio", inverse_query_field="parent_studio"),
+
+# direct_field: server resolves the nested list (e.g. VideoFile.scenes, #6938)
+"scenes": has_many("Scene", inverse_query_field="files",
+                   query_strategy="direct_field"),
 ```
 
-To fetch `tag.scenes`, the store calls
-`find_scenes(scene_filter={"tags": {"value": [tag.id], ...}})`. `populate()`
-and `filter_and_populate()` use this strategy automatically.
+To fetch `tag.scenes`, the store calls `find_scenes(scene_filter={"tags": {"value": [tag.id], ...}})`. `populate()` and `filter_and_populate()` use this strategy automatically.
 
-The `query_strategy` stored in the metadata is `"filter_query"`, and the
-`filter_query_hint` is auto-derived.
+#### Capability-adaptive direct fields (file reverse relationships)
+
+The file reverse relationships — `VideoFile.scenes`, `ImageFile.images`, `GalleryFile.galleries` (stashapp/stash #6938) — are declared `direct_field`, but their resolvers are **introspection-gated** (`ServerCapabilities.has_file_reverse_relationships`; no appSchema bump, since the PR added no migration). `populate()` adapts per server:
+
+- **resolver present** → fetched via `findFile` using a `... on VideoFile { scenes }` inline fragment (the field is subtype-only and `findFile` returns the `BaseFile` interface).
+- **resolver absent** (stable v0.30.x) → falls back to a filter query keyed by the file's **path** (`findScenes(scene_filter={path: {value, EQUALS}})`). Path is the join key because it is the identifier downstream consumers reliably hold. If the path can't be resolved, the field is left `UNSET`.
+
+Either way `file.scenes` is populated, so the feature works on stable servers that predate the resolvers.
 
 ### `has_many_through(inverse_type, *, transform, inverse_query_field=...)`
 
 !!! warning "Not Rails `through: :model`"
-This helper is **not** the Rails `has_many :through:` pattern. It does
-not name an intermediate model that joins two sides. It means
-**"through a wrapper input type that carries relationship-level metadata"**
-— ordering, descriptions, or similar per-edge data.
 
-Used when the relationship _itself_ has data attached. The wire format is a
-list of wrapper objects instead of a list of IDs.
+    This helper is **not** the Rails `has_many :through:` pattern. It does not name an intermediate model that joins two sides. It means **"through a wrapper input type that carries relationship-level metadata"** — ordering, descriptions, or similar per-edge data.
+
+Used when the relationship _itself_ has data attached. The wire format is a list of wrapper objects instead of a list of IDs.
 
 ```python
 # Scene.groups — each relation carries a scene_index (ordering)
@@ -96,9 +94,7 @@ list of wrapper objects instead of a list of IDs.
 ),
 ```
 
-`transform` is **required** here (unlike `habtm` where it's optional) because
-the wrapper input must be constructed explicitly. `query_strategy` is
-`"complex_object"`.
+`transform` is **required** here (unlike `habtm` where it's optional) because the wrapper input must be constructed explicitly. `query_strategy` is `"complex_object"`.
 
 ## Which Helper to Use
 
@@ -111,8 +107,7 @@ the wrapper input must be constructed explicitly. `query_strategy` is
 
 ## Auto-Derivation
 
-`RelationshipMetadata` has several fields you don't supply — they're resolved
-in `__init_subclass__` from the dict key and sibling metadata:
+`RelationshipMetadata` has several fields you don't supply — they're resolved in `__init_subclass__` from the dict key and sibling metadata:
 
 - **`query_field`** — the dict key itself (`"studio"` → `query_field="studio"`).
 - **`target_field`** — auto-derived by helper:
@@ -120,11 +115,10 @@ in `__init_subclass__` from the dict key and sibling metadata:
   - `habtm`: singularize(key) + `"_ids"` (e.g. `tags` → `tag_ids`, `galleries` → `gallery_ids`)
   - `has_many_through`: key as-is (the wrapper list field keeps its plural name)
   - `has_many`: `""` (no mutation input — read-only)
-- **`filter_query_hint`** (for `has_many`) — derived from `inverse_type` +
-  owner type to produce the right `find_X_filter={"owner_field": {...}}` shape.
 
-You can override any of these explicitly when the convention doesn't fit, but
-the idiomatic code relies on the derivation.
+- **`filter_query_hint`** (for `has_many`) — derived from `inverse_type` + owner type to produce the right `find_X_filter={"owner_field": {...}}` shape.
+
+You can override any of these explicitly when the convention doesn't fit, but the idiomatic code relies on the derivation.
 
 ## Full Example
 
@@ -173,31 +167,17 @@ class Author(StashObject):
 
 With this declaration alone, the following all work:
 
-- `author.genres.append(sci_fi)` then `author.save(client)` → sends
-  `genre_ids` on the author update.
+- `author.genres.append(sci_fi)` then `author.save(client)` → sends `genre_ids` on the author update.
 - `author.publisher = new_pub; author.save(client)` → sends `publisher_id`.
-- `await store.populate(author, ["reviews"])` → issues
-  `find_reviews(filter={"author": {"value": [author.id]}})` and attaches the
-  results to `author.reviews`.
-- `await store.filter_and_populate(Author, filter={...}, fields=["books__book__title"])`
-  → batched filter + nested population across the `has_many_through`.
+- `await store.populate(author, ["reviews"])` → issues `find_reviews(filter={"author": {"value": [author.id]}})` and attaches the results to `author.reviews`.
+- `await store.filter_and_populate(Author, filter={...}, fields=["books__book__title"])` → batched filter + nested population across the `has_many_through`.
 
 ## Interaction with Save and Side Mutations
 
-For most relationship fields, `save()` just translates the relationship list
-into its `target_field` on the update input. Some fields — content
-relationships on `Tag`, `cover` on `Gallery` — are declared as
-`has_many` (read-only) here because the _owning_ entity writes them, but the
-user experience needs to feel writable. Those fields are handled by
-[side mutations](side-mutations.md): assignments trigger bulk-update calls on
-the inverse entity.
+For most relationship fields, `save()` just translates the relationship list into its `target_field` on the update input. Some fields — content relationships on `Tag`, `cover` on `Gallery` — are declared as `has_many` (read-only) here because the _owning_ entity writes them, but the user experience needs to feel writable. Those fields are handled by [side mutations](side-mutations.md): assignments trigger bulk-update calls on the inverse entity.
 
 ## See Also
 
-- [Side Mutations](side-mutations.md) — the mechanism that backs
-  "writable" `has_many` fields like `Tag.scenes`.
-- [Bidirectional Relationships](../architecture/bidirectional-relationships.md)
-  — architectural rationale for how these relationships stay in sync without
-  dual mutations.
-- [Batched Mutations](batched-mutations.md) — how relationship updates batch
-  when multiple entities are saved together.
+- [Side Mutations](side-mutations.md) — the mechanism that backs "writable" `has_many` fields like `Tag.scenes`.
+- [Bidirectional Relationships](../architecture/bidirectional-relationships.md) — architectural rationale for how these relationships stay in sync without dual mutations.
+- [Batched Mutations](batched-mutations.md) — how relationship updates batch when multiple entities are saved together.

@@ -87,18 +87,18 @@ async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
 
 ### Feature Comparison
 
-| Feature | Raw gql | stash-graphql-client |
-|---------|---------|---------------------|
-| **Query construction** | Manual string building | Method calls (`client.find_scene()`) |
-| **Type safety** | None (runtime dicts) | Full Pydantic validation |
-| **IDE autocomplete** | No | Yes (all fields, methods) |
-| **Response parsing** | Dict navigation | Pydantic models |
-| **Mutation building** | Manual GraphQL strings | `.save()` / `.delete()` methods |
-| **Partial updates** | Include all fields or manual tracking | UNSET pattern (automatic) |
-| **Object identity** | Manual tracking | Automatic identity map |
-| **Relationship handling** | Manual dict navigation | Pydantic models with bidirectional sync |
-| **Error detection** | Runtime (wrong keys, types) | Development time (Pydantic validation) |
-| **Code volume** | ~40-50 lines for basic CRUD | ~5-10 lines for same operations |
+| Feature                   | Raw gql                               | stash-graphql-client                    |
+| ------------------------- | ------------------------------------- | --------------------------------------- |
+| **Query construction**    | Manual string building                | Method calls (`client.find_scene()`)    |
+| **Type safety**           | None (runtime dicts)                  | Full Pydantic validation                |
+| **IDE autocomplete**      | No                                    | Yes (all fields, methods)               |
+| **Response parsing**      | Dict navigation                       | Pydantic models                         |
+| **Mutation building**     | Manual GraphQL strings                | `.save()` / `.delete()` methods         |
+| **Partial updates**       | Include all fields or manual tracking | UNSET pattern (automatic)               |
+| **Object identity**       | Manual tracking                       | Automatic identity map                  |
+| **Relationship handling** | Manual dict navigation                | Pydantic models with bidirectional sync |
+| **Error detection**       | Runtime (wrong keys, types)           | Development time (Pydantic validation)  |
+| **Code volume**           | ~40-50 lines for basic CRUD           | ~5-10 lines for same operations         |
 
 ### When to Use Raw gql
 
@@ -124,16 +124,16 @@ Apollo Client is the most popular GraphQL client for JavaScript/TypeScript. Here
 
 ### Architecture Comparison
 
-| Component | Apollo Client | stash-graphql-client |
-|-----------|--------------|---------------------|
-| **Language** | JavaScript/TypeScript | Python |
-| **Type system** | TypeScript (compile-time) | Pydantic (runtime validation) |
-| **Caching** | InMemoryCache (separate layer) | Wrap validators (integrated) |
-| **Cache normalization** | Refs to normalized objects | Direct object references |
-| **Cache writes** | `cache.writeQuery()` | Automatic in constructor |
-| **Cache reads** | `cache.readQuery()` | Automatic object reuse |
-| **Optimistic updates** | Manual configuration | Not built-in (manual for now) |
-| **Subscriptions** | Via graphql-ws | Via websockets transport |
+| Component               | Apollo Client                  | stash-graphql-client          |
+| ----------------------- | ------------------------------ | ----------------------------- |
+| **Language**            | JavaScript/TypeScript          | Python                        |
+| **Type system**         | TypeScript (compile-time)      | Pydantic (runtime validation) |
+| **Caching**             | InMemoryCache (separate layer) | Wrap validators (integrated)  |
+| **Cache normalization** | Refs to normalized objects     | Direct object references      |
+| **Cache writes**        | `cache.writeQuery()`           | Automatic in constructor      |
+| **Cache reads**         | `cache.readQuery()`            | Automatic object reuse        |
+| **Optimistic updates**  | Manual configuration           | Not built-in (manual for now) |
+| **Subscriptions**       | Via graphql-ws                 | Via websockets transport      |
 
 ### Cache Implementation
 
@@ -149,23 +149,23 @@ const cache = new InMemoryCache({
         studio: {
           merge(existing, incoming) {
             return incoming;
-          }
-        }
-      }
-    }
-  }
+          },
+        },
+      },
+    },
+  },
 });
 
 // Manual cache writes
 cache.writeQuery({
   query: SCENE_QUERY,
-  data: { findScene: updatedScene }
+  data: { findScene: updatedScene },
 });
 
 // Manual cache reads
 const scene = cache.readQuery({
   query: SCENE_QUERY,
-  variables: { id: "123" }
+  variables: { id: "123" },
 });
 ```
 
@@ -236,17 +236,17 @@ SQLAlchemy is Python's most popular ORM for SQL databases. stash-graphql-client 
 
 ### Conceptual Mapping
 
-| SQLAlchemy Concept | stash-graphql-client Equivalent |
-|-------------------|-------------------------------|
-| **Session** | StashEntityStore |
-| **Session.identity_map** | Wrap validator cache |
+| SQLAlchemy Concept       | stash-graphql-client Equivalent           |
+| ------------------------ | ----------------------------------------- |
+| **Session**              | StashEntityStore                          |
+| **Session.identity_map** | Wrap validator cache                      |
 | **Model.query.filter()** | `store.find(Type, field__modifier=value)` |
-| **relationship()** | RelationshipMetadata + auto-sync |
-| **back_populates** | inverse_query_field |
-| **Lazy loading** | Field-aware population |
-| **session.add()** | Automatic in constructor |
-| **session.commit()** | `.save(client)` |
-| **session.flush()** | No direct equivalent (saves immediately) |
+| **relationship()**       | RelationshipMetadata + auto-sync          |
+| **back_populates**       | inverse_query_field                       |
+| **Lazy loading**         | Field-aware population                    |
+| **session.add()**        | Automatic in constructor                  |
+| **session.commit()**     | `.save(client)`                           |
+| **session.flush()**      | No direct equivalent (saves immediately)  |
 
 ### Side-by-Side Example
 
@@ -311,17 +311,17 @@ async with StashContext(conn={...}) as client:
 
 ### Key Differences
 
-| Aspect | SQLAlchemy | stash-graphql-client |
-|--------|-----------|---------------------|
-| **Backend** | SQL databases (Postgres, MySQL, SQLite) | GraphQL API (Stash) |
-| **Query language** | SQLAlchemy expressions / SQL | GraphQL / Django-style kwargs |
-| **Identity map** | `Session.identity_map` dict | Pydantic wrap validators |
-| **Async** | `async_scoped_session` (extension) | Native async throughout |
-| **Type validation** | Optional (via type hints) | Required (Pydantic runtime) |
-| **Relationships** | Foreign keys + `relationship()` | `RelationshipMetadata` + query strategies |
-| **Lazy loading** | Database query when accessed | Field-aware populate |
-| **Transactions** | session.begin() / commit() / rollback() | No transactions (GraphQL mutations) |
-| **Schema changes** | Alembic migrations | N/A (server handles schema) |
+| Aspect              | SQLAlchemy                              | stash-graphql-client                      |
+| ------------------- | --------------------------------------- | ----------------------------------------- |
+| **Backend**         | SQL databases (Postgres, MySQL, SQLite) | GraphQL API (Stash)                       |
+| **Query language**  | SQLAlchemy expressions / SQL            | GraphQL / Django-style kwargs             |
+| **Identity map**    | `Session.identity_map` dict             | Pydantic wrap validators                  |
+| **Async**           | `async_scoped_session` (extension)      | Native async throughout                   |
+| **Type validation** | Optional (via type hints)               | Required (Pydantic runtime)               |
+| **Relationships**   | Foreign keys + `relationship()`         | `RelationshipMetadata` + query strategies |
+| **Lazy loading**    | Database query when accessed            | Field-aware populate                      |
+| **Transactions**    | session.begin() / commit() / rollback() | No transactions (GraphQL mutations)       |
+| **Schema changes**  | Alembic migrations                      | N/A (server handles schema)               |
 
 ### Advantages of stash-graphql-client
 
@@ -389,16 +389,16 @@ results = await store.find(
 
 ### Key Differences
 
-| Feature | Django ORM | stash-graphql-client |
-|---------|-----------|---------------------|
-| **Filter syntax** | `field__modifier` | Same! `field__modifier` |
-| **Query chaining** | `.filter().filter().exclude()` | Single `find()` call |
-| **Identity map** | Implicit (QuerySet caching) | Explicit (StashEntityStore) |
-| **Async support** | Limited (`sync_to_async`) | Native async |
-| **Type validation** | Model field types | Pydantic runtime validation |
-| **Partial updates** | `save(update_fields=[...])` | UNSET pattern |
-| **Relationships** | ForeignKey / ManyToMany | RelationshipMetadata |
-| **Database** | SQL (Postgres, MySQL, SQLite) | GraphQL (Stash) |
+| Feature             | Django ORM                     | stash-graphql-client        |
+| ------------------- | ------------------------------ | --------------------------- |
+| **Filter syntax**   | `field__modifier`              | Same! `field__modifier`     |
+| **Query chaining**  | `.filter().filter().exclude()` | Single `find()` call        |
+| **Identity map**    | Implicit (QuerySet caching)    | Explicit (StashEntityStore) |
+| **Async support**   | Limited (`sync_to_async`)      | Native async                |
+| **Type validation** | Model field types              | Pydantic runtime validation |
+| **Partial updates** | `save(update_fields=[...])`    | UNSET pattern               |
+| **Relationships**   | ForeignKey / ManyToMany        | RelationshipMetadata        |
+| **Database**        | SQL (Postgres, MySQL, SQLite)  | GraphQL (Stash)             |
 
 ### When to Use Django ORM vs stash-graphql-client
 
@@ -499,7 +499,7 @@ scene = await client.find_scene("123")
 ```javascript
 const { data } = await client.query({
   query: FIND_SCENE,
-  variables: { id: "123" }
+  variables: { id: "123" },
 });
 const scene = data.findScene;
 ```

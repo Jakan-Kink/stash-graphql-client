@@ -6,14 +6,14 @@ This document captures the original motivations, architectural decisions, and tr
 
 Four downstream projects contained nearly identical Stash integration code:
 
-| Project | Stash Code | Lines | Types Framework |
-|---|---|---|---|
-| fansly-downloader-ng | `stash/` | ~14,500 | Strawberry |
-| missF-downloader | `stash/` | ~17,800 | Strawberry |
-| pyLoyalFans | `pyloyalfans/stash/` | ~10,700 | Pydantic |
-| pyofscraperstash | `pyofscraperstash/stash/` | ~12,000 | Strawberry |
+| Project              | Stash Code                | Lines   | Types Framework |
+| -------------------- | ------------------------- | ------- | --------------- |
+| fansly-downloader-ng | `stash/`                  | ~14,500 | Strawberry      |
+| missF-downloader     | `stash/`                  | ~17,800 | Strawberry      |
+| pyLoyalFans          | `pyloyalfans/stash/`      | ~10,700 | Pydantic        |
+| pyofscraperstash     | `pyofscraperstash/stash/` | ~12,000 | Strawberry      |
 
-Across these projects, **95%+ of the Stash client code was identical**: the GraphQL transport layer, client mixins, query fragments, and type definitions. Only the *processing* logic (mapping platform entities to Stash entities) was project-specific.
+Across these projects, **95%+ of the Stash client code was identical**: the GraphQL transport layer, client mixins, query fragments, and type definitions. Only the _processing_ logic (mapping platform entities to Stash entities) was project-specific.
 
 Schema updates required identical changes in four places. Bug fixes had to be manually propagated. The Strawberry-to-Pydantic migration multiplied this cost further.
 
@@ -29,7 +29,7 @@ Schema updates required identical changes in four places. Bug fixes had to be ma
 
 **Decision**: Use Pydantic v2 BaseModel for all types, not Strawberry.
 
-**Why**: Strawberry is designed for *building* GraphQL servers, not consuming them. Its `@strawberry.type` decorator adds unnecessary overhead when we only need deserialization and validation. Pydantic v2's `model_validator(mode='wrap')` turned out to be the key enabler for the identity map pattern — it allows intercepting object construction before Pydantic processes data, returning cached instances when available.
+**Why**: Strawberry is designed for _building_ GraphQL servers, not consuming them. Its `@strawberry.type` decorator adds unnecessary overhead when we only need deserialization and validation. Pydantic v2's `model_validator(mode='wrap')` turned out to be the key enabler for the identity map pattern — it allows intercepting object construction before Pydantic processes data, returning cached instances when available.
 
 pyLoyalFans had already completed the Strawberry-to-Pydantic migration, making it the natural extraction source.
 

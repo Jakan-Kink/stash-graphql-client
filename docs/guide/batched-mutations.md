@@ -8,11 +8,11 @@ Batched mutations solve this by combining multiple operations into a single alia
 
 The batching system has three layers, each building on the one below:
 
-| Layer | Method | Use case |
-|-------|--------|----------|
-| **Low-level** | `client.execute_batch()` | Raw aliased GraphQL — full control over mutations |
-| **Mid-level** | `store.save_batch()` | Save a list of dirty entities with cache integration |
-| **High-level** | `store.save_all()` | Flush all dirty entities in the identity map |
+| Layer          | Method                   | Use case                                             |
+| -------------- | ------------------------ | ---------------------------------------------------- |
+| **Low-level**  | `client.execute_batch()` | Raw aliased GraphQL — full control over mutations    |
+| **Mid-level**  | `store.save_batch()`     | Save a list of dirty entities with cache integration |
+| **High-level** | `store.save_all()`       | Flush all dirty entities in the identity map         |
 
 ## Low-Level: `execute_batch()`
 
@@ -45,8 +45,14 @@ This generates the following GraphQL:
 
 ```graphql
 mutation Batch($input0: SceneUpdateInput!, $input1: TagCreateInput!) {
-  op0: sceneUpdate(input: $input0) { id __typename }
-  op1: tagCreate(input: $input1) { id __typename }
+  op0: sceneUpdate(input: $input0) {
+    id
+    __typename
+  }
+  op1: tagCreate(input: $input1) {
+    id
+    __typename
+  }
 }
 ```
 

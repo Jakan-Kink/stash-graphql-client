@@ -4,12 +4,8 @@
 **Status:** Implemented - Tier 1 (Automatic Backend Sync)
 
 !!! tip "User-facing guides"
-This document covers the **architectural rationale** for bidirectional
-sync. For how to _declare_ relationships in your entity classes, see the
-[Relationship DSL guide](../guide/relationship-dsl.md)
-(`belongs_to` / `habtm` / `has_many` / `has_many_through`). For how
-non-updateable fields like `Tag.scenes` or `Gallery.cover` get persisted,
-see the [Side Mutations guide](../guide/side-mutations.md).
+
+    This document covers the **architectural rationale** for bidirectional sync. For how to _declare_ relationships in your entity classes, see the [Relationship DSL guide](../guide/relationship-dsl.md) (`belongs_to` / `habtm` / `has_many` / `has_many_through`). For how non-updateable fields like `Tag.scenes` or `Gallery.cover` get persisted, see the [Side Mutations guide](../guide/side-mutations.md).
 
 ## Executive Summary
 
@@ -402,9 +398,7 @@ class Scene(StashObject):
 
 ### Filter Query Relationships (Studio, Performer, etc.)
 
-Some inverse relationships — like "all scenes for a studio" — aren't direct fields on the entity.
-Studio has a `scene_count` resolver field but no `scenes` list. Querying scenes by studio requires
-a filter query via the client or store.
+Some inverse relationships — like "all scenes for a studio" — aren't direct fields on the entity. Studio has a `scene_count` resolver field but no `scenes` list. Querying scenes by studio requires a filter query via the client or store.
 
 **Using the client directly:**
 

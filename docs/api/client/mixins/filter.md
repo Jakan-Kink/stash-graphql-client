@@ -3,6 +3,7 @@
 Operations for saving and managing search filters.
 
 !!! note "See also"
+
     `find_saved_filter()` and `find_saved_filters()` are in [Configuration](config.md).
 
 ::: stash_graphql_client.client.mixins.filter.FilterClientMixin

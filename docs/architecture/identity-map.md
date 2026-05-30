@@ -276,8 +276,7 @@ assert scene.studio is studio  # ✅ Same cached instance!
 
 ### Field Merging on Cache Hits
 
-When returning a cached instance, the validator merges new fields from the GraphQL response.
-This logic is inlined in `_identity_map_validator` (no separate method):
+When returning a cached instance, the validator merges new fields from the GraphQL response. This logic is inlined in `_identity_map_validator` (no separate method):
 
 ```python
 # Conceptual pseudocode (actual logic is inline in the validator)
@@ -366,8 +365,7 @@ class StashEntityStore:
         self._lock = RLock()
 ```
 
-The identity map is activated by `StashContext`, which creates the store **and** wires it to
-`StashObject` as part of client initialization, then un-wires it on close:
+The identity map is activated by `StashContext`, which creates the store **and** wires it to `StashObject` as part of client initialization, then un-wires it on close:
 
 ```python
 # StashContext.get_client() — called on __aenter__
@@ -379,9 +377,7 @@ self._store.invalidate_all()
 StashObject._store = None          # ← deactivates identity map
 ```
 
-`StashEntityStore.__init__` deliberately does **not** set `StashObject._store` so that the
-store can be constructed without global side effects. `StashContext` owns the wiring because
-it also owns the cleanup.
+`StashEntityStore.__init__` deliberately does **not** set `StashObject._store` so that the store can be constructed without global side effects. `StashContext` owns the wiring because it also owns the cleanup.
 
 **Key design decisions:**
 
