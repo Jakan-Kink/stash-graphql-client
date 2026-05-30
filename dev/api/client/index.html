@@ -2338,6 +2338,34 @@
 
 
 
+<h4 id="stash_graphql_client.client.StashClient.capabilities" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">capabilities</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#stash_graphql_client.client.StashClient.capabilities" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">capabilities</span><span class="p">:</span> <span class="n"><span title="stash_graphql_client.capabilities.ServerCapabilities">ServerCapabilities</span></span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The detected server capabilities, or <code>None</code> before <code>initialize()</code>.</p>
+<p>Exposed so callers can introspect the connected server's appSchema-driven
+feature set — e.g., to gate optional features that only newer Stash
+versions support, or to drive client-side decisions that mirror the
+fragment store's capability injection logic.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h4 id="stash_graphql_client.client.StashClient.log" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">log</span>
 

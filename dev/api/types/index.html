@@ -3221,9 +3221,13 @@ Note: created_at and updated_at are handled by Stash internally</p>
 - mark_clean: Mark object as having no unsaved changes
 - mark_dirty: Mark object as having unsaved changes</p>
 <p>Identity Map Integration:
-- Uses mode='wrap' validator to check cache before construction
-- Returns cached instance if entity already exists in store
-- Automatically caches new instances after construction</p>
+- Direct <code>Foo(id=...)</code> stub construction is intercepted at the metaclass
+  level (<code>_StashObjectMeta.__call__</code>) for cache lookup, restoring the
+  same-id-yields-same-object guarantee for <code>__init__</code> callers and
+  eliminating Pydantic's "validator returning non-self" warning.
+- For multi-field construction or new server data, <code>from_dict</code> /
+  <code>from_graphql</code> use <code>model_validate</code> and run the wrap validator's
+  full merge logic.</p>
 
 
 
@@ -17550,6 +17554,34 @@ after validation.</p>
 
 </div>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.files.VideoFile.scenes" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">scenes</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.files.VideoFile.scenes" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">scenes</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Scene (stash_graphql_client.types.scene.Scene)" href="#stash_graphql_client.types.scene.Scene">Scene</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
 
 
 
@@ -17683,6 +17715,34 @@ after validation.</p>
 
 </div>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.files.ImageFile.images" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">images</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.files.ImageFile.images" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">images</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Image (stash_graphql_client.types.image.Image)" href="#stash_graphql_client.types.image.Image">Image</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
 
 
 
@@ -17730,7 +17790,35 @@ after validation.</p>
 
 
 
+<h4 id="stash_graphql_client.types.files.GalleryFile-attributes">Attributes<a href="#stash_graphql_client.types.files.GalleryFile-attributes" class="headerlink" title="Permanent link">&para;</a></h4>
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="stash_graphql_client.types.files.GalleryFile.galleries" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">galleries</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.files.GalleryFile.galleries" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">galleries</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            Gallery (stash_graphql_client.types.gallery.Gallery)" href="#stash_graphql_client.types.gallery.Gallery">Gallery</a></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
 
 
 

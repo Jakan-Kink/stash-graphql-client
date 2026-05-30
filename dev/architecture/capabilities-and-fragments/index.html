@@ -2746,9 +2746,14 @@
 <td>Folder basename (column + index)</td>
 <td>New scan options (imagePhashes)</td>
 </tr>
+<tr>
+<td>(resolver-only additions)</td>
+<td>File reverse resolvers (VideoFile.scenes, #6938)</td>
+</tr>
 </tbody>
 </table>
 <p>For non-appSchema features, the client now uses <code>__schema</code> introspection. Lookup methods on <code>ServerCapabilities</code> (<code>has_mutation()</code>, <code>has_query()</code>, <code>has_type()</code>, <code>type_has_field()</code>, <code>input_has_field()</code>) provide dynamic queries against the parsed schema data.</p>
+<p>Some capability properties are therefore <strong>introspection-gated</strong> rather than appSchema-derived — <code>has_folder_sub_folders</code>, <code>has_scraped_tag_parent</code>, and <code>has_file_reverse_relationships</code> each check <code>type_has_field(...)</code>. These features add GraphQL resolvers over existing data (no migration), so appSchema never moves for them; only introspection can detect them.</p>
 <h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
 <h3 id="servercapabilities-frozen-dataclass"><code>ServerCapabilities</code> (frozen dataclass)<a class="headerlink" href="#servercapabilities-frozen-dataclass" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

@@ -1445,6 +1445,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#stash_graphql_client.errors.StashCapabilityError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;StashCapabilityError
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2924,6 +2935,60 @@ failure.</p>
         <p>Raised when the Stash server version is too old to be supported.</p>
 <p>This occurs when the server's appSchema is below the minimum required
 by this client version (MIN_SUPPORTED_APP_SCHEMA = 75, i.e. Stash v0.30.0).</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="stash_graphql_client.errors.StashCapabilityError" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">StashCapabilityError</span>
+
+
+<a href="#stash_graphql_client.errors.StashCapabilityError" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">StashCapabilityError</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            StashError (stash_graphql_client.errors.StashError)" href="#stash_graphql_client.errors.StashError">StashError</a></code></p>
+
+
+
+        <p>Raised when a feature is requested that the connected server's appSchema doesn't support.</p>
+<p>Distinct from :class:<code>StashVersionError</code> (which fires at connect time when the
+server is below the absolute minimum). This error fires per-feature at use time
+when a capability the consumer is exercising isn't available on this particular
+server — e.g., assigning <code>scene.custom_fields</code> against a server below appSchema
+79, or <code>performer.career_start</code> below appSchema 78.</p>
 
 
 

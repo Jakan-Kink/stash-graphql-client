@@ -2239,16 +2239,20 @@
 <p><strong>Archived</strong>: 2026-01-20
 <strong>Status</strong>: ✅ All issues resolved</p>
 <p>A technical debt tracking document created during the v0.10.7 TTL bug investigation. Documents 11 categories of type validation issues that were systematically resolved across v0.10.8 through v0.10.10.</p>
-<p><strong>Why archived</strong>: All identified issues have been resolved. The document is preserved to:
-- Show the evolution of type safety in the codebase
-- Demonstrate systematic technical debt resolution
-- Provide historical context for validation patterns
-- Serve as a reference for similar future investigations</p>
-<p><strong>Key takeaway</strong>: The codebase evolved from "fail late at GraphQL" to "fail early with clear errors" through:
-- Pydantic validation for all dict inputs (50+ methods)
-- Standardized boolean return patterns (40 methods)
-- ID and range validation with clear error messages
-- Type coercion with validation (verify_ssl, port, etc.)</p>
+<p><strong>Why archived</strong>: All identified issues have been resolved. The document is preserved to:</p>
+<ul>
+<li>Show the evolution of type safety in the codebase</li>
+<li>Demonstrate systematic technical debt resolution</li>
+<li>Provide historical context for validation patterns</li>
+<li>Serve as a reference for similar future investigations</li>
+</ul>
+<p><strong>Key takeaway</strong>: The codebase evolved from "fail late at GraphQL" to "fail early with clear errors" through:</p>
+<ul>
+<li>Pydantic validation for all dict inputs (50+ methods)</li>
+<li>Standardized boolean return patterns (40 methods)</li>
+<li>ID and range validation with clear error messages</li>
+<li>Type coercion with validation (verify_ssl, port, etc.)</li>
+</ul>
 <h2 id="adding-to-archive">Adding to Archive<a class="headerlink" href="#adding-to-archive" title="Permanent link">&para;</a></h2>
 <p>When archiving documentation:</p>
 <ol>

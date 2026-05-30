@@ -850,10 +850,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#has_manyinverse_type-inverse_query_field" class="md-nav__link">
+  <a href="#has_manyinverse_type-inverse_query_field-query_strategyfilter_query" class="md-nav__link">
     <span class="md-ellipsis">
       
-        has_many(inverse_type, *, inverse_query_field=...)
+        has_many(inverse_type, *, inverse_query_field=..., query_strategy="filter_query")
       
     </span>
   </a>
@@ -2310,59 +2310,56 @@
 
 
 <h1 id="relationship-dsl">Relationship DSL<a class="headerlink" href="#relationship-dsl" title="Permanent link">&para;</a></h1>
-<p>Every <code>StashObject</code> subclass declares its relationships to other entities via
-a <code>__relationships__</code> class attribute. The DSL — four helper factories —
-produces <code>RelationshipMetadata</code> entries that drive save mutations, inverse
-synchronisation, lazy population, and <code>filter_and_populate</code> queries.</p>
+<p>Every <code>StashObject</code> subclass declares its relationships to other entities via a <code>__relationships__</code> class attribute. The DSL — four helper factories — produces <code>RelationshipMetadata</code> entries that drive save mutations, inverse synchronisation, lazy population, and <code>filter_and_populate</code> queries.</p>
 <h2 id="the-four-helpers">The Four Helpers<a class="headerlink" href="#the-four-helpers" title="Permanent link">&para;</a></h2>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">belongs_to</span><span class="p">,</span> <span class="n">habtm</span><span class="p">,</span> <span class="n">has_many</span><span class="p">,</span> <span class="n">has_many_through</span>
 </span></code></pre></div>
 <h3 id="belongs_toinverse_type-inverse_query_field"><code>belongs_to(inverse_type, *, inverse_query_field=...)</code><a class="headerlink" href="#belongs_toinverse_type-inverse_query_field" title="Permanent link">&para;</a></h3>
-<p>The FK side of a many-to-one. The entity <em>owns the write</em> through a <code>*_id</code>
-field on its update input type.</p>
+<p>The FK side of a many-to-one. The entity <em>owns the write</em> through a <code>*_id</code> field on its update input type.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="s2">&quot;studio&quot;</span><span class="p">:</span> <span class="n">belongs_to</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="s2">&quot;parent_studio&quot;</span><span class="p">:</span> <span class="n">belongs_to</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;child_studios&quot;</span><span class="p">),</span>
 </span></code></pre></div>
-<p>The client writes <code>studio_id=&lt;id&gt;</code> on save. The inverse side (Studio.scenes)
-is auto-populated by the server after any scene update, so no coordination
-between sides is needed.</p>
+<p>The client writes <code>studio_id=&lt;id&gt;</code> on save. The inverse side (Studio.scenes) is auto-populated by the server after any scene update, so no coordination between sides is needed.</p>
 <h3 id="habtminverse_type-inverse_query_field-transform"><code>habtm(inverse_type, *, inverse_query_field=..., transform=...)</code><a class="headerlink" href="#habtminverse_type-inverse_query_field-transform" title="Permanent link">&para;</a></h3>
-<p>Many-to-many written as a <strong>list of IDs</strong>. The entity owns the write through
-a <code>*_ids</code> field on its update input.</p>
+<p>Many-to-many written as a <strong>list of IDs</strong>. The entity owns the write through a <code>*_ids</code> field on its update input.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Tag&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s2">&quot;performers&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Performer&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;scenes&quot;</span><span class="p">),</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s2">&quot;parents&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span><span class="s2">&quot;Tag&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;children&quot;</span><span class="p">),</span>  <span class="c1"># self-referential</span>
 </span></code></pre></div>
-<p>The client writes <code>tag_ids=[...]</code>, <code>performer_ids=[...]</code>, and so on.
-<code>transform</code> converts the in-memory object into the exact input shape when the
-wire format isn't a plain ID list — see <code>Scene.stash_ids</code>:</p>
+<p>The client writes <code>tag_ids=[...]</code>, <code>performer_ids=[...]</code>, and so on. <code>transform</code> converts the in-memory object into the exact input shape when the wire format isn't a plain ID list — see <code>Scene.stash_ids</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="s2">&quot;stash_ids&quot;</span><span class="p">:</span> <span class="n">habtm</span><span class="p">(</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="s2">&quot;StashID&quot;</span><span class="p">,</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">transform</span><span class="o">=</span><span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">StashIDInput</span><span class="p">(</span><span class="n">endpoint</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">stash_id</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">stash_id</span><span class="p">),</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">),</span>
 </span></code></pre></div>
-<h3 id="has_manyinverse_type-inverse_query_field"><code>has_many(inverse_type, *, inverse_query_field=...)</code><a class="headerlink" href="#has_manyinverse_type-inverse_query_field" title="Permanent link">&para;</a></h3>
-<p>The <strong>read-only inverse side</strong> of a relationship. No mutation input exists on
-this entity's update type; the field is populated by issuing a filter query
-against the inverse type.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Scene&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;tags&quot;</span><span class="p">),</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s2">&quot;child_studios&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;parent_studio&quot;</span><span class="p">),</span>
+<h3 id="has_manyinverse_type-inverse_query_field-query_strategyfilter_query"><code>has_many(inverse_type, *, inverse_query_field=..., query_strategy="filter_query")</code><a class="headerlink" href="#has_manyinverse_type-inverse_query_field-query_strategyfilter_query" title="Permanent link">&para;</a></h3>
+<p>The <strong>read-only inverse side</strong> of a relationship. No mutation input exists on this entity's update type. <code>query_strategy</code> selects how the inverse list is read:</p>
+<ul>
+<li><strong><code>"filter_query"</code></strong> (default) — the server exposes no list resolver for this inverse (only a <code>*_count</code>, e.g. <code>Tag.scene_count</code>), so the client synthesizes one via <code>find{Type}(filter=...)</code>. A <code>filter_query_hint</code> is auto-derived.</li>
+<li><strong><code>"direct_field"</code></strong> — the server resolves the inverse natively as a nested list field (a real GraphQL resolver). The data arrives embedded in the parent's selection; no synthetic find query and no <code>filter_query_hint</code>.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># filter_query (default): Tag has scene_count only, no scenes resolver</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Scene&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;tags&quot;</span><span class="p">),</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s2">&quot;child_studios&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Studio&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;parent_studio&quot;</span><span class="p">),</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># direct_field: server resolves the nested list (e.g. VideoFile.scenes, #6938)</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">has_many</span><span class="p">(</span><span class="s2">&quot;Scene&quot;</span><span class="p">,</span> <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;files&quot;</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>                   <span class="n">query_strategy</span><span class="o">=</span><span class="s2">&quot;direct_field&quot;</span><span class="p">),</span>
 </span></code></pre></div>
-<p>To fetch <code>tag.scenes</code>, the store calls
-<code>find_scenes(scene_filter={"tags": {"value": [tag.id], ...}})</code>. <code>populate()</code>
-and <code>filter_and_populate()</code> use this strategy automatically.</p>
-<p>The <code>query_strategy</code> stored in the metadata is <code>"filter_query"</code>, and the
-<code>filter_query_hint</code> is auto-derived.</p>
+<p>To fetch <code>tag.scenes</code>, the store calls <code>find_scenes(scene_filter={"tags": {"value": [tag.id], ...}})</code>. <code>populate()</code> and <code>filter_and_populate()</code> use this strategy automatically.</p>
+<h4 id="capability-adaptive-direct-fields-file-reverse-relationships">Capability-adaptive direct fields (file reverse relationships)<a class="headerlink" href="#capability-adaptive-direct-fields-file-reverse-relationships" title="Permanent link">&para;</a></h4>
+<p>The file reverse relationships — <code>VideoFile.scenes</code>, <code>ImageFile.images</code>, <code>GalleryFile.galleries</code> (stashapp/stash #6938) — are declared <code>direct_field</code>, but their resolvers are <strong>introspection-gated</strong> (<code>ServerCapabilities.has_file_reverse_relationships</code>; no appSchema bump, since the PR added no migration). <code>populate()</code> adapts per server:</p>
+<ul>
+<li><strong>resolver present</strong> → fetched via <code>findFile</code> using a <code>... on VideoFile { scenes }</code> inline fragment (the field is subtype-only and <code>findFile</code> returns the <code>BaseFile</code> interface).</li>
+<li><strong>resolver absent</strong> (stable v0.30.x) → falls back to a filter query keyed by the file's <strong>path</strong> (<code>findScenes(scene_filter={path: {value, EQUALS}})</code>). Path is the join key because it is the identifier downstream consumers reliably hold. If the path can't be resolved, the field is left <code>UNSET</code>.</li>
+</ul>
+<p>Either way <code>file.scenes</code> is populated, so the feature works on stable servers that predate the resolvers.</p>
 <h3 id="has_many_throughinverse_type-transform-inverse_query_field"><code>has_many_through(inverse_type, *, transform, inverse_query_field=...)</code><a class="headerlink" href="#has_many_throughinverse_type-transform-inverse_query_field" title="Permanent link">&para;</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Not Rails <code>through: :model</code></p>
+<p>This helper is <strong>not</strong> the Rails <code>has_many :through:</code> pattern. It does not name an intermediate model that joins two sides. It means <strong>"through a wrapper input type that carries relationship-level metadata"</strong> — ordering, descriptions, or similar per-edge data.</p>
 </div>
-<p>This helper is <strong>not</strong> the Rails <code>has_many :through:</code> pattern. It does
-not name an intermediate model that joins two sides. It means
-<strong>"through a wrapper input type that carries relationship-level metadata"</strong>
-— ordering, descriptions, or similar per-edge data.</p>
-<p>Used when the relationship <em>itself</em> has data attached. The wire format is a
-list of wrapper objects instead of a list of IDs.</p>
+<p>Used when the relationship <em>itself</em> has data attached. The wire format is a list of wrapper objects instead of a list of IDs.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Scene.groups — each relation carries a scene_index (ordering)</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s2">&quot;groups&quot;</span><span class="p">:</span> <span class="n">has_many_through</span><span class="p">(</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="s2">&quot;Group&quot;</span><span class="p">,</span>
@@ -2381,9 +2378,7 @@ list of wrapper objects instead of a list of IDs.</p>
 </span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="n">inverse_query_field</span><span class="o">=</span><span class="s2">&quot;containing_groups&quot;</span><span class="p">,</span>
 </span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">),</span>
 </span></code></pre></div>
-<p><code>transform</code> is <strong>required</strong> here (unlike <code>habtm</code> where it's optional) because
-the wrapper input must be constructed explicitly. <code>query_strategy</code> is
-<code>"complex_object"</code>.</p>
+<p><code>transform</code> is <strong>required</strong> here (unlike <code>habtm</code> where it's optional) because the wrapper input must be constructed explicitly. <code>query_strategy</code> is <code>"complex_object"</code>.</p>
 <h2 id="which-helper-to-use">Which Helper to Use<a class="headerlink" href="#which-helper-to-use" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2412,20 +2407,21 @@ the wrapper input must be constructed explicitly. <code>query_strategy</code> is
 </tbody>
 </table>
 <h2 id="auto-derivation">Auto-Derivation<a class="headerlink" href="#auto-derivation" title="Permanent link">&para;</a></h2>
-<p><code>RelationshipMetadata</code> has several fields you don't supply — they're resolved
-in <code>__init_subclass__</code> from the dict key and sibling metadata:</p>
+<p><code>RelationshipMetadata</code> has several fields you don't supply — they're resolved in <code>__init_subclass__</code> from the dict key and sibling metadata:</p>
 <ul>
 <li><strong><code>query_field</code></strong> — the dict key itself (<code>"studio"</code> → <code>query_field="studio"</code>).</li>
 <li><strong><code>target_field</code></strong> — auto-derived by helper:</li>
 <li><code>belongs_to</code>: key + <code>"_id"</code> (e.g. <code>studio</code> → <code>studio_id</code>)</li>
 <li><code>habtm</code>: singularize(key) + <code>"_ids"</code> (e.g. <code>tags</code> → <code>tag_ids</code>, <code>galleries</code> → <code>gallery_ids</code>)</li>
 <li><code>has_many_through</code>: key as-is (the wrapper list field keeps its plural name)</li>
-<li><code>has_many</code>: <code>""</code> (no mutation input — read-only)</li>
-<li><strong><code>filter_query_hint</code></strong> (for <code>has_many</code>) — derived from <code>inverse_type</code> +
-  owner type to produce the right <code>find_X_filter={"owner_field": {...}}</code> shape.</li>
+<li>
+<p><code>has_many</code>: <code>""</code> (no mutation input — read-only)</p>
+</li>
+<li>
+<p><strong><code>filter_query_hint</code></strong> (for <code>has_many</code>) — derived from <code>inverse_type</code> + owner type to produce the right <code>find_X_filter={"owner_field": {...}}</code> shape.</p>
+</li>
 </ul>
-<p>You can override any of these explicitly when the convention doesn't fit, but
-the idiomatic code relies on the derivation.</p>
+<p>You can override any of these explicitly when the convention doesn't fit, but the idiomatic code relies on the derivation.</p>
 <h2 id="full-example">Full Example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h2>
 <p>A hypothetical <code>Author</code> entity demonstrating all four patterns:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">stash_graphql_client.types.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -2469,32 +2465,18 @@ the idiomatic code relies on the derivation.</p>
 </span></code></pre></div>
 <p>With this declaration alone, the following all work:</p>
 <ul>
-<li><code>author.genres.append(sci_fi)</code> then <code>author.save(client)</code> → sends
-  <code>genre_ids</code> on the author update.</li>
+<li><code>author.genres.append(sci_fi)</code> then <code>author.save(client)</code> → sends <code>genre_ids</code> on the author update.</li>
 <li><code>author.publisher = new_pub; author.save(client)</code> → sends <code>publisher_id</code>.</li>
-<li><code>await store.populate(author, ["reviews"])</code> → issues
-  <code>find_reviews(filter={"author": {"value": [author.id]}})</code> and attaches the
-  results to <code>author.reviews</code>.</li>
-<li><code>await store.filter_and_populate(Author, filter={...}, fields=["books__book__title"])</code>
-  → batched filter + nested population across the <code>has_many_through</code>.</li>
+<li><code>await store.populate(author, ["reviews"])</code> → issues <code>find_reviews(filter={"author": {"value": [author.id]}})</code> and attaches the results to <code>author.reviews</code>.</li>
+<li><code>await store.filter_and_populate(Author, filter={...}, fields=["books__book__title"])</code> → batched filter + nested population across the <code>has_many_through</code>.</li>
 </ul>
 <h2 id="interaction-with-save-and-side-mutations">Interaction with Save and Side Mutations<a class="headerlink" href="#interaction-with-save-and-side-mutations" title="Permanent link">&para;</a></h2>
-<p>For most relationship fields, <code>save()</code> just translates the relationship list
-into its <code>target_field</code> on the update input. Some fields — content
-relationships on <code>Tag</code>, <code>cover</code> on <code>Gallery</code> — are declared as
-<code>has_many</code> (read-only) here because the <em>owning</em> entity writes them, but the
-user experience needs to feel writable. Those fields are handled by
-<a href="../side-mutations/">side mutations</a>: assignments trigger bulk-update calls on
-the inverse entity.</p>
+<p>For most relationship fields, <code>save()</code> just translates the relationship list into its <code>target_field</code> on the update input. Some fields — content relationships on <code>Tag</code>, <code>cover</code> on <code>Gallery</code> — are declared as <code>has_many</code> (read-only) here because the <em>owning</em> entity writes them, but the user experience needs to feel writable. Those fields are handled by <a href="../side-mutations/">side mutations</a>: assignments trigger bulk-update calls on the inverse entity.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../side-mutations/">Side Mutations</a> — the mechanism that backs
-  "writable" <code>has_many</code> fields like <code>Tag.scenes</code>.</li>
-<li><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a>
-  — architectural rationale for how these relationships stay in sync without
-  dual mutations.</li>
-<li><a href="../batched-mutations/">Batched Mutations</a> — how relationship updates batch
-  when multiple entities are saved together.</li>
+<li><a href="../side-mutations/">Side Mutations</a> — the mechanism that backs "writable" <code>has_many</code> fields like <code>Tag.scenes</code>.</li>
+<li><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a> — architectural rationale for how these relationships stay in sync without dual mutations.</li>
+<li><a href="../batched-mutations/">Batched Mutations</a> — how relationship updates batch when multiple entities are saved together.</li>
 </ul>
 
 

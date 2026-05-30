@@ -2470,13 +2470,8 @@
 <strong>Status:</strong> Implemented - Tier 1 (Automatic Backend Sync)</p>
 <div class="admonition tip">
 <p class="admonition-title">User-facing guides</p>
+<p>This document covers the <strong>architectural rationale</strong> for bidirectional sync. For how to <em>declare</em> relationships in your entity classes, see the <a href="../../guide/relationship-dsl/">Relationship DSL guide</a> (<code>belongs_to</code> / <code>habtm</code> / <code>has_many</code> / <code>has_many_through</code>). For how non-updateable fields like <code>Tag.scenes</code> or <code>Gallery.cover</code> get persisted, see the <a href="../../guide/side-mutations/">Side Mutations guide</a>.</p>
 </div>
-<p>This document covers the <strong>architectural rationale</strong> for bidirectional
-sync. For how to <em>declare</em> relationships in your entity classes, see the
-<a href="../../guide/relationship-dsl/">Relationship DSL guide</a>
-(<code>belongs_to</code> / <code>habtm</code> / <code>has_many</code> / <code>has_many_through</code>). For how
-non-updateable fields like <code>Tag.scenes</code> or <code>Gallery.cover</code> get persisted,
-see the <a href="../../guide/side-mutations/">Side Mutations guide</a>.</p>
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
 <p>Empirical testing confirms that <strong>Stash's backend automatically maintains bidirectional referential integrity for ALL relationship types</strong>. No dual mutation coordination is required. This document details the findings and implementation approach.</p>
 <h2 id="empirical-verification-results">Empirical Verification Results<a class="headerlink" href="#empirical-verification-results" title="Permanent link">&para;</a></h2>
@@ -2858,9 +2853,7 @@ see the <a href="../../guide/side-mutations/">Side Mutations guide</a>.</p>
 </span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
 </span></code></pre></div>
 <h3 id="filter-query-relationships-studio-performer-etc">Filter Query Relationships (Studio, Performer, etc.)<a class="headerlink" href="#filter-query-relationships-studio-performer-etc" title="Permanent link">&para;</a></h3>
-<p>Some inverse relationships — like "all scenes for a studio" — aren't direct fields on the entity.
-Studio has a <code>scene_count</code> resolver field but no <code>scenes</code> list. Querying scenes by studio requires
-a filter query via the client or store.</p>
+<p>Some inverse relationships — like "all scenes for a studio" — aren't direct fields on the entity. Studio has a <code>scene_count</code> resolver field but no <code>scenes</code> list. Querying scenes by studio requires a filter query via the client or store.</p>
 <p><strong>Using the client directly:</strong></p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># All scenes for a studio (paginated)</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scenes</span><span class="p">(</span>

@@ -2304,12 +2304,7 @@
 
 
 <h1 id="side-mutations">Side Mutations<a class="headerlink" href="#side-mutations" title="Permanent link">&para;</a></h1>
-<p>Some fields on a Stash entity cannot be written through the normal
-<code>sceneUpdate</code> / <code>imageUpdate</code> / <code>galleryUpdate</code> mutations. They require
-<em>dedicated</em> mutations — <code>sceneSaveActivity</code>, <code>sceneAddO</code>, <code>imageIncrementO</code>,
-<code>setGalleryCover</code>, and so on. A "side mutation" is this library's automation
-for firing those extra mutations on <code>save()</code> so users don't have to call them
-manually.</p>
+<p>Some fields on a Stash entity cannot be written through the normal <code>sceneUpdate</code> / <code>imageUpdate</code> / <code>galleryUpdate</code> mutations. They require <em>dedicated</em> mutations — <code>sceneSaveActivity</code>, <code>sceneAddO</code>, <code>imageIncrementO</code>, <code>setGalleryCover</code>, and so on. A "side mutation" is this library's automation for firing those extra mutations on <code>save()</code> so users don't have to call them manually.</p>
 <h2 id="the-problem">The Problem<a class="headerlink" href="#the-problem" title="Permanent link">&para;</a></h2>
 <p>Consider updating a scene's play history and rating at the same time:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">scene</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">find_scene</span><span class="p">(</span><span class="s2">&quot;1&quot;</span><span class="p">)</span>
@@ -2318,12 +2313,9 @@ manually.</p>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">scene</span><span class="o">.</span><span class="n">play_history</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">scene</span><span class="o">.</span><span class="n">play_history</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()]</span>  <span class="c1"># NOT writable via sceneUpdate</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Without side mutations you'd have to call three separate client methods in
-the right order and track which fields changed. Side mutations let you just
-set the fields and call <code>save()</code>.</p>
+<p>Without side mutations you'd have to call three separate client methods in the right order and track which fields changed. Side mutations let you just set the fields and call <code>save()</code>.</p>
 <h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
-<p>Each entity class declares a <code>__side_mutations__</code> dict mapping field names to
-async handlers:</p>
+<p>Each entity class declares a <code>__side_mutations__</code> dict mapping field names to async handlers:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">Scene</span><span class="p">(</span><span class="n">StashObject</span><span class="p">):</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">__side_mutations__</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="s2">&quot;resume_time&quot;</span><span class="p">:</span> <span class="n">_save_activity</span><span class="p">,</span>
@@ -2341,14 +2333,11 @@ async handlers:</p>
 <ol>
 <li>Runs the main update mutation for all ordinary dirty fields.</li>
 <li>Looks at which side-mutation fields changed.</li>
-<li><strong>Deduplicates</strong> handlers — if both <code>resume_time</code> and <code>play_duration</code> are
-   dirty, <code>_save_activity</code> runs only once (handlers keyed by identity).</li>
+<li><strong>Deduplicates</strong> handlers — if both <code>resume_time</code> and <code>play_duration</code> are dirty, <code>_save_activity</code> runs only once (handlers keyed by identity).</li>
 <li>Fires each unique handler in field-declaration order.</li>
-<li>Handlers typically read the entity's current + snapshot state, compute the
-   needed mutation(s), fire them, and update local fields from the response.</li>
+<li>Handlers typically read the entity's current + snapshot state, compute the needed mutation(s), fire them, and update local fields from the response.</li>
 </ol>
-<p>The fields listed in <code>__side_mutations__</code> are automatically excluded from the
-main update input so they don't get sent twice.</p>
+<p>The fields listed in <code>__side_mutations__</code> are automatically excluded from the main update input so they don't get sent twice.</p>
 <h2 id="built-in-handlers">Built-In Handlers<a class="headerlink" href="#built-in-handlers" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -2391,28 +2380,17 @@ main update input so they don't get sent twice.</p>
 </tr>
 </tbody>
 </table>
-<p>The <code>Tag</code> handlers are produced by the factory
-<code>StashObject._make_bulk_relationship_handler(field, client_method, id_param)</code>
-— covered below.</p>
+<p>The <code>Tag</code> handlers are produced by the factory <code>StashObject._make_bulk_relationship_handler(field, client_method, id_param)</code> — covered below.</p>
 <h2 id="diff-based-handlers">Diff-Based Handlers<a class="headerlink" href="#diff-based-handlers" title="Permanent link">&para;</a></h2>
-<p>History fields (<code>o_history</code>, <code>play_history</code>) use set-diff logic: the handler
-compares the current list against the snapshot captured when the entity was
-loaded, determines which timestamps were <em>added</em> and which were <em>removed</em>,
-and fires <code>sceneAddO</code> or <code>sceneDeleteO</code> accordingly. This lets users treat
-the list as a normal Python list:</p>
+<p>History fields (<code>o_history</code>, <code>play_history</code>) use set-diff logic: the handler compares the current list against the snapshot captured when the entity was loaded, determines which timestamps were <em>added</em> and which were <em>removed</em>, and fires <code>sceneAddO</code> or <code>sceneDeleteO</code> accordingly. This lets users treat the list as a normal Python list:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">scene</span><span class="o">.</span><span class="n">o_history</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">scene</span><span class="o">.</span><span class="n">o_history</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()]</span>   <span class="c1"># adds one</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">scene</span><span class="o">.</span><span class="n">o_history</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">scene</span><span class="o">.</span><span class="n">o_history</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="mi">2024</span><span class="p">]</span>  <span class="c1"># removes old</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="delta-based-handlers">Delta-Based Handlers<a class="headerlink" href="#delta-based-handlers" title="Permanent link">&para;</a></h2>
-<p><code>Image.o_counter</code> uses delta logic: snapshot-vs-current integer difference,
-incrementing or decrementing that many times. Setting <code>o_counter = 0</code> when
-the snapshot was non-zero fires a single <code>imageResetO</code> instead.</p>
+<p><code>Image.o_counter</code> uses delta logic: snapshot-vs-current integer difference, incrementing or decrementing that many times. Setting <code>o_counter = 0</code> when the snapshot was non-zero fires a single <code>imageResetO</code> instead.</p>
 <h2 id="bulk-relationship-handlers">Bulk Relationship Handlers<a class="headerlink" href="#bulk-relationship-handlers" title="Permanent link">&para;</a></h2>
-<p><code>Tag</code> doesn't have a <code>scene_ids</code> field on <code>TagUpdateInput</code> — scenes are
-associated with tags via <code>Scene.tags</code> (or <code>bulkSceneUpdate(tag_ids=...)</code>).
-The bulk relationship handler factory builds side-mutation handlers that
-fire the <em>inverse</em> entity's bulk update:</p>
+<p><code>Tag</code> doesn't have a <code>scene_ids</code> field on <code>TagUpdateInput</code> — scenes are associated with tags via <code>Scene.tags</code> (or <code>bulkSceneUpdate(tag_ids=...)</code>). The bulk relationship handler factory builds side-mutation handlers that fire the <em>inverse</em> entity's bulk update:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># In Tag.__side_mutations__:</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="s2">&quot;scenes&quot;</span><span class="p">:</span> <span class="n">StashObject</span><span class="o">.</span><span class="n">_make_bulk_relationship_handler</span><span class="p">(</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="s2">&quot;scenes&quot;</span><span class="p">,</span>          <span class="c1"># Local field on the Tag</span>
@@ -2420,30 +2398,19 @@ fire the <em>inverse</em> entity's bulk update:</p>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="s2">&quot;tag_ids&quot;</span><span class="p">,</span>         <span class="c1"># Input field name on BulkSceneUpdateInput</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">),</span>
 </span></code></pre></div>
-<p>When <code>tag.scenes = [scene1, scene2]</code> and <code>save()</code> runs, the handler calls
-<code>client.bulk_scene_update({"ids": [scene1.id, scene2.id], "tag_ids": {"ids": [tag.id], "mode": "ADD"}})</code>.
-This is how relationship fields that the owning-side's update input doesn't
-support still get persisted.</p>
+<p>When <code>tag.scenes = [scene1, scene2]</code> and <code>save()</code> runs, the handler calls <code>client.bulk_scene_update({"ids": [scene1.id, scene2.id], "tag_ids": {"ids": [tag.id], "mode": "ADD"}})</code>. This is how relationship fields that the owning-side's update input doesn't support still get persisted.</p>
 <h2 id="interaction-with-save_batch">Interaction With <code>save_batch</code><a class="headerlink" href="#interaction-with-save_batch" title="Permanent link">&para;</a></h2>
-<p><code>store.save_batch(entities)</code> executes all main updates in a single GraphQL
-round-trip. Side-mutation handlers then fire sequentially, <strong>per entity</strong>,
-<strong>after</strong> the batch response returns. Failures on a main mutation skip that
-entity's side mutations; failures inside a side-mutation handler are logged
-but don't stop other entities' handlers from running.</p>
-<p>See the <a href="../batched-mutations/">Batched Mutations guide</a> for the full
-ordering model.</p>
+<p><code>store.save_batch(entities)</code> executes all main updates in a single GraphQL round-trip. Side-mutation handlers then fire sequentially, <strong>per entity</strong>, <strong>after</strong> the batch response returns. Failures on a main mutation skip that entity's side mutations; failures inside a side-mutation handler are logged but don't stop other entities' handlers from running.</p>
+<p>See the <a href="../batched-mutations/">Batched Mutations guide</a> for the full ordering model.</p>
 <h2 id="queued-side-operations">Queued Side Operations<a class="headerlink" href="#queued-side-operations" title="Permanent link">&para;</a></h2>
-<p>Occasionally you want to fire an extra mutation on <code>save()</code> that isn't tied
-to a field — for example, a one-shot mark-as-processed. Use
-<code>_queue_side_op()</code>:</p>
+<p>Occasionally you want to fire an extra mutation on <code>save()</code> that isn't tied to a field — for example, a one-shot mark-as-processed. Use <code>_queue_side_op()</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">mark_processed</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">StashClient</span><span class="p">,</span> <span class="n">scene</span><span class="p">:</span> <span class="n">Scene</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">scene_save_activity</span><span class="p">(</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">resume_time</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">scene</span><span class="o">.</span><span class="n">_queue_side_op</span><span class="p">(</span><span class="n">mark_processed</span><span class="p">)</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">await</span> <span class="n">scene</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>   <span class="c1"># runs main update + mark_processed</span>
 </span></code></pre></div>
-<p>Queued ops are FIFO and run <em>after</em> the field-based handlers. They're
-cleared once executed, so re-saving the same entity won't re-fire them.</p>
+<p>Queued ops are FIFO and run <em>after</em> the field-based handlers. They're cleared once executed, so re-saving the same entity won't re-fire them.</p>
 <h2 id="defining-custom-handlers">Defining Custom Handlers<a class="headerlink" href="#defining-custom-handlers" title="Permanent link">&para;</a></h2>
 <p>Subclass an entity and extend its <code>__side_mutations__</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyScene</span><span class="p">(</span><span class="n">Scene</span><span class="p">):</span>
@@ -2457,16 +2424,12 @@ cleared once executed, so re-saving the same entity won't re-fire them.</p>
 </span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="c1"># Fire whatever mutation(s) this field needs</span>
 </span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">my_custom_mutation</span><span class="p">(</span><span class="n">scene</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">scene</span><span class="o">.</span><span class="n">my_custom_field</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Be sure to include <code>"my_custom_field"</code> in <code>__tracked_fields__</code> so the dirty
-detector notices changes to it.</p>
+<p>Be sure to include <code>"my_custom_field"</code> in <code>__tracked_fields__</code> so the dirty detector notices changes to it.</p>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../relationship-dsl/">Relationship DSL</a> — declaring entity relationships
-  with <code>belongs_to</code>, <code>habtm</code>, <code>has_many</code>, <code>has_many_through</code>.</li>
-<li><a href="../batched-mutations/">Batched Mutations</a> — how side mutations fit into
-  the batch flow.</li>
-<li><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a>
-  — architectural rationale for inverse sync.</li>
+<li><a href="../relationship-dsl/">Relationship DSL</a> — declaring entity relationships with <code>belongs_to</code>, <code>habtm</code>, <code>has_many</code>, <code>has_many_through</code>.</li>
+<li><a href="../batched-mutations/">Batched Mutations</a> — how side mutations fit into the batch flow.</li>
+<li><a href="../../architecture/bidirectional-relationships/">Bidirectional Relationships</a> — architectural rationale for inverse sync.</li>
 </ul>
 
 
