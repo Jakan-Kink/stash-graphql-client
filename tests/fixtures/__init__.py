@@ -25,6 +25,11 @@ from tests.fixtures.client import (
     stash_context,
     stash_context_with_api_key,
 )
+from tests.fixtures.fake_websocket import (
+    FakeSocket,
+    dump_ws_calls,
+    fake_ws_connection,
+)
 from tests.fixtures.stash import (
     # Type factories
     GalleryFactory,
@@ -82,9 +87,16 @@ from tests.fixtures.stash import (
     mock_tag,
     mock_video_file,
 )
+from tests.fixtures.utils import assert_query_fragments_resolve
 
 
 __all__ = [
+    # Cross-cutting utils
+    "assert_query_fragments_resolve",
+    # WebSocket fakes
+    "FakeSocket",
+    "dump_ws_calls",
+    "fake_ws_connection",
     # Capability Fixtures
     "create_capability_response",
     "make_server_capabilities",

@@ -15,6 +15,7 @@ from stash_graphql_client import StashClient, StashEntityStore
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.types.scene import Scene, SceneCreateInput
+from tests.fixtures.fake_websocket import fake_ws_connection
 from tests.fixtures.stash.graphql_responses import (
     create_capability_response,
     make_server_capabilities,
@@ -199,7 +200,13 @@ async def respx_stash_client(
             assert studio.id == "123"
         ```
     """
-    with respx.mock:
+    # initialize() eagerly opens a WebSocket session (base.py) in addition to the
+    # HTTP one. respx is HTTP-only and cannot intercept the ws handshake, so the
+    # ws connect is routed to an in-process FakeSocket via fake_ws_connection
+    # (patches websockets.connect). This keeps the fixture fully offline AND leaves
+    # the ws session functional, so subscription tests can drive real graphql-ws
+    # traffic by scripting client._fake_ws.events (the WebSocket parallel to respx).
+    with respx.mock, fake_ws_connection() as fake_ws:
         # Default response for GraphQL requests — includes capability detection
         # response so that StashClient.initialize() succeeds.
         def _graphql_responder(request: httpx.Request) -> httpx.Response:
@@ -220,8 +227,11 @@ async def respx_stash_client(
 
         respx.post("http://localhost:9999/graphql").mock(side_effect=_graphql_responder)
 
-        # Initialize the client (will use mocked HTTP)
+        # Initialize the client (will use mocked HTTP + the FakeSocket ws).
         client = await stash_context.get_client()
+
+        # Expose the fake ws so subscription tests can script events / inspect frames.
+        client._fake_ws = fake_ws
 
         # Clear call history from capability detection so tests see a clean slate
         for route in respx.routes:
@@ -305,6 +315,11 @@ async def respx_entity_store_with_file_reverse_caps(
     finally:
         if original is not None:
             fragment_store.rebuild(original)
+        else:
+            # Singleton had no capabilities on entry; reset to base so the
+            # reverse-relationship queries don't leak into later tests.
+            fragment_store._capabilities = None
+            fragment_store._build_base()
 
 
 @pytest_asyncio.fixture

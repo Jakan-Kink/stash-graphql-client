@@ -22,7 +22,7 @@ from .errors import StashBatchError, StashError, StashIntegrationError
 from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import RelationshipMetadata, StashObject
-from .types.files import BaseFile, GalleryFile, ImageFile, VideoFile
+from .types.files import BaseFile, BasicFile, GalleryFile, ImageFile, VideoFile
 from .types.unset import UnsetType
 
 
@@ -978,6 +978,8 @@ class StashEntityStore:
         type_map: dict[str, type[StashObject]] = {
             "ImageFile": ImageFile,
             "VideoFile": VideoFile,
+            "GalleryFile": GalleryFile,
+            "BasicFile": BasicFile,
             "BaseFile": BaseFile,
         }
 
@@ -2794,6 +2796,11 @@ class StashEntityStore:
                 "findImages",
                 "image_filter",
             ),
+            "BaseFile": (
+                fragment_store.FIND_FILES_QUERY,
+                "findFiles",
+                "file_filter",
+            ),
         }
 
         if type_name not in query_map:
@@ -2819,14 +2826,20 @@ class StashEntityStore:
             items_key = "galleries"
         elif type_name == "Image":
             items_key = "images"
+        elif type_name == "BaseFile":
+            items_key = "files"
 
         raw_items = data.get(items_key) or []
 
         # Convert to entity objects using Pydantic's from_graphql (identity map via validator)
         items: list[T] = []
         for raw in raw_items:
+            # Resolve polymorphic subtype from __typename BEFORE sanitization
+            # (sanitize_model_data strips __-prefixed keys); for BaseFile this
+            # yields the concrete VideoFile/ImageFile/GalleryFile class.
+            concrete_type = self._get_concrete_type(raw, entity_type)
             clean = sanitize_model_data(raw)
-            entity = entity_type.from_graphql(clean)
+            entity = concrete_type.from_graphql(clean)
             # Cache the entity
             self._cache_entity(entity)
             items.append(entity)

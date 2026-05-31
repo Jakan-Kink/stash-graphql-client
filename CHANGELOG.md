@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **File reverse-relationship bulk preload and eager fetch (completes stashapp/stash #6938).** `find_iter(BaseFile, …)`, `find_files`, and `find_file` now resolve files into their concrete polymorphic subtypes (`VideoFile`/`ImageFile`/`GalleryFile`) and, on servers exposing the #6938 resolvers, eagerly select the reverse relationships (`scenes`/`images`/`galleries`) through `findFiles`/`findFile`. Filtered preload is supported via `FileFilterType` (e.g. `find_iter(BaseFile, path__contains=…, basename__equals=…)`). The reverse lists carry full entity fragments — declared once and deduplicated, with the reverse selection emitted at the query level so the file fragments stay scalar and depth is bounded — so each reverse scene's own `files` come back populated and resolve through the identity map to the owning file (`scene.files[0] is file`). On servers without the resolvers, bulk preload still returns files; the reverse field is left `UNSET`.
+
+### Fixed
+
+- `StashEntityStore` bulk find (`find_iter`/`find`) raised `Unsupported entity type: BaseFile` and could not preload files. `_execute_find_query` now maps `BaseFile` to `findFiles`, deserializes each item to its concrete subtype via `__typename` (including the previously-unmapped `GalleryFile`), and the `find_file`/`find_files` client mixin uses the capability-aware `FragmentStore` queries. 0.12.6 shipped the file reverse-relationship entity fields and the on-access populate path, but the `FragmentStore` queries and `StashEntityStore` bulk path needed to actually use the relationships were not yet wired; this completes that integration.
+
 ## [0.12.6] - 2026-05-30
 
 ### Added

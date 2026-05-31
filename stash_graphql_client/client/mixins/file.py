@@ -70,7 +70,7 @@ class FileClientMixin(StashClientProtocol):
         try:
             # BaseFile is polymorphic - will return VideoFile, ImageFile, etc
             return await self.execute(
-                fragments.FIND_FILE_QUERY,
+                fragment_store.FIND_FILE_QUERY,
                 {"id": id, "path": path},
                 result_type=BaseFile,
             )
@@ -148,7 +148,7 @@ class FileClientMixin(StashClientProtocol):
             filter_ = self._normalize_sort_direction(filter_)
         try:
             return await self.execute(
-                fragments.FIND_FILES_QUERY,
+                fragment_store.FIND_FILES_QUERY,
                 {
                     "file_filter": file_filter,
                     "filter": filter_,

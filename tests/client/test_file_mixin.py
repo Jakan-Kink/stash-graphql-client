@@ -1117,3 +1117,62 @@ async def test_reveal_folder_in_file_manager_error_raises(
 
     with pytest.raises(StashGraphQLError):
         await respx_stash_client.reveal_folder_in_file_manager(id="7")
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_file_selects_reverse_fields_on_capable_server(
+    respx_stash_client: StashClient,
+    respx_entity_store_with_file_reverse_caps,
+) -> None:
+    """find_file must use the capability-aware fragment_store query so that, on a
+    #6938-capable server, the reverse relationships are eagerly selected.
+
+    The caps fixture rebuilds the shared fragment_store with the reverse
+    resolvers; find_file reading the static module query (instead of
+    fragment_store) would never select them.
+    """
+    file_data = create_file_dict(id="500", path="/v.mp4")
+
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findFile", file_data))
+        ]
+    )
+
+    try:
+        await respx_stash_client.find_file(id="500")
+    finally:
+        dump_graphql_calls(route.calls)
+
+    query = json.loads(route.calls[0].request.content)["query"]
+    assert "... on VideoFile" in query
+    assert "...SceneFragment" in query
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_find_files_selects_reverse_fields_on_capable_server(
+    respx_stash_client: StashClient,
+    respx_entity_store_with_file_reverse_caps,
+) -> None:
+    """find_files (bulk) must likewise use the capability-aware fragment_store
+    query so a #6938-capable server eagerly returns the reverse relationships."""
+    result_data = create_find_files_result(
+        files=[create_file_dict(id="500", path="/v.mp4")]
+    )
+
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findFiles", result_data))
+        ]
+    )
+
+    try:
+        await respx_stash_client.find_files(ids=["500"])
+    finally:
+        dump_graphql_calls(route.calls)
+
+    query = json.loads(route.calls[0].request.content)["query"]
+    assert "... on VideoFile" in query
+    assert "...SceneFragment" in query

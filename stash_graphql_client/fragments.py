@@ -2427,6 +2427,92 @@ class FragmentStore:
         This mirrors the module-level f-string constants but uses
         ``self.<FIELD>`` so the queries pick up capability-gated fields.
         """
+        # ---- File queries (capability-aware reverse relationships) ----
+        # When the #6938 resolvers are present, findFile(s) eagerly selects the
+        # subtype-only reverse fields with the full entity fragment. The reverse
+        # selection lives at the query level (``... on VideoFile { scenes }``),
+        # never inside VIDEO_FILE_FIELDS, so Scene -> files -> VideoFileFields
+        # stays scalar and the depth is bounded to one level.
+        caps = self._capabilities
+        has_reverse = bool(caps and caps.has_file_reverse_relationships)
+
+        if has_reverse:
+            # Every entity fragment + file fragment, each declared exactly once
+            # (duplicate fragment names are invalid GraphQL). Entity fragments
+            # reference only the file fragments, so this set is closed.
+            file_query_fragments = "\n".join(
+                [
+                    FILE_FIELDS,
+                    VIDEO_FILE_FIELDS,
+                    IMAGE_FILE_FIELDS,
+                    GALLERY_FILE_FIELDS,
+                    f"fragment SceneFragment on Scene {{\n    {self.SCENE_FIELDS}\n}}",
+                    f"fragment ImageFragment on Image {{\n    {self.IMAGE_FIELDS}\n}}",
+                    f"fragment GalleryFragment on Gallery {{\n    "
+                    f"{self.GALLERY_FIELDS}\n}}",
+                ]
+            )
+            video_reverse = "scenes {\n                ...SceneFragment\n            }"
+            image_reverse = "images {\n                ...ImageFragment\n            }"
+            gallery_reverse = (
+                "galleries {\n                ...GalleryFragment\n            }"
+            )
+        else:
+            file_query_fragments = "\n".join(
+                [FILE_FIELDS, VIDEO_FILE_FIELDS, IMAGE_FILE_FIELDS, GALLERY_FILE_FIELDS]
+            )
+            video_reverse = image_reverse = gallery_reverse = ""
+
+        self.FIND_FILE_QUERY = f"""
+{file_query_fragments}
+query FindFile($id: ID, $path: String) {{
+    findFile(id: $id, path: $path) {{
+        __typename
+        ...FileFields
+        ... on VideoFile {{
+            ...VideoFileFields
+            {video_reverse}
+        }}
+        ... on ImageFile {{
+            ...ImageFileFields
+            {image_reverse}
+        }}
+        ... on GalleryFile {{
+            ...GalleryFileFields
+            {gallery_reverse}
+        }}
+    }}
+}}
+"""
+
+        self.FIND_FILES_QUERY = f"""
+{file_query_fragments}
+query FindFiles($file_filter: FileFilterType, $filter: FindFilterType, $ids: [ID!]) {{
+    findFiles(file_filter: $file_filter, filter: $filter, ids: $ids) {{
+        count
+        megapixels
+        duration
+        size
+        files {{
+            __typename
+            ...FileFields
+            ... on VideoFile {{
+                ...VideoFileFields
+                {video_reverse}
+            }}
+            ... on ImageFile {{
+                ...ImageFileFields
+                {image_reverse}
+            }}
+            ... on GalleryFile {{
+                ...GalleryFileFields
+                {gallery_reverse}
+            }}
+        }}
+    }}
+}}
+"""
+
         # ---- Scene queries ----
         self.SCENE_QUERY_FRAGMENTS = f"""
 {FILE_FIELDS}

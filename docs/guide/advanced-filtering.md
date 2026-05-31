@@ -606,6 +606,43 @@ except ValueError:
     )
 ```
 
+## Preloading Files with `find_iter(BaseFile, ...)`
+
+`find_iter(BaseFile, ...)` bulk-loads files and warms the identity map. Each file is deserialized as its concrete polymorphic subtype (`VideoFile`, `ImageFile`, `GalleryFile`, or the fieldless `BasicFile`) based on its `__typename`. On servers that expose the file reverse-relationship resolvers (stashapp/stash #6938), the reverse relationships (`scenes`, `images`, `galleries`) are populated in the same query; on older servers they are left `UNSET` (there is no per-file fallback in the bulk path — use `populate()` on an individual file for the path-filter fallback).
+
+```python
+# Preload every video file with its scenes, filtered by path
+async for vf in store.find_iter(BaseFile, path__contains="/media/"):
+    if isinstance(vf, VideoFile) and not isinstance(vf.scenes, UnsetType):
+        for scene in vf.scenes:
+            # scene.files is populated too — e.g. find the file's owning scene
+            owner = next((s for s in vf.scenes if s.files and vf == s.files[0]), None)
+```
+
+### Supported `FileFilterType` filters
+
+Django-style kwargs translate directly for the scalar `FileFilterType` fields:
+
+```python
+store.find_iter(BaseFile, path__contains="/media/")     # StringCriterionInput
+store.find_iter(BaseFile, basename__equals="clip.mp4")   # StringCriterionInput
+store.find_iter(BaseFile, dir__contains="/2024/")        # StringCriterionInput
+store.find_iter(BaseFile, scene_count__gte=1)            # IntCriterionInput
+store.find_iter(BaseFile, mod_time__gt="2024-01-01")     # TimestampCriterionInput
+```
+
+### Known limitation: list-membership and complex file filters
+
+The kwargs shorthand does **not** auto-translate every `FileFilterType` field. These must be passed as raw filter dicts (matching the GraphQL input shape), and list-membership values must be given as explicit lists:
+
+- `zip_file` (`MultiCriterionInput`) and `parent_folder` (`HierarchicalMultiCriterionInput`) — the shorthand will not wrap a single value into a list; pass `{"value": [ids], "modifier": "INCLUDES"}`.
+- `hashes` (`[FingerprintFilterInput!]`) and `duplicated` (`FileDuplicationCriterionInput`) — no shorthand; pass the raw dict.
+
+```python
+# Raw dict for the fields the shorthand doesn't cover
+store.find_iter(BaseFile, zip_file={"value": ["42"], "modifier": "INCLUDES"})
+```
+
 ## See Also
 
 - [UNSET Pattern](unset-pattern.md): Understanding unqueried vs null fields

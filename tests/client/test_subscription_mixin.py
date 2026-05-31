@@ -12,7 +12,6 @@ Testing Strategy:
 - Use helper functions to create mock WebSocket sessions consistently
 """
 
-import asyncio
 import json
 from collections.abc import AsyncIterator
 from unittest.mock import patch
@@ -20,11 +19,12 @@ from unittest.mock import patch
 import httpx
 import pytest
 import respx
+from websockets.exceptions import ConnectionClosedOK
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
 from stash_graphql_client.types import Job, JobStatus, JobStatusUpdate, LogEntry
-from tests.fixtures import dump_graphql_calls
+from tests.fixtures import FakeSocket, dump_graphql_calls, dump_ws_calls
 
 
 # =============================================================================
@@ -62,43 +62,6 @@ class MockAsyncIterator(AsyncIterator):
 
 
 # =============================================================================
-# Helper: Mock WebSocket session
-# =============================================================================
-
-
-class MockWebSocketSession:
-    """Mock WebSocket session for testing subscriptions.
-
-    This is a minimal implementation that provides just the subscribe method
-    needed for testing, avoiding MagicMock.
-    """
-
-    def __init__(self, responses: list | Exception):
-        """Initialize with either a list of responses or an exception to raise.
-
-        Args:
-            responses: List of response dicts to yield, or Exception to raise
-        """
-        self.responses = responses
-
-    def subscribe(self, query):
-        """Return an async iterator of responses.
-
-        Args:
-            query: GraphQL subscription query (unused in mock)
-
-        Returns:
-            Async iterator of responses
-
-        Raises:
-            Exception if initialized with an exception
-        """
-        if isinstance(self.responses, Exception):
-            raise self.responses
-        return MockAsyncIterator(self.responses)
-
-
-# =============================================================================
 # subscribe_to_jobs Tests
 # =============================================================================
 
@@ -110,52 +73,50 @@ async def test_subscribe_to_jobs_yields_updates(
 ) -> None:
     """Test that subscribe_to_jobs yields JobStatusUpdate objects."""
     # Set up WebSocket session with test responses
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "jobsSubscribe": {
-                    "type": "ADD",
-                    "job": {
-                        "id": "job_123",
-                        "status": "RUNNING",
-                        "subTasks": [],
-                        "description": "Scanning metadata",
-                        "progress": 50.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "RUNNING",
-                        "subTasks": [],
-                        "description": "Scanning metadata",
-                        "progress": 75.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "FINISHED",
-                        "subTasks": [],
-                        "description": "Scanning metadata",
-                        "progress": 100.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "ADD",
+                "job": {
+                    "id": "job_123",
+                    "status": "RUNNING",
+                    "subTasks": [],
+                    "description": "Scanning metadata",
+                    "progress": 50.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "RUNNING",
+                    "subTasks": [],
+                    "description": "Scanning metadata",
+                    "progress": 75.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "FINISHED",
+                    "subTasks": [],
+                    "description": "Scanning metadata",
+                    "progress": 100.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+    ]
 
     # Subscribe and collect updates
     updates = []
@@ -207,7 +168,7 @@ async def test_subscribe_to_jobs_no_ws_session_raises(
 async def test_subscribe_to_jobs_empty_stream(respx_stash_client: StashClient) -> None:
     """Test that subscribe_to_jobs handles empty subscription stream."""
     # Set up WebSocket session with empty responses
-    respx_stash_client._ws_session = MockWebSocketSession([])
+    respx_stash_client._fake_ws.events = []
 
     # Subscribe and verify no updates
     updates = []
@@ -229,42 +190,40 @@ async def test_subscribe_to_logs_yields_log_entries(
 ) -> None:
     """Test that subscribe_to_logs yields LogEntry lists."""
     # Set up WebSocket session with log responses
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "loggingSubscribe": [
-                    {
-                        "time": "2024-01-01T10:00:00Z",
-                        "level": "Info",
-                        "message": "Starting scan",
-                    },
-                    {
-                        "time": "2024-01-01T10:00:01Z",
-                        "level": "Debug",
-                        "message": "Processing file 1",
-                    },
-                ]
-            },
-            {
-                "loggingSubscribe": [
-                    {
-                        "time": "2024-01-01T10:00:02Z",
-                        "level": "Info",
-                        "message": "Scan complete",
-                    }
-                ]
-            },
-            {
-                "loggingSubscribe": [
-                    {
-                        "time": "2024-01-01T10:00:03Z",
-                        "level": "Error",
-                        "message": "Failed to process file",
-                    }
-                ]
-            },
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        {
+            "loggingSubscribe": [
+                {
+                    "time": "2024-01-01T10:00:00Z",
+                    "level": "Info",
+                    "message": "Starting scan",
+                },
+                {
+                    "time": "2024-01-01T10:00:01Z",
+                    "level": "Debug",
+                    "message": "Processing file 1",
+                },
+            ]
+        },
+        {
+            "loggingSubscribe": [
+                {
+                    "time": "2024-01-01T10:00:02Z",
+                    "level": "Info",
+                    "message": "Scan complete",
+                }
+            ]
+        },
+        {
+            "loggingSubscribe": [
+                {
+                    "time": "2024-01-01T10:00:03Z",
+                    "level": "Error",
+                    "message": "Failed to process file",
+                }
+            ]
+        },
+    ]
 
     # Subscribe and collect log batches
     log_batches = []
@@ -312,20 +271,18 @@ async def test_subscribe_to_logs_no_ws_session_raises(
 async def test_subscribe_to_logs_empty_batches(respx_stash_client: StashClient) -> None:
     """Test that subscribe_to_logs handles empty log batches."""
     # Set up WebSocket session with empty and non-empty batches
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {"loggingSubscribe": []},  # Empty batch
-            {
-                "loggingSubscribe": [
-                    {
-                        "time": "2024-01-01T10:00:00Z",
-                        "level": "Info",
-                        "message": "Test",
-                    }
-                ]
-            },
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        {"loggingSubscribe": []},  # Empty batch
+        {
+            "loggingSubscribe": [
+                {
+                    "time": "2024-01-01T10:00:00Z",
+                    "level": "Info",
+                    "message": "Test",
+                }
+            ]
+        },
+    ]
 
     log_batches = []
     async with respx_stash_client.subscribe_to_logs() as subscription:
@@ -352,12 +309,10 @@ async def test_subscribe_to_scan_complete_yields_bool(
 ) -> None:
     """Test that subscribe_to_scan_complete yields boolean values."""
     # Set up WebSocket session with scan complete events
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {"scanCompleteSubscribe": True},
-            {"scanCompleteSubscribe": True},
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        {"scanCompleteSubscribe": True},
+        {"scanCompleteSubscribe": True},
+    ]
 
     events = []
     async with respx_stash_client.subscribe_to_scan_complete() as subscription:
@@ -615,38 +570,36 @@ async def test_wait_for_job_with_updates_via_subscription(
     )
 
     # Set up WebSocket session with subscription updates
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "RUNNING",
-                        "subTasks": [],
-                        "description": "Processing",
-                        "progress": 50.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "FINISHED",
-                        "subTasks": [],
-                        "description": "Done",
-                        "progress": 100.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "RUNNING",
+                    "subTasks": [],
+                    "description": "Processing",
+                    "progress": 50.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "FINISHED",
+                    "subTasks": [],
+                    "description": "Done",
+                    "progress": 100.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+    ]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates("job_123")
@@ -682,24 +635,22 @@ async def test_wait_for_job_with_updates_wrong_status(
     )
 
     # Set up WebSocket session - job gets cancelled instead of finished
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "CANCELLED",
-                        "subTasks": [],
-                        "description": "Cancelled",
-                        "progress": 50.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "CANCELLED",
+                    "subTasks": [],
+                    "description": "Cancelled",
+                    "progress": 50.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
             }
-        ]
-    )
+        }
+    ]
 
     # Wait for FINISHED but job gets CANCELLED
     try:
@@ -752,7 +703,7 @@ async def test_wait_for_job_with_updates_timeout(
     )
 
     # Set up WebSocket session with empty responses (to trigger timeout)
-    respx_stash_client._ws_session = MockWebSocketSession([])
+    respx_stash_client._fake_ws.events = []
 
     # Use very short timeout
     try:
@@ -791,21 +742,9 @@ async def test_wait_for_job_with_updates_timeout_during_wait(
         ]
     )
 
-    # Create an async iterator that never yields (blocks forever)
-    class BlockingAsyncIterator:
-        def __aiter__(self):
-            return self
-
-        async def __anext__(self):
-            # Sleep forever to trigger timeout
-            await asyncio.sleep(999999)
-            raise StopAsyncIteration
-
-    class BlockingWebSocketSession:
-        def subscribe(self, query):
-            return BlockingAsyncIterator()
-
-    respx_stash_client._ws_session = BlockingWebSocketSession()
+    # Keep the subscription open with no events (no trailing 'complete'), so the
+    # async-for blocks and the client-side asyncio.timeout fires.
+    respx_stash_client._fake_ws.complete = False
 
     # Use very short timeout - should trigger TimeoutError exception
     try:
@@ -845,40 +784,38 @@ async def test_wait_for_job_with_updates_ignores_other_jobs(
     )
 
     # Set up WebSocket session with updates for different jobs
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            # Update for different job - should be ignored
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_999",
-                        "status": "FINISHED",
-                        "subTasks": [],
-                        "description": "Other job",
-                        "progress": 100.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-            # Update for our job
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "FINISHED",
-                        "subTasks": [],
-                        "description": "Done",
-                        "progress": 100.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
-            },
-        ]
-    )
+    respx_stash_client._fake_ws.events = [
+        # Update for different job - should be ignored
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_999",
+                    "status": "FINISHED",
+                    "subTasks": [],
+                    "description": "Other job",
+                    "progress": 100.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+        # Update for our job
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "FINISHED",
+                    "subTasks": [],
+                    "description": "Done",
+                    "progress": 100.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
+            }
+        },
+    ]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates("job_123")
@@ -914,24 +851,22 @@ async def test_wait_for_job_with_updates_handles_string_status(
     )
 
     # Set up WebSocket session with status as string (not enum)
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "FINISHED",  # String instead of JobStatus enum
-                        "subTasks": [],
-                        "description": "Done",
-                        "progress": 100.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "FINISHED",  # String instead of JobStatus enum
+                    "subTasks": [],
+                    "description": "Done",
+                    "progress": 100.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
             }
-        ]
-    )
+        }
+    ]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates("job_123")
@@ -1059,8 +994,9 @@ async def test_wait_for_job_with_updates_subscription_exception_fallback(
         ]
     )
 
-    # Set up WebSocket session to raise exception
-    respx_stash_client._ws_session = MockWebSocketSession(Exception("Connection error"))
+    # Make the subscription fail: the fake emits a server 'error' frame, so the
+    # real gql transport raises TransportQueryError and wait_for_job falls back.
+    respx_stash_client._fake_ws.error = [{"message": "Connection error"}]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates("job_123")
@@ -1097,24 +1033,22 @@ async def test_wait_for_job_with_updates_custom_status(
     )
 
     # Set up WebSocket session - wait for RUNNING instead of FINISHED
-    respx_stash_client._ws_session = MockWebSocketSession(
-        [
-            {
-                "jobsSubscribe": {
-                    "type": "UPDATE",
-                    "job": {
-                        "id": "job_123",
-                        "status": "RUNNING",
-                        "subTasks": [],
-                        "description": "Started",
-                        "progress": 10.0,
-                        "addTime": "2024-01-01T00:00:00Z",
-                        "error": None,
-                    },
-                }
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "job_123",
+                    "status": "RUNNING",
+                    "subTasks": [],
+                    "description": "Started",
+                    "progress": 10.0,
+                    "addTime": "2024-01-01T00:00:00Z",
+                    "error": None,
+                },
             }
-        ]
-    )
+        }
+    ]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates(
@@ -1171,3 +1105,103 @@ async def test_async_iterator_wrapper_empty_source() -> None:
     results = [value async for value in wrapped]
 
     assert results == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_subscribe_to_jobs_round_trips_through_real_transport(
+    respx_stash_client: StashClient,
+) -> None:
+    """subscribe_to_jobs drives the REAL gql transport + StashClient code against
+    the FakeSocket wired into respx_stash_client — no MockWebSocketSession.
+
+    The fake negotiates the subprotocol exactly as Stash would. The gql client
+    offers ``graphql-ws`` first, so apollo is negotiated: the client sends
+    ``connection_init`` + ``start`` and parses server ``data`` frames into real
+    JobStatusUpdate objects. ``progress`` is nullable (per a live DevTools capture).
+    """
+    respx_stash_client._fake_ws.events = [
+        {
+            "jobsSubscribe": {
+                "type": "ADD",
+                "job": {
+                    "id": "114",
+                    "addTime": "2026-05-31T11:17:23Z",
+                    "status": "READY",
+                    "subTasks": [],
+                    "description": "Generating...",
+                    "progress": None,
+                    "error": None,
+                },
+            }
+        },
+        {
+            "jobsSubscribe": {
+                "type": "UPDATE",
+                "job": {
+                    "id": "114",
+                    "addTime": "2026-05-31T11:17:23Z",
+                    "status": "FINISHED",
+                    "subTasks": [],
+                    "description": "Generating...",
+                    "progress": 1.0,
+                    "error": None,
+                },
+            }
+        },
+    ]
+
+    updates = []
+    try:
+        async with respx_stash_client.subscribe_to_jobs() as subscription:
+            async for update in subscription:
+                updates.append(update)
+    finally:
+        dump_ws_calls(respx_stash_client._fake_ws)
+
+    fake = respx_stash_client._fake_ws
+    # Real apollo graphql-ws negotiation (the gql client offers it first).
+    assert fake.subprotocol == "graphql-ws"
+    sent_types = [frame.get("type") for frame in fake.sent]
+    assert "connection_init" in sent_types
+    assert "start" in sent_types  # apollo 'start', not transport-ws 'subscribe'
+
+    # Real parsing into JobStatusUpdate via the real AsyncIteratorWrapper.
+    assert [u.type for u in updates] == ["ADD", "UPDATE"]
+    assert all(isinstance(u, JobStatusUpdate) for u in updates)
+    assert isinstance(updates[0].job, Job)
+    assert updates[0].job.progress is None
+    assert updates[1].job.status == JobStatus.FINISHED
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_fake_socket_negotiates_transport_ws_codec() -> None:
+    """A client offering only ``graphql-transport-ws`` (the Stash browser UI) gets
+    that protocol and ``next`` frames — matching a live DevTools capture — whereas
+    the gql client (offering ``graphql-ws`` first) gets apollo ``data``.
+
+    Exercises the fake's negotiator + the transport-ws codec branch directly.
+    """
+    fake = FakeSocket(events=[{"jobsSubscribe": {"type": "ADD"}}])
+
+    # Apollo wins when both are offered (server-order); transport-ws only when alone.
+    fake.negotiate(["graphql-ws", "graphql-transport-ws"])
+    assert fake.subprotocol == "graphql-ws"
+    fake.negotiate(["graphql-transport-ws"])
+    assert fake.subprotocol == "graphql-transport-ws"
+
+    await fake.send(json.dumps({"type": "connection_init", "payload": {}}))
+    assert json.loads(await fake.recv()) == {"type": "connection_ack"}
+
+    await fake.send(json.dumps({"id": "uuid-1", "type": "subscribe", "payload": {}}))
+    first = json.loads(await fake.recv())
+    assert first["type"] == "next"  # transport-ws 'next', not apollo 'data'
+    assert first["id"] == "uuid-1"
+    assert first["payload"]["data"] == {"jobsSubscribe": {"type": "ADD"}}
+    assert json.loads(await fake.recv())["type"] == "complete"
+
+    # close() unblocks a pending recv by surfacing a clean connection close.
+    await fake.close()
+    with pytest.raises(ConnectionClosedOK):
+        await fake.recv()
