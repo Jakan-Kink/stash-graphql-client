@@ -2329,66 +2329,64 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
     ) -> Self | None:
         """Merge source entities into a destination entity.
 
-        Combines multiple entities of this type into one, transferring
-        relationships and optionally overriding field values.
+        Not implemented on the base class: a generic selection set built from
+        field names is invalid GraphQL for any type with nested object fields.
+        Mergeable types (Tag, Scene, Performer) override this with their own
+        fragment-backed mutation via ``_merge_via``; every other type does not
+        support merge.
+
+        Raises:
+            NotImplementedError: always — overridden by mergeable types.
+        """
+        raise NotImplementedError(
+            f"{cls.__type_name__} does not support merge. Mergeable types "
+            f"(Tag, Scene, Performer) override merge(); use the type's own "
+            f"merge() or the client mixin (e.g. client.tags_merge(...))."
+        )
+
+    @classmethod
+    async def _merge_via(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        mutation: str,
+        **kwargs: Any,
+    ) -> Self | None:
+        """Shared merge body for type-specific ``merge()`` overrides.
+
+        Builds the merge input from ``__merge_input_type__``, runs the type's
+        fragment-backed ``mutation`` (deserializing the merged destination via
+        ``result_type``), then invalidates the source entities from the cache.
 
         Args:
             client: StashClient instance
             source_ids: IDs of entities to merge from (these will be deleted)
             destination_id: ID of the entity to merge into (this will be kept)
+            mutation: the type's fragment-backed merge mutation
             **kwargs: Additional merge input fields (e.g., values, play_history)
-
-        Returns:
-            The merged destination entity, or None
-
-        Raises:
-            NotImplementedError: If the type doesn't support merge
-            ValueError: If merge fails
-
-        Examples:
-            >>> merged = await Tag.merge(client, ["1", "2"], "3")
-            >>> merged = await Scene.merge(client, ["1"], "2", play_history=True)
         """
-        if not cls.__merge_input_type__:
+        if cls.__merge_input_type__ is None:
             raise NotImplementedError(
                 f"{cls.__type_name__} does not support merge "
                 f"(no __merge_input_type__ defined)"
             )
 
-        type_name = cls.__type_name__
         merge_input = cls.__merge_input_type__(
             source=source_ids, destination=destination_id, **kwargs
         )
-        input_data = merge_input.to_graphql()  # type: ignore[attr-defined]
-        input_type_name = cls.__merge_input_type__.__name__
-
-        # Schema uses tagsMerge (plural) vs sceneMerge/performerMerge (singular)
-        operation_key = f"{type_name[0].lower()}{type_name[1:]}Merge"
-        if type_name == "Tag":
-            operation_key = "tagsMerge"
-
-        # Merge returns the merged entity with its fields
-        fields = " ".join(cls._get_field_names())
-        mutation = f"""
-            mutation Merge{type_name}($input: {input_type_name}!) {{
-                {operation_key}(input: $input) {{
-                    {fields}
-                }}
-            }}
-        """
-
-        result = await client.execute(mutation, {"input": input_data})
-        entity_data = result.get(operation_key)
+        merged = await client.execute(
+            mutation,
+            {"input": merge_input.to_graphql()},  # type: ignore[attr-defined]
+            result_type=cls,
+        )
 
         # Invalidate source entities from cache
         if cls._store is not None:
             for sid in source_ids:
                 cls._store.invalidate(cls, sid)
 
-        if entity_data is None:
-            return None
-
-        return cls.from_dict(entity_data)
+        return merged
 
     @staticmethod
     async def _get_id(obj: Any) -> str | None:

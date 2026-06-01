@@ -198,7 +198,7 @@ async def test_concurrent_operations(
     3. Generates metadata concurrently
     4. Verifies everything worked correctly
     """
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         try:
             # Create scenes concurrently
             scenes = []
@@ -297,7 +297,7 @@ async def test_error_handling(
     3. Tests concurrent error handling
     4. Tests recovery from errors
     """
-    async with stash_cleanup_tracker(stash_client) as cleanup:
+    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
         try:
             # Test invalid scene creation
             scene = Scene(

@@ -198,6 +198,9 @@ class TestTagManagement:
                         source=[dup.id], destination=orig.id
                     )
                     assert merged_tag is not None
+                    # The merge consumes the source (dup) tag — drop it from
+                    # cleanup so teardown doesn't re-delete a nonexistent tag.
+                    cleanup["tags"].remove(dup.id)
 
                 # Allow time for the server to process the merge
                 await asyncio.sleep(2.0)
@@ -581,7 +584,9 @@ class TestDuplicateManagement:
         3. Verifies all content exists
         """
         try:
-            async with stash_cleanup_tracker(stash_client) as cleanup:
+            async with stash_cleanup_tracker(
+                stash_client, auto_capture=False
+            ) as cleanup:
                 # Create unique timestamp for this test
                 timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
                 test_id = f"dup_test_{timestamp}"
@@ -686,7 +691,9 @@ class TestDuplicateManagement:
         3. Verifies duplicates are detected correctly
         """
         try:
-            async with stash_cleanup_tracker(stash_client) as cleanup:
+            async with stash_cleanup_tracker(
+                stash_client, auto_capture=False
+            ) as cleanup:
                 # Create unique timestamp for this test
                 timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
                 test_id = f"detect_{timestamp}"
@@ -795,7 +802,9 @@ class TestDuplicateManagement:
         3. Verifies changes were applied correctly
         """
         try:
-            async with stash_cleanup_tracker(stash_client) as cleanup:
+            async with stash_cleanup_tracker(
+                stash_client, auto_capture=False
+            ) as cleanup:
                 # Create unique timestamp for this test
                 timestamp = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
                 test_id = f"manage_{timestamp}"
@@ -844,91 +853,33 @@ class TestDuplicateManagement:
                     duplicates.append(scene)
                     cleanup["scenes"].append(scene.id)
 
-                # Update primary to indicate it's the primary version
-                primary.title = f"MERGED - {primary.title}"
-                primary.details += "\n\nMerged from duplicates"
-                await stash_client.update_scene(primary)
+                # Merge the duplicate scenes into the primary
+                merged = await Scene.merge(
+                    stash_client,
+                    source_ids=[dup.id for dup in duplicates],
+                    destination_id=primary.id,
+                )
+                assert merged is not None
+                assert merged.id == primary.id
 
-                # Mark duplicates as not organized
-                for i, dup in enumerate(duplicates):
-                    dup.organized = False
-                    dup.title = f"DUPLICATE {i} - {dup.title}"
-                    await stash_client.update_scene(dup)
-
-                # Verify updates were applied
-                updated_primary = await stash_client.find_scene(primary.id)
-                assert "MERGED" in updated_primary.title
-                assert "Merged from duplicates" in updated_primary.details
-                assert updated_primary.organized is True
-
-                # Check duplicates
+                # The merge consumes (deletes) the source duplicates — drop them
+                # from cleanup so teardown doesn't re-delete nonexistent scenes.
                 for dup in duplicates:
-                    updated_dup = await stash_client.find_scene(dup.id)
-                    assert "DUPLICATE" in updated_dup.title
-                    assert updated_dup.organized is False
+                    cleanup["scenes"].remove(dup.id)
 
-                # Verify scene count
-                primary_scenes = await stash_client.find_scenes(
-                    scene_filter={
-                        "title": {"value": "primary_manage_", "modifier": "INCLUDES"},
-                        "url": {
-                            "value": test_id,
-                            "modifier": "INCLUDES",
-                        },
-                    }
-                )
+                # Allow time for the server to process the merge
+                await asyncio.sleep(2.0)
 
-                duplicate_scenes = await stash_client.find_scenes(
-                    scene_filter={
-                        "title": {
-                            "value": "DUPLICATE.*" + test_id,
-                            "modifier": "MATCHES_REGEX",
-                        }
-                    }
-                )
+                # The primary survives the merge and keeps its relationships
+                surviving = await stash_client.find_scene(primary.id)
+                assert surviving is not None
+                assert surviving.id == primary.id
+                assert performer.id in {p.id for p in surviving.performers}
+                assert surviving.studio.id == studio.id
 
-                # Fallback in case MATCHES_REGEX isn't supported
-                if duplicate_scenes.count == 0:
-                    duplicate_scenes = await stash_client.find_scenes(
-                        scene_filter={
-                            "title": {"value": "DUPLICATE", "modifier": "INCLUDES"},
-                            "details": {"value": "Duplicate", "modifier": "INCLUDES"},
-                        }
-                    )
-                    filtered_duplicates = [
-                        s for s in duplicate_scenes.scenes if test_id in s["title"]
-                    ]
-                    print(
-                        f"Found {len(filtered_duplicates)} duplicates for test_id {test_id} out of {duplicate_scenes.count} total duplicates"
-                    )
-
-                # Additional validation to debug the test
-                if primary_scenes.count != 1 or duplicate_scenes.count != len(
-                    duplicates
-                ):
-                    debug_scenes = await stash_client.find_scenes(
-                        scene_filter={
-                            "title": {"value": test_id, "modifier": "INCLUDES"}
-                        }
-                    )
-                    print(
-                        f"\nDEBUG: Found {debug_scenes.count} scenes with test_id: {test_id}"
-                    )
-                    for s in debug_scenes.scenes:
-                        print(f"  - {s['id']}: {s['title']}")
-
-                assert primary_scenes.count == 1, (
-                    f"Expected 1 primary scene, found {primary_scenes.count}"
-                )
-
-                if "filtered_duplicates" in locals():
-                    assert len(filtered_duplicates) == len(duplicates), (
-                        f"Expected {len(duplicates)} duplicate scenes, found {len(filtered_duplicates)}"
-                    )
-                else:
-                    assert duplicate_scenes.count == len(duplicates), (
-                        f"Expected {len(duplicates)} duplicate scenes, found {duplicate_scenes.count}"
-                    )
+                # The duplicates were consumed by the merge and no longer exist
+                for dup in duplicates:
+                    assert await stash_client.find_scene(dup.id) is None
 
         except (ConnectionError, TimeoutError) as e:
             pytest.skip(

@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 from pydantic import BaseModel, Field
 
+from stash_graphql_client.fragments import fragment_store
+
 from .base import (
     BulkUpdateIds,
     BulkUpdateStrings,
@@ -185,6 +187,24 @@ class Scene(StashObject):
     __destroy_input_type__ = SceneDestroyInput
     __bulk_destroy_input_type__ = ScenesDestroyInput
     __merge_input_type__ = SceneMergeInput
+
+    @classmethod
+    async def merge(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        **kwargs: Any,
+    ) -> Scene | None:
+        """Merge source scenes into the destination scene (``sceneMerge``)."""
+        return await cls._merge_via(
+            client,
+            source_ids,
+            destination_id,
+            fragment_store.SCENE_MERGE_MUTATION,
+            **kwargs,
+        )
+
     # No __create_input_type__ - scenes can only be updated, they are created by the server during scanning
 
     # Fields to track for changes

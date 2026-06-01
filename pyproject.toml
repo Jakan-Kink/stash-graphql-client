@@ -275,6 +275,7 @@ markers = [
     "requires_performers: test requires Stash to have performers",
     "requires_studios: test requires Stash to have studios",
     "requires_tags: test requires Stash to have tags",
+    "full_workflow: marks full end-to-end multi-entity workflow tests",
 ]
 [tool.coverage.run]
 branch = true

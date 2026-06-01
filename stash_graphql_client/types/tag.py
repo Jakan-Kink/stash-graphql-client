@@ -117,6 +117,23 @@ class Tag(StashObject):
     __destroy_input_type__ = TagDestroyInput
     __merge_input_type__ = TagsMergeInput
 
+    @classmethod
+    async def merge(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        **kwargs: Any,
+    ) -> Tag | None:
+        """Merge source tags into the destination tag (``tagsMerge``)."""
+        return await cls._merge_via(
+            client,
+            source_ids,
+            destination_id,
+            fragment_store.TAGS_MERGE_MUTATION,
+            **kwargs,
+        )
+
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
         "name",  # TagCreateInput/TagUpdateInput

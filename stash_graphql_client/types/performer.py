@@ -209,6 +209,23 @@ class Performer(StashObject):
     __destroy_input_type__ = PerformerDestroyInput
     __merge_input_type__ = PerformerMergeInput
 
+    @classmethod
+    async def merge(
+        cls,
+        client: StashClient,
+        source_ids: list[str],
+        destination_id: str,
+        **kwargs: Any,
+    ) -> Performer | None:
+        """Merge source performers into the destination (``performerMerge``)."""
+        return await cls._merge_via(
+            client,
+            source_ids,
+            destination_id,
+            fragment_store.PERFORMER_MERGE_MUTATION,
+            **kwargs,
+        )
+
     # Fields to track for changes - only fields that can be written via input types
     __tracked_fields__ = {
         "name",  # PerformerCreateInput/PerformerUpdateInput
