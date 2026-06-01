@@ -1102,6 +1102,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#preloading-files-with-find_iterbasefile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preloading Files with find_iter(BaseFile, ...)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Preloading Files with find_iter(BaseFile, ...)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#supported-filefiltertype-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported FileFilterType filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-limitation-list-membership-and-complex-file-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitation: list-membership and complex file filters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3240,6 +3279,32 @@
 </span><span id="__span-22-27"><a id="__codelineno-22-27" name="__codelineno-22-27" href="#__codelineno-22-27"></a>        <span class="n">required_fields</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;rating100&#39;</span><span class="p">],</span>
 </span><span id="__span-22-28"><a id="__codelineno-22-28" name="__codelineno-22-28" href="#__codelineno-22-28"></a>        <span class="n">predicate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">rating100</span> <span class="o">&gt;=</span> <span class="mi">80</span>
 </span><span id="__span-22-29"><a id="__codelineno-22-29" name="__codelineno-22-29" href="#__codelineno-22-29"></a>    <span class="p">)</span>
+</span></code></pre></div>
+<h2 id="preloading-files-with-find_iterbasefile">Preloading Files with <code>find_iter(BaseFile, ...)</code><a class="headerlink" href="#preloading-files-with-find_iterbasefile" title="Permanent link">&para;</a></h2>
+<p><code>find_iter(BaseFile, ...)</code> bulk-loads files and warms the identity map. Each file is deserialized as its concrete polymorphic subtype (<code>VideoFile</code>, <code>ImageFile</code>, <code>GalleryFile</code>, or the fieldless <code>BasicFile</code>) based on its <code>__typename</code>. On servers that expose the file reverse-relationship resolvers (stashapp/stash #6938), the reverse relationships (<code>scenes</code>, <code>images</code>, <code>galleries</code>) are populated in the same query; on older servers they are left <code>UNSET</code> (there is no per-file fallback in the bulk path — use <code>populate()</code> on an individual file for the path-filter fallback).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Preload every video file with its scenes, filtered by path</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">async</span> <span class="k">for</span> <span class="n">vf</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">path__contains</span><span class="o">=</span><span class="s2">&quot;/media/&quot;</span><span class="p">):</span>
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vf</span><span class="p">,</span> <span class="n">VideoFile</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vf</span><span class="o">.</span><span class="n">scenes</span><span class="p">,</span> <span class="n">UnsetType</span><span class="p">):</span>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>        <span class="k">for</span> <span class="n">scene</span> <span class="ow">in</span> <span class="n">vf</span><span class="o">.</span><span class="n">scenes</span><span class="p">:</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>            <span class="c1"># scene.files is populated too — e.g. find the file&#39;s owning scene</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>            <span class="n">owner</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">vf</span><span class="o">.</span><span class="n">scenes</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">files</span> <span class="ow">and</span> <span class="n">vf</span> <span class="o">==</span> <span class="n">s</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="supported-filefiltertype-filters">Supported <code>FileFilterType</code> filters<a class="headerlink" href="#supported-filefiltertype-filters" title="Permanent link">&para;</a></h3>
+<p>Django-style kwargs translate directly for the scalar <code>FileFilterType</code> fields:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">path__contains</span><span class="o">=</span><span class="s2">&quot;/media/&quot;</span><span class="p">)</span>     <span class="c1"># StringCriterionInput</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">basename__equals</span><span class="o">=</span><span class="s2">&quot;clip.mp4&quot;</span><span class="p">)</span>   <span class="c1"># StringCriterionInput</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">dir__contains</span><span class="o">=</span><span class="s2">&quot;/2024/&quot;</span><span class="p">)</span>        <span class="c1"># StringCriterionInput</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">scene_count__gte</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>            <span class="c1"># IntCriterionInput</span>
+</span><span id="__span-24-5"><a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">mod_time__gt</span><span class="o">=</span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">)</span>     <span class="c1"># TimestampCriterionInput</span>
+</span></code></pre></div>
+<h3 id="known-limitation-list-membership-and-complex-file-filters">Known limitation: list-membership and complex file filters<a class="headerlink" href="#known-limitation-list-membership-and-complex-file-filters" title="Permanent link">&para;</a></h3>
+<p>The kwargs shorthand does <strong>not</strong> auto-translate every <code>FileFilterType</code> field. These must be passed as raw filter dicts (matching the GraphQL input shape), and list-membership values must be given as explicit lists:</p>
+<ul>
+<li><code>zip_file</code> (<code>MultiCriterionInput</code>) and <code>parent_folder</code> (<code>HierarchicalMultiCriterionInput</code>) — the shorthand will not wrap a single value into a list; pass <code>{"value": [ids], "modifier": "INCLUDES"}</code>.</li>
+<li><code>hashes</code> (<code>[FingerprintFilterInput!]</code>) and <code>duplicated</code> (<code>FileDuplicationCriterionInput</code>) — no shorthand; pass the raw dict.</li>
+</ul>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># Raw dict for the fields the shorthand doesn&#39;t cover</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="n">store</span><span class="o">.</span><span class="n">find_iter</span><span class="p">(</span><span class="n">BaseFile</span><span class="p">,</span> <span class="n">zip_file</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;42&quot;</span><span class="p">],</span> <span class="s2">&quot;modifier&quot;</span><span class="p">:</span> <span class="s2">&quot;INCLUDES&quot;</span><span class="p">})</span>
 </span></code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
