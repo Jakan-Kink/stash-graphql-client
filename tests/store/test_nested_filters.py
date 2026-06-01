@@ -645,7 +645,7 @@ class TestNestedFieldEdgeCases:
 
         # No GraphQL call should be made since parent is None
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(500, text="Should not be called")
+            side_effect=[httpx.Response(500, text="Should not be called")]
         )
 
         # Populate with nested spec - should skip because parent is None
@@ -772,13 +772,15 @@ class TestNestedFieldEdgeCases:
 
         # Mock response for populating the ImageFile
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200,
-                json=create_graphql_response(
-                    "findFile",
-                    {"__typename": "ImageFile", "id": "801", "path": "/test.jpg"},
-                ),
-            )
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_graphql_response(
+                        "findFile",
+                        {"__typename": "ImageFile", "id": "801", "path": "/test.jpg"},
+                    ),
+                )
+            ]
         )
 
         # Populate nested field - should skip the string item, populate the StashObject

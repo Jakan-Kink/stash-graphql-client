@@ -1015,14 +1015,17 @@ async def test_destroy_files(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_destroy_files_error_raises(respx_stash_client: StashClient) -> None:
     """Test that destroy_files raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.destroy_files(ids=["1"])
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.destroy_files(ids=["1"])
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1062,14 +1065,17 @@ async def test_reveal_file_in_file_manager_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that reveal_file_in_file_manager raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.reveal_file_in_file_manager(id="42")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.reveal_file_in_file_manager(id="42")
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1109,14 +1115,17 @@ async def test_reveal_folder_in_file_manager_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that reveal_folder_in_file_manager raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError):
-        await respx_stash_client.reveal_folder_in_file_manager(id="7")
+    try:
+        with pytest.raises(StashGraphQLError):
+            await respx_stash_client.reveal_folder_in_file_manager(id="7")
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio

@@ -293,9 +293,11 @@ class TestCustomFieldsSideMutation:
         scene.custom_fields = {"existing": "v0", "_mm_d": "watermark"}
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("sceneUpdate", {"id": "42"})
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("sceneUpdate", {"id": "42"})
+                )
+            ]
         )
 
         try:
@@ -326,15 +328,19 @@ class TestCustomFieldsSideMutation:
         scene.mark_clean()
         scene.custom_fields = {"existing": "v0", "_mm_d": "watermark"}
 
-        respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("sceneUpdate", {"id": "42"})
-            )
+        route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("sceneUpdate", {"id": "42"})
+                )
+            ]
         )
 
-        with pytest.raises(ValueError, match="has_scene_custom_fields"):
-            # save() wraps handler errors in ValueError("Failed to save Scene: ...")
-            await scene.save(respx_stash_client)
+        try:
+            with pytest.raises(ValueError, match="has_scene_custom_fields"):
+                await scene.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(route.calls)
 
     @pytest.mark.asyncio
     async def test_save_skips_handler_when_no_change(
@@ -348,12 +354,17 @@ class TestCustomFieldsSideMutation:
         # No change to custom_fields. Save with no other dirty fields → nothing fires.
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("sceneUpdate", {"id": "42"})
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("sceneUpdate", {"id": "42"})
+                )
+            ]
         )
 
-        await scene.save(respx_stash_client)
+        try:
+            await scene.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # Object isn't dirty, so save() returns early — zero calls.
         assert len(graphql_route.calls) == 0
@@ -381,13 +392,18 @@ class TestCustomFieldsSideMutation:
 
         # Catch any HTTP call the handler might errantly make.
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("sceneUpdate", {"id": "42"})
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("sceneUpdate", {"id": "42"})
+                )
+            ]
         )
 
         handler = Scene.__side_mutations__["custom_fields"]
-        await handler(respx_stash_client, scene)
+        try:
+            await handler(respx_stash_client, scene)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
         # No HTTP call — the handler short-circuited on cfi=None.
         assert len(graphql_route.calls) == 0

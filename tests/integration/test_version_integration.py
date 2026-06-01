@@ -73,7 +73,7 @@ async def test_latestversion_returns_github_version(
     }
 
     respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=mock_response)
+        side_effect=[httpx.Response(200, json=mock_response)]
     )
 
     async with (
@@ -144,7 +144,7 @@ async def test_version_and_latestversion_compatibility(
 
         with respx.mock:
             respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(200, json=mock_latest_response)
+                side_effect=[httpx.Response(200, json=mock_latest_response)]
             )
             try:
                 latest = await stash_client.latestversion()

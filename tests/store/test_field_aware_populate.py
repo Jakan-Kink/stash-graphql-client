@@ -15,8 +15,6 @@ This follows TESTING_REQUIREMENTS.md:
 - Verify field tracking and selective fetching behavior
 """
 
-import json
-
 import httpx
 import pytest
 import respx
@@ -83,19 +81,19 @@ class TestPopulateWithFieldsParameter:
         # Initial get - only has id, title
         try:
             scene = await store.get(Scene, "1")
-            assert scene is not None
-
             # Verify initial _received_fields
             received: set[str] = getattr(scene, "_received_fields", set())
-            assert "id" in received
-            assert "title" in received
-            assert "studio" not in received
-            assert "performers" not in received
 
             # Populate with additional fields
             scene = await store.populate(scene, fields=["studio", "performers"])
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert scene is not None
+        assert "id" in received
+        assert "title" in received
+        assert "studio" not in received
+        assert "performers" not in received
 
         # Verify studio and performers are now present
         assert scene.studio is not None
@@ -143,23 +141,12 @@ class TestPopulateWithFieldsParameter:
 
         try:
             scene = await store.get(Scene, "1")
-            assert scene is not None
-
             # Try to populate with field that's already received
             scene_after = await store.populate(scene, fields=["studio"])
         finally:
             dump_graphql_calls(graphql_route.calls)
 
-        # Debug: Print all GraphQL calls made
-        print(f"\n=== GraphQL Calls Made: {len(graphql_route.calls)} ===")
-        for i, call in enumerate(graphql_route.calls):
-            req_body = json.loads(call.request.content)
-            print(f"\nCall {i}:")
-            print(f"  Query: {req_body.get('query', '')[:100]}...")
-            print(f"  Variables: {req_body.get('variables', {})}")
-            if call.response:
-                print(f"  Response status: {call.response.status_code}")
-
+        assert scene is not None
         # Should have made only 1 call (the initial get), populate should make 0 additional calls
         assert len(graphql_route.calls) == 1
 
@@ -337,12 +324,12 @@ class TestFieldMergingOnRefetch:
 
         try:
             scene = await store.get(Scene, "1")
-            assert "studio" in getattr(scene, "_received_fields", set())
-
             # Populate with performers
             scene = await store.populate(scene, fields=["performers"])
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert "studio" in getattr(scene, "_received_fields", set())
 
         # Verify studio is still in _received_fields (not lost)
         final_received: set[str] = getattr(scene, "_received_fields", set())
@@ -396,14 +383,17 @@ class TestForceRefetchParameter:
 
         try:
             scene = await store.get(Scene, "1")
-            assert scene.title == "Original Title"
-            assert scene.studio is not None
-            assert scene.studio.name == "Original Studio"
-
+            initial_title = scene.title
+            initial_studio = scene.studio
+            initial_studio_name = scene.studio.name if scene.studio else None
             # Force refetch - should get updated data even though fields are already received
             scene = await store.populate(scene, fields=["studio"], force_refetch=True)
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_title == "Original Title"
+        assert initial_studio is not None
+        assert initial_studio_name == "Original Studio"
 
         # Should have updated data from server
         assert scene.studio is not None
@@ -436,12 +426,13 @@ class TestForceRefetchParameter:
 
         try:
             scene = await store.get(Scene, "1")
-            assert scene.title == "Original"
-
+            initial_title = scene.title
             # Force refetch with empty fields
             scene_after = await store.populate(scene, fields=[], force_refetch=True)
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_title == "Original"
 
         # Should handle gracefully (behavior depends on implementation)
         assert scene_after is not None
@@ -694,14 +685,15 @@ class TestPopulateIntegrationWithPhase2:
 
         try:
             scene = await store.get(Scene, "1")
-            assert scene.studio is not None
-
+            initial_studio = scene.studio
             # Populate the nested studio directly
             populated_studio = await store.populate(
                 scene.studio, fields=["urls", "details"]
             )
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_studio is not None
 
         # Verify studio now has additional fields
         assert populated_studio.urls == ["http://test.com"]
@@ -756,8 +748,7 @@ class TestPopulateIntegrationWithPhase2:
 
         try:
             scene = await store.get(Scene, "1")
-            assert len(scene.performers) >= 1
-
+            initial_performer_count = len(scene.performers)
             # Populate the first performer
             performer = scene.performers[0]
             populated_performer = await store.populate(
@@ -765,6 +756,8 @@ class TestPopulateIntegrationWithPhase2:
             )
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_performer_count >= 1
 
         # Verify performer now has additional fields
         assert populated_performer.birthdate == "1990-01-01"
@@ -823,12 +816,13 @@ class TestPopulateIntegrationWithPhase2:
         try:
             scene1 = await store.get(Scene, "1")
             scene2 = await store.get(Scene, "2")
-
+            initial_studio = scene1.studio
             # Populate studio through scene1
-            assert scene1.studio is not None
             populated_studio = await store.populate(scene1.studio, fields=["urls"])
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_studio is not None
 
         assert populated_studio.urls == ["http://shared.com"]
 
@@ -864,7 +858,7 @@ class TestSelectiveFieldLoading:
         }
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": scene_data})
+            side_effect=[httpx.Response(200, json={"data": scene_data})]
         )
 
         try:
@@ -937,9 +931,8 @@ class TestSelectiveFieldLoading:
         # Fast initial fetch
         try:
             scene = await store.get(Scene, "1")
-            assert scene.title == "Test Scene"
-            assert scene.rating100 == 85
-
+            initial_title = scene.title
+            initial_rating = scene.rating100
             # Only load relationships when actually needed
             if_need_relationships = True
             if if_need_relationships:
@@ -948,6 +941,9 @@ class TestSelectiveFieldLoading:
                 )
         finally:
             dump_graphql_calls(graphql_route.calls)
+
+        assert initial_title == "Test Scene"
+        assert initial_rating == 85
 
         assert len(scene.performers) >= 2
         assert len(scene.tags) >= 2

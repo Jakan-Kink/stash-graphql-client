@@ -31,7 +31,7 @@ async def test_tag_find_by_name_exact_match(respx_stash_client) -> None:
 
     with respx.mock:
         route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {"findTags": find_result}})
+            side_effect=[httpx.Response(200, json={"data": {"findTags": find_result}})]
         )
 
         # Call find_by_name with real client

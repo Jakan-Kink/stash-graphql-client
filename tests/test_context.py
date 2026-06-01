@@ -148,7 +148,7 @@ class TestStashContextProperties:
         """Test store property returns StashEntityStore after initialization."""
         # Mock GraphQL endpoint (handles capability detection + any other queries)
         respx_mock.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {}})
+            side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
         context = StashContext(
@@ -563,7 +563,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -582,7 +584,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -605,7 +609,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -629,7 +635,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -656,7 +664,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -711,7 +721,9 @@ class TestStashContextAsyncContextManager:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 
@@ -844,7 +856,9 @@ class TestStashContextEdgeCases:
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
         with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            graphql_route = respx.post(
+                "http://localhost:9999/graphql"
+            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 side_effect=[httpx.Response(200, json={"data": {}})]
             )
 

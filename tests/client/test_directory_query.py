@@ -254,7 +254,7 @@ async def test_directory_windows_path(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_directory_error(respx_stash_client: StashClient) -> None:
     """Test directory query error handling."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -267,29 +267,35 @@ async def test_directory_error(respx_stash_client: StashClient) -> None:
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Directory not found"):
-        await respx_stash_client.directory(path="/nonexistent/path")
+    try:
+        with pytest.raises(StashGraphQLError, match="Directory not found"):
+            await respx_stash_client.directory(path="/nonexistent/path")
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_directory_server_error(respx_stash_client: StashClient) -> None:
     """Test directory query with server error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.directory(path="/some/path")
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.directory(path="/some/path")
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_directory_permission_error(respx_stash_client: StashClient) -> None:
     """Test directory query with permission denied error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -306,8 +312,11 @@ async def test_directory_permission_error(respx_stash_client: StashClient) -> No
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Permission denied"):
-        await respx_stash_client.directory(path="/root/protected")
+    try:
+        with pytest.raises(StashGraphQLError, match="Permission denied"):
+            await respx_stash_client.directory(path="/root/protected")
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio

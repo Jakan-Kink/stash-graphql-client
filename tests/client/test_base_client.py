@@ -1613,16 +1613,28 @@ async def test_stash_client_verify_ssl_string_conversion(respx_mock) -> None:
     """
     # Mock the GraphQL endpoint (capability detection happens during initialize)
     graphql_route = respx_mock.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                "data": {
-                    "version": {"version": "v0.30.0"},
-                    "systemStatus": {"appSchema": 75, "status": "OK"},
-                    "_dup": None,
-                }
-            },
-        )
+        side_effect=[
+            httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "version": {"version": "v0.30.0"},
+                        "systemStatus": {"appSchema": 75, "status": "OK"},
+                        "_dup": None,
+                    }
+                },
+            ),
+            httpx.Response(
+                200,
+                json={
+                    "data": {
+                        "version": {"version": "v0.30.0"},
+                        "systemStatus": {"appSchema": 75, "status": "OK"},
+                        "_dup": None,
+                    }
+                },
+            ),
+        ]
     )
 
     # Test "false" string - ensures the False branch of line 131 is covered

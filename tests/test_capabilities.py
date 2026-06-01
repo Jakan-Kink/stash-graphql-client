@@ -291,13 +291,15 @@ class TestDetectCapabilitiesViaClient:
         """Client initialises successfully against minimum-version server."""
         with respx.mock:
             graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200,
-                    json=create_capability_response(
-                        app_schema=75,
-                        version="v0.30.0",
-                    ),
-                )
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json=create_capability_response(
+                            app_schema=75,
+                            version="v0.30.0",
+                        ),
+                    )
+                ]
             )
             try:
                 client = await stash_context.get_client()
@@ -317,14 +319,16 @@ class TestDetectCapabilitiesViaClient:
         """Client detects capabilities on latest develop build."""
         with respx.mock:
             graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200,
-                    json=create_capability_response(
-                        app_schema=84,
-                        version="v0.30.1-98-gc874bd56",
-                        type_names={"DuplicationCriterionInput"},
-                    ),
-                )
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json=create_capability_response(
+                            app_schema=84,
+                            version="v0.30.1-98-gc874bd56",
+                            type_names={"DuplicationCriterionInput"},
+                        ),
+                    )
+                ]
             )
             try:
                 client = await stash_context.get_client()
@@ -351,13 +355,15 @@ class TestDetectCapabilitiesViaClient:
         """
         with respx.mock:
             graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200,
-                    json=create_capability_response(
-                        app_schema=74,
-                        version="v0.29.0",
-                    ),
-                )
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json=create_capability_response(
+                            app_schema=74,
+                            version="v0.29.0",
+                        ),
+                    )
+                ]
             )
             try:
                 with pytest.raises(RuntimeError, match="below minimum supported"):
@@ -371,7 +377,7 @@ class TestDetectCapabilitiesViaClient:
         """Server errors during detection bubble up through client init."""
         with respx.mock:
             graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(500, text="Internal Server Error")
+                side_effect=[httpx.Response(500, text="Internal Server Error")]
             )
             try:
                 with pytest.raises(RuntimeError, match="Failed to initialize"):
@@ -385,13 +391,15 @@ class TestDetectCapabilitiesViaClient:
         """StashContext.capabilities returns detected capabilities after init."""
         with respx.mock:
             graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200,
-                    json=create_capability_response(
-                        app_schema=80,
-                        version="v0.30.1",
-                    ),
-                )
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json=create_capability_response(
+                            app_schema=80,
+                            version="v0.30.1",
+                        ),
+                    )
+                ]
             )
             try:
                 client = await stash_context.get_client()

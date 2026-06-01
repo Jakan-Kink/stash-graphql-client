@@ -24,6 +24,7 @@ from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
 from stash_graphql_client.types.unset import UNSET, UnsetType
+from tests.fixtures import dump_graphql_calls
 
 
 # Test model for from_graphql union type testing
@@ -123,8 +124,8 @@ class TestIdentityMapValidator:
         assert Scene._store is not None
 
         # Set up mock GraphQL response (not actually called in this test)
-        respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {}})
+        route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
         )
 
         # Step 1: Create initial scene via from_graphql to populate cache
@@ -142,23 +143,28 @@ class TestIdentityMapValidator:
             "updated_at": "2024-01-01T00:00:00Z",
         }
 
-        scene1 = Scene.from_graphql(scene_data)
+        try:
+            scene1 = Scene.from_graphql(scene_data)
+
+            # Verify it was cached
+            cache_key = ("Scene", "401")
+
+            # Step 2: Force the cache entry to expire
+            # Set TTL to negative value - guaranteed expired since age is always positive
+            # (time.monotonic() - cached_at) > -1 is always True
+            cached_entry = Scene._store._cache[cache_key]
+            cached_entry.ttl_seconds = -1
+
+            # Step 3: Call from_graphql again with same ID
+            # This should trigger the validator's expiration path (lines 507-508)
+            scene2 = Scene.from_graphql(scene_data)
+        finally:
+            dump_graphql_calls(route.calls)
+
+        # Verify scene1 was created and cached before eviction
         assert scene1.id == "401"
         assert scene1.title == "Original Scene"
-
-        # Verify it was cached
-        cache_key = ("Scene", "401")
         assert cache_key in Scene._store._cache
-
-        # Step 2: Force the cache entry to expire
-        # Set TTL to negative value - guaranteed expired since age is always positive
-        # (time.monotonic() - cached_at) > -1 is always True
-        cached_entry = Scene._store._cache[cache_key]
-        cached_entry.ttl_seconds = -1
-
-        # Step 3: Call from_graphql again with same ID
-        # This should trigger the validator's expiration path (lines 507-508)
-        scene2 = Scene.from_graphql(scene_data)
 
         # Step 4: Verify behavior
         # The expired entry should have been evicted and a new instance created

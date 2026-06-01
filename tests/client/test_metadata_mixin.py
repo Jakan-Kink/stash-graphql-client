@@ -112,12 +112,15 @@ async def test_metadata_generate_no_job_id_raises(
 @pytest.mark.unit
 async def test_metadata_generate_exception(respx_stash_client: StashClient) -> None:
     """Test metadata_generate handles exceptions (lines 106-108)."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=Exception("Network error")
     )
 
-    with pytest.raises(Exception, match="Network error"):
-        await respx_stash_client.metadata_generate(options={"covers": True})
+    try:
+        with pytest.raises(Exception, match="Network error"):
+            await respx_stash_client.metadata_generate(options={"covers": True})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio
@@ -432,14 +435,17 @@ async def test_metadata_clean_with_model(respx_stash_client: StashClient) -> Non
 @pytest.mark.unit
 async def test_metadata_clean_error_raises(respx_stash_client: StashClient) -> None:
     """Test metadata_clean raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_clean({"paths": [], "dryRun": False})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_clean({"paths": [], "dryRun": False})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -512,14 +518,17 @@ async def test_metadata_clean_generated_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test metadata_clean_generated raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_clean_generated({"dryRun": False})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_clean_generated({"dryRun": False})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -583,14 +592,17 @@ async def test_export_objects_with_model(respx_stash_client: StashClient) -> Non
 @pytest.mark.unit
 async def test_export_objects_error_raises(respx_stash_client: StashClient) -> None:
     """Test export_objects raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.export_objects({"scenes": {"all": True}})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.export_objects({"scenes": {"all": True}})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -662,20 +674,23 @@ async def test_import_objects_with_model(respx_stash_client: StashClient) -> Non
 @pytest.mark.unit
 async def test_import_objects_error_raises(respx_stash_client: StashClient) -> None:
     """Test import_objects raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.import_objects(
-            {
-                "file": "/path/to/file",
-                "duplicateBehaviour": "IGNORE",
-                "missingRefBehaviour": "FAIL",
-            }
-        )
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.import_objects(
+                {
+                    "file": "/path/to/file",
+                    "duplicateBehaviour": "IGNORE",
+                    "missingRefBehaviour": "FAIL",
+                }
+            )
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -738,14 +753,17 @@ async def test_backup_database_with_model(respx_stash_client: StashClient) -> No
 @pytest.mark.unit
 async def test_backup_database_error_raises(respx_stash_client: StashClient) -> None:
     """Test backup_database raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.backup_database({"download": True})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.backup_database({"download": True})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -808,14 +826,17 @@ async def test_anonymise_database_with_model(respx_stash_client: StashClient) ->
 @pytest.mark.unit
 async def test_anonymise_database_error_raises(respx_stash_client: StashClient) -> None:
     """Test anonymise_database raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.anonymise_database({"download": True})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.anonymise_database({"download": True})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -851,14 +872,17 @@ async def test_migrate_with_dict(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_migrate_error_raises(respx_stash_client: StashClient) -> None:
     """Test migrate raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate({"backupPath": "/path/to/backup.db"})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate({"backupPath": "/path/to/backup.db"})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -898,14 +922,17 @@ async def test_migrate_hash_naming_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test migrate_hash_naming raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_hash_naming()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_hash_naming()
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -951,14 +978,17 @@ async def test_migrate_scene_screenshots_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test migrate_scene_screenshots raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_scene_screenshots({"deleteFiles": True})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_scene_screenshots({"deleteFiles": True})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -995,14 +1025,17 @@ async def test_migrate_blobs_with_dict(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_migrate_blobs_error_raises(respx_stash_client: StashClient) -> None:
     """Test migrate_blobs raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_blobs({"deleteOld": True})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_blobs({"deleteOld": True})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1038,14 +1071,17 @@ async def test_optimise_database_success(respx_stash_client: StashClient) -> Non
 @pytest.mark.unit
 async def test_optimise_database_error_raises(respx_stash_client: StashClient) -> None:
     """Test optimise_database raises on error (covers lines 701-703)."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.optimise_database()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.optimise_database()
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1127,14 +1163,17 @@ async def test_setup_returns_false(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_setup_error_raises(respx_stash_client: StashClient) -> None:
     """Test setup raises on error (covers lines 728-730)."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.setup({"stashes": []})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.setup({"stashes": []})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1169,14 +1208,17 @@ async def test_download_ffmpeg_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_download_ffmpeg_error_raises(respx_stash_client: StashClient) -> None:
     """Test download_ffmpeg raises on error (covers lines 741-743)."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.download_ffmpeg()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.download_ffmpeg()
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1254,14 +1296,17 @@ async def test_metadata_auto_tag_with_dict(respx_stash_client: StashClient) -> N
 @pytest.mark.unit
 async def test_metadata_auto_tag_error(respx_stash_client: StashClient) -> None:
     """Test metadata_auto_tag raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_auto_tag({"performers": ["*"]})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_auto_tag({"performers": ["*"]})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1344,19 +1389,22 @@ async def test_metadata_identify_with_dict(respx_stash_client: StashClient) -> N
 @pytest.mark.unit
 async def test_metadata_identify_error(respx_stash_client: StashClient) -> None:
     """Test metadata_identify raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_identify(
-            {
-                "sources": [{"source": {"scraper_id": "scraper-1"}}],
-                "sceneIDs": ["scene-1"],
-            }
-        )
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_identify(
+                {
+                    "sources": [{"source": {"scraper_id": "scraper-1"}}],
+                    "sceneIDs": ["scene-1"],
+                }
+            )
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1393,14 +1441,17 @@ async def test_metadata_import_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_metadata_import_error(respx_stash_client: StashClient) -> None:
     """Test metadata_import raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_import()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_import()
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -1437,11 +1488,14 @@ async def test_metadata_export_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_metadata_export_error(respx_stash_client: StashClient) -> None:
     """Test metadata_export raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.metadata_export()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.metadata_export()
+    finally:
+        dump_graphql_calls(route.calls)

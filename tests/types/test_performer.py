@@ -53,9 +53,11 @@ async def test_performer_update_avatar_success(respx_stash_client) -> None:
 
         with respx.mock:
             route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200, json={"data": {"performerUpdate": performer_data}}
-                )
+                side_effect=[
+                    httpx.Response(
+                        200, json={"data": {"performerUpdate": performer_data}}
+                    )
+                ]
             )
 
             # Call update_avatar with real client
@@ -127,9 +129,11 @@ async def test_performer_update_avatar_with_png(respx_stash_client) -> None:
 
         with respx.mock:
             route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200, json={"data": {"performerUpdate": performer_data}}
-                )
+                side_effect=[
+                    httpx.Response(
+                        200, json={"data": {"performerUpdate": performer_data}}
+                    )
+                ]
             )
 
             # Call update_avatar
@@ -190,10 +194,12 @@ async def test_performer_update_avatar_client_error(respx_stash_client) -> None:
         # Mock GraphQL error response
         with respx.mock:
             route = respx.post("http://localhost:9999/graphql").mock(
-                return_value=httpx.Response(
-                    200,
-                    json={"errors": [{"message": "GraphQL error"}]},
-                )
+                side_effect=[
+                    httpx.Response(
+                        200,
+                        json={"errors": [{"message": "GraphQL error"}]},
+                    )
+                ]
             )
 
             # Call should re-raise as ValueError
@@ -224,9 +230,9 @@ async def test_performer_find_by_name_found(respx_stash_client) -> None:
 
     with respx.mock:
         route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json={"data": {"findPerformers": find_result}}
-            )
+            side_effect=[
+                httpx.Response(200, json={"data": {"findPerformers": find_result}})
+            ]
         )
 
         # Call find_by_name with real client
@@ -262,9 +268,9 @@ async def test_performer_find_by_name_not_found(respx_stash_client) -> None:
 
     with respx.mock:
         route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json={"data": {"findPerformers": find_result}}
-            )
+            side_effect=[
+                httpx.Response(200, json={"data": {"findPerformers": find_result}})
+            ]
         )
 
         # Call find_by_name

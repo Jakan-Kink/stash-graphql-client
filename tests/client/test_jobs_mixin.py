@@ -34,9 +34,9 @@ async def test_find_job_success(respx_stash_client: StashClient) -> None:
     }
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("findJob", job_data)
-        )
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findJob", job_data))
+        ]
     )
 
     try:
@@ -133,11 +133,14 @@ async def test_find_job_result_with_errors_key(respx_stash_client: StashClient) 
 @pytest.mark.unit
 async def test_find_job_exception(respx_stash_client: StashClient) -> None:
     """Test find_job handles exceptions gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
-        side_effect=Exception("Network error")
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[Exception("Network error")]
     )
 
-    job = await respx_stash_client.find_job("exception-job")
+    try:
+        job = await respx_stash_client.find_job("exception-job")
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert job is None
 
@@ -160,12 +163,15 @@ async def test_wait_for_job_empty_id(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_wait_for_job_not_found(respx_stash_client: StashClient) -> None:
     """Test wait_for_job raises ValueError when job not found."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=create_graphql_response("findJob", None))
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[httpx.Response(200, json=create_graphql_response("findJob", None))]
     )
 
-    with pytest.raises(ValueError, match="Job nonexistent not found"):
-        await respx_stash_client.wait_for_job("nonexistent", timeout=1.0)
+    try:
+        with pytest.raises(ValueError, match="Job nonexistent not found"):
+            await respx_stash_client.wait_for_job("nonexistent", timeout=1.0)
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 @pytest.mark.asyncio
@@ -181,15 +187,18 @@ async def test_wait_for_job_success(respx_stash_client: StashClient) -> None:
         "addTime": "2024-01-01T00:00:00Z",
     }
 
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("findJob", job_data)
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findJob", job_data))
+        ]
     )
 
-    result = await respx_stash_client.wait_for_job(
-        "job-123", status=JobStatus.FINISHED, period=0.1
-    )
+    try:
+        result = await respx_stash_client.wait_for_job(
+            "job-123", status=JobStatus.FINISHED, period=0.1
+        )
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is True
 
@@ -209,15 +218,18 @@ async def test_wait_for_job_finished_with_different_status(
         "addTime": "2024-01-01T00:00:00Z",
     }
 
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("findJob", job_data)
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findJob", job_data))
+        ]
     )
 
-    result = await respx_stash_client.wait_for_job(
-        "job-123", status=JobStatus.FINISHED, period=0.1
-    )
+    try:
+        result = await respx_stash_client.wait_for_job(
+            "job-123", status=JobStatus.FINISHED, period=0.1
+        )
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is False
 
@@ -235,18 +247,22 @@ async def test_wait_for_job_timeout(respx_stash_client: StashClient) -> None:
         "addTime": "2024-01-01T00:00:00Z",
     }
 
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("findJob", job_data)
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("findJob", job_data))
+        ]
+        * 20
     )
 
-    with pytest.raises(
-        TimeoutError, match="Timeout waiting for job job-123 to reach status"
-    ):
-        await respx_stash_client.wait_for_job(
-            "job-123", status=JobStatus.FINISHED, period=0.1, timeout=0.5
-        )
+    try:
+        with pytest.raises(
+            TimeoutError, match="Timeout waiting for job job-123 to reach status"
+        ):
+            await respx_stash_client.wait_for_job(
+                "job-123", status=JobStatus.FINISHED, period=0.1, timeout=0.5
+            )
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -259,7 +275,7 @@ async def test_wait_for_job_timeout(respx_stash_client: StashClient) -> None:
 async def test_stop_job_success(respx_stash_client: StashClient) -> None:
     """Test stopping a job successfully."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=create_graphql_response("stopJob", True))
+        side_effect=[httpx.Response(200, json=create_graphql_response("stopJob", True))]
     )
 
     try:
@@ -278,11 +294,16 @@ async def test_stop_job_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_stop_job_false_response(respx_stash_client: StashClient) -> None:
     """Test stop_job returns False when server returns false."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=create_graphql_response("stopJob", False))
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("stopJob", False))
+        ]
     )
 
-    result = await respx_stash_client.stop_job("job-123")
+    try:
+        result = await respx_stash_client.stop_job("job-123")
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is False
 
@@ -291,11 +312,14 @@ async def test_stop_job_false_response(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_stop_job_exception(respx_stash_client: StashClient) -> None:
     """Test stop_job handles exceptions gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
-        side_effect=Exception("Network error")
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[Exception("Network error")]
     )
 
-    result = await respx_stash_client.stop_job("job-123")
+    try:
+        result = await respx_stash_client.stop_job("job-123")
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is False
 
@@ -310,9 +334,9 @@ async def test_stop_job_exception(respx_stash_client: StashClient) -> None:
 async def test_stop_all_jobs_success(respx_stash_client: StashClient) -> None:
     """Test stopping all jobs successfully."""
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("stopAllJobs", True)
-        )
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("stopAllJobs", True))
+        ]
     )
 
     try:
@@ -330,13 +354,16 @@ async def test_stop_all_jobs_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_stop_all_jobs_false_response(respx_stash_client: StashClient) -> None:
     """Test stop_all_jobs returns False when server returns false."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("stopAllJobs", False)
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("stopAllJobs", False))
+        ]
     )
 
-    result = await respx_stash_client.stop_all_jobs()
+    try:
+        result = await respx_stash_client.stop_all_jobs()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is False
 
@@ -345,11 +372,14 @@ async def test_stop_all_jobs_false_response(respx_stash_client: StashClient) -> 
 @pytest.mark.unit
 async def test_stop_all_jobs_exception(respx_stash_client: StashClient) -> None:
     """Test stop_all_jobs handles exceptions gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
-        side_effect=Exception("Network error")
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[Exception("Network error")]
     )
 
-    result = await respx_stash_client.stop_all_jobs()
+    try:
+        result = await respx_stash_client.stop_all_jobs()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert result is False
 
@@ -383,9 +413,9 @@ async def test_job_queue_success(respx_stash_client: StashClient) -> None:
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("jobQueue", jobs_data)
-        )
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("jobQueue", jobs_data))
+        ]
     )
 
     try:
@@ -407,11 +437,14 @@ async def test_job_queue_success(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_job_queue_empty(respx_stash_client: StashClient) -> None:
     """Test getting empty job queue."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=create_graphql_response("jobQueue", []))
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[httpx.Response(200, json=create_graphql_response("jobQueue", []))]
     )
 
-    jobs = await respx_stash_client.job_queue()
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert len(jobs) == 0
 
@@ -420,11 +453,16 @@ async def test_job_queue_empty(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_job_queue_none(respx_stash_client: StashClient) -> None:
     """Test getting job queue when response is None (GraphQL null)."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(200, json=create_graphql_response("jobQueue", None))
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("jobQueue", None))
+        ]
     )
 
-    jobs = await respx_stash_client.job_queue()
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert len(jobs) == 0
 
@@ -459,9 +497,9 @@ async def test_job_queue_null_entries_in_list(respx_stash_client: StashClient) -
     ]
 
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("jobQueue", jobs_data)
-        )
+        side_effect=[
+            httpx.Response(200, json=create_graphql_response("jobQueue", jobs_data))
+        ]
     )
 
     try:
@@ -479,13 +517,18 @@ async def test_job_queue_null_entries_in_list(respx_stash_client: StashClient) -
 @pytest.mark.unit
 async def test_job_queue_unexpected_type(respx_stash_client: StashClient) -> None:
     """Test job_queue handles non-list response gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
-        return_value=httpx.Response(
-            200, json=create_graphql_response("jobQueue", "unexpected_string")
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("jobQueue", "unexpected_string")
+            )
+        ]
     )
 
-    jobs = await respx_stash_client.job_queue()
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert len(jobs) == 0
 
@@ -494,10 +537,13 @@ async def test_job_queue_unexpected_type(respx_stash_client: StashClient) -> Non
 @pytest.mark.unit
 async def test_job_queue_exception(respx_stash_client: StashClient) -> None:
     """Test job_queue handles exceptions gracefully."""
-    respx.post("http://localhost:9999/graphql").mock(
-        side_effect=Exception("Network error")
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[Exception("Network error")]
     )
 
-    jobs = await respx_stash_client.job_queue()
+    try:
+        jobs = await respx_stash_client.job_queue()
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert len(jobs) == 0

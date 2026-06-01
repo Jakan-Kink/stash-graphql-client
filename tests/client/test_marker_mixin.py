@@ -906,13 +906,16 @@ async def test_marker_wall(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_marker_wall_error_returns_empty(respx_stash_client: StashClient) -> None:
     """Test that marker_wall returns empty list on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    markers = await respx_stash_client.marker_wall(q="test")
+    try:
+        markers = await respx_stash_client.marker_wall(q="test")
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert markers == []
 
@@ -949,13 +952,16 @@ async def test_marker_strings_error_returns_empty(
     respx_stash_client: StashClient,
 ) -> None:
     """Test that marker_strings returns empty list on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    strings = await respx_stash_client.marker_strings(q="test")
+    try:
+        strings = await respx_stash_client.marker_strings(q="test")
+    finally:
+        dump_graphql_calls(route.calls)
 
     assert strings == []
 

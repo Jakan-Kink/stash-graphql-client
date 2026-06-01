@@ -223,9 +223,11 @@ class TestFilterAndPopulateSecondPassEdgeCases:
         # Mock GraphQL response for the populate call
         p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p1_complete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p1_complete)
+                )
+            ]
         )
 
         # Patch populate to also invalidate the type after populating
@@ -264,9 +266,11 @@ class TestFilterAndPopulateSecondPassEdgeCases:
         # Mock GraphQL response for the populate call
         p1_complete = create_performer_dict(id="1", name="Alice", rating100=90)
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p1_complete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p1_complete)
+                )
+            ]
         )
 
         original_populate = store.populate
@@ -315,7 +319,7 @@ class TestFilterAndPopulate:
 
         # Should NOT make any GraphQL calls
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(500, text="Should not be called")
+            side_effect=[httpx.Response(500, text="Should not be called")]
         )
 
         # Filter - no population needed
@@ -371,9 +375,11 @@ class TestFilterAndPopulate:
             id="2", name="Bob", rating100=85, favorite=False
         )
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p2_complete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p2_complete)
+                )
+            ]
         )
 
         # Filter with auto-population
@@ -541,9 +547,11 @@ class TestFilterAndPopulate:
         # Intentionally omit rating100 from response
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p1_incomplete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p1_incomplete)
+                )
+            ]
         )
 
         # Filter should warn and skip this performer
@@ -696,9 +704,11 @@ class TestFilterAndPopulateWithStats:
         # Mock response for p2
         p2_complete = create_performer_dict(id="2", name="Bob", rating100=85)
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p2_complete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p2_complete)
+                )
+            ]
         )
 
         # Filter with stats
@@ -837,9 +847,11 @@ class TestFilterAndPopulateWithStats:
         p1_incomplete = create_performer_dict(id="1", name="Alice")
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p1_incomplete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p1_incomplete)
+                )
+            ]
         )
 
         # Should warn and skip
@@ -1121,9 +1133,11 @@ class TestPopulatedFilterIter:
         p1_incomplete = create_performer_dict(id="1", name="Alice")
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json=create_graphql_response("findPerformer", p1_incomplete)
-            )
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformer", p1_incomplete)
+                )
+            ]
         )
 
         # Should warn and skip
@@ -1166,7 +1180,7 @@ class TestPopulatedFilterIter:
 
         # Mock should NOT be called (no population needed)
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(500, text="Should not be called")
+            side_effect=[httpx.Response(500, text="Should not be called")]
         )
 
         # Iterate - should not trigger any fetches

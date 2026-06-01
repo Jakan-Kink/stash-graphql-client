@@ -231,7 +231,7 @@ class TestFindById:
         # Mock response
         response_data = {"data": {"findCustomType": {"id": "13", "name": "Test"}}}
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json=response_data)
+            side_effect=[httpx.Response(200, json=response_data)]
         )
 
         # Call find_by_id - should build fallback query since CustomType not in query_map
@@ -313,9 +313,9 @@ class TestSaveMethod:
 
         # Mock response missing the operation key
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200, json={"data": {"wrong_key": {"id": "123"}}}
-            )
+            side_effect=[
+                httpx.Response(200, json={"data": {"wrong_key": {"id": "123"}}})
+            ]
         )
 
         try:
@@ -334,7 +334,7 @@ class TestSaveMethod:
 
         # Mock response with None result
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(200, json={"data": {"tagCreate": None}})
+            side_effect=[httpx.Response(200, json={"data": {"tagCreate": None}})]
         )
 
         try:
@@ -374,17 +374,19 @@ class TestSaveMethod:
 
         # Mock successful create response
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "data": {
-                        "tagCreate": {
-                            "id": "9001",
-                            "name": "New Tag",
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={
+                        "data": {
+                            "tagCreate": {
+                                "id": "9001",
+                                "name": "New Tag",
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            ]
         )
 
         # Save should update ID and mark clean
@@ -417,17 +419,19 @@ class TestSaveMethod:
 
         # Mock successful update response
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "data": {
-                        "tagUpdate": {
-                            "id": "9002",
-                            "name": "Updated Tag",
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={
+                        "data": {
+                            "tagUpdate": {
+                                "id": "9002",
+                                "name": "Updated Tag",
+                            }
                         }
-                    }
-                },
-            )
+                    },
+                )
+            ]
         )
 
         # Save should NOT update ID (already has server ID) but should mark clean

@@ -305,12 +305,14 @@ class TestSideMutations:
         tag = Tag.new(name="Plain Tag")
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            return_value=httpx.Response(
-                200,
-                json=create_graphql_response(
-                    "tagCreate", {"id": "400", "name": "Plain Tag"}
-                ),
-            )
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_graphql_response(
+                        "tagCreate", {"id": "400", "name": "Plain Tag"}
+                    ),
+                )
+            ]
         )
 
         try:
@@ -397,7 +399,10 @@ class TestSideMutations:
         tag = Tag.from_graphql({"id": "400", "name": "Test"})
         tag.mark_clean()
 
-        tag._queue_side_op(AsyncMock())
+        async def _noop_side_op(client, obj):
+            pass
+
+        tag._queue_side_op(_noop_side_op)
         assert len(tag._pending_side_ops) == 1
 
         await tag.save(respx_stash_client)
@@ -406,7 +411,11 @@ class TestSideMutations:
     def test_queued_ops_cleared_on_mark_clean(self, respx_entity_store) -> None:
         """mark_clean() also clears the queue."""
         tag = Tag.from_graphql({"id": "400", "name": "Test"})
-        tag._queue_side_op(AsyncMock())
+
+        async def _noop_side_op(client, obj):
+            pass
+
+        tag._queue_side_op(_noop_side_op)
         assert len(tag._pending_side_ops) == 1
 
         tag.mark_clean()
@@ -2101,7 +2110,7 @@ class TestUnsetGuards:
 
         # Mock: populate now fires findScenes via filter_query_hint
         # (not findPerformer), returning an empty scenes list
-        respx.post("http://localhost:9999/graphql").mock(
+        route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -2112,7 +2121,10 @@ class TestUnsetGuards:
 
         # With filter_query support, populate successfully initializes
         # performer.scenes to [], so add_scene can proceed
-        await performer.add_scene(scene)
+        try:
+            await performer.add_scene(scene)
+        finally:
+            dump_graphql_calls(route.calls)
         assert scene in performer.scenes
 
     @pytest.mark.asyncio
@@ -2153,7 +2165,7 @@ class TestUnsetGuards:
         gallery = Gallery(id="7001")
 
         # Mock: populate fires findScene, response has no "galleries" key
-        respx.post("http://localhost:9999/graphql").mock(
+        route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
                 httpx.Response(
                     200,
@@ -2164,11 +2176,14 @@ class TestUnsetGuards:
             ]
         )
 
-        with pytest.raises(
-            StashIntegrationError,
-            match="field is still UNSET after populate",
-        ):
-            await scene.add_to_gallery(gallery)
+        try:
+            with pytest.raises(
+                StashIntegrationError,
+                match="field is still UNSET after populate",
+            ):
+                await scene.add_to_gallery(gallery)
+        finally:
+            dump_graphql_calls(route.calls)
 
     @pytest.mark.asyncio
     async def test_filter_query_inverse_unset_no_store_raises(self) -> None:

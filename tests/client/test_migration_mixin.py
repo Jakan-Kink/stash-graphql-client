@@ -82,14 +82,17 @@ async def test_migrate_with_model(respx_stash_client: StashClient) -> None:
 @pytest.mark.unit
 async def test_migrate_error_raises(respx_stash_client: StashClient) -> None:
     """Test migrate raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate({"backupPath": "/path/to/backup"})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate({"backupPath": "/path/to/backup"})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -126,14 +129,17 @@ async def test_migrate_hash_naming_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test migrate_hash_naming raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_hash_naming()
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_hash_naming()
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -205,14 +211,17 @@ async def test_migrate_scene_screenshots_error_raises(
     respx_stash_client: StashClient,
 ) -> None:
     """Test migrate_scene_screenshots raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_scene_screenshots({"deleteFiles": False})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_scene_screenshots({"deleteFiles": False})
+    finally:
+        dump_graphql_calls(route.calls)
 
 
 # =============================================================================
@@ -272,11 +281,14 @@ async def test_migrate_blobs_with_model(respx_stash_client: StashClient) -> None
 @pytest.mark.unit
 async def test_migrate_blobs_error_raises(respx_stash_client: StashClient) -> None:
     """Test migrate_blobs raises on error."""
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(500, json={"errors": [{"message": "Server error"}]})
         ]
     )
 
-    with pytest.raises(StashGraphQLError, match="Server error"):
-        await respx_stash_client.migrate_blobs({"deleteOld": True})
+    try:
+        with pytest.raises(StashGraphQLError, match="Server error"):
+            await respx_stash_client.migrate_blobs({"deleteOld": True})
+    finally:
+        dump_graphql_calls(route.calls)

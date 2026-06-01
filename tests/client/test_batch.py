@@ -535,7 +535,7 @@ async def test_batch_result_iteration(respx_stash_client: StashClient) -> None:
 async def test_response_missing_alias_key(respx_stash_client: StashClient) -> None:
     """Response missing an expected alias key marks that op as errored."""
     # Server returns op0 but not op1
-    respx.post("http://localhost:9999/graphql").mock(
+    route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
                 200,
@@ -549,8 +549,11 @@ async def test_response_missing_alias_key(respx_stash_client: StashClient) -> No
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "B"}}),
     ]
 
-    with pytest.raises(StashBatchError) as exc_info:
-        await respx_stash_client.execute_batch(ops)
+    try:
+        with pytest.raises(StashBatchError) as exc_info:
+            await respx_stash_client.execute_batch(ops)
+    finally:
+        dump_graphql_calls(route.calls)
 
     batch_result = exc_info.value.batch_result
     assert batch_result[0].result == {"id": "1", "__typename": "Tag"}
