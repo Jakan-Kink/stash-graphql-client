@@ -11,6 +11,13 @@ on:
 permissions:
   contents: write
 
+# Constant group (deliberately not per-ref): a release pushes both `main` and
+# the tag, triggering two runs that otherwise race to push `gh-pages`. Serialize
+# them so the second re-fetches and pushes on top instead of being rejected.
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
