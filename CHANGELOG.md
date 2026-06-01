@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.7] - 2026-06-01
+
 ### Added
 
 - **File reverse-relationship bulk preload and eager fetch (completes stashapp/stash #6938).** `find_iter(BaseFile, …)`, `find_files`, and `find_file` now resolve files into their concrete polymorphic subtypes (`VideoFile`/`ImageFile`/`GalleryFile`) and, on servers exposing the #6938 resolvers, eagerly select the reverse relationships (`scenes`/`images`/`galleries`) through `findFiles`/`findFile`. Filtered preload is supported via `FileFilterType` (e.g. `find_iter(BaseFile, path__contains=…, basename__equals=…)`). The reverse lists carry full entity fragments — declared once and deduplicated, with the reverse selection emitted at the query level so the file fragments stay scalar and depth is bounded — so each reverse scene's own `files` come back populated and resolve through the identity map to the owning file (`scene.files[0] is file`). On servers without the resolvers, bulk preload still returns files; the reverse field is left `UNSET`.
@@ -15,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - `StashEntityStore` bulk find (`find_iter`/`find`) raised `Unsupported entity type: BaseFile` and could not preload files. `_execute_find_query` now maps `BaseFile` to `findFiles`, deserializes each item to its concrete subtype via `__typename` (including the previously-unmapped `GalleryFile`), and the `find_file`/`find_files` client mixin uses the capability-aware `FragmentStore` queries. 0.12.6 shipped the file reverse-relationship entity fields and the on-access populate path, but the `FragmentStore` queries and `StashEntityStore` bulk path needed to actually use the relationships were not yet wired; this completes that integration.
+- **`merge()` produced invalid GraphQL for entity types with nested fields.** `StashObject.merge()` built its result selection set from a flat field-name list (`" ".join(_get_field_names())`), which is invalid GraphQL for any field that resolves to an object or list (`files`, `studio`, `performers`, `tags`, …) — those require a subfield selection — so `Scene.merge`/`Performer.merge` failed server-side validation (`Field "files" of type "[VideoFile!]!" must have a selection of subfields`), and the Python field name `scene_streams` was emitted instead of the GraphQL alias `sceneStreams`. (The respx-mocked unit tests had hidden this, since the mock returns a canned response regardless of query validity.) Merge is now type-specific: `StashObject.merge()` raises `NotImplementedError`, and `Tag`, `Scene`, and `Performer` each override `merge()` to run their fragment-backed `*_MERGE_MUTATION` via a shared `_merge_via` helper (builds the input from `__merge_input_type__`, deserializes the merged destination, and invalidates the source entities from the identity map). Types without a merge mutation (e.g. `Studio`) correctly raise.
 
 ## [0.12.6] - 2026-05-30
 
@@ -753,7 +756,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...HEAD
+[0.12.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.4...v0.12.5
 [0.12.4]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.3...v0.12.4
