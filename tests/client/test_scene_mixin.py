@@ -18,6 +18,8 @@ from stash_graphql_client.types import (
     SceneMergeInput,
     ScenesDestroyInput,
 )
+from stash_graphql_client.types.files import VideoFile
+from stash_graphql_client.types.scene import SceneCreateInput
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_find_scenes_result,
@@ -949,6 +951,73 @@ async def test_create_scene(respx_stash_client: StashClient, mock_scene) -> None
     req = json.loads(graphql_route.calls[0].request.content)
     assert "sceneCreate" in req["query"]
     assert "input" in req["variables"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_scene_sends_file_ids(
+    respx_stash_client: StashClient, monkeypatch
+) -> None:
+    """create_scene serializes scene.files to SceneCreateInput.file_ids in order.
+
+    Scene creation is intentionally guarded; this opts in via __create_input_type__
+    (mirroring tests/integration) and verifies the file association is sent.
+    """
+    monkeypatch.setattr(Scene, "__create_input_type__", SceneCreateInput)
+    created_scene_data = create_scene_dict(id="9002", title="Scanned Scene")
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("sceneCreate", created_scene_data)
+            )
+        ]
+    )
+
+    scene = Scene(title="Scanned Scene", urls=["https://example.com/s"], organized=True)
+    scene.files = [VideoFile(id="903"), VideoFile(id="901")]
+
+    try:
+        result = await respx_stash_client.create_scene(scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    assert result.id == "9002"
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert "sceneCreate" in req["query"]
+    # First id is primary; order preserved; no primary_file_id on create input.
+    assert req["variables"]["input"]["file_ids"] == ["903", "901"]
+    assert "primary_file_id" not in req["variables"]["input"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_update_scene_sends_primary_file_id(
+    respx_stash_client: StashClient,
+) -> None:
+    """update_scene sends primary_file_id (not file_ids) after set_primary_file."""
+    updated_scene_data = create_scene_dict(id="123", title="Test Scene")
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200, json=create_graphql_response("sceneUpdate", updated_scene_data)
+            )
+        ]
+    )
+
+    scene = Scene(id="123", title="Test Scene", organized=False, urls=[])
+    scene.files = [VideoFile(id="901"), VideoFile(id="902")]
+    scene.mark_clean()
+    scene.set_primary_file("902")
+
+    try:
+        await respx_stash_client.update_scene(scene)
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    req = json.loads(graphql_route.calls[0].request.content)
+    assert req["variables"]["input"]["primary_file_id"] == "902"
+    assert "file_ids" not in req["variables"]["input"]
 
 
 @pytest.mark.asyncio

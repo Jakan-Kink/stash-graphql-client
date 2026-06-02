@@ -188,6 +188,7 @@ class Gallery(StashObject):
         "urls",
         "organized",
         "files",
+        "primary_file_id",  # GalleryUpdateInput.primary_file_id (update only)
         "chapters",
         "scenes",
         "tags",
@@ -224,6 +225,9 @@ class Gallery(StashObject):
     urls: list[str] | UnsetType = UNSET
     organized: bool | UnsetType = UNSET
     files: list[GalleryFile] | UnsetType = UNSET
+    # Write-only intent (no readable Gallery field): GalleryUpdateInput.primary_file_id.
+    # Prefer set_primary_file(), which also reorders files primary-first.
+    primary_file_id: str | None | UnsetType = UNSET  # ID (input-only)
     chapters: list[GalleryChapter] | UnsetType = UNSET
     scenes: list[Scene] | UnsetType = UNSET
     images: list[Image] | UnsetType = UNSET  # Reverse of Image.galleries
@@ -386,6 +390,7 @@ class Gallery(StashObject):
         "photographer": str,
         "rating100": int,
         "organized": bool,
+        "primary_file_id": str,
         "date": lambda d: (
             d.strftime("%Y-%m-%d")
             if isinstance(d, datetime)
@@ -396,6 +401,15 @@ class Gallery(StashObject):
             )
         ),
     }
+
+    def set_primary_file(self, file: Any) -> None:
+        """Designate a file as primary (reorders ``files`` primary-first).
+
+        Args:
+            file: A GalleryFile or its id; must be among this gallery's files
+                when the collection is loaded.
+        """
+        self._apply_primary_file(file, list_attr="files")
 
     __relationships__: ClassVar[dict] = {
         "studio": belongs_to("Studio", inverse_query_field="galleries"),
@@ -417,7 +431,9 @@ class Gallery(StashObject):
         ),
         "chapters": has_many("GalleryChapter", inverse_query_field="gallery"),
         # Read-only inverse: server resolves GalleryFile.galleries natively (direct_field).
-        # No file_ids on GalleryUpdateInput, so this is not user-writable here.
+        # Galleries have no file_ids on either create or update — the file set is
+        # not assignable here. Primary file reassignment uses the separate
+        # primary_file_id field (see set_primary_file), not this list.
         "files": has_many(
             "GalleryFile",
             inverse_query_field="galleries",

@@ -1776,6 +1776,45 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
         """
         self._snapshot = {}
 
+    def set_primary_file(self, file: Any) -> None:
+        """Designate the primary file for this entity.
+
+        Args:
+            file: A file entity or its id.
+
+        Raises:
+            NotImplementedError: This entity type has no file collection.
+        """
+        raise NotImplementedError(
+            f"{self.__type_name__} does not support primary file assignment"
+        )
+
+    def _apply_primary_file(self, file: Any, *, list_attr: str) -> None:
+        """Move ``file`` to the front of ``list_attr`` and set primary_file_id.
+
+        Stash treats the first file in the collection as primary. When the
+        collection is loaded, the file is validated against it and reordered to
+        index 0, and that reorder is re-baselined into the snapshot so it is not
+        a pending change. On update only ``primary_file_id`` is sent; on create
+        the index-0 file becomes ``file_ids[0]``. Accepts a file entity or id.
+        """
+        fid = file if isinstance(file, str) else getattr(file, "id", None)
+        if not fid:
+            raise ValueError("set_primary_file requires a file or file id")
+
+        files = getattr(self, list_attr, UNSET)
+        if isinstance(files, list):
+            match = next((f for f in files if getattr(f, "id", None) == fid), None)
+            if match is None:
+                raise ValueError(
+                    f"File {fid} is not among this {self.__type_name__}'s {list_attr}"
+                )
+            files.remove(match)
+            files.insert(0, match)
+            self._update_snapshot_for_fields({list_attr})
+
+        self.primary_file_id = fid
+
     def _queue_side_op(self, op: Callable[[StashClient, StashObject], Any]) -> None:
         """Queue an async operation to fire during save().
 
@@ -2562,6 +2601,29 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
 
         return data
 
+    def _filter_input_fields(
+        self, data: dict[str, Any], input_type: type[BaseModel]
+    ) -> dict[str, Any]:
+        """Drop keys not declared on ``input_type`` before construction.
+
+        Create and update inputs differ in shape (e.g. ``SceneCreateInput`` has
+        ``file_ids`` while ``SceneUpdateInput`` has ``primary_file_id``), so a
+        field valid for one operation is invalid for the other. Undeclared keys
+        are dropped rather than sent — the server rejects unknown input fields.
+        """
+        allowed = set(input_type.model_fields)
+        for field_info in input_type.model_fields.values():
+            if field_info.alias:
+                allowed.add(field_info.alias)
+
+        dropped = data.keys() - allowed
+        if dropped:
+            log.debug(
+                f"{self.__type_name__}: dropping field(s) not on "
+                f"{input_type.__name__}: {sorted(dropped)}"
+            )
+        return {k: v for k, v in data.items() if k in allowed}
+
     async def to_input(self) -> dict[str, Any]:
         """Convert to GraphQL input type.
 
@@ -2634,7 +2696,7 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
             raise NotImplementedError("__update_input_type__ cannot be None")
 
         # Return validated Pydantic object
-        return input_type(**data)
+        return input_type(**self._filter_input_fields(data, input_type))
 
     async def _to_input_dirty(self) -> BaseModel:
         """Convert only dirty fields to input type.
@@ -2674,7 +2736,7 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
             raise NotImplementedError("__update_input_type__ cannot be None")
 
         # Return validated Pydantic object
-        return update_input_type(**data)
+        return update_input_type(**self._filter_input_fields(data, update_input_type))
 
     def __hash__(self) -> int:
         """Make object hashable based on type and ID.

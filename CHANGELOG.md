@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.8] - 2026-06-02
+
+### Added
+
+- **Writable scene file association and primary-file selection.** `Scene.files` now serializes to `SceneCreateInput.file_ids` on create (the first id is assigned primary), restoring the create-side mapping. A new `set_primary_file(file)` on `Scene`, `Gallery`, and `Image` reorders the file collection (`files` / `visual_files`) primary-first — mirroring how Stash returns files, so the local view stays truthful without a refetch — and sets `primary_file_id` for the corresponding `*UpdateInput`. It accepts a file entity or its id and validates membership when the collection is loaded; the reorder is re-baselined into the dirty snapshot so only `primary_file_id` is persisted. `StashObject.set_primary_file` raises `NotImplementedError` for types without a file collection.
+
+### Fixed
+
+- **`Scene.files` was incorrectly read-only.** The #6938 file-reverse-relationship work (0.12.6) over-generalized: only the reverse resolvers (`VideoFile.scenes`, `ImageFile.images`, `GalleryFile.galleries`) are read-only, but `Scene.files` had also been modeled as a read-only `direct_field` inverse (`has_many` → `target_field=""`), silently dropping the `SceneCreateInput.file_ids` the schema exposes. It is now `habtm("VideoFile", inverse_query_field="scenes")` (`target_field="file_ids"`) — writable on create, reads unchanged (the `target_field` change affects only the write path; verified against a live server). `Gallery.files` and `Image.visual_files` correctly remain read-only, since neither create nor update accepts `file_ids` for them.
+- **`primary_file_id` was unreachable through the entity.** The field was declared on `SceneUpdateInput` / `GalleryUpdateInput` / `ImageUpdateInput` but never wired to the `Scene` / `Gallery` / `Image` entities (no settable field, absent from `__tracked_fields__` / `__field_conversions__`), so reassigning the primary file via `save()` was impossible. Now wired on all three.
+
+### Changed
+
+- **`to_input()` filters each operation's payload to its target input type's fields.** Create and update inputs differ in shape (e.g. `SceneCreateInput.file_ids` versus `SceneUpdateInput.primary_file_id`), so a field valid for one operation is dropped for the other — with a `debug` log naming the dropped keys — rather than sent. Previously such a key would surface as a confusing capability-gating `ValueError` against a real server (and a hard `extra="forbid"` rejection in v0.13). The filter is a no-op for correctly-mapped entities.
+
 ## [0.12.7] - 2026-06-01
 
 ### Added
@@ -756,7 +771,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...HEAD
+[0.12.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...v0.12.6
 [0.12.5]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.4...v0.12.5

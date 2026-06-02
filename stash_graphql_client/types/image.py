@@ -130,6 +130,7 @@ class Image(StashObject):
         "photographer",  # ImageUpdateInput
         "studio",  # mapped to studio_id
         "organized",  # ImageUpdateInput
+        "primary_file_id",  # ImageUpdateInput.primary_file_id (update only)
         "galleries",  # mapped to gallery_ids
         "tags",  # mapped to tag_ids
         "performers",  # mapped to performer_ids
@@ -165,6 +166,9 @@ class Image(StashObject):
     visual_files: list[VisualFile] | UnsetType = Field(
         default=UNSET
     )  # [VisualFile!]! - The image files (union of VideoFile | ImageFile)
+    # Write-only intent (no readable Image field): ImageUpdateInput.primary_file_id.
+    # Prefer set_primary_file(), which also reorders visual_files primary-first.
+    primary_file_id: str | None | UnsetType = UNSET  # ID (input-only)
     paths: ImagePathsType | UnsetType = Field(
         default=UNSET
     )  # ImagePathsType! (Resolver)
@@ -198,6 +202,7 @@ class Image(StashObject):
         "photographer": str,
         "rating100": int,
         "organized": bool,
+        "primary_file_id": str,
         "date": lambda d: (
             d.strftime("%Y-%m-%d")
             if isinstance(d, datetime)
@@ -208,6 +213,15 @@ class Image(StashObject):
             )
         ),
     }
+
+    def set_primary_file(self, file: Any) -> None:
+        """Designate a file as primary (reorders ``visual_files`` primary-first).
+
+        Args:
+            file: A VisualFile (VideoFile or ImageFile) or its id; must be among
+                this image's visual_files when the collection is loaded.
+        """
+        self._apply_primary_file(file, list_attr="visual_files")
 
     @staticmethod
     async def _save_o_counter(client: StashClient, image: Image) -> None:

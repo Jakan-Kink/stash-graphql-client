@@ -217,7 +217,8 @@ class Scene(StashObject):
         "studio",  # mapped to studio_id
         "urls",  # SceneUpdateInput
         "organized",  # SceneUpdateInput
-        "files",  # mapped to file_ids
+        "files",  # mapped to file_ids (create only)
+        "primary_file_id",  # SceneUpdateInput.primary_file_id (update only)
         "galleries",  # mapped to gallery_ids
         "groups",  # SceneUpdateInput
         "tags",  # mapped to tag_ids
@@ -278,6 +279,9 @@ class Scene(StashObject):
     urls: list[str] | UnsetType = UNSET  # [String!]!
     organized: bool | UnsetType = UNSET  # Boolean!
     files: list[VideoFile] | UnsetType = UNSET  # [VideoFile!]!
+    # Write-only intent (no readable Scene field): SceneUpdateInput.primary_file_id.
+    # Prefer set_primary_file(), which also reorders files primary-first.
+    primary_file_id: str | None | UnsetType = UNSET  # ID (input-only)
     paths: ScenePathsType | UnsetType = UNSET  # ScenePathsType! (Resolver)
     scene_markers: list[SceneMarker] | UnsetType = UNSET  # [SceneMarker!]!
     galleries: list[Gallery] | UnsetType = UNSET  # [Gallery!]!
@@ -316,11 +320,11 @@ class Scene(StashObject):
             transform=lambda s: StashIDInput(endpoint=s.endpoint, stash_id=s.stash_id),
         ),
         "scene_markers": has_many("SceneMarker", inverse_query_field="scene"),
-        # Read-only inverse: server resolves VideoFile.scenes natively (direct_field).
-        # No file_ids on SceneUpdateInput, so this is not user-writable here.
-        "files": has_many(
-            "VideoFile", inverse_query_field="scenes", query_strategy="direct_field"
-        ),
+        # Writable: server resolves the nested list on read (direct_field) and
+        # accepts SceneCreateInput.file_ids on create (first id = primary). On
+        # update there is no file_ids (only primary_file_id), so file_ids is
+        # dropped from update payloads by _filter_input_fields.
+        "files": habtm("VideoFile", inverse_query_field="scenes"),
     }
 
     # Field definitions with their conversion functions
@@ -332,6 +336,7 @@ class Scene(StashObject):
         "urls": list,
         "rating100": int,
         "organized": bool,
+        "primary_file_id": str,
         "date": lambda d: (
             d.strftime("%Y-%m-%d")
             if isinstance(d, datetime)
@@ -342,6 +347,15 @@ class Scene(StashObject):
             )
         ),
     }
+
+    def set_primary_file(self, file: Any) -> None:
+        """Designate a file as primary (reorders ``files`` primary-first).
+
+        Args:
+            file: A VideoFile or its id; must be among this scene's files when
+                the collection is loaded.
+        """
+        self._apply_primary_file(file, list_attr="files")
 
     # =========================================================================
     # Side-Mutation Handlers (field-based)
