@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.9] - 2026-06-12
+
+### Added
+
+- **`UNSET`, `UnsetType`, and `is_set` are now exported from the top-level package.** The three-state helpers are the library's core ergonomic, but were only importable from `stash_graphql_client.types`; `from stash_graphql_client import is_set` failed at runtime and under mypy's `no-implicit-reexport`. Surfaced by a downstream (FDNG) type-checking pass.
+
+### Fixed
+
+- **`__gte` / `__lte` store lookups were silently strict (`>` / `<`).** Stash's `CriterionModifier` has no `>=`/`<=`, and `_parse_lookup` collapsed `gte`→`GREATER_THAN` and `lte`→`LESS_THAN`, so `store.find(Scene, rating100__gte=90)` excluded scenes rated exactly 90 — contradicting the Django lookup semantics the API advertises. Inclusive bounds are now expressed exactly for every criterion type (int, float, date, timestamp) by negating the strict inverse through the filter's `NOT` combinator: `rating100__gte=90` sends `NOT: {rating100: {value: 90, modifier: LESS_THAN}}`. Multiple inclusive bounds — including `__gte` + `__lte` on the same field — chain via `OR` inside the single `NOT` (De Morgan: `NOT(a OR b)` ≡ `NOT a AND NOT b`). Verified against a live server: the boundary value is included, NULL-valued fields stay excluded (SQL three-valued logic), and `__gt`/`__lt` remain strict.
+- **`__null=True` on numeric filter fields failed GraphQL validation.** `IS_NULL`/`NOT_NULL` criteria always sent `value: ""`, which gqlgen rejects for `IntCriterionInput`/`FloatCriterionInput` (`cannot use string as Int`) even though the value is semantically ignored — so documented lookups like `store.find(Scene, rating100__null=True)` errored against a real server (respx-mocked tests had hidden this). Numeric criterion fields (`rating100`, `o_counter`, `duration`, …) now send a `0` placeholder; string-criterion fields keep `""`.
+
 ## [0.12.8] - 2026-06-02
 
 ### Added
@@ -771,7 +782,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.9...HEAD
+[0.12.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...v0.12.7
 [0.12.6]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.5...v0.12.6
