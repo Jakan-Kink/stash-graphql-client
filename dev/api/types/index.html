@@ -3355,7 +3355,7 @@ Note: created_at and updated_at are handled by Stash internally</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.base.StashObject-functions">Functions<a href="#stash_graphql_client.types.base.StashObject-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.base.StashObject-functions">Methods:<a href="#stash_graphql_client.types.base.StashObject-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -3745,6 +3745,80 @@ any pending queued side operations.</p>
 
         <p>Mark object as having unsaved changes.</p>
 <p>Clears the snapshot to force all tracked fields to be considered dirty.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.base.StashObject.set_primary_file" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_primary_file</span>
+
+
+<a href="#stash_graphql_client.types.base.StashObject.set_primary_file" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_primary_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Designate the primary file for this entity.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>file</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A file entity or its id.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="NotImplementedError">NotImplementedError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>This entity type has no file collection.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -4435,7 +4509,7 @@ while ensuring GraphQL compatibility.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.base.StashInput-functions">Functions<a href="#stash_graphql_client.types.base.StashInput-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.base.StashInput-functions">Methods:<a href="#stash_graphql_client.types.base.StashInput-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -5173,6 +5247,34 @@ functionality like find_by_id, save, and to_input methods.</p>
 
 
 
+<h5 id="stash_graphql_client.types.scene.Scene.primary_file_id" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">primary_file_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.scene.Scene.primary_file_id" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">primary_file_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h5 id="stash_graphql_client.types.scene.Scene.paths" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">paths</span>
 
@@ -5452,7 +5554,7 @@ functionality like find_by_id, save, and to_input methods.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.scene.Scene-functions">Functions<a href="#stash_graphql_client.types.scene.Scene-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.scene.Scene-functions">Methods:<a href="#stash_graphql_client.types.scene.Scene-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -5478,6 +5580,58 @@ functionality like find_by_id, save, and to_input methods.</p>
     <div class="doc doc-contents ">
 
         <p>Merge source scenes into the destination scene (<code>sceneMerge</code>).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.scene.Scene.set_primary_file" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_primary_file</span>
+
+
+<a href="#stash_graphql_client.types.scene.Scene.set_primary_file" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_primary_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Designate a file as primary (reorders <code>files</code> primary-first).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>file</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A VideoFile or its id; must be among this scene's files when
+the collection is loaded.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -6902,7 +7056,7 @@ functionality like find_by_id, save, and to_input methods.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.performer.Performer-functions">Functions<a href="#stash_graphql_client.types.performer.Performer-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.performer.Performer-functions">Methods:<a href="#stash_graphql_client.types.performer.Performer-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -7737,6 +7891,34 @@ functionality like find_by_id, save, and to_input methods.</p>
 
 
 
+<h5 id="stash_graphql_client.types.gallery.Gallery.primary_file_id" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">primary_file_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.gallery.Gallery.primary_file_id" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">primary_file_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h5 id="stash_graphql_client.types.gallery.Gallery.chapters" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">chapters</span>
 
@@ -7958,7 +8140,7 @@ functionality like find_by_id, save, and to_input methods.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.gallery.Gallery-functions">Functions<a href="#stash_graphql_client.types.gallery.Gallery-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.gallery.Gallery-functions">Methods:<a href="#stash_graphql_client.types.gallery.Gallery-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -8271,6 +8453,58 @@ by its position in the gallery.</p>
     <div class="doc doc-contents ">
 
         <p>Remove tag (syncs inverse automatically, call save() to persist).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.gallery.Gallery.set_primary_file" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_primary_file</span>
+
+
+<a href="#stash_graphql_client.types.gallery.Gallery.set_primary_file" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_primary_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Designate a file as primary (reorders <code>files</code> primary-first).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>file</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A GalleryFile or its id; must be among this gallery's files
+when the collection is loaded.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -8648,6 +8882,34 @@ reach the target value.</p>
 
 
 
+<h5 id="stash_graphql_client.types.image.Image.primary_file_id" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">primary_file_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#stash_graphql_client.types.image.Image.primary_file_id" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">primary_file_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            UnsetType (stash_graphql_client.types.unset.UnsetType)" href="#stash_graphql_client.types.unset.UnsetType">UnsetType</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            UNSET
+
+
+  
+      module-attribute
+   (stash_graphql_client.types.unset.UNSET)" href="#stash_graphql_client.types.unset.UNSET">UNSET</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h5 id="stash_graphql_client.types.image.Image.paths" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">paths</span>
 
@@ -8787,7 +9049,59 @@ reach the target value.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.image.Image-functions">Functions<a href="#stash_graphql_client.types.image.Image-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.image.Image-functions">Methods:<a href="#stash_graphql_client.types.image.Image-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+
+<div class="doc doc-object doc-function">
+
+
+<h5 id="stash_graphql_client.types.image.Image.set_primary_file" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">set_primary_file</span>
+
+
+<a href="#stash_graphql_client.types.image.Image.set_primary_file" class="headerlink" title="Permanent link">&para;</a></h5>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">set_primary_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Designate a file as primary (reorders <code>visual_files</code> primary-first).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>file</code>
+            </td>
+            <td>
+                  <code><span title="typing.Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A VisualFile (VideoFile or ImageFile) or its id; must be among
+this image's visual_files when the collection is loaded.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -9553,7 +9867,7 @@ reach the target value.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.group.Group-functions">Functions<a href="#stash_graphql_client.types.group.Group-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.group.Group-functions">Methods:<a href="#stash_graphql_client.types.group.Group-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -10533,7 +10847,7 @@ reach the target value.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.studio.Studio-functions">Functions<a href="#stash_graphql_client.types.studio.Studio-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.studio.Studio-functions">Methods:<a href="#stash_graphql_client.types.studio.Studio-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -11649,7 +11963,7 @@ Mutations guide).</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.tag.Tag-functions">Functions<a href="#stash_graphql_client.types.tag.Tag-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.tag.Tag-functions">Methods:<a href="#stash_graphql_client.types.tag.Tag-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -12556,7 +12870,7 @@ Mutations guide).</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.markers.SceneMarker-functions">Functions<a href="#stash_graphql_client.types.markers.SceneMarker-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.markers.SceneMarker-functions">Methods:<a href="#stash_graphql_client.types.markers.SceneMarker-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -12841,7 +13155,7 @@ as distinct from being explicitly set to None.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.date_utils.FuzzyDate-functions">Functions<a href="#stash_graphql_client.types.date_utils.FuzzyDate-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.date_utils.FuzzyDate-functions">Methods:<a href="#stash_graphql_client.types.date_utils.FuzzyDate-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -18042,7 +18356,7 @@ fields in the schema, matching the common pattern.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.files.BaseFile-functions">Functions<a href="#stash_graphql_client.types.files.BaseFile-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.files.BaseFile-functions">Methods:<a href="#stash_graphql_client.types.files.BaseFile-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 
@@ -18335,7 +18649,7 @@ fields in the schema, matching the common pattern.</p>
 </div>
 
 
-<h4 id="stash_graphql_client.types.files.Folder-functions">Functions<a href="#stash_graphql_client.types.files.Folder-functions" class="headerlink" title="Permanent link">&para;</a></h4>
+<h4 id="stash_graphql_client.types.files.Folder-functions">Methods:<a href="#stash_graphql_client.types.files.Folder-functions" class="headerlink" title="Permanent link">&para;</a></h4>
 
 <div class="doc doc-object doc-function">
 

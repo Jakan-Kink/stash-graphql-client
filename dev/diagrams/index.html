@@ -2453,12 +2453,12 @@
     Field --&gt; BuildFilter[Build filter object]
     Modifier --&gt; MapModifier[Map to GraphQL modifier]
 
-    MapModifier --&gt; GraphQLMod["GREATER_THAN"]
+    MapModifier --&gt; GraphQLMod["Inclusive bound: Stash has no &gt;=,&lt;br/&gt;negate the strict inverse via NOT"]
 
     BuildFilter --&gt; Combine[Combine field + modifier]
     GraphQLMod --&gt; Combine
 
-    Combine --&gt; Output["{\n  rating100: {\n    value: 80,\n    modifier: 'GREATER_THAN'\n  }\n}"]
+    Combine --&gt; Output["{\n  NOT: {\n    rating100: {\n      value: 80,\n      modifier: 'LESS_THAN'\n    }\n  }\n}"]
 
     style Input fill:#2E86AB,color:#fff
     style Output fill:#06A77D,color:#fff</code></pre>

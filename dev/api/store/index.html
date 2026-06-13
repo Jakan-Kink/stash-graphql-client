@@ -1300,7 +1300,7 @@
   <a href="#stash_graphql_client.store.StashEntityStore-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Functions
+        Methods:
       
     </span>
   </a>
@@ -2540,7 +2540,7 @@ queries for data you don't need.</p>
 </div>
 
 
-<h3 id="stash_graphql_client.store.StashEntityStore-functions">Functions<a href="#stash_graphql_client.store.StashEntityStore-functions" class="headerlink" title="Permanent link">&para;</a></h3>
+<h3 id="stash_graphql_client.store.StashEntityStore-functions">Methods:<a href="#stash_graphql_client.store.StashEntityStore-functions" class="headerlink" title="Permanent link">&para;</a></h3>
 
 <div class="doc doc-object doc-function">
 
@@ -2965,7 +2965,8 @@ dual sync/async pattern.</p>
 <p>find(Scene, title="exact")              # EQUALS
 find(Scene, title__contains="partial")  # INCLUDES
 find(Scene, title__regex=r"S\d+")      # MATCHES_REGEX
-find(Scene, rating100__gte=80)          # GREATER_THAN
+find(Scene, rating100__gt=80)           # GREATER_THAN (strict)
+find(Scene, rating100__gte=80)          # &gt;= via NOT(LESS_THAN)
 find(Scene, rating100__between=(60,90)) # BETWEEN
 find(Scene, studio__null=True)          # IS_NULL</p>
 <h5 id="stash_graphql_client.store.StashEntityStore.find--raw-dict-for-complex-cases">Raw dict for complex cases<a class="headerlink" href="#stash_graphql_client.store.StashEntityStore.find--raw-dict-for-complex-cases" title="Permanent link">&para;</a></h5>
@@ -4971,8 +4972,10 @@ Preferred pattern: explicitly save related objects before parent.</p>
 
 <a href="#stash_graphql_client.store.StashEntityStore.save_batch" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">save_batch</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">objects</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">250</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">objects</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">max_batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">250</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            BatchResult
 
 
   
@@ -5006,7 +5009,7 @@ after the main batch succeeds (same as :meth:<code>save</code>).</p>
                 <code>objects</code>
             </td>
             <td>
-                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a>]</code>
+                  <code><span title="collections.abc.Sequence">Sequence</span>[<a class="autorefs autorefs-internal" title="            StashObject (stash_graphql_client.types.base.StashObject)" href="../types/#stash_graphql_client.types.base.StashObject">StashObject</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
