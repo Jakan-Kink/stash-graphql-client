@@ -1358,6 +1358,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#importing-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Importing types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#base-types" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3186,6 +3197,9 @@
 
 <h1 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h1>
 <p>Type definitions and utilities for Stash entities.</p>
+<h2 id="importing-types">Importing types<a class="headerlink" href="#importing-types" title="Permanent link">&para;</a></h2>
+<p><code>stash_graphql_client.types</code> is the canonical, complete, flat import surface for every public schema type, input, enum, filter, and relationship helper. Anything in this package is importable directly from it — <code>from stash_graphql_client.types import GenderEnum, CustomFieldsInput, VideoFile, FileFilterType</code> — without reaching into the individual submodules (<code>.types.enums</code>, <code>.types.files</code>, <code>.types.metadata</code>, ...). Submodule paths still work, but <code>.types</code> is the supported, stable location and the only one that round-trips cleanly under mypy's <code>no-implicit-reexport</code>.</p>
+<p>The top-level package (<code>stash_graphql_client</code>) deliberately re-exports only the curated essentials — the client, store, errors, logging, the core entity types and their create/update inputs, and the <code>UNSET</code> / <code>UnsetType</code> / <code>is_set</code> helpers. For everything else, import from <code>stash_graphql_client.types</code>. So the rule of thumb is: reach for the top-level package for the common path, and <code>stash_graphql_client.types</code> for the full type surface.</p>
 <h2 id="base-types">Base Types<a class="headerlink" href="#base-types" title="Permanent link">&para;</a></h2>
 
 
