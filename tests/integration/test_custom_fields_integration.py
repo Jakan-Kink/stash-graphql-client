@@ -176,19 +176,30 @@ async def test_performer_custom_fields_pre_floor(
 
     async with (
         stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
     ):
-        perf = await stash_client.create_performer(
-            Performer.new(name=f"cf_perf_{suffix}")
-        )
-        cleanup["performers"].append(perf.id)
+        try:
+            perf = await stash_client.create_performer(
+                Performer.new(name=f"cf_perf_{suffix}")
+            )
+            cleanup["performers"].append(perf.id)
 
-        perf.custom_fields = {f"k_{suffix}": "v1"}
-        await perf.save(stash_client)
+            perf.custom_fields = {f"k_{suffix}": "v1"}
+            await perf.save(stash_client)
+        finally:
+            dump_graphql_calls(calls, "performer cf create and save")
 
-        reloaded = await stash_client.find_performer(perf.id)
+        calls.clear()
+
+        try:
+            reloaded = await stash_client.find_performer(perf.id)
+        finally:
+            dump_graphql_calls(calls, "performer cf reload")
+
         assert reloaded is not None
-        assert is_set(reloaded.custom_fields)
-        assert reloaded.custom_fields.get(f"k_{suffix}") == "v1"
+        reloaded_cf = reloaded.custom_fields
+        assert is_set(reloaded_cf)
+        assert reloaded_cf.get(f"k_{suffix}") == "v1"
 
 
 # =============================================================================
@@ -204,28 +215,45 @@ async def test_studio_custom_fields(
     _skip_unless_capability(stash_client, "has_studio_custom_fields")
     suffix = _unique_suffix()
 
-    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
-        studio = await stash_client.create_studio(
-            Studio.new(name=f"cf_studio_{suffix}")
-        )
-        cleanup["studios"].append(studio.id)
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            studio = await stash_client.create_studio(
+                Studio.new(name=f"cf_studio_{suffix}")
+            )
+            cleanup["studios"].append(studio.id)
 
-        studio.custom_fields = {f"k_{suffix}": "v1", f"k2_{suffix}": "v2"}
-        await studio.save(stash_client)
+            studio.custom_fields = {f"k_{suffix}": "v1", f"k2_{suffix}": "v2"}
+            await studio.save(stash_client)
 
-        reloaded = await stash_client.find_studio(studio.id)
+            reloaded = await stash_client.find_studio(studio.id)
+        finally:
+            dump_graphql_calls(calls, "studio cf create, save, reload")
+
         assert reloaded is not None
-        assert reloaded.custom_fields.get(f"k_{suffix}") == "v1"
-        assert reloaded.custom_fields.get(f"k2_{suffix}") == "v2"
+        reloaded_cf = reloaded.custom_fields
+        assert is_set(reloaded_cf)
+        assert reloaded_cf.get(f"k_{suffix}") == "v1"
+        assert reloaded_cf.get(f"k2_{suffix}") == "v2"
+
+        calls.clear()
 
         # Modify + remove
-        reloaded.custom_fields = {f"k_{suffix}": "v1-updated"}
-        await reloaded.save(stash_client)
+        try:
+            reloaded.custom_fields = {f"k_{suffix}": "v1-updated"}
+            await reloaded.save(stash_client)
 
-        reloaded2 = await stash_client.find_studio(studio.id)
+            reloaded2 = await stash_client.find_studio(studio.id)
+        finally:
+            dump_graphql_calls(calls, "studio cf modify and reload")
+
         assert reloaded2 is not None
-        assert reloaded2.custom_fields.get(f"k_{suffix}") == "v1-updated"
-        assert f"k2_{suffix}" not in reloaded2.custom_fields
+        reloaded2_cf = reloaded2.custom_fields
+        assert is_set(reloaded2_cf)
+        assert reloaded2_cf.get(f"k_{suffix}") == "v1-updated"
+        assert f"k2_{suffix}" not in reloaded2_cf
 
 
 @pytest.mark.integration
@@ -236,16 +264,25 @@ async def test_tag_custom_fields(
     _skip_unless_capability(stash_client, "has_tag_custom_fields")
     suffix = _unique_suffix()
 
-    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
-        tag = await stash_client.create_tag(Tag.new(name=f"cf_tag_{suffix}"))
-        cleanup["tags"].append(tag.id)
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            tag = await stash_client.create_tag(Tag.new(name=f"cf_tag_{suffix}"))
+            cleanup["tags"].append(tag.id)
 
-        tag.custom_fields = {f"k_{suffix}": "tag_value"}
-        await tag.save(stash_client)
+            tag.custom_fields = {f"k_{suffix}": "tag_value"}
+            await tag.save(stash_client)
 
-        reloaded = await stash_client.find_tag(tag.id)
+            reloaded = await stash_client.find_tag(tag.id)
+        finally:
+            dump_graphql_calls(calls, "tag cf create, save, reload")
+
         assert reloaded is not None
-        assert reloaded.custom_fields.get(f"k_{suffix}") == "tag_value"
+        reloaded_cf = reloaded.custom_fields
+        assert is_set(reloaded_cf)
+        assert reloaded_cf.get(f"k_{suffix}") == "tag_value"
 
 
 @pytest.mark.integration
@@ -256,18 +293,27 @@ async def test_gallery_custom_fields(
     _skip_unless_capability(stash_client, "has_gallery_custom_fields")
     suffix = _unique_suffix()
 
-    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
-        gallery = await stash_client.create_gallery(
-            Gallery.new(title=f"cf_gallery_{suffix}")
-        )
-        cleanup["galleries"].append(gallery.id)
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            gallery = await stash_client.create_gallery(
+                Gallery.new(title=f"cf_gallery_{suffix}")
+            )
+            cleanup["galleries"].append(gallery.id)
 
-        gallery.custom_fields = {f"k_{suffix}": "gallery_value"}
-        await gallery.save(stash_client)
+            gallery.custom_fields = {f"k_{suffix}": "gallery_value"}
+            await gallery.save(stash_client)
 
-        reloaded = await stash_client.find_gallery(gallery.id)
+            reloaded = await stash_client.find_gallery(gallery.id)
+        finally:
+            dump_graphql_calls(calls, "gallery cf create, save, reload")
+
         assert reloaded is not None
-        assert reloaded.custom_fields.get(f"k_{suffix}") == "gallery_value"
+        reloaded_cf = reloaded.custom_fields
+        assert is_set(reloaded_cf)
+        assert reloaded_cf.get(f"k_{suffix}") == "gallery_value"
 
 
 @pytest.mark.integration
@@ -278,16 +324,27 @@ async def test_group_custom_fields(
     _skip_unless_capability(stash_client, "has_group_custom_fields")
     suffix = _unique_suffix()
 
-    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
-        group = await stash_client.create_group(Group.new(name=f"cf_group_{suffix}"))
-        cleanup["groups"].append(group.id)
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            group = await stash_client.create_group(
+                Group.new(name=f"cf_group_{suffix}")
+            )
+            cleanup["groups"].append(group.id)
 
-        group.custom_fields = {f"k_{suffix}": "group_value"}
-        await group.save(stash_client)
+            group.custom_fields = {f"k_{suffix}": "group_value"}
+            await group.save(stash_client)
 
-        reloaded = await stash_client.find_group(group.id)
+            reloaded = await stash_client.find_group(group.id)
+        finally:
+            dump_graphql_calls(calls, "group cf create, save, reload")
+
         assert reloaded is not None
-        assert reloaded.custom_fields.get(f"k_{suffix}") == "group_value"
+        reloaded_cf = reloaded.custom_fields
+        assert is_set(reloaded_cf)
+        assert reloaded_cf.get(f"k_{suffix}") == "group_value"
 
 
 # =============================================================================
@@ -312,40 +369,70 @@ async def test_image_custom_fields_on_existing(
     suffix = _unique_suffix()
     test_key = f"_int_test_{suffix}"
 
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
-        result = await stash_client.find_images(filter_={"per_page": 1})
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            result = await stash_client.find_images(filter_={"per_page": 1})
+        finally:
+            dump_graphql_calls(calls, "image cf probe")
+
         if not is_set(result.images) or not result.images:
             pytest.skip("No images in test Stash library")
         image_id = result.images[0].id
 
-        image = await stash_client.find_image(image_id)
+        calls.clear()
+
+        try:
+            image = await stash_client.find_image(image_id)
+        finally:
+            dump_graphql_calls(calls, "image cf initial read")
+
         assert image is not None
         original_cf: dict[str, Any] = (
             dict(image.custom_fields) if is_set(image.custom_fields) else {}
         )
 
-        try:
-            # Add a unique key without disturbing existing ones.
-            image.custom_fields = {**original_cf, test_key: "stamp"}
-            await image.save(stash_client)
+        calls.clear()
 
-            reloaded = await stash_client.find_image(image_id)
-            assert reloaded is not None
-            assert reloaded.custom_fields.get(test_key) == "stamp"
-            # Verify side-mutation handler didn't wipe other keys.
-            for k, v in original_cf.items():
-                assert reloaded.custom_fields.get(k) == v, (
-                    f"Existing custom_field {k!r} was clobbered by "
-                    "the side-mutation save"
-                )
+        # Stamp the unique key, snapshot the post-stamp state, then restore
+        # the image's pre-test custom_fields whether or not the stamp
+        # succeeded. The snapshot is a copied dict because the identity map
+        # returns the same Image instance for every find_image(image_id) —
+        # the restore save would otherwise mutate what we assert against.
+        # Assertions run after restoration, against the snapshot.
+        reloaded_cf_snapshot: dict[str, Any] | None = None
+        try:
+            try:
+                image.custom_fields = {**original_cf, test_key: "stamp"}
+                await image.save(stash_client)
+
+                reloaded = await stash_client.find_image(image_id)
+                if reloaded is not None and is_set(reloaded.custom_fields):
+                    reloaded_cf_snapshot = dict(reloaded.custom_fields)
+            finally:
+                dump_graphql_calls(calls, "image cf stamp save and reload")
         finally:
             # Clean up: remove the test key so the image's custom_fields are
             # restored to their pre-test state.
-            cleanup_image = await stash_client.find_image(image_id)
-            if cleanup_image is not None and is_set(cleanup_image.custom_fields):
-                cleanup_image.custom_fields = {
-                    k: v
-                    for k, v in cleanup_image.custom_fields.items()
-                    if k != test_key
-                }
-                await cleanup_image.save(stash_client)
+            calls.clear()
+            try:
+                cleanup_image = await stash_client.find_image(image_id)
+                if cleanup_image is not None and is_set(cleanup_image.custom_fields):
+                    cleanup_image.custom_fields = {
+                        k: v
+                        for k, v in cleanup_image.custom_fields.items()
+                        if k != test_key
+                    }
+                    await cleanup_image.save(stash_client)
+            finally:
+                dump_graphql_calls(calls, "image cf restore pre-test state")
+
+        assert reloaded_cf_snapshot is not None
+        assert reloaded_cf_snapshot.get(test_key) == "stamp"
+        # Verify side-mutation handler didn't wipe other keys.
+        for k, v in original_cf.items():
+            assert reloaded_cf_snapshot.get(k) == v, (
+                f"Existing custom_field {k!r} was clobbered by the side-mutation save"
+            )

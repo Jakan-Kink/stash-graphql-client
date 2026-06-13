@@ -39,6 +39,7 @@ from stash_graphql_client.store import CacheEntry, StashEntityStore
 
 # Re-export commonly used types
 from stash_graphql_client.types import (  # Base types; Core types; Metadata types
+    UNSET,
     BulkUpdateIds,
     BulkUpdateStrings,
     Gallery,
@@ -67,6 +68,8 @@ from stash_graphql_client.types import (  # Base types; Core types; Metadata typ
     Tag,
     TagCreateInput,
     TagUpdateInput,
+    UnsetType,
+    is_set,
 )
 
 
@@ -125,6 +128,10 @@ __all__ = [
     "BulkUpdateIds",
     "BulkUpdateStrings",
     "StashObject",
+    # UNSET helpers
+    "UNSET",
+    "UnsetType",
+    "is_set",
     # Metadata types
     "GenerateMetadataInput",
     "GenerateMetadataOptions",

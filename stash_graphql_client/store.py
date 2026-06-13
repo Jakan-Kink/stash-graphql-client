@@ -10,7 +10,7 @@ import asyncio
 import re
 import threading
 import time
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import timedelta
 from itertools import batched
@@ -314,7 +314,8 @@ class StashEntityStore:
             find(Scene, title="exact")              # EQUALS
             find(Scene, title__contains="partial")  # INCLUDES
             find(Scene, title__regex=r"S\\d+")      # MATCHES_REGEX
-            find(Scene, rating100__gte=80)          # GREATER_THAN
+            find(Scene, rating100__gt=80)           # GREATER_THAN (strict)
+            find(Scene, rating100__gte=80)          # >= via NOT(LESS_THAN)
             find(Scene, rating100__between=(60,90)) # BETWEEN
             find(Scene, studio__null=True)          # IS_NULL
 
@@ -1730,7 +1731,7 @@ class StashEntityStore:
 
     async def save_batch(
         self,
-        objects: list[StashObject],
+        objects: Sequence[StashObject],
         *,
         max_batch_size: int = 250,
     ) -> BatchResult:
@@ -2630,6 +2631,13 @@ class StashEntityStore:
         """
         graphql_filter: dict[str, Any] = {}
         entity_filter: dict[str, Any] = {}
+        # Stash's CriterionModifier has no >= / <=, so inclusive bounds are
+        # expressed as negated strict comparisons: x >= v == NOT(x < v).
+        inclusive_inverses = {
+            "GREATER_THAN_OR_EQUAL": "LESS_THAN",
+            "LESS_THAN_OR_EQUAL": "GREATER_THAN",
+        }
+        negated_criteria: list[tuple[str, dict[str, Any]]] = []
 
         for key, value in filters.items():
             # Check if it's already a raw dict (pass through)
@@ -2645,11 +2653,29 @@ class StashEntityStore:
             # Parse Django-style lookup
             field, modifier = self._parse_lookup(key)
 
+            if modifier in inclusive_inverses:
+                negated_criteria.append(
+                    (field, {"value": value, "modifier": inclusive_inverses[modifier]})
+                )
+                continue
+
             # Build criterion input
             criterion = self._build_criterion(field, modifier, value)
 
             if criterion is not None:
                 entity_filter[field] = criterion
+
+        if negated_criteria:
+            # Multiple negated bounds chain via OR inside one NOT (De Morgan:
+            # NOT(a OR b) == NOT a AND NOT b); each level holds one criterion
+            # so the same field can carry both a __gte and a __lte bound.
+            not_filter: dict[str, Any] | None = None
+            for field, criterion in reversed(negated_criteria):
+                node: dict[str, Any] = {field: criterion}
+                if not_filter is not None:
+                    node["OR"] = not_filter
+                not_filter = node
+            entity_filter["NOT"] = not_filter
 
         return graphql_filter, entity_filter if entity_filter else None
 
@@ -2659,7 +2685,11 @@ class StashEntityStore:
         Examples:
             "title" -> ("title", "EQUALS")
             "title__contains" -> ("title", "INCLUDES")
-            "rating100__gte" -> ("rating100", "GREATER_THAN")
+            "rating100__gte" -> ("rating100", "GREATER_THAN_OR_EQUAL")
+
+        GREATER_THAN_OR_EQUAL / LESS_THAN_OR_EQUAL are internal pseudo-modifiers;
+        Stash has no >= / <= so _translate_filters rewrites them as negated strict
+        comparisons inside the filter's NOT combinator.
         """
         lookup_map = {
             "contains": "INCLUDES",
@@ -2669,9 +2699,9 @@ class StashEntityStore:
             "regex": "MATCHES_REGEX",
             "iregex": "MATCHES_REGEX",
             "gt": "GREATER_THAN",
-            "gte": "GREATER_THAN",  # GraphQL doesn't have >=, use > with value-1
+            "gte": "GREATER_THAN_OR_EQUAL",
             "lt": "LESS_THAN",
-            "lte": "LESS_THAN",
+            "lte": "LESS_THAN_OR_EQUAL",
             "between": "BETWEEN",
             "null": "IS_NULL",
             "notnull": "NOT_NULL",
@@ -2727,10 +2757,48 @@ class StashEntityStore:
             "parent_studios",
         }
 
+        # Fields using IntCriterionInput/FloatCriterionInput in any supported
+        # filter type (schema/types/filters.graphql). IS_NULL/NOT_NULL ignore
+        # the value server-side, but gqlgen still validates its type, so the
+        # placeholder must be numeric for these fields and a string otherwise.
+        numeric_criterion_fields = {
+            "age",
+            "birth_year",
+            "bitrate",
+            "child_count",
+            "death_year",
+            "duration",
+            "file_count",
+            "framerate",
+            "gallery_count",
+            "group_count",
+            "height_cm",
+            "id",
+            "image_count",
+            "interactive_speed",
+            "marker_count",
+            "movie_count",
+            "o_counter",
+            "parent_count",
+            "penis_length",
+            "performer_age",
+            "performer_count",
+            "play_count",
+            "play_duration",
+            "rating100",
+            "resume_time",
+            "scene_count",
+            "stash_id_count",
+            "studio_count",
+            "tag_count",
+            "weight",
+        }
+
         if modifier == "IS_NULL":
+            placeholder: int | str = 0 if field in numeric_criterion_fields else ""
             if value:
-                return {"value": "", "modifier": "IS_NULL"}
-            return {"value": "", "modifier": "NOT_NULL"}
+                return {"value": placeholder, "modifier": "IS_NULL"}
+            return {"value": placeholder, "modifier": "NOT_NULL"}
 
         if modifier == "BETWEEN":
             if isinstance(value, (list, tuple)) and len(value) == 2:

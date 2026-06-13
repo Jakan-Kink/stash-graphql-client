@@ -157,7 +157,7 @@ class TestSafeToEatGating:
 
     def test_unset_fields_excluded_before_gating(self) -> None:
         """UNSET fields are excluded before capability gating runs."""
-        obj = _GatedInput(alpha="hello")  # beta stays UNSET
+        obj = _GatedInput(alpha="hello")  # type: ignore[call-arg]  # beta stays UNSET
 
         # Server knows _GatedInput with only "alpha" — "beta" would fail if present
         caps = _make_caps(

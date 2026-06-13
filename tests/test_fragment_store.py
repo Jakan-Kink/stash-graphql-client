@@ -566,7 +566,7 @@ class TestScrapedPerformerCareerDateCoercion:
         """ScrapedPerformer coerces int career_start to str."""
         from stash_graphql_client.types.scraped_types import ScrapedPerformer
 
-        p = ScrapedPerformer(career_start=2020)
+        p = ScrapedPerformer(career_start=2020)  # type: ignore[arg-type]
         assert p.career_start == "2020"
 
     @pytest.mark.unit
@@ -582,7 +582,7 @@ class TestScrapedPerformerCareerDateCoercion:
         """ScrapedPerformerInput coerces int career_start to str."""
         from stash_graphql_client.types.scraped_types import ScrapedPerformerInput
 
-        inp = ScrapedPerformerInput(career_start=2019)
+        inp = ScrapedPerformerInput(career_start=2019)  # type: ignore[arg-type]
         assert inp.career_start == "2019"
 
     @pytest.mark.unit

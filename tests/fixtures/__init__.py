@@ -14,6 +14,7 @@ Fixture Organization:
 from tests.fixtures.client import (
     capture_graphql_calls,
     dump_graphql_calls,
+    live_entity_store,
     mock_entity_store,
     mock_gql_ws_connect,
     mock_ws_transport,
@@ -29,6 +30,7 @@ from tests.fixtures.fake_websocket import (
     FakeSocket,
     dump_ws_calls,
     fake_ws_connection,
+    get_fake_ws,
 )
 from tests.fixtures.stash import (
     # Type factories
@@ -97,6 +99,7 @@ __all__ = [
     "FakeSocket",
     "dump_ws_calls",
     "fake_ws_connection",
+    "get_fake_ws",
     # Capability Fixtures
     "create_capability_response",
     "make_server_capabilities",
@@ -104,6 +107,7 @@ __all__ = [
     "capture_graphql_calls",
     "dump_graphql_calls",
     "enable_scene_creation",
+    "live_entity_store",
     "mock_entity_store",
     "mock_gql_ws_connect",
     "mock_ws_transport",

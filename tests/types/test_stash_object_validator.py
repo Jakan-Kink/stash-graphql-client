@@ -23,7 +23,7 @@ from stash_graphql_client.types.image import Image
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
-from stash_graphql_client.types.unset import UNSET, UnsetType
+from stash_graphql_client.types.unset import UNSET, UnsetType, is_set
 from tests.fixtures import dump_graphql_calls
 
 
@@ -42,7 +42,7 @@ class _ModelNonEntityUnionList(StashObject):
 
     __type_name__: ClassVar[str] = "_TestNonEntityUnion"
 
-    id: str | UnsetType = UNSET
+    id: str | UnsetType = UNSET  # type: ignore[assignment]
     items: list[str | int] | UnsetType = UNSET
 
 
@@ -212,6 +212,20 @@ class TestIdentityMapInitShortcut:
         stub = Performer(id="5001")
         assert stub is cached, (
             "Performer(id=...) should return the cached instance via metaclass shortcut"
+        )
+
+        # model_validate with a stub dict bypasses the metaclass shortcut and
+        # exercises the wrap validator's stub fast path WITHOUT a from_graphql
+        # context — it must return the cached instance without touching
+        # _received_fields.
+        received_before = set(cached._received_fields)
+        stub_validated = Performer.model_validate({"id": "5001"})
+        assert stub_validated is cached, (
+            "model_validate of an id-only stub should return the cached instance "
+            "via the validator stub fast path"
+        )
+        assert cached._received_fields == received_before, (
+            "non-from_graphql stub validation must not mutate _received_fields"
         )
 
     @pytest.mark.asyncio
@@ -684,12 +698,16 @@ class TestMergePathUnionTypeDiscrimination:
 
         # First construction — caches the Image
         img1 = Image.from_graphql(raw_data.copy())
-        assert isinstance(img1.visual_files[0], ImageFile)
+        files1 = img1.visual_files
+        assert is_set(files1)
+        assert isinstance(files1[0], ImageFile)
 
         # Second construction — triggers merge path
         img2 = Image.from_graphql(raw_data.copy())
         assert img2 is img1, "Identity map must return same object"
-        assert isinstance(img2.visual_files[0], ImageFile), (
+        files2 = img2.visual_files
+        assert is_set(files2)
+        assert isinstance(files2[0], ImageFile), (
             "visual_files[0] should be ImageFile after merge, not dict"
         )
 
@@ -763,7 +781,9 @@ class TestMergePathUnionTypeDiscrimination:
         }
 
         img = Image.from_graphql(data)
-        file_obj = img.visual_files[0]
+        img_files = img.visual_files
+        assert is_set(img_files)
+        file_obj = img_files[0]
         assert isinstance(file_obj, ImageFile)
         assert "path" in file_obj._received_fields, (
             "_received_fields should contain 'path' for nested ImageFile"
@@ -799,11 +819,13 @@ class TestMergePathUnionTypeDiscrimination:
         }
 
         img = Image.from_graphql(data)
-        assert isinstance(img.visual_files[0], ImageFile)
-        assert isinstance(img.visual_files[1], VideoFile)
+        img_files = img.visual_files
+        assert is_set(img_files)
+        assert isinstance(img_files[0], ImageFile)
+        assert isinstance(img_files[1], VideoFile)
         # Both should have _received_fields populated
-        assert "path" in img.visual_files[0]._received_fields
-        assert "path" in img.visual_files[1]._received_fields
+        assert "path" in img_files[0]._received_fields
+        assert "path" in img_files[1]._received_fields
 
 
 class TestUnionListBranchCoverage:

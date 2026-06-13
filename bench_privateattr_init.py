@@ -70,20 +70,20 @@ def make_scene_dicts(n: int) -> list[dict]:
     ]
 
 
-def bench_tag_from_graphql(n: int) -> None:
+def bench_tag_from_graphql(n: int) -> list[Tag]:
     """Production path: from_graphql → _process_nested_graphql → model_validate."""
     payloads = make_tag_dicts(n)
     # Hold references so identity-map cache + entities stay alive during measurement
     return [Tag.from_graphql(p) for p in payloads]
 
 
-def bench_tag_model_validate(n: int) -> None:
+def bench_tag_model_validate(n: int) -> list[Tag]:
     """Direct model_validate path (no from_graphql preprocessing)."""
     payloads = make_tag_dicts(n)
     return [Tag.model_validate(p) for p in payloads]
 
 
-def bench_scene_from_graphql(n: int) -> None:
+def bench_scene_from_graphql(n: int) -> list[Scene]:
     payloads = make_scene_dicts(n)
     return [Scene.from_graphql(p) for p in payloads]
 

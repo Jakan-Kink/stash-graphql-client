@@ -20,7 +20,7 @@ import httpx
 import pytest
 import respx
 
-from stash_graphql_client.types.base import StashObject
+from stash_graphql_client.types.base import RelationshipMetadata, StashObject
 from stash_graphql_client.types.gallery import Gallery
 from stash_graphql_client.types.group import Group
 from stash_graphql_client.types.image import Image
@@ -28,6 +28,7 @@ from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene, SceneGroupInput
 from stash_graphql_client.types.studio import Studio
 from stash_graphql_client.types.tag import Tag
+from stash_graphql_client.types.unset import is_set
 from tests.fixtures import (
     create_gallery_dict,
     create_graphql_response,
@@ -747,7 +748,10 @@ class TestSideMutations:
             {"id": "300", "title": "T", "o_history": ["2026-01-01T00:00:00Z"]}
         )
         scene.mark_clean()
-        scene.o_history.append("2026-02-01T00:00:00Z")
+        o_history = scene.o_history
+        assert is_set(o_history)
+        assert o_history is not None
+        o_history.append("2026-02-01T00:00:00Z")  # type: ignore[arg-type]
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
@@ -792,7 +796,10 @@ class TestSideMutations:
         )
         scene.mark_clean()
         # Time scalar converts strings to datetime, so pop by index
-        scene.o_history.pop(1)
+        o_history = scene.o_history
+        assert is_set(o_history)
+        assert o_history is not None
+        o_history.pop(1)
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
@@ -827,7 +834,10 @@ class TestSideMutations:
             {"id": "302", "title": "T", "play_history": [], "play_count": 0}
         )
         scene.mark_clean()
-        scene.play_history.append("2026-03-01T12:00:00Z")
+        play_history = scene.play_history
+        assert is_set(play_history)
+        assert play_history is not None
+        play_history.append("2026-03-01T12:00:00Z")  # type: ignore[arg-type]
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
@@ -866,7 +876,10 @@ class TestSideMutations:
         )
         scene.mark_clean()
         # Time scalar converts strings to datetime, so pop by index
-        scene.play_history.pop(0)
+        play_history = scene.play_history
+        assert is_set(play_history)
+        assert play_history is not None
+        play_history.pop(0)
 
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
             side_effect=[
@@ -1230,7 +1243,6 @@ class TestBulkRelationshipHandler:
 
     def test_performer_groups_in_relationships(self) -> None:
         """Performer.groups has RelationshipMetadata for queryability."""
-        from stash_graphql_client.types.base import RelationshipMetadata
 
         rel = Performer.__relationships__["groups"]
         assert isinstance(rel, RelationshipMetadata)
@@ -1705,7 +1717,6 @@ class TestSceneGroupsSerialization:
 
     def test_scene_groups_in_relationships(self) -> None:
         """Scene.__relationships__ includes groups with complex_object strategy."""
-        from stash_graphql_client.types.base import RelationshipMetadata
 
         assert "groups" in Scene.__relationships__
         rel = Scene.__relationships__["groups"]
@@ -1729,6 +1740,7 @@ class TestSceneGroupsSerialization:
         group = Group(id="5001")
         scene_group = MockSceneGroup(group=group, scene_index=3)
 
+        assert rel.transform is not None
         result = rel.transform(scene_group)
 
         assert isinstance(result, SceneGroupInput)
@@ -2125,7 +2137,9 @@ class TestUnsetGuards:
             await performer.add_scene(scene)
         finally:
             dump_graphql_calls(route.calls)
-        assert scene in performer.scenes
+        performer_scenes = performer.scenes
+        assert is_set(performer_scenes)
+        assert scene in performer_scenes
 
     @pytest.mark.asyncio
     async def test_filter_query_field_still_unset_after_populate_raises(

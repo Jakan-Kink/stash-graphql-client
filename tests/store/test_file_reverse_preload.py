@@ -24,7 +24,7 @@ from stash_graphql_client.types.files import (
     ImageFile,
     VideoFile,
 )
-from stash_graphql_client.types.unset import UnsetType
+from stash_graphql_client.types.unset import UnsetType, is_set
 from tests.fixtures import (
     assert_query_fragments_resolve,
     dump_graphql_calls,
@@ -114,10 +114,13 @@ class TestFindIterBaseFilePreload:
 
         # Response: yielded the concrete subtype with its reverse list populated.
         assert len(results) == 1
-        assert isinstance(results[0], VideoFile)
-        assert results[0].scenes is not None
-        assert isinstance(results[0].scenes[0], Scene)
-        assert results[0].scenes[0].id == "1"
+        video_file = results[0]
+        assert isinstance(video_file, VideoFile)
+        reverse_scenes = video_file.scenes
+        assert is_set(reverse_scenes)
+        assert reverse_scenes is not None
+        assert isinstance(reverse_scenes[0], Scene)
+        assert reverse_scenes[0].id == "1"
 
     @pytest.mark.asyncio
     @pytest.mark.unit

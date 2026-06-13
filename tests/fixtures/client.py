@@ -26,6 +26,7 @@ __all__ = [
     "stash_context",
     "stash_context_with_api_key",
     "stash_client",
+    "live_entity_store",
     "respx_stash_client",
     "respx_entity_store",
     "respx_entity_store_with_file_reverse_caps",
@@ -166,6 +167,23 @@ async def stash_client(
 
 
 @pytest_asyncio.fixture
+async def live_entity_store(
+    stash_context: StashContext,
+    stash_client: StashClient,
+) -> StashEntityStore:
+    """Get the context-wired StashEntityStore backed by the live Stash client.
+
+    For integration tests that exercise store behavior (find, populate, save)
+    against a real Stash server. Depends on stash_client so the context has
+    initialized and wired the store before it is handed out.
+
+    Returns:
+        StashEntityStore: The store singleton from the StashContext
+    """
+    return stash_context.store
+
+
+@pytest_asyncio.fixture
 async def respx_stash_client(
     stash_context: StashContext,
 ) -> AsyncGenerator[StashClient, None]:
@@ -231,7 +249,7 @@ async def respx_stash_client(
         client = await stash_context.get_client()
 
         # Expose the fake ws so subscription tests can script events / inspect frames.
-        client._fake_ws = fake_ws
+        client._fake_ws = fake_ws  # type: ignore[attr-defined]
 
         # Clear call history from capability detection so tests see a clean slate
         for route in respx.routes:

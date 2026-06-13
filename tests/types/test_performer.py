@@ -421,7 +421,7 @@ class TestPerformerCareerDateCoercion:
     @pytest.mark.unit
     def test_create_input_career_start_int_coerced(self) -> None:
         """PerformerCreateInput coerces int career_start to str."""
-        inp = PerformerCreateInput(name="Test", career_start=2020)
+        inp = PerformerCreateInput(name="Test", career_start=2020)  # type: ignore[arg-type]
         assert inp.career_start == "2020"
 
     @pytest.mark.unit
@@ -435,7 +435,7 @@ class TestPerformerCareerDateCoercion:
     @pytest.mark.unit
     def test_update_input_career_start_int_coerced(self) -> None:
         """PerformerUpdateInput coerces int career_start to str."""
-        inp = PerformerUpdateInput(id="1", career_start=2019)
+        inp = PerformerUpdateInput(id="1", career_start=2019)  # type: ignore[arg-type]
         assert inp.career_start == "2019"
 
     @pytest.mark.unit
@@ -449,7 +449,7 @@ class TestPerformerCareerDateCoercion:
     @pytest.mark.unit
     def test_bulk_update_input_career_start_int_coerced(self) -> None:
         """BulkPerformerUpdateInput coerces int career_start to str."""
-        inp = BulkPerformerUpdateInput(career_start=2018)
+        inp = BulkPerformerUpdateInput(career_start=2018)  # type: ignore[arg-type]
         assert inp.career_start == "2018"
 
     @pytest.mark.unit

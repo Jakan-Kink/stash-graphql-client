@@ -382,7 +382,9 @@ async def test_performer_merge(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test merging a source performer into a destination performer."""
-    if not stash_client._capabilities.has_type("PerformerMergeInput"):
+    caps = stash_client._capabilities
+    assert caps is not None
+    if not caps.has_type("PerformerMergeInput"):
         pytest.skip(
             "Server does not support performerMerge (PerformerMergeInput not available)"
         )

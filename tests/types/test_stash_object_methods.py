@@ -645,8 +645,13 @@ class TestProcessRelationships:
             return None
 
         # Modify relationships to use our falsy transform
+        # (legacy tuple format — _process_relationships still unpacks it)
         modified_relationships = original_relationships.copy()
-        modified_relationships["studio"] = ("studio_id", False, falsy_transform)
+        modified_relationships["studio"] = (  # type: ignore[assignment]
+            "studio_id",
+            False,
+            falsy_transform,
+        )
 
         with patch.object(Scene, "__relationships__", modified_relationships):
             # Process relationships - transform will return None

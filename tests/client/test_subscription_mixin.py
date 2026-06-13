@@ -24,7 +24,7 @@ from websockets.exceptions import ConnectionClosedOK
 from stash_graphql_client import StashClient
 from stash_graphql_client.client.mixins.subscription import AsyncIteratorWrapper
 from stash_graphql_client.types import Job, JobStatus, JobStatusUpdate, LogEntry
-from tests.fixtures import FakeSocket, dump_graphql_calls, dump_ws_calls
+from tests.fixtures import FakeSocket, dump_graphql_calls, dump_ws_calls, get_fake_ws
 
 
 # =============================================================================
@@ -73,7 +73,7 @@ async def test_subscribe_to_jobs_yields_updates(
 ) -> None:
     """Test that subscribe_to_jobs yields JobStatusUpdate objects."""
     # Set up WebSocket session with test responses
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "ADD",
@@ -168,7 +168,7 @@ async def test_subscribe_to_jobs_no_ws_session_raises(
 async def test_subscribe_to_jobs_empty_stream(respx_stash_client: StashClient) -> None:
     """Test that subscribe_to_jobs handles empty subscription stream."""
     # Set up WebSocket session with empty responses
-    respx_stash_client._fake_ws.events = []
+    get_fake_ws(respx_stash_client).events = []
 
     # Subscribe and verify no updates
     updates = []
@@ -190,7 +190,7 @@ async def test_subscribe_to_logs_yields_log_entries(
 ) -> None:
     """Test that subscribe_to_logs yields LogEntry lists."""
     # Set up WebSocket session with log responses
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "loggingSubscribe": [
                 {
@@ -271,7 +271,7 @@ async def test_subscribe_to_logs_no_ws_session_raises(
 async def test_subscribe_to_logs_empty_batches(respx_stash_client: StashClient) -> None:
     """Test that subscribe_to_logs handles empty log batches."""
     # Set up WebSocket session with empty and non-empty batches
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {"loggingSubscribe": []},  # Empty batch
         {
             "loggingSubscribe": [
@@ -309,7 +309,7 @@ async def test_subscribe_to_scan_complete_yields_bool(
 ) -> None:
     """Test that subscribe_to_scan_complete yields boolean values."""
     # Set up WebSocket session with scan complete events
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {"scanCompleteSubscribe": True},
         {"scanCompleteSubscribe": True},
     ]
@@ -570,7 +570,7 @@ async def test_wait_for_job_with_updates_via_subscription(
     )
 
     # Set up WebSocket session with subscription updates
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "UPDATE",
@@ -635,7 +635,7 @@ async def test_wait_for_job_with_updates_wrong_status(
     )
 
     # Set up WebSocket session - job gets cancelled instead of finished
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "UPDATE",
@@ -703,7 +703,7 @@ async def test_wait_for_job_with_updates_timeout(
     )
 
     # Set up WebSocket session with empty responses (to trigger timeout)
-    respx_stash_client._fake_ws.events = []
+    get_fake_ws(respx_stash_client).events = []
 
     # Use very short timeout
     try:
@@ -744,7 +744,7 @@ async def test_wait_for_job_with_updates_timeout_during_wait(
 
     # Keep the subscription open with no events (no trailing 'complete'), so the
     # async-for blocks and the client-side asyncio.timeout fires.
-    respx_stash_client._fake_ws.complete = False
+    get_fake_ws(respx_stash_client).complete = False
 
     # Use very short timeout - should trigger TimeoutError exception
     try:
@@ -784,7 +784,7 @@ async def test_wait_for_job_with_updates_ignores_other_jobs(
     )
 
     # Set up WebSocket session with updates for different jobs
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         # Update for different job - should be ignored
         {
             "jobsSubscribe": {
@@ -851,7 +851,7 @@ async def test_wait_for_job_with_updates_handles_string_status(
     )
 
     # Set up WebSocket session with status as string (not enum)
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "UPDATE",
@@ -996,7 +996,7 @@ async def test_wait_for_job_with_updates_subscription_exception_fallback(
 
     # Make the subscription fail: the fake emits a server 'error' frame, so the
     # real gql transport raises TransportQueryError and wait_for_job falls back.
-    respx_stash_client._fake_ws.error = [{"message": "Connection error"}]
+    get_fake_ws(respx_stash_client).error = [{"message": "Connection error"}]
 
     try:
         result = await respx_stash_client.wait_for_job_with_updates("job_123")
@@ -1033,7 +1033,7 @@ async def test_wait_for_job_with_updates_custom_status(
     )
 
     # Set up WebSocket session - wait for RUNNING instead of FINISHED
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "UPDATE",
@@ -1120,7 +1120,7 @@ async def test_subscribe_to_jobs_round_trips_through_real_transport(
     ``connection_init`` + ``start`` and parses server ``data`` frames into real
     JobStatusUpdate objects. ``progress`` is nullable (per a live DevTools capture).
     """
-    respx_stash_client._fake_ws.events = [
+    get_fake_ws(respx_stash_client).events = [
         {
             "jobsSubscribe": {
                 "type": "ADD",
@@ -1157,9 +1157,9 @@ async def test_subscribe_to_jobs_round_trips_through_real_transport(
             async for update in subscription:
                 updates.append(update)
     finally:
-        dump_ws_calls(respx_stash_client._fake_ws)
+        dump_ws_calls(get_fake_ws(respx_stash_client))
 
-    fake = respx_stash_client._fake_ws
+    fake = get_fake_ws(respx_stash_client)
     # Real apollo graphql-ws negotiation (the gql client offers it first).
     assert fake.subprotocol == "graphql-ws"
     sent_types = [frame.get("type") for frame in fake.sent]

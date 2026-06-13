@@ -169,6 +169,15 @@ class FakeSocket:
         self._inbox.put_nowait(json.dumps(frame))
 
 
+def get_fake_ws(client: Any) -> FakeSocket:
+    """Return the FakeSocket the respx client fixtures attached to a StashClient.
+
+    Typed accessor for the dynamically-injected ``_fake_ws`` test attribute, so
+    subscription tests get a real ``FakeSocket`` type instead of ``Any``.
+    """
+    return client._fake_ws
+
+
 def dump_ws_calls(fake: FakeSocket, label: str = "WebSocket frames") -> None:
     """Print the client frames a ``FakeSocket`` recorded (mirrors dump_graphql_calls)."""
     print(f"\n{'=' * 70}\n  {label} ({len(fake.sent)} total)\n{'=' * 70}")

@@ -7,6 +7,7 @@ Tests the StashEntityStore following TESTING_REQUIREMENTS.md:
 """
 
 import concurrent.futures
+import json
 import time
 import uuid
 from datetime import timedelta
@@ -127,13 +128,31 @@ class TestFilterTranslation:
         assert modifier == "MATCHES_REGEX"
 
     @pytest.mark.unit
+    def test_parse_lookup_gt(self, respx_entity_store) -> None:
+        """Test parsing __gt lookup maps to strict GREATER_THAN."""
+        store = respx_entity_store
+
+        field, modifier = store._parse_lookup("rating100__gt")
+        assert field == "rating100"
+        assert modifier == "GREATER_THAN"
+
+    @pytest.mark.unit
     def test_parse_lookup_gte(self, respx_entity_store) -> None:
-        """Test parsing __gte lookup."""
+        """Test parsing __gte lookup maps to the inclusive internal modifier."""
         store = respx_entity_store
 
         field, modifier = store._parse_lookup("rating100__gte")
         assert field == "rating100"
-        assert modifier == "GREATER_THAN"
+        assert modifier == "GREATER_THAN_OR_EQUAL"
+
+    @pytest.mark.unit
+    def test_parse_lookup_lte(self, respx_entity_store) -> None:
+        """Test parsing __lte lookup maps to the inclusive internal modifier."""
+        store = respx_entity_store
+
+        field, modifier = store._parse_lookup("rating100__lte")
+        assert field == "rating100"
+        assert modifier == "LESS_THAN_OR_EQUAL"
 
     @pytest.mark.unit
     def test_parse_lookup_between(self, respx_entity_store) -> None:
@@ -186,6 +205,30 @@ class TestFilterTranslation:
         assert criterion == {"value": "", "modifier": "NOT_NULL"}
 
     @pytest.mark.unit
+    def test_build_criterion_is_null_numeric_field_uses_int_placeholder(
+        self, respx_entity_store
+    ) -> None:
+        """Test IS_NULL on numeric criterion fields sends an int placeholder.
+
+        IntCriterionInput.value is Int! — a "" placeholder fails GraphQL
+        validation server-side even though the value is ignored for IS_NULL.
+        """
+        store = respx_entity_store
+
+        criterion = store._build_criterion("rating100", "IS_NULL", True)
+        assert criterion == {"value": 0, "modifier": "IS_NULL"}
+
+    @pytest.mark.unit
+    def test_build_criterion_not_null_numeric_field_uses_int_placeholder(
+        self, respx_entity_store
+    ) -> None:
+        """Test NOT_NULL (null=False) on numeric criterion fields sends an int."""
+        store = respx_entity_store
+
+        criterion = store._build_criterion("rating100", "IS_NULL", False)
+        assert criterion == {"value": 0, "modifier": "NOT_NULL"}
+
+    @pytest.mark.unit
     def test_build_criterion_includes_list(self, respx_entity_store) -> None:
         """Test building INCLUDES criterion with list."""
         store = respx_entity_store
@@ -212,6 +255,78 @@ class TestFilterTranslation:
         # String fields (path, title, etc.) should NOT wrap value in list
         criterion = store._build_criterion("path", "INCLUDES", "/media/videos/")
         assert criterion == {"value": "/media/videos/", "modifier": "INCLUDES"}
+
+    @pytest.mark.unit
+    def test_translate_filters_gte_folds_into_not(self, respx_entity_store) -> None:
+        """Test __gte translates to NOT(field LESS_THAN value) for inclusive >=."""
+        store = respx_entity_store
+
+        _graphql_filter, entity_filter = store._translate_filters(
+            "Scene", {"rating100__gte": 90}
+        )
+        assert entity_filter == {
+            "NOT": {"rating100": {"value": 90, "modifier": "LESS_THAN"}}
+        }
+
+    @pytest.mark.unit
+    def test_translate_filters_lte_folds_into_not(self, respx_entity_store) -> None:
+        """Test __lte translates to NOT(field GREATER_THAN value) for inclusive <=."""
+        store = respx_entity_store
+
+        _graphql_filter, entity_filter = store._translate_filters(
+            "Scene", {"rating100__lte": 90}
+        )
+        assert entity_filter == {
+            "NOT": {"rating100": {"value": 90, "modifier": "GREATER_THAN"}}
+        }
+
+    @pytest.mark.unit
+    def test_translate_filters_gte_lte_same_field_or_chain(
+        self, respx_entity_store
+    ) -> None:
+        """Test __gte + __lte on one field chain via OR inside a single NOT.
+
+        De Morgan: NOT(x < a OR x > b) == x >= a AND x <= b.
+        """
+        store = respx_entity_store
+
+        _graphql_filter, entity_filter = store._translate_filters(
+            "Scene", {"rating100__gte": 50, "rating100__lte": 90}
+        )
+        assert entity_filter == {
+            "NOT": {
+                "rating100": {"value": 50, "modifier": "LESS_THAN"},
+                "OR": {"rating100": {"value": 90, "modifier": "GREATER_THAN"}},
+            }
+        }
+
+    @pytest.mark.unit
+    def test_translate_filters_gte_alongside_regular_criteria(
+        self, respx_entity_store
+    ) -> None:
+        """Test inclusive lookups coexist with normal criteria on other fields."""
+        store = respx_entity_store
+
+        _graphql_filter, entity_filter = store._translate_filters(
+            "Scene", {"organized": True, "rating100__gte": 90}
+        )
+        assert entity_filter == {
+            "organized": {"value": True, "modifier": "EQUALS"},
+            "NOT": {"rating100": {"value": 90, "modifier": "LESS_THAN"}},
+        }
+
+    @pytest.mark.unit
+    def test_translate_filters_gt_stays_strict(self, respx_entity_store) -> None:
+        """Test __gt / __lt remain plain strict criteria (no NOT folding)."""
+        store = respx_entity_store
+
+        _graphql_filter, entity_filter = store._translate_filters(
+            "Scene", {"rating100__gt": 90, "o_counter__lt": 5}
+        )
+        assert entity_filter == {
+            "rating100": {"value": 90, "modifier": "GREATER_THAN"},
+            "o_counter": {"value": 5, "modifier": "LESS_THAN"},
+        }
 
 
 # =============================================================================
@@ -797,6 +912,45 @@ class TestFindOperations:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
+    async def test_find_gte_sends_not_wrapped_filter(self, respx_entity_store) -> None:
+        """Test find() with __gte sends NOT(LESS_THAN) so the boundary is included."""
+        store = respx_entity_store
+
+        performers_data = create_find_performers_result(
+            count=1,
+            performers=[create_performer_dict(id="1", name="Boundary", rating100=90)],
+        )
+
+        # find() issues a count probe, then the full fetch
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformers", performers_data)
+                ),
+                httpx.Response(
+                    200, json=create_graphql_response("findPerformers", performers_data)
+                ),
+            ]
+        )
+
+        try:
+            results = await store.find(Performer, rating100__gte=90)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert len(graphql_route.calls) == 2
+        for call in graphql_route.calls:
+            request = json.loads(call.request.content)
+            assert "findPerformers" in request["query"]
+            assert request["variables"]["performer_filter"] == {
+                "NOT": {"rating100": {"value": 90, "modifier": "LESS_THAN"}}
+            }
+
+        assert len(results) == 1
+        assert results[0].rating100 == 90
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
     async def test_find_raises_on_large_result(self, respx_entity_store) -> None:
         """Test that find() raises StashError when results exceed FIND_LIMIT."""
         store = respx_entity_store
@@ -1235,7 +1389,7 @@ class TestFilterTypeIndexCleanup:
             store._type_index["Performer"].add("orphan")
 
             # filter() should handle the orphan gracefully and still return valid results
-            favorites = store.filter(Performer, lambda p: p.favorite)
+            favorites = store.filter(Performer, lambda p: p.favorite is True)
 
             assert len(favorites) == 1
             assert favorites[0].name == "Alice"

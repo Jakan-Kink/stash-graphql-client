@@ -193,7 +193,7 @@ async def test_homogeneous_batch_five_updates(
     assert result.all_succeeded
     assert len(result.succeeded) == 5
     for i, op in enumerate(result.operations):
-        assert op.result["id"] == str(i + 1)
+        assert op.result == {"id": str(i + 1), "__typename": "Scene"}
 
     # Single HTTP request
     assert len(graphql_route.calls) == 1
@@ -245,9 +245,9 @@ async def test_heterogeneous_batch(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     assert result.all_succeeded
-    assert result[0].result["__typename"] == "Scene"
-    assert result[1].result["id"] == "99"
-    assert result[2].result["__typename"] == "Performer"
+    assert result[0].result == {"id": "1", "__typename": "Scene"}
+    assert result[1].result == {"id": "99", "__typename": "Tag"}
+    assert result[2].result == {"id": "50", "__typename": "Performer"}
 
 
 @pytest.mark.asyncio
@@ -297,7 +297,7 @@ async def test_chunking_two_requests(respx_stash_client: StashClient) -> None:
 
     # Results mapped correctly across chunks
     for i in range(8):
-        assert result[i].result["id"] == str(i)
+        assert result[i].result == {"id": str(i), "__typename": "Image"}
 
 
 @pytest.mark.asyncio
@@ -316,7 +316,9 @@ async def test_partial_failure_raises_batch_error(
     }
     errors = [{"message": "Scene not found", "path": ["op1"]}]
 
-    original_execute = respx_stash_client._session.execute
+    session = respx_stash_client._session
+    assert session is not None
+    original_execute = session.execute
 
     async def mock_execute(operation):
         raise TransportQueryError(
@@ -325,7 +327,7 @@ async def test_partial_failure_raises_batch_error(
             data=partial_data,
         )
 
-    respx_stash_client._session.execute = mock_execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation(
@@ -347,7 +349,7 @@ async def test_partial_failure_raises_batch_error(
         assert isinstance(batch_result.failed[0].error, StashGraphQLError)
         assert "Scene not found" in str(batch_result.failed[0].error)
     finally:
-        respx_stash_client._session.execute = original_execute
+        session.execute = original_execute
 
 
 @pytest.mark.asyncio
@@ -370,8 +372,10 @@ async def test_all_fail_raises_batch_error(
             data={},
         )
 
-    original_execute = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original_execute = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation(
@@ -391,7 +395,7 @@ async def test_all_fail_raises_batch_error(
         assert len(batch_result.succeeded) == 0
         assert "2/2 operations had errors" in str(exc_info.value)
     finally:
-        respx_stash_client._session.execute = original_execute
+        session.execute = original_execute
 
 
 @pytest.mark.asyncio
@@ -417,8 +421,10 @@ async def test_nested_error_path_maps_by_first_element(
             data=partial_data,
         )
 
-    original_execute = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original_execute = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation(
@@ -440,7 +446,7 @@ async def test_nested_error_path_maps_by_first_element(
         assert batch_result[1].error is not None
         assert "Invalid title" in str(batch_result[1].error)
     finally:
-        respx_stash_client._session.execute = original_execute
+        session.execute = original_execute
 
 
 @pytest.mark.asyncio
@@ -514,11 +520,11 @@ async def test_batch_result_iteration(respx_stash_client: StashClient) -> None:
         dump_graphql_calls(graphql_route.calls)
 
     # Indexing
-    assert result[0].result["id"] == "1"
-    assert result[1].result["id"] == "2"
+    assert result[0].result == {"id": "1", "__typename": "Tag"}
+    assert result[1].result == {"id": "2", "__typename": "Tag"}
 
     # Iteration
-    ids = [op.result["id"] for op in result]
+    ids = [op.result["id"] for op in result if op.result is not None]
     assert ids == ["1", "2"]
 
     # len
@@ -574,8 +580,10 @@ async def test_error_without_alias_path(respx_stash_client: StashClient) -> None
             data={},
         )
 
-    original = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "A"}}),
@@ -587,7 +595,7 @@ async def test_error_without_alias_path(respx_stash_client: StashClient) -> None
 
         assert "Something broke" in str(exc_info.value.batch_result[0].error)
     finally:
-        respx_stash_client._session.execute = original
+        session.execute = original
 
 
 @pytest.mark.asyncio
@@ -603,8 +611,10 @@ async def test_unmappable_error_path(respx_stash_client: StashClient) -> None:
             data={},
         )
 
-    original = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "A"}}),
@@ -618,7 +628,7 @@ async def test_unmappable_error_path(respx_stash_client: StashClient) -> None:
         # couldn't be mapped
         assert exc_info.value.batch_result[0].error is not None
     finally:
-        respx_stash_client._session.execute = original
+        session.execute = original
 
 
 @pytest.mark.asyncio
@@ -674,8 +684,10 @@ async def test_pathless_error_skips_ops_with_results(
             data={"op0": {"id": "1", "__typename": "Tag"}},  # op0 succeeded
         )
 
-    original = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "A"}}),
@@ -694,7 +706,7 @@ async def test_pathless_error_skips_ops_with_results(
         assert br[1].error is not None
         assert "Global failure" in str(br[1].error)
     finally:
-        respx_stash_client._session.execute = original
+        session.execute = original
 
 
 @pytest.mark.asyncio
@@ -712,8 +724,10 @@ async def test_error_path_out_of_range_ignored(
             data={},
         )
 
-    original = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "A"}}),
@@ -726,7 +740,7 @@ async def test_error_path_out_of_range_ignored(
         # op999 is out of range — op[0] gets fallback error
         assert exc_info.value.batch_result[0].error is not None
     finally:
-        respx_stash_client._session.execute = original
+        session.execute = original
 
 
 @pytest.mark.asyncio
@@ -742,8 +756,10 @@ async def test_network_error_raises_connection_error(
     async def mock_execute(operation):
         raise TransportError("Connection refused")
 
-    original = respx_stash_client._session.execute
-    respx_stash_client._session.execute = mock_execute
+    session = respx_stash_client._session
+    assert session is not None
+    original = session.execute
+    session.execute = mock_execute
 
     ops = [
         BatchOperation("tagCreate", "TagCreateInput!", {"input": {"name": "A"}}),
@@ -753,4 +769,4 @@ async def test_network_error_raises_connection_error(
         with pytest.raises(StashConnectionError):
             await respx_stash_client.execute_batch(ops)
     finally:
-        respx_stash_client._session.execute = original
+        session.execute = original

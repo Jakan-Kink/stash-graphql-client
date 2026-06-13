@@ -20,7 +20,7 @@ from stash_graphql_client.types.metadata import (
     _validate_custom_field_name,
 )
 from stash_graphql_client.types.scene import Scene
-from stash_graphql_client.types.unset import UNSET
+from stash_graphql_client.types.unset import UNSET, is_set
 from tests.fixtures import create_graphql_response, dump_graphql_calls
 from tests.fixtures.stash.graphql_responses import make_server_capabilities
 
@@ -180,7 +180,9 @@ class TestDiffCustomFields:
         # Snapshot is shallow-copied so in-place mutation of current doesn't
         # silently mutate the snapshot too.
         scene = Scene(id="1", custom_fields={"a": "x"})
-        scene.custom_fields["a"] = "y"
+        custom_fields = scene.custom_fields
+        assert is_set(custom_fields)
+        custom_fields["a"] = "y"
         cfi = StashObject._diff_custom_fields(scene)
         assert cfi is not None
         assert cfi.partial == {"a": "y"}
@@ -245,8 +247,10 @@ class TestCustomFieldsRegistrationInvariant:
         # Walk all StashObject subclasses (recursively) and find any with a
         # `custom_fields` model field. Each must have it tracked AND registered
         # as a side mutation.
-        def _all_subclasses(cls: type) -> set[type]:
-            seen: set[type] = set()
+        def _all_subclasses(
+            cls: type[StashObject],
+        ) -> set[type[StashObject]]:
+            seen: set[type[StashObject]] = set()
             stack = list(cls.__subclasses__())
             while stack:
                 sub = stack.pop()

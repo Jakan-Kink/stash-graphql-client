@@ -1,6 +1,8 @@
 # Getting Started
 
-This guide will walk you through installing and using stash-graphql-client for the first time.
+This guide walks you through installing `stash-graphql-client` and using it the way it's meant to be used: through the **EntityStore**. The store is what turns this library from "a typed GraphQL client" into an ORM-like layer — an identity map so the same entity ID is always the same Python object, read-through caching, selective field loading, Django-style filtering, and batched saves that figure out create-before-update ordering for you.
+
+You can always drop down to raw client calls (covered near the end), but reach for the store first.
 
 ## Prerequisites
 
@@ -39,8 +41,6 @@ print(stash_graphql_client.__version__)
 
 ## Configuration
 
-### Connection Settings
-
 Create a connection dictionary with your Stash server details:
 
 ```python
@@ -52,253 +52,23 @@ conn = {
 }
 ```
 
-### API Key (Optional)
-
-If your Stash instance requires authentication:
-
-1. Open Stash web interface
-2. Go to Settings → Security
-3. Generate an API Key
-4. Add it to your connection config
-
-```python
-conn = {
-    "Host": "localhost",
-    "Port": 9999,
-    "ApiKey": "your-api-key-here",  # From Stash settings
-}
-```
+If your Stash instance requires authentication, generate an API key in the Stash web interface under **Settings → Security**, and add it as `ApiKey` above.
 
 ## Your First Script
 
-### Example 1: List All Studios
+`StashContext` is an async context manager. Entering it yields a ready-to-use `StashClient`, and the context exposes a single **store singleton** (`context.store`) wired to the identity map. This is the pattern you'll use most:
 
 ```python
 import asyncio
 from stash_graphql_client import StashContext
-
-async def main():
-    # Connect using context manager (recommended)
-    async with StashContext(conn={
-        "Host": "localhost",
-        "Port": 9999,
-    }) as client:
-        # Find all studios
-        result = await client.find_studios()
-
-        print(f"Found {result.count} studios:")
-        for studio in result.studios:
-            print(f"  - {studio.name} (ID: {studio.id})")
-
-# Run the async function
-asyncio.run(main())
-```
-
-**Output:**
-
-```
-Found 25 studios:
-  - Acme Productions (ID: 1)
-  - Studio B (ID: 2)
-  - Example Corp (ID: 3)
-  ...
-```
-
-### Example 2: Create a New Tag
-
-```python
-import asyncio
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import Tag
-
-async def main():
-    async with StashContext(conn={
-        "Host": "localhost",
-        "Port": 9999,
-    }) as client:
-        # Create a new tag
-        tag = Tag(
-            name="Documentary",
-            description="Documentary-style content"
-        )
-
-        # Save to server
-        saved_tag = await tag.save(client)
-
-        print(f"Created tag: {saved_tag.name}")
-        print(f"Server assigned ID: {saved_tag.id}")
-
-asyncio.run(main())
-```
-
-### Example 3: Find and Update a Scene
-
-```python
-import asyncio
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import UNSET
-
-async def main():
-    async with StashContext(conn={
-        "Host": "localhost",
-        "Port": 9999,
-    }) as client:
-        # Find a scene by ID
-        scene = await client.find_scene("123")
-
-        if scene is None:
-            print("Scene not found")
-            return
-
-        print(f"Found scene: {scene.title}")
-        print(f"Current rating: {scene.rating100}")
-
-        # Update the rating
-        scene.rating100 = 95
-        scene.details = UNSET  # Don't touch this field
-
-        # Save changes
-        await scene.save(client)
-
-        print(f"Updated rating to: {scene.rating100}")
-
-asyncio.run(main())
-```
-
-## Core Workflows
-
-### Workflow 1: Find and Update Entity
-
-This is the most common pattern for working with existing entities.
-
-```python
-import asyncio
-from stash_graphql_client import StashContext
-
-async def update_performer_birthdate():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        # 1. Find the entity
-        performer = await client.find_performer("456")
-
-        if performer is None:
-            print("Performer not found")
-            return
-
-        # 2. Modify fields
-        performer.birthdate = "1990-05-15"
-        performer.gender = "FEMALE"
-
-        # 3. Save changes
-        await performer.save(client)
-
-        print(f"Updated {performer.name}")
-
-asyncio.run(update_performer_birthdate())
-```
-
-### Workflow 2: Create and Link Entities
-
-Create new entities and establish relationships.
-
-```python
-import asyncio
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import Scene, Tag
-
-async def create_scene_with_tags():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        # 1. Create or find tags
-        tag1 = Tag(name="Action")
-        await tag1.save(client)
-
-        tag2 = Tag(name="Adventure")
-        await tag2.save(client)
-
-        # 2. Create scene
-        scene = Scene(title="Epic Battle", rating100=90)
-        await scene.save(client)
-
-        # 3. Link tags to scene
-        await scene.add_tag(tag1)
-        await scene.add_tag(tag2)
-
-        print(f"Created scene '{scene.title}' with {len(scene.tags)} tags")
-
-asyncio.run(create_scene_with_tags())
-```
-
-### Workflow 3: Bulk Processing with Filters
-
-Process multiple entities matching specific criteria.
-
-```python
-import asyncio
-from stash_graphql_client import StashContext, StashEntityStore
-from stash_graphql_client.types import Scene
-
-async def organize_unrated_scenes():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        store = StashEntityStore(client)
-
-        # Find all unrated scenes
-        unrated = await store.find(Scene, rating100__null=True, organized=False)
-
-        print(f"Found {len(unrated)} unrated scenes")
-
-        # Process each scene
-        for scene in unrated:
-            # Apply default rating
-            scene.rating100 = 50
-            scene.organized = True
-            await scene.save(client)
-
-            print(f"  - Organized: {scene.title}")
-
-        print("Done!")
-
-asyncio.run(organize_unrated_scenes())
-```
-
-## Using the Entity Store
-
-The `StashEntityStore` provides additional features like caching, Django-style filtering, and field-aware population.
-
-### Basic Store Usage
-
-```python
-import asyncio
-from stash_graphql_client import StashContext, StashEntityStore
-from stash_graphql_client.types import Performer
-
-async def main():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        # Create store with 5-minute cache TTL
-        store = StashEntityStore(client, default_ttl=300)
-
-        # Read-through caching (fetches if not cached)
-        performer1 = await store.get(Performer, "123")
-        performer2 = await store.get(Performer, "123")
-
-        # Both references point to same object
-        assert performer1 is performer2
-
-        print(f"Performer: {performer1.name}")
-
-asyncio.run(main())
-```
-
-### Django-Style Filtering
-
-```python
-import asyncio
-from stash_graphql_client import StashContext, StashEntityStore
 from stash_graphql_client.types import Scene
 
 async def main():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        store = StashEntityStore(client)
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    async with context as client:
+        store = context.store
 
-        # Find highly-rated scenes
+        # Django-style filtering — find highly-rated scenes
         top_rated = await store.find(Scene, rating100__gte=90)
 
         print(f"Found {len(top_rated)} highly-rated scenes:")
@@ -308,122 +78,255 @@ async def main():
 asyncio.run(main())
 ```
 
+!!! note
+    Keep a reference to the `context` (don't write `async with StashContext(...) as client:` if you need the store) — `context.store` is the identity-map-wired singleton, and it's only initialized once the context is entered.
+
+## Working with the EntityStore
+
+The store is the recommended entry point for everything: reads, searches, and writes.
+
+### Identity Map + Caching
+
+`store.get()` checks the cache first and fetches on a miss. Because of the identity map, the **same entity ID always returns the same object reference**, so a change made anywhere is visible everywhere:
+
+```python
+from stash_graphql_client.types import Performer
+
+performer1 = await store.get(Performer, "123")   # cache miss → fetch
+performer2 = await store.get(Performer, "123")   # cache hit → no network
+
+assert performer1 is performer2                  # same object, guaranteed
+```
+
+### Django-Style Filtering
+
+`store.find()` accepts familiar `field__lookup` filters instead of hand-built GraphQL filter objects:
+
+```python
+from stash_graphql_client.types import Scene
+
+unrated = await store.find(Scene, rating100__null=True, organized=False)
+recent = await store.find(Scene, title__contains="interview")
+```
+
+### Selective Field Loading
+
+Entities may arrive as "stubs" with only base fields. `store.populate()` fetches **only** the fields you actually need (it tracks what's already present), and supports nested `field__subfield` specs:
+
+```python
+scene = await store.get(Scene, "123")
+
+# Load just the relationships you need, when you need them
+scene = await store.populate(scene, fields=["performers", "studio", "tags"])
+
+# Nested population — files, then the path on each file
+scene = await store.populate(scene, fields=["files__path", "studio__parent__name"])
+```
+
+### Saving Changes
+
+Modify entities in place, then persist. `store.save()` saves one entity; `store.save_all()` flushes every dirty or new entity the store is tracking in a single batched request (handling create-before-update ordering automatically):
+
+```python
+scene = await store.get(Scene, "123")
+scene.rating100 = 95
+scene.organized = True
+
+await store.save(scene)            # save this one entity
+# ...or, after editing many entities:
+result = await store.save_all()    # batch-save everything dirty
+```
+
+### Lazy Iteration Over Large Sets
+
+For large result sets, `store.find_iter()` yields entities as it pages through them, so you never hold the whole set in memory:
+
+```python
+async for scene in store.find_iter(Scene, organized=False):
+    process(scene)
+```
+
+### Get or Create
+
+`store.get_or_create()` finds an entity by search criteria or builds a new one from those same criteria. New entities are **not** auto-saved — persist them with `store.save()`:
+
+```python
+from stash_graphql_client.types import Tag
+
+tag = await store.get_or_create(Tag, name="Documentary")
+await store.save(tag)   # persist if it was newly created
+```
+
+## Core Workflows
+
+These are the same workflows you'll reach for daily — expressed store-first.
+
+### Workflow 1: Find and Update
+
+```python
+import asyncio
+from stash_graphql_client import StashContext
+from stash_graphql_client.types import Performer
+
+async def update_performer_birthdate():
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    async with context as client:
+        store = context.store
+
+        performer = await store.get(Performer, "456")
+        if performer is None:
+            print("Performer not found")
+            return
+
+        performer.birthdate = "1990-05-15"
+        performer.gender = "FEMALE"
+
+        await store.save_all()       # flush the change
+        print(f"Updated {performer.name}")
+
+asyncio.run(update_performer_birthdate())
+```
+
+### Workflow 2: Create and Link Entities
+
+Build several entities, link them, and let `save_all()` persist everything in one batch with correct ordering (new tags get server IDs before the scene that references them):
+
+```python
+import asyncio
+from stash_graphql_client import StashContext
+from stash_graphql_client.types import Scene, Tag
+
+async def create_scene_with_tags():
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    async with context as client:
+        store = context.store
+
+        action = await store.get_or_create(Tag, name="Action")
+        adventure = await store.get_or_create(Tag, name="Adventure")
+
+        scene = Scene(title="Epic Battle", rating100=90)
+        store.add(scene)             # track the new entity
+        await scene.add_tag(action)
+        await scene.add_tag(adventure)
+
+        result = await store.save_all()   # one batched, correctly-ordered write
+        print(f"Created '{scene.title}' with {len(scene.tags)} tags")
+
+asyncio.run(create_scene_with_tags())
+```
+
+### Workflow 3: Bulk Processing with Progress
+
+```python
+import asyncio
+from stash_graphql_client import StashContext
+from stash_graphql_client.types import Scene
+
+async def organize_unrated_scenes():
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    async with context as client:
+        store = context.store
+
+        processed = 0
+        async for scene in store.find_iter(Scene, rating100__null=True, organized=False):
+            scene.rating100 = 50
+            scene.organized = True
+            processed += 1
+            if processed % 10 == 0:
+                print(f"Processed {processed} scenes")
+
+        result = await store.save_all()   # batch-save every change at the end
+        print(f"Organized {processed} scenes")
+
+asyncio.run(organize_unrated_scenes())
+```
+
 ## Understanding UNSET
 
-The UNSET pattern is one of the library's key features for precise partial updates.
-
-### Three Field States
+The UNSET pattern is how the library does precise partial updates: a field is either set to a value, explicitly `None`, or `UNSET` (never touched, so it's excluded from mutations).
 
 ```python
 from stash_graphql_client.types import Scene, UNSET
 
 scene = Scene(title="Test")
 
-# Three possible states for any field:
-scene.title = "Example"     # State 1: Set to value
-scene.rating100 = None      # State 2: Explicitly null
-scene.details = UNSET       # State 3: Never touched
+scene.title = "Example"     # State 1: set to a value
+scene.rating100 = None      # State 2: explicitly null
+scene.details = UNSET       # State 3: never touched → omitted from the mutation
 ```
 
-### Why UNSET Matters
+Because saves only send fields you actually changed, you can load an entity, set one field, and save without clobbering anything else:
 
 ```python
-import asyncio
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import UNSET
-
-async def main():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        # Load a scene
-        scene = await client.find_scene("123")
-
-        # Only update rating, leave everything else unchanged
-        scene.rating100 = 95
-        # scene.title stays UNSET - won't be included in mutation
-        # scene.details stays UNSET - server keeps existing value
-
-        # Save only sends rating100 field
-        await scene.save(client)
-
-        print("Updated only the rating!")
-
-asyncio.run(main())
+scene = await store.get(Scene, "123")
+scene.rating100 = 95         # only this field is dirty
+await store.save(scene)      # mutation sends rating100 only
 ```
 
 See [UNSET Pattern Guide](unset-pattern.md) for comprehensive examples.
 
 ## Working with Relationships
 
-### Accessing Related Entities
+Relationships may be UNSET until populated. Use `store.populate()` to load them, and `is_set()` before accessing:
 
 ```python
-import asyncio
-from stash_graphql_client import StashContext
-from stash_graphql_client.types import is_set
+from stash_graphql_client.types import Scene, is_set
 
-async def main():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        scene = await client.find_scene("123")
+scene = await store.get(Scene, "123")
+scene = await store.populate(scene, fields=["studio", "performers"])
 
-        # Always check for UNSET before accessing relationships
-        if is_set(scene.studio):
-            print(f"Studio: {scene.studio.name}")
+if is_set(scene.studio):
+    print(f"Studio: {scene.studio.name}")
 
-        if is_set(scene.performers):
-            print(f"Performers: {len(scene.performers)}")
-            for performer in scene.performers:
-                print(f"  - {performer.name}")
-
-asyncio.run(main())
+if is_set(scene.performers):
+    for performer in scene.performers:
+        print(f"  - {performer.name}")
 ```
 
-### Setting Relationships
+Many-to-many helpers register local changes; persist them with a save:
+
+```python
+from stash_graphql_client.types import Performer
+
+performer = await store.get(Performer, "789")
+await scene.add_performer(performer)
+await store.save(scene)
+
+await scene.remove_performer(performer)
+await store.save(scene)
+```
+
+## Lower-Level: Using the Client Directly
+
+The store is built on top of `StashClient`, and you can use the client directly when you don't need caching, the identity map, or batching — for example a one-off lookup or a quick script. Entities save against the client with `entity.save(client)`:
 
 ```python
 import asyncio
 from stash_graphql_client import StashContext
+from stash_graphql_client.types import Tag, UNSET
 
 async def main():
     async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        scene = await client.find_scene("123")
-        studio = await client.find_studio("456")
+        # Direct create
+        tag = Tag(name="Documentary", description="Documentary-style content")
+        await tag.save(client)
+        print(f"Created tag: {tag.name} (ID: {tag.id})")
 
-        # Set the relationship
-        scene.studio = studio
+        # Direct find + partial update
+        scene = await client.find_scene("123")
+        if scene is None:
+            return
+        scene.rating100 = 95
+        scene.details = UNSET        # leave other fields untouched
         await scene.save(client)
 
-        print(f"Set studio to: {studio.name}")
-
 asyncio.run(main())
 ```
 
-### Using Relationship Helpers
-
-```python
-import asyncio
-from stash_graphql_client import StashContext
-
-async def main():
-    async with StashContext(conn={"Host": "localhost", "Port": 9999}) as client:
-        scene = await client.find_scene("123")
-        performer = await client.find_performer("789")
-
-        # Add to many-to-many relationship (local change)
-        await scene.add_performer(performer)
-        await scene.save(client)  # persist to server
-
-        print(f"Added {performer.name} to scene")
-
-        # Remove from relationship (local change)
-        await scene.remove_performer(performer)
-        await scene.save(client)  # persist to server
-
-asyncio.run(main())
-```
+!!! tip
+    Prefer the store when you touch the same entities more than once, batch writes, or rely on relationships staying consistent. Reach for the raw client for simple one-shot reads or writes.
 
 ## Error Handling
-
-### Handling Common Errors
 
 ```python
 import asyncio
@@ -435,117 +338,87 @@ from httpx import ConnectError
 
 async def main():
     try:
-        async with StashContext(conn={
-            "Host": "localhost",
-            "Port": 9999,
-        }) as client:
-            # Validation error example
+        context = StashContext(conn={"Host": "localhost", "Port": 9999})
+        async with context as client:
+            store = context.store
+
+            # Validation happens at construction time
             try:
-                scene = Scene(rating100=150)  # Invalid: must be 0-100
+                scene = Scene(rating100=150)  # invalid: must be 0–100
             except ValidationError as e:
-                print("Validation error:")
                 for error in e.errors():
                     print(f"  {error['loc']}: {error['msg']}")
 
-            # GraphQL query error
-            scene = await client.find_scene("invalid-id")
+            scene = await store.get(Scene, "invalid-id")
             if scene is None:
                 print("Scene not found")
 
     except ConnectError:
-        print("Cannot connect to Stash server - is it running?")
+        print("Cannot connect to Stash server — is it running?")
     except TransportQueryError as e:
         print(f"GraphQL error: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
 
 asyncio.run(main())
 ```
 
 ## Best Practices
 
-### 1. Use Context Manager
+### 1. Use the store singleton
 
-Always use `StashContext` as a context manager to ensure proper cleanup:
+Access the store via `context.store` so every part of your code shares one identity map and cache:
+
+```python
+# ✅ Good — one shared, identity-map-wired store
+context = StashContext(conn={...})
+async with context as client:
+    store = context.store
+    ...
+
+# ❌ Avoid — a detached store won't share the context's identity map
+store = StashEntityStore(client)
+```
+
+### 2. Batch your writes
+
+Make all your edits, then flush once:
 
 ```python
 # ✅ Good
-async with StashContext(conn={...}) as client:
-    await client.find_scenes()
+for scene in scenes:
+    scene.organized = True
+await store.save_all()
 
-# ❌ Avoid
-context = StashContext(conn={...})
-client = await context.get_client()
-# ... might forget to close
+# ❌ Less efficient — a round-trip per entity
+for scene in scenes:
+    scene.organized = True
+    await store.save(scene)
 ```
 
-### 2. Check for UNSET Before Accessing
+### 3. Populate only what you need
 
-Always check if a field is UNSET before using it:
+```python
+# ✅ Good — fetch just these fields
+scene = await store.populate(scene, fields=["performers", "studio"])
+
+# ❌ Avoid — over-fetching everything you might never read
+```
+
+### 4. Check for UNSET before accessing
 
 ```python
 from stash_graphql_client.types import is_set
 
-# ✅ Good - using helper method
 if is_set(scene.studio):
     print(scene.studio.name)
-
-# ✅ Good - manual check
-if scene.studio is not UNSET and scene.studio is not None:
-    print(scene.studio.name)
-
-# ❌ Avoid
-print(scene.studio.name)  # Might fail if UNSET
 ```
 
-### 3. Use UNSET for Partial Updates
-
-When updating only specific fields, leave others as UNSET:
+### 5. Handle None responses
 
 ```python
-# ✅ Good
-scene.rating100 = 90
-# Other fields stay UNSET
-await scene.save(client)
-
-# ❌ Avoid
-scene.rating100 = 90
-scene.title = scene.title  # Unnecessary
-scene.details = scene.details  # Unnecessary
-await scene.save(client)
-```
-
-### 4. Use Store for Repeated Queries
-
-If querying the same entities multiple times, use StashEntityStore:
-
-```python
-# ✅ Good
-store = StashEntityStore(client)
-performer1 = await store.get(Performer, "123")  # Fetches from server
-performer2 = await store.get(Performer, "123")  # Returns cached
-
-# ❌ Less efficient
-performer1 = await client.find_performer("123")  # Fetches
-performer2 = await client.find_performer("123")  # Fetches again
-```
-
-### 5. Handle None Responses
-
-Always check if entities exist before using them:
-
-```python
-# ✅ Good
-scene = await client.find_scene("123")
+scene = await store.get(Scene, "123")
 if scene is None:
     print("Scene not found")
     return
-
-print(scene.title)
-
-# ❌ Avoid
-scene = await client.find_scene("123")
-print(scene.title)  # Might crash if scene is None
 ```
 
 ## Common Patterns
@@ -553,39 +426,30 @@ print(scene.title)  # Might crash if scene is None
 ### Pattern: Get or Create
 
 ```python
-async def get_or_create_tag(client, name):
-    # Try to find existing tag
-    tags_result = await client.find_tags(
-        tag_filter={"name": {"value": name, "modifier": "EQUALS"}}
-    )
+from stash_graphql_client.types import Tag
 
-    if tags_result.tags:
-        return tags_result.tags[0]
-
-    # Create if not found
-    tag = Tag(name=name)
-    return await tag.save(client)
+async def get_or_create_tag(store, name):
+    tag = await store.get_or_create(Tag, name=name)
+    await store.save(tag)   # no-op if it already existed
+    return tag
 ```
 
-### Pattern: Batch Processing with Progress
+### Pattern: Batch Processing with the Store
 
 ```python
 import asyncio
-from stash_graphql_client import StashContext, StashEntityStore
+from stash_graphql_client import StashContext
+from stash_graphql_client.types import Scene
 
 async def process_all_scenes():
-    async with StashContext(conn={...}) as client:
-        store = StashEntityStore(client)
+    context = StashContext(conn={"Host": "localhost", "Port": 9999})
+    async with context as client:
+        store = context.store
 
-        processed = 0
         async for scene in store.find_iter(Scene, organized=False):
             await process_scene(scene)
-            processed += 1
 
-            if processed % 10 == 0:
-                print(f"Processed {processed} scenes")
-
-        print(f"Total: {processed} scenes")
+        await store.save_all()
 
 asyncio.run(process_all_scenes())
 ```
@@ -597,7 +461,7 @@ Now that you've completed the getting started guide, explore these topics:
 - **[Usage Patterns](usage-patterns.md)** - Common recipes and best practices
 - **[UNSET Pattern Guide](unset-pattern.md)** - Deep dive on partial updates
 - **[Overview](overview.md)** - Architecture and core concepts
-- **[API Reference](../api/client.md)** - Complete method documentation
+- **[Entity Store API](../api/store.md)** - Complete store method reference
 
 ## Troubleshooting
 
@@ -619,8 +483,6 @@ Now that you've completed the getting started guide, explore these topics:
 
 ```bash
 pip install stash-graphql-client
-# or
-poetry add stash-graphql-client
 ```
 
 ### Type Errors

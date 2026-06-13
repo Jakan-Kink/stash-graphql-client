@@ -209,12 +209,12 @@ flowchart LR
     Field --> BuildFilter[Build filter object]
     Modifier --> MapModifier[Map to GraphQL modifier]
 
-    MapModifier --> GraphQLMod["GREATER_THAN"]
+    MapModifier --> GraphQLMod["Inclusive bound: Stash has no >=,<br/>negate the strict inverse via NOT"]
 
     BuildFilter --> Combine[Combine field + modifier]
     GraphQLMod --> Combine
 
-    Combine --> Output["{\n  rating100: {\n    value: 80,\n    modifier: 'GREATER_THAN'\n  }\n}"]
+    Combine --> Output["{\n  NOT: {\n    rating100: {\n      value: 80,\n      modifier: 'LESS_THAN'\n    }\n  }\n}"]
 
     style Input fill:#2E86AB,color:#fff
     style Output fill:#06A77D,color:#fff
