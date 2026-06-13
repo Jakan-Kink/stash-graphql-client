@@ -5,7 +5,7 @@ Every `StashObject` subclass declares its relationships to other entities via a 
 ## The Four Helpers
 
 ```python
-from stash_graphql_client.types.base import belongs_to, habtm, has_many, has_many_through
+from stash_graphql_client.types import belongs_to, habtm, has_many, has_many_through
 ```
 
 ### `belongs_to(inverse_type, *, inverse_query_field=...)`
@@ -125,7 +125,7 @@ You can override any of these explicitly when the convention doesn't fit, but th
 A hypothetical `Author` entity demonstrating all four patterns:
 
 ```python
-from stash_graphql_client.types.base import (
+from stash_graphql_client.types import (
     StashObject, belongs_to, habtm, has_many, has_many_through,
 )
 

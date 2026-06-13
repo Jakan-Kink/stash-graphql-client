@@ -63,8 +63,8 @@ class SceneMovie(BaseModel):
 class VideoCaption(BaseModel):
     """Video caption type from schema/types/scene.graphql."""
 
-    language_code: str | None | UnsetType = UNSET  # String!
-    caption_type: str | None | UnsetType = UNSET  # String!
+    language_code: str | UnsetType = UNSET  # String!
+    caption_type: str | UnsetType = UNSET  # String!
 
 
 class SceneFileType(BaseModel):

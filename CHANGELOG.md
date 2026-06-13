@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **`stash_graphql_client.types` is now the canonical, complete, flat export surface.** Every public schema type, input, enum, filter, and relationship helper is re-exported from the package and listed in `__all__`, so it round-trips under mypy's `no-implicit-reexport` — the same gap that hid `is_set` until 0.12.9. Eleven symbols that were previously importable only from individual submodules are now surfaced: `FileFilterType`, `VideoFileFilterInput`, `ImageFileFilterInput`, `FingerprintFilterInput` (from `.filters`), `VideoCaption` (from `.scene`), `JobStatusUpdateType` (from `.enums`), the `belongs_to` / `habtm` / `has_many` / `has_many_through` relationship helpers (from `.base`), and `fingerprint_resolver` (from `.files`). The top-level `stash_graphql_client` package stays curated (client, store, core entities/inputs, `UNSET` helpers); `stash_graphql_client.types` is the supported location for the full type surface. A new regression guard (`tests/types/test_exports.py`) fails if any public submodule symbol is added without being surfaced.
+
+### Fixed
+
+- **`VideoCaption` and `JobStatusUpdateType` were each defined twice in divergent copies.** `VideoCaption` existed in both `types/scene.py` and `types/files.py` (the latter dead and using a different field shape); `JobStatusUpdateType` existed in both `types/enums.py` and `types/job.py`. Each is collapsed to a single canonical definition. `VideoCaption.language_code` and `caption_type` now match the schema's `String!` (three-state `str | UnsetType`) and no longer accept `None`.
+
 ## [0.12.9] - 2026-06-12
 
 ### Added

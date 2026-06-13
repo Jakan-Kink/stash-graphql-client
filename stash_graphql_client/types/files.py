@@ -264,13 +264,6 @@ class StashID(BaseModel):
     updated_at: Time | None | UnsetType = UNSET  # Time!
 
 
-class VideoCaption(BaseModel):
-    """Video caption type from schema/types/scene.graphql."""
-
-    language_code: str  # String!
-    caption_type: str  # String!
-
-
 class Folder(StashObject):
     """Folder type from schema/types/file.graphql.
 

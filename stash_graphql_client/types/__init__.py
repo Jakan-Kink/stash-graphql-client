@@ -1,4 +1,12 @@
-"""GraphQL types converted to Pydantic."""
+"""GraphQL types converted to Pydantic.
+
+This package is the canonical, complete, flat import surface for every public
+schema type, input, enum, filter, and relationship helper. Import directly from
+``stash_graphql_client.types`` rather than the individual submodules; every name
+here is also listed in ``__all__`` so it re-exports cleanly under mypy's
+``no-implicit-reexport``. The top-level ``stash_graphql_client`` package exposes
+only a curated subset (client, store, core entities/inputs, UNSET helpers).
+"""
 
 from __future__ import annotations
 
@@ -11,6 +19,10 @@ from .base import (
     StashInput,
     StashObject,
     StashResult,
+    belongs_to,
+    habtm,
+    has_many,
+    has_many_through,
 )
 
 # Support types
@@ -64,6 +76,7 @@ from .enums import (
     ImageLightboxScrollMode,
     ImportDuplicateEnum,
     ImportMissingRefEnum,
+    JobStatusUpdateType,
     OnMultipleMatch,
     OrientationEnum,
     PackageType,
@@ -91,6 +104,7 @@ from .files import (
     StashIDInput,
     VideoFile,
     VisualFile,
+    fingerprint_resolver,
 )
 from .filters import (
     CircumcisionCriterionInput,
@@ -99,13 +113,16 @@ from .filters import (
     DestroyFilterInput,
     DuplicationCriterionInput,
     FileDuplicationCriterionInput,
+    FileFilterType,
     FindFilterType,
+    FingerprintFilterInput,
     FloatCriterionInput,
     FolderFilterType,
     GalleryFilterType,
     GenderCriterionInput,
     GroupFilterType,
     HierarchicalMultiCriterionInput,
+    ImageFileFilterInput,
     ImageFilterType,
     IntCriterionInput,
     MultiCriterionInput,
@@ -126,6 +143,7 @@ from .filters import (
     StudioFilterType,
     TagFilterType,
     TimestampCriterionInput,
+    VideoFileFilterInput,
 )
 
 # Core types
@@ -255,6 +273,7 @@ from .scene import (
     ScenesDestroyInput,
     SceneStreamEndpoint,
     SceneUpdateInput,
+    VideoCaption,
 )
 from .scraped_types import (
     ScrapeContentType,
@@ -382,6 +401,7 @@ __all__: list[str] = [
     "ExportObjectTypeInput",
     "ExportObjectsInput",
     "FileDuplicationCriterionInput",
+    "FileFilterType",
     "FileSetFingerprintsInput",
     "FilterMode",
     "FindFilesResultType",
@@ -398,6 +418,7 @@ __all__: list[str] = [
     "FindStudiosResultType",
     "FindTagsResultType",
     "Fingerprint",
+    "FingerprintFilterInput",
     "FloatCriterionInput",
     "Folder",
     "FolderFilterType",
@@ -448,6 +469,7 @@ __all__: list[str] = [
     "Image",
     "ImageDestroyInput",
     "ImageFile",
+    "ImageFileFilterInput",
     "ImageFileType",
     "ImageFilterType",
     "ImageLightboxDisplayMode",
@@ -463,6 +485,7 @@ __all__: list[str] = [
     "Job",
     "JobStatus",
     "JobStatusUpdate",
+    "JobStatusUpdateType",
     "LatestVersion",
     "LogEntry",
     "LogLevel",
@@ -611,8 +634,15 @@ __all__: list[str] = [
     "TimestampCriterionInput",
     "UnsetType",
     "Version",
+    "VideoCaption",
     "VideoFile",
+    "VideoFileFilterInput",
     "VisualFile",
+    "belongs_to",
+    "fingerprint_resolver",
+    "habtm",
+    "has_many",
+    "has_many_through",
     "is_set",
     "normalize_date",
     "parse_date_precision",
@@ -804,6 +834,10 @@ StudioFilterType.model_rebuild()
 TagFilterType.model_rebuild()
 ImageFilterType.model_rebuild()
 SceneMarkerFilterType.model_rebuild()
+FileFilterType.model_rebuild()
+VideoFileFilterInput.model_rebuild()
+ImageFileFilterInput.model_rebuild()
+FingerprintFilterInput.model_rebuild()
 
 # DLNA types
 DLNAIP.model_rebuild()

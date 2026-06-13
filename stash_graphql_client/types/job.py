@@ -7,6 +7,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from .base import FromGraphQLMixin, StashInput
+from .enums import JobStatusUpdateType
 from .scalars import Time
 from .unset import UNSET, UnsetType
 
@@ -44,14 +45,6 @@ class FindJobInput(StashInput):
     """Input for finding jobs from schema/types/job.graphql."""
 
     id: str  # ID!
-
-
-class JobStatusUpdateType(StrEnum):
-    """Job status update type enum from schema/types/job.graphql."""
-
-    ADD = "ADD"
-    REMOVE = "REMOVE"
-    UPDATE = "UPDATE"
 
 
 class JobStatusUpdate(FromGraphQLMixin, BaseModel):

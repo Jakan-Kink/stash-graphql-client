@@ -2,6 +2,12 @@
 
 Type definitions and utilities for Stash entities.
 
+## Importing types
+
+`stash_graphql_client.types` is the canonical, complete, flat import surface for every public schema type, input, enum, filter, and relationship helper. Anything in this package is importable directly from it — `from stash_graphql_client.types import GenderEnum, CustomFieldsInput, VideoFile, FileFilterType` — without reaching into the individual submodules (`.types.enums`, `.types.files`, `.types.metadata`, ...). Submodule paths still work, but `.types` is the supported, stable location and the only one that round-trips cleanly under mypy's `no-implicit-reexport`.
+
+The top-level package (`stash_graphql_client`) deliberately re-exports only the curated essentials — the client, store, errors, logging, the core entity types and their create/update inputs, and the `UNSET` / `UnsetType` / `is_set` helpers. For everything else, import from `stash_graphql_client.types`. So the rule of thumb is: reach for the top-level package for the common path, and `stash_graphql_client.types` for the full type surface.
+
 ## Base Types
 
 ::: stash_graphql_client.types.base.StashObject
