@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.10] - 2026-06-13
+
 ### Added
 
 - **`stash_graphql_client.types` is now the canonical, complete, flat export surface.** Every public schema type, input, enum, filter, and relationship helper is re-exported from the package and listed in `__all__`, so it round-trips under mypy's `no-implicit-reexport` — the same gap that hid `is_set` until 0.12.9. Eleven symbols that were previously importable only from individual submodules are now surfaced: `FileFilterType`, `VideoFileFilterInput`, `ImageFileFilterInput`, `FingerprintFilterInput` (from `.filters`), `VideoCaption` (from `.scene`), `JobStatusUpdateType` (from `.enums`), the `belongs_to` / `habtm` / `has_many` / `has_many_through` relationship helpers (from `.base`), and `fingerprint_resolver` (from `.files`). The top-level `stash_graphql_client` package stays curated (client, store, core entities/inputs, `UNSET` helpers); `stash_graphql_client.types` is the supported location for the full type surface. A new regression guard (`tests/types/test_exports.py`) fails if any public submodule symbol is added without being surfaced.
@@ -790,7 +792,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.9...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.10...HEAD
+[0.12.10]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...v0.12.8
 [0.12.7]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.6...v0.12.7
