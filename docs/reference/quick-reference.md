@@ -322,7 +322,7 @@ scene = Scene(title="Test")  # UUID auto-generated
 ### For Fields
 
 ```python
-from stash_graphql_client.types.unset import UnsetType
+from stash_graphql_client.types import UnsetType
 
 # Required field with UNSET default
 title: str | UnsetType = UNSET

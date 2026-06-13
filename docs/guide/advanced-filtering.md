@@ -575,7 +575,7 @@ large_images = await store.filter_and_populate(
 The advanced filter methods work seamlessly with the [UNSET Pattern](unset-pattern.md):
 
 ```python
-from stash_graphql_client.types.unset import UNSET
+from stash_graphql_client.types import UNSET
 
 # Manual check for UNSET fields
 if performer.rating100 is UNSET:

@@ -186,7 +186,7 @@ Entity types should define fields with UNSET as the default:
 
 ```python
 from pydantic import BaseModel
-from stash_graphql_client.types.unset import UNSET, UnsetType
+from stash_graphql_client.types import UNSET, UnsetType
 
 class Scene(StashObject):
     """Scene entity with UNSET sentinel support."""
@@ -692,7 +692,7 @@ When migrating entity types to use the UNSET pattern:
 ### Step 1: Import UNSET
 
 ```python
-from stash_graphql_client.types.unset import UNSET, UnsetType
+from stash_graphql_client.types import UNSET, UnsetType
 ```
 
 ### Step 2: Update Field Definitions
