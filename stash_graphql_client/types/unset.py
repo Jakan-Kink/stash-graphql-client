@@ -135,4 +135,54 @@ def is_set[T](value: T | UnsetType) -> TypeGuard[T]:
     return value is not UNSET
 
 
-__all__ = ["UNSET", "UnsetType", "is_set"]
+def is_present[T](value: T | None | UnsetType) -> TypeGuard[T]:
+    """Type guard narrowing a three-state field to a concrete, non-null value.
+
+    Like :func:`is_set`, but also excludes ``None``: after ``is_present(value)`` a
+    static type checker knows the value is neither ``UNSET`` nor ``None`` and can be
+    treated as type ``T``. Useful for the ``T | None | UnsetType`` entity fields where
+    a single ``assert is_present(field)`` replaces a two-step
+    ``is_set(field)`` + ``field is not None`` narrowing.
+
+    Args:
+        value: A three-state value that might be UNSET, None, or a value of type T.
+
+    Returns:
+        True if value is neither UNSET nor None.
+
+    Example:
+        >>> from stash_graphql_client.types import Scene, is_present
+        >>> scene = Scene(id="1", tags=[])
+        >>> if is_present(scene.tags):
+        ...     tag in scene.tags  # OK: type checker knows scene.tags is list[Tag]
+    """
+    return value is not UNSET and value is not None
+
+
+def present[T](value: T | None | UnsetType) -> T:
+    """Return a three-state field's concrete value, requiring it be set and non-null.
+
+    The value-returning counterpart of :func:`is_present`: use it inline where a
+    queried, non-null field is expected, e.g. ``present(obj.tags)[0]`` or
+    ``x in present(obj.tags)``. Unlike an ``assert is_present(...)`` it re-narrows at
+    each call site, so it is robust where a static checker would otherwise drop
+    attribute narrowing (e.g. across an intervening ``await``). Raises if the value
+    is ``UNSET`` or ``None`` so bad data never passes silently.
+
+    Args:
+        value: A three-state value that should be a real value of type T.
+
+    Returns:
+        The value, narrowed to T.
+
+    Raises:
+        ValueError: If the value is UNSET or None.
+    """
+    if isinstance(value, UnsetType):
+        raise ValueError("present(): value is UNSET (field was not queried)")
+    if value is None:
+        raise ValueError("present(): value is None")
+    return value
+
+
+__all__ = ["UNSET", "UnsetType", "is_present", "is_set", "present"]

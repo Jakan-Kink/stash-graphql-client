@@ -10,6 +10,7 @@ import pytest
 
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import GenerateMetadataOptions, JobStatus, Scene
+from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
 # Integration tests with metadata generation need longer timeouts
@@ -21,7 +22,10 @@ async def test_scene_workflow(
     stash_client: StashClient, enable_scene_creation, stash_cleanup_tracker
 ) -> None:
     """Test complete scene workflow."""
-    async with stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup:
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False) as cleanup,
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Create scene
         scene = Scene(
             title="Test Scene",
@@ -38,20 +42,29 @@ async def test_scene_workflow(
         )
 
         # Create
-        created = await stash_client.create_scene(scene)
+        try:
+            created = await stash_client.create_scene(scene)
+        finally:
+            dump_graphql_calls(calls, "create_scene")
         cleanup["scenes"].append(created.id)  # Add to cleanup tracker
         assert created.id is not None
         assert created.title == scene.title
 
         # Find
-        found = await stash_client.find_scene(created.id)
+        try:
+            found = await stash_client.find_scene(created.id)
+        finally:
+            dump_graphql_calls(calls, "find_scene")
         assert found is not None
         assert found.id == created.id
         assert found.title == scene.title
 
         # Update
         found.title = "Updated Title"
-        updated = await stash_client.update_scene(found)
+        try:
+            updated = await stash_client.update_scene(found)
+        finally:
+            dump_graphql_calls(calls, "update_scene")
         assert updated.title == "Updated Title"
 
         # Generate metadata
@@ -60,11 +73,17 @@ async def test_scene_workflow(
             sprites=True,
             previews=True,
         )
-        job_id = await stash_client.metadata_generate(options)
+        try:
+            job_id = await stash_client.metadata_generate(options)
+        finally:
+            dump_graphql_calls(calls, "metadata_generate")
         assert job_id is not None
 
         # Wait for job — may be CANCELLED (no media files to process)
-        result = await stash_client.wait_for_job(job_id=job_id, period=0.1)
+        try:
+            result = await stash_client.wait_for_job(job_id=job_id, period=0.1)
+        finally:
+            dump_graphql_calls(calls, "wait_for_job")
         assert result is not None  # Job was found and reached a terminal state
 
 

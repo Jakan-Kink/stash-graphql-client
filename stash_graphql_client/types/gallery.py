@@ -22,6 +22,7 @@ from .base import (
 from .enums import BulkUpdateIdMode
 from .files import Folder, GalleryFile
 from .image import Image
+from .json import expect_dict
 from .metadata import CustomFieldsInput
 from .scalars import Map
 from .unset import UNSET, UnsetType, is_set
@@ -199,17 +200,6 @@ class Gallery(StashObject):
         "custom_fields",  # galleryUpdate via CustomFieldsInput diff (appSchema >= 81)
     }
 
-    # Side mutations: fields persisted via separate GraphQL mutations
-    # Lambdas are intentional: forward references to methods defined below
-    __side_mutations__: ClassVar[dict] = {
-        "cover": lambda client, obj: Gallery._save_cover(client, obj),  # noqa: PLW0108
-        "images": lambda client, obj: Gallery._save_images(client, obj),  # noqa: PLW0108
-        "custom_fields": StashObject._make_custom_fields_handler(
-            capability_attr="has_gallery_custom_fields",
-            update_method_name="update_gallery",
-        ),
-    }
-
     # Optional fields
     title: str | None | UnsetType = UNSET
     code: str | None | UnsetType = UNSET
@@ -304,7 +294,7 @@ class Gallery(StashObject):
         if not gallery_data:
             raise ValueError(f"Gallery {self.id} not found")
 
-        image_data = gallery_data.get("image")
+        image_data = expect_dict(gallery_data, "findGallery").get("image")
         if not image_data:
             raise ValueError(
                 f"No image found at index {index} in gallery {self.id}. "
@@ -313,7 +303,7 @@ class Gallery(StashObject):
 
         # Use from_graphql() - the canonical method for GraphQL responses
         # This ensures proper _received_fields tracking and identity map integration
-        return Image.from_graphql(image_data)
+        return Image.from_graphql(expect_dict(image_data, "image"))
 
     @staticmethod
     async def _save_cover(client: StashClient, gallery: Gallery) -> None:
@@ -348,6 +338,18 @@ class Gallery(StashObject):
             await client.add_gallery_images(gallery.id, list(added))
         if removed:
             await client.remove_gallery_images(gallery.id, list(removed))
+
+    # Side-mutation registry — placed AFTER the _save_* handlers it references so the
+    # lambda forward-refs resolve for static type checkers regardless of module import
+    # order. Shared handler objects preserve save()'s id()-based dedup.
+    __side_mutations__: ClassVar[dict] = {
+        "cover": lambda client, obj: Gallery._save_cover(client, obj),  # noqa: PLW0108
+        "images": lambda client, obj: Gallery._save_images(client, obj),  # noqa: PLW0108
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_gallery_custom_fields",
+            update_method_name="update_gallery",
+        ),
+    }
 
     async def add_image(self, image: Image) -> None:
         """Add image (syncs Image.galleries inverse, call save() to persist)."""

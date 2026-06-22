@@ -18,6 +18,12 @@ import pytest
 from stash_graphql_client import StashClient
 from stash_graphql_client.types import JobStatus, JobStatusUpdate, LogEntry
 from stash_graphql_client.types.unset import is_set
+from tests.fixtures import (
+    capture_graphql_calls,
+    capture_ws_calls,
+    dump_graphql_calls,
+    dump_ws_calls,
+)
 
 
 # =============================================================================
@@ -37,12 +43,19 @@ async def test_subscribe_to_jobs_real_connection(
     This verifies the WebSocket transport works without triggering actions.
     Works on any library size (doesn't depend on job activity).
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         # Connection test with 5 second timeout
-        async with asyncio.timeout(5.0):
-            async with stash_client.subscribe_to_jobs() as subscription:
-                # Connection successful - exit immediately
-                assert subscription is not None
+        try:
+            async with asyncio.timeout(5.0):
+                async with stash_client.subscribe_to_jobs() as subscription:
+                    # Connection successful - exit immediately
+                    connected = subscription is not None
+        finally:
+            dump_ws_calls(ws_calls, "jobs_connection")
+        assert connected
 
 
 @pytest.mark.xdist_group(name="websocket")  # Run serially, not in parallel
@@ -63,37 +76,45 @@ async def test_subscribe_then_trigger_job(
 
     This test works on any library size and with background jobs running.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         collected_events = []
         event_timeout_occurred = False
 
-        async with stash_client.subscribe_to_jobs() as subscription:
-            # Longer delay to ensure subscription is fully ready
-            await asyncio.sleep(0.5)
+        try:
+            async with stash_client.subscribe_to_jobs() as subscription:
+                # Longer delay to ensure subscription is fully ready
+                await asyncio.sleep(0.5)
 
-            # Trigger scan and get job ID
-            result = await stash_client.metadata_scan()
-            job_id = result
-            assert job_id is not None, "metadata_scan should return job ID"
+                # Trigger scan and get job ID
+                result = await stash_client.metadata_scan()
+                job_id = result
+                if job_id is None:
+                    pytest.fail("metadata_scan should return job ID")
 
-            # Collect events for this specific job (with timeout and early exit)
-            try:
-                async with asyncio.timeout(30.0):
-                    async for update in subscription:
-                        # Filter: only collect events for our job
-                        if str(update.job.id) == str(job_id):
-                            collected_events.append(update)
+                # Collect events for this specific job (with timeout and early exit)
+                try:
+                    async with asyncio.timeout(30.0):
+                        async for update in subscription:
+                            # Filter: only collect events for our job
+                            if str(update.job.id) == str(job_id):
+                                collected_events.append(update)
 
-                            # More aggressive early exit: collect 3 events then stop
-                            # (Reduced from 5 to be more lenient with fast jobs)
-                            if len(collected_events) >= 3:
-                                break
+                                # More aggressive early exit: collect 3 events then stop
+                                if len(collected_events) >= 3:
+                                    break
 
-                            # Exit early if we see REMOVE (job complete)
-                            if update.type == "REMOVE":
-                                break
-            except TimeoutError:
-                event_timeout_occurred = True
+                                # Exit early if we see REMOVE (job complete)
+                                if update.type == "REMOVE":
+                                    break
+                except TimeoutError:
+                    event_timeout_occurred = True
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
+            dump_ws_calls(ws_calls, "jobs_subscription")
 
         # Verify we captured events (or timeout occurred with at least 1 event)
         # Very fast jobs might complete with just 1-2 events
@@ -133,40 +154,52 @@ async def test_subscribe_to_jobs_receives_job_updates(
 
     Note: We use metadata_clean for this test as it's fast and reliable.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         collected_events = []
         found_numeric_progress = False
         timeout_occurred = False
 
-        async with stash_client.subscribe_to_jobs() as subscription:
-            # Longer delay to ensure subscription is ready
-            await asyncio.sleep(0.5)
+        try:
+            async with stash_client.subscribe_to_jobs() as subscription:
+                # Longer delay to ensure subscription is ready
+                await asyncio.sleep(0.5)
 
-            # Trigger clean (fast, reliable operation)
-            result = await stash_client.metadata_clean({"dryRun": False})
-            job_id = result
-            assert job_id is not None, "metadata_clean should return job ID"
+                # Trigger clean (fast, reliable operation)
+                result = await stash_client.metadata_clean({"dryRun": False})
+                job_id = result
+                if job_id is None:
+                    pytest.fail("metadata_clean should return job ID")
 
-            # Collect events and look for numeric progress
-            try:
-                async with asyncio.timeout(30.0):
-                    async for update in subscription:
-                        if str(update.job.id) == str(job_id):
-                            collected_events.append(update)
+                # Collect events and look for numeric progress
+                try:
+                    async with asyncio.timeout(30.0):
+                        async for update in subscription:
+                            if str(update.job.id) == str(job_id):
+                                collected_events.append(update)
 
-                            # Check if this event has numeric progress
-                            if (
-                                hasattr(update.job, "progress")
-                                and update.job.progress is not None
-                            ):
-                                found_numeric_progress = True
+                                # Check if this event has numeric progress
+                                if (
+                                    hasattr(update.job, "progress")
+                                    and update.job.progress is not None
+                                ):
+                                    found_numeric_progress = True
 
-                            # Exit when we see REMOVE (job complete) or after collecting enough events
-                            # Fast jobs may only generate 1-2 events total
-                            if update.type == "REMOVE" or len(collected_events) >= 3:
-                                break
-            except TimeoutError:
-                timeout_occurred = True
+                                # Exit when we see REMOVE (job complete) or after enough events
+                                # Fast jobs may only generate 1-2 events total
+                                if (
+                                    update.type == "REMOVE"
+                                    or len(collected_events) >= 3
+                                ):
+                                    break
+                except TimeoutError:
+                    timeout_occurred = True
+        finally:
+            dump_graphql_calls(calls, "metadata_clean")
+            dump_ws_calls(ws_calls, "jobs_subscription")
 
         # More lenient verification - skip if job completed too fast
         if timeout_occurred and len(collected_events) == 0:
@@ -209,12 +242,19 @@ async def test_subscribe_to_logs_real_connection(
     This verifies the WebSocket transport works without triggering actions.
     Works regardless of logging activity.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         # Connection test with 5 second timeout
-        async with asyncio.timeout(5.0):
-            async with stash_client.subscribe_to_logs() as subscription:
-                # Connection successful - exit immediately
-                assert subscription is not None
+        try:
+            async with asyncio.timeout(5.0):
+                async with stash_client.subscribe_to_logs() as subscription:
+                    # Connection successful - exit immediately
+                    connected = subscription is not None
+        finally:
+            dump_ws_calls(ws_calls, "logs_connection")
+        assert connected
 
 
 @pytest.mark.xdist_group(name="websocket")  # Run serially, not in parallel
@@ -230,31 +270,39 @@ async def test_subscribe_to_logs_during_activity(
     This test collects a few batches to verify structure.
     Note: System queries (configuration, status) don't generate logs.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         log_batches = []
         total_log_entries = 0
         timeout_occurred = False
 
-        async with stash_client.subscribe_to_logs() as subscription:
-            # Longer delay to ensure subscription is ready
-            await asyncio.sleep(0.5)
+        try:
+            async with stash_client.subscribe_to_logs() as subscription:
+                # Longer delay to ensure subscription is ready
+                await asyncio.sleep(0.5)
 
-            # Trigger scan to generate logs (queries don't generate logs)
-            await stash_client.metadata_scan()
+                # Trigger scan to generate logs (queries don't generate logs)
+                await stash_client.metadata_scan()
 
-            # Shorter timeout and more lenient collection
-            try:
-                async with asyncio.timeout(15.0):  # Reduced from 30s
-                    async for batch in subscription:
-                        if batch:  # Only count non-empty batches
-                            log_batches.append(batch)
-                            total_log_entries += len(batch)
+                # Shorter timeout and more lenient collection
+                try:
+                    async with asyncio.timeout(15.0):  # Reduced from 30s
+                        async for batch in subscription:
+                            if batch:  # Only count non-empty batches
+                                log_batches.append(batch)
+                                total_log_entries += len(batch)
 
-                            # More aggressive early exit: collect 2 batches (reduced from 3)
-                            if len(log_batches) >= 2:
-                                break
-            except TimeoutError:
-                timeout_occurred = True
+                                # More aggressive early exit: collect 2 batches
+                                if len(log_batches) >= 2:
+                                    break
+                except TimeoutError:
+                    timeout_occurred = True
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
+            dump_ws_calls(ws_calls, "logs_subscription")
 
         # More lenient verification - skip if no logs captured at all
         if timeout_occurred and len(log_batches) == 0:
@@ -304,12 +352,19 @@ async def test_subscribe_to_scan_complete_connection(
     This verifies the WebSocket transport works without triggering actions.
     Works regardless of scan activity.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         # Connection test with 5 second timeout
-        async with asyncio.timeout(5.0):
-            async with stash_client.subscribe_to_scan_complete() as subscription:
-                # Connection successful - exit immediately
-                assert subscription is not None
+        try:
+            async with asyncio.timeout(5.0):
+                async with stash_client.subscribe_to_scan_complete() as subscription:
+                    # Connection successful - exit immediately
+                    connected = subscription is not None
+        finally:
+            dump_ws_calls(ws_calls, "scan_complete_connection")
+        assert connected
 
 
 @pytest.mark.xdist_group(name="websocket")  # Run serially, not in parallel
@@ -324,35 +379,47 @@ async def test_scan_complete_receives_event(
     Triggers a scan and waits for the scanComplete event.
     Note: scanComplete fires for multiple metadata operations (scan, clean, generate).
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         scan_complete_received = False
+        skip_reason = None
 
-        async with stash_client.subscribe_to_scan_complete() as subscription:
-            # Longer delay to ensure subscription is ready
-            await asyncio.sleep(0.5)
+        try:
+            async with stash_client.subscribe_to_scan_complete() as subscription:
+                # Longer delay to ensure subscription is ready
+                await asyncio.sleep(0.5)
 
-            # Trigger scan (fast operation)
-            result = await stash_client.metadata_scan()
-            job_id = result
-            assert job_id is not None, "metadata_scan should return job ID"
+                # Trigger scan (fast operation)
+                result = await stash_client.metadata_scan()
+                job_id = result
+                if job_id is None:
+                    pytest.fail("metadata_scan should return job ID")
 
-            # Wait for scan complete event
-            try:
-                async with asyncio.timeout(30.0):
-                    async for event in subscription:
-                        # scanComplete returns boolean
-                        assert isinstance(event, bool), (
-                            f"Event should be bool, got {type(event)}"
-                        )
-                        if event is True:
-                            scan_complete_received = True
-                            break
-            except TimeoutError:
-                # More lenient - skip if event didn't arrive
-                pytest.skip(
-                    "Timeout waiting for scan complete event. "
-                    "Job may have completed before subscription was ready."
-                )
+                # Wait for scan complete event
+                try:
+                    async with asyncio.timeout(30.0):
+                        async for event in subscription:
+                            # scanComplete returns boolean
+                            if not isinstance(event, bool):
+                                pytest.fail(f"Event should be bool, got {type(event)}")
+                            if event is True:
+                                scan_complete_received = True
+                                break
+                except TimeoutError:
+                    # More lenient - skip if event didn't arrive
+                    skip_reason = (
+                        "Timeout waiting for scan complete event. "
+                        "Job may have completed before subscription was ready."
+                    )
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
+            dump_ws_calls(ws_calls, "scan_complete_subscription")
+
+        if skip_reason is not None:
+            pytest.skip(skip_reason)
 
         # Verify we received the completion event
         assert scan_complete_received, "Should receive scanComplete = True event"
@@ -365,45 +432,54 @@ async def test_scan_complete_receives_event(
 async def test_job_lifecycle_includes_remove_event(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
-    """Test complete job lifecycle: ADD → UPDATE(s) → REMOVE.
+    """Test complete job lifecycle: ADD -> UPDATE(s) -> REMOVE.
 
     Verifies that jobs complete with a REMOVE event (not just status=FINISHED).
     This documents the expected lifecycle and ensures cleanup events are sent.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         collected_events = []
         found_remove = False
 
-        async with stash_client.subscribe_to_jobs() as subscription:
-            # Longer delay to ensure subscription is ready
-            await asyncio.sleep(0.5)
+        try:
+            async with stash_client.subscribe_to_jobs() as subscription:
+                # Longer delay to ensure subscription is ready
+                await asyncio.sleep(0.5)
 
-            # Trigger scan and get job ID
-            try:
-                result = await stash_client.metadata_scan()
-            except ValueError as e:
-                if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
-                    pytest.skip("ffmpeg/ffprobe not available in test environment")
-                raise
-            job_id = result
-            assert job_id is not None, "metadata_scan should return job ID"
+                # Trigger scan and get job ID
+                try:
+                    result = await stash_client.metadata_scan()
+                except ValueError as e:
+                    if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
+                        pytest.skip("ffmpeg/ffprobe not available in test environment")
+                    raise
+                job_id = result
+                if job_id is None:
+                    pytest.fail("metadata_scan should return job ID")
 
-            # Collect events until we see REMOVE (or timeout)
-            try:
-                async with asyncio.timeout(30.0):
-                    async for update in subscription:
-                        if str(update.job.id) == str(job_id):
-                            collected_events.append(update)
+                # Collect events until we see REMOVE (or timeout)
+                try:
+                    async with asyncio.timeout(30.0):
+                        async for update in subscription:
+                            if str(update.job.id) == str(job_id):
+                                collected_events.append(update)
 
-                            # Track REMOVE event
-                            if update.type == "REMOVE":
-                                found_remove = True
-                                # REMOVE is the final event - stop collecting
-                                break
-            except TimeoutError:
-                # If we got some events but timed out, still check what we have
-                if len(collected_events) == 0:
-                    pytest.skip("Job completed too fast to capture any events")
+                                # Track REMOVE event
+                                if update.type == "REMOVE":
+                                    found_remove = True
+                                    # REMOVE is the final event - stop collecting
+                                    break
+                except TimeoutError:
+                    # If we got some events but timed out, still check what we have
+                    if len(collected_events) == 0:
+                        pytest.skip("Job completed too fast to capture any events")
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
+            dump_ws_calls(ws_calls, "jobs_subscription")
 
         # More lenient verification
         # Fast jobs might complete with just 1 event (REMOVE)
@@ -443,9 +519,17 @@ async def test_wait_for_job_nonexistent(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test wait_for_job_with_updates returns None for nonexistent job."""
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Use very short timeout with nonexistent job ID
-        result = await stash_client.wait_for_job_with_updates("999999999", timeout=1.0)
+        try:
+            result = await stash_client.wait_for_job_with_updates(
+                "999999999", timeout=1.0
+            )
+        finally:
+            dump_graphql_calls(calls, "wait_for_job_with_updates")
         # Should return None for nonexistent job
         assert result is None
 
@@ -457,9 +541,15 @@ async def test_check_job_status_nonexistent(
     stash_client: StashClient, stash_cleanup_tracker
 ) -> None:
     """Test _check_job_status returns (None, None) for nonexistent job."""
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Use an ID that's unlikely to exist
-        is_done, status = await stash_client._check_job_status("999999999")
+        try:
+            is_done, status = await stash_client._check_job_status("999999999")
+        finally:
+            dump_graphql_calls(calls, "check_job_status")
 
         # Nonexistent job should return None, None
         assert is_done is None
@@ -477,7 +567,10 @@ async def test_check_job_status_with_real_jobs(
     Triggers a scan, gets the job ID, then checks its status.
     Verifies the helper method returns valid job status information.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Trigger scan and get job ID
         try:
             result = await stash_client.metadata_scan()
@@ -485,6 +578,8 @@ async def test_check_job_status_with_real_jobs(
             if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
                 pytest.skip("ffmpeg/ffprobe not available in test environment")
             raise
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
         job_id = result  # metadata_scan returns job ID directly as string
         assert job_id is not None, "metadata_scan should return job ID"
 
@@ -492,7 +587,10 @@ async def test_check_job_status_with_real_jobs(
         await asyncio.sleep(0.2)
 
         # Check job status
-        is_done, status = await stash_client._check_job_status(str(job_id))
+        try:
+            is_done, status = await stash_client._check_job_status(str(job_id))
+        finally:
+            dump_graphql_calls(calls, "check_job_status")
 
         # Should get valid response (job exists)
         assert is_done is not None, "is_done should not be None for existing job"
@@ -524,7 +622,11 @@ async def test_concurrent_jobs_filter_by_id(
     Note: This test takes longer (~60s) as it uses generate (slow operation).
     Requires scenes in Stash to generate meaningful job events.
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+        capture_ws_calls(stash_client) as ws_calls,
+    ):
         # Drain any leftover jobs from prior tests to avoid event flood
         with contextlib.suppress(Exception):
             pending_jobs = await stash_client.job_queue()
@@ -540,7 +642,7 @@ async def test_concurrent_jobs_filter_by_id(
         job1_id = None
         job2_id = None
 
-        # Wrap entire subscription context — crashes during WebSocket
+        # Wrap entire subscription context - crashes during WebSocket
         # teardown (__aexit__) have killed pytest workers previously
         try:
             async with stash_client.subscribe_to_jobs() as subscription:
@@ -551,7 +653,8 @@ async def test_concurrent_jobs_filter_by_id(
                     options={"phashes": True}, input_data={"overwrite": True}
                 )
                 job1_id = result1
-                assert job1_id is not None, "metadata_generate should return job ID"
+                if job1_id is None:
+                    pytest.fail("metadata_generate should return job ID")
 
                 # Small delay between jobs
                 await asyncio.sleep(0.2)
@@ -559,7 +662,8 @@ async def test_concurrent_jobs_filter_by_id(
                 # Trigger second job (scan - fast)
                 result2 = await stash_client.metadata_scan()
                 job2_id = result2
-                assert job2_id is not None, "metadata_scan should return job ID"
+                if job2_id is None:
+                    pytest.fail("metadata_scan should return job ID")
 
                 # Collect events for both jobs and cancel job1 after a few events
                 try:
@@ -608,6 +712,9 @@ async def test_concurrent_jobs_filter_by_id(
                 f"{type(e).__name__}: {e}. "
                 f"Job1 events: {len(job1_events)}, Job2 events: {len(job2_events)}."
             )
+        finally:
+            dump_graphql_calls(calls, "concurrent_jobs_http")
+            dump_ws_calls(ws_calls, "concurrent_jobs_subscription")
 
         # More lenient verification for fast-completing jobs
         if len(job1_events) == 0 or len(job2_events) == 0:
@@ -646,9 +753,15 @@ async def test_job_queue(stash_client: StashClient, stash_cleanup_tracker) -> No
     3. Can trigger a job and see it appear in the queue
     4. Job status is a valid JobStatus enum
     """
-    async with stash_cleanup_tracker(stash_client, auto_capture=False):
+    async with (
+        stash_cleanup_tracker(stash_client, auto_capture=False),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Get initial queue state
-        initial_queue = await stash_client.job_queue()
+        try:
+            initial_queue = await stash_client.job_queue()
+        finally:
+            dump_graphql_calls(calls, "job_queue_initial")
         assert isinstance(initial_queue, list), "job_queue should return a list"
 
         # Trigger a job
@@ -658,10 +771,15 @@ async def test_job_queue(stash_client: StashClient, stash_cleanup_tracker) -> No
             if "ffmpeg" in str(e).lower() or "ffprobe" in str(e).lower():
                 pytest.skip("ffmpeg/ffprobe not available in test environment")
             raise
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
         assert job_id is not None, "metadata_scan should return job ID"
 
         # Get queue again (should include our job)
-        queue = await stash_client.job_queue()
+        try:
+            queue = await stash_client.job_queue()
+        finally:
+            dump_graphql_calls(calls, "job_queue_after")
         assert isinstance(queue, list), "job_queue should return a list"
 
         # Find our job in the queue

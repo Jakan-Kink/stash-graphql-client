@@ -6,7 +6,7 @@ Tests core client methods like execute, system status, and job management.
 import pytest
 
 from stash_graphql_client import StashClient
-from stash_graphql_client.types import SystemStatus
+from stash_graphql_client.types import SystemStatus, expect_dict
 from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 
 
@@ -71,7 +71,8 @@ async def test_execute_raw_query(
         # Verify response
         assert result is not None
         assert "systemStatus" in result
-        assert result["systemStatus"]["status"] in ("OK", "NEEDS_MIGRATION", "SETUP")
+        system_status = expect_dict(result["systemStatus"], "systemStatus")
+        assert system_status["status"] in ("OK", "NEEDS_MIGRATION", "SETUP")
 
 
 @pytest.mark.integration
@@ -115,7 +116,9 @@ async def test_client_is_initialized(
 ) -> None:
     """Test that client is properly initialized."""
     async with (
-        stash_cleanup_tracker(stash_client, auto_capture=False),
+        stash_cleanup_tracker(
+            stash_client, auto_capture=False
+        ),  # CCH:NO-DUMP  # client-state only; body issues no GraphQL (asserts len(calls) == 0)
         capture_graphql_calls(stash_client) as calls,
     ):
         # This test doesn't make GraphQL calls - just checks client state

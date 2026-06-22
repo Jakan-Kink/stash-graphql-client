@@ -63,7 +63,7 @@ class TestStashContextInit:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_lowercase_keys_work_with_client_initialization(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test that lowercase connection keys work correctly during client initialization.
 
@@ -82,23 +82,22 @@ class TestStashContextInit:
         }
         context = StashContext(conn=conn, verify_ssl=False)
 
-        with respx.mock:
-            # Mock the HTTPS endpoint (not default http://localhost:9999)
-            graphql_route = respx.post("https://stash.example.com:8443/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        # Mock the HTTPS endpoint (not default http://localhost:9999)
+        graphql_route = respx.post("https://stash.example.com:8443/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Verify client used the lowercase config values (not defaults)
-            assert client.url == "https://stash.example.com:8443/graphql"
-            assert client.ws_url == "wss://stash.example.com:8443/graphql"
-            assert client.scheme == "https"
+        # Verify client used the lowercase config values (not defaults)
+        assert client.url == "https://stash.example.com:8443/graphql"
+        assert client.ws_url == "wss://stash.example.com:8443/graphql"
+        assert client.scheme == "https"
 
-            await context.close()
+        await context.close()
 
 
 class TestStashContextProperties:
@@ -170,7 +169,7 @@ class TestStashContextGetClient:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_get_client_returns_stash_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test get_client returns a StashClient instance.
 
@@ -183,69 +182,66 @@ class TestStashContextGetClient:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert isinstance(client, StashClient)
-            assert context._client is client
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert isinstance(client, StashClient)
+        assert context._client is client
 
-            # Test re-initialization guard (lines 132-133)
-            # Client is already initialized, so this should return immediately
-            assert client._initialized is True
-            await client.initialize()  # Should return early, no error
-            assert client._initialized is True  # Still initialized
+        # Test re-initialization guard (lines 132-133)
+        # Client is already initialized, so this should return immediately
+        assert client._initialized is True
+        await client.initialize()  # Should return early, no error
+        assert client._initialized is True  # Still initialized
 
-            await context.close()
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_get_client_returns_same_instance(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test get_client returns the same client instance on subsequent calls."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client1 = await context.get_client()
-                client2 = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            client1 = await context.get_client()
+            client2 = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            assert client1 is client2
+        assert client1 is client2
 
-            await context.close()
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_get_client_initializes_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test get_client properly initializes the client."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert client._initialized is True
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert client._initialized is True
 
-            await context.close()
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -271,30 +267,29 @@ class TestStashContextGetClient:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_get_client_initializes_store(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test get_client initializes entity store and wires it to StashObject."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Store should be initialized
-            assert context._store is not None
+        # Store should be initialized
+        assert context._store is not None
 
-            # Store should be wired to StashObject
-            from stash_graphql_client.types.base import StashObject
+        # Store should be wired to StashObject
+        from stash_graphql_client.types.base import StashObject
 
-            assert StashObject._store is context._store
+        assert StashObject._store is context._store
 
-            await context.close()
+        await context.close()
 
 
 class TestStashContextClose:
@@ -311,7 +306,7 @@ class TestStashContextClose:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_cleans_up_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close properly cleans up the client.
 
@@ -319,28 +314,27 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert context._client is not None
-            assert context._store is not None
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert context._client is not None
+        assert context._store is not None
 
-            await context.close()
+        await context.close()
 
-            # Lines 186-189: Client and store should be cleaned up
-            assert context._client is None
-            assert context._store is None
+        # Lines 186-189: Client and store should be cleaned up
+        assert context._client is None
+        assert context._store is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_unwires_store_from_stash_object(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close unwires entity store from StashObject.
 
@@ -348,30 +342,29 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            from stash_graphql_client.types.base import StashObject
+        from stash_graphql_client.types.base import StashObject
 
-            # Store should be wired
-            assert StashObject._store is context._store
+        # Store should be wired
+        assert StashObject._store is context._store
 
-            await context.close()
+        await context.close()
 
-            # Store should be unwired
-            assert StashObject._store is None
+        # Store should be unwired
+        assert StashObject._store is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_deferred_with_active_refs(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close is deferred when there are active references.
 
@@ -379,35 +372,34 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            # Simulate entering context manager
-            async with context._ref_lock:
-                context._ref_count = 1
+        # Simulate entering context manager
+        async with context._ref_lock:
+            context._ref_count = 1
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            client = context._client
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        client = context._client
 
-            # Close without force - should be deferred (line 174-179)
-            await context.close()
+        # Close without force - should be deferred (line 174-179)
+        await context.close()
 
-            # Client should still be there (deferred close)
-            assert context._client is client
+        # Client should still be there (deferred close)
+        assert context._client is client
 
-            # Clean up
-            context._ref_count = 0
-            await context.close()
+        # Clean up
+        context._ref_count = 0
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_warning_with_active_refs(
-        self, mock_ws_transport, mock_gql_ws_connect, caplog
+        self, mock_ws_transport, mock_gql_ws_connect, caplog, respx_mock
     ) -> None:
         """Test close logs warning when called with active references.
 
@@ -417,41 +409,40 @@ class TestStashContextClose:
 
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Simulate active references
-            async with context._ref_lock:
-                context._ref_count = 2
+        # Simulate active references
+        async with context._ref_lock:
+            context._ref_count = 2
 
-            # Call close manually (not from __aexit__)
-            await context.close()
+        # Call close manually (not from __aexit__)
+        await context.close()
 
-            # Verify warning was logged (line 167-172)
-            assert any(
-                "active references" in record.message
-                for record in caplog.records
-                if record.levelname == "WARNING"
-            )
+        # Verify warning was logged (line 167-172)
+        assert any(
+            "active references" in record.message
+            for record in caplog.records
+            if record.levelname == "WARNING"
+        )
 
-            # Client should still exist due to active refs
-            assert context._client is not None
+        # Client should still exist due to active refs
+        assert context._client is not None
 
-            # Clean up
-            context._ref_count = 0
-            await context.close(force=True)
+        # Clean up
+        context._ref_count = 0
+        await context.close(force=True)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_forced_with_active_refs(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close with force=True closes even with active refs.
 
@@ -459,26 +450,25 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            async with context._ref_lock:
-                context._ref_count = 1
+        async with context._ref_lock:
+            context._ref_count = 1
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            await context.close(force=True)
-            assert context._client is None
+        await context.close(force=True)
+        assert context._client is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_internal_flag(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close with _internal=True for __aexit__ calls.
 
@@ -486,19 +476,18 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # _internal=True skips lock and ref_count check (used by __aexit__)
-            await context.close(_internal=True)
-            assert context._client is None
+        # _internal=True skips lock and ref_count check (used by __aexit__)
+        await context.close(_internal=True)
+        assert context._client is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -521,7 +510,7 @@ class TestStashContextClose:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_internal_with_store_cleanup(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close with _internal=True cleans up store.
 
@@ -529,26 +518,25 @@ class TestStashContextClose:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert context._store is not None
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert context._store is not None
 
-            await context.close(_internal=True)
+        await context.close(_internal=True)
 
-            # Store should be cleaned up
-            assert context._store is None
+        # Store should be cleaned up
+        assert context._store is None
 
-            from stash_graphql_client.types.base import StashObject
+        from stash_graphql_client.types.base import StashObject
 
-            # Store should be unwired from StashObject
-            assert StashObject._store is None
+        # Store should be unwired from StashObject
+        assert StashObject._store is None
 
 
 class TestStashContextAsyncContextManager:
@@ -557,76 +545,73 @@ class TestStashContextAsyncContextManager:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_aenter_returns_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test __aenter__ returns the StashClient."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
-                async with context as client:
-                    assert isinstance(client, StashClient)
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            async with context as client:
+                assert isinstance(client, StashClient)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_aenter_increments_ref_count(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test __aenter__ increments the reference count."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
-                assert context.ref_count == 0
+        try:
+            assert context.ref_count == 0
 
-                async with context:
-                    assert context.ref_count == 1
+            async with context:
+                assert context.ref_count == 1
 
-                assert context.ref_count == 0
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            assert context.ref_count == 0
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_aexit_decrements_ref_count(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test __aexit__ decrements the reference count."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
-                async with context:
-                    assert context.ref_count == 1
+        try:
+            async with context:
+                assert context.ref_count == 1
 
-                assert context.ref_count == 0
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            assert context.ref_count == 0
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_aexit_closes_client_when_ref_zero(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test __aexit__ closes client when ref count reaches 0.
 
@@ -634,27 +619,26 @@ class TestStashContextAsyncContextManager:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
-                async with context as client:
-                    assert context._client is not None
-                    assert client is context._client
+        try:
+            async with context as client:
+                assert context._client is not None
+                assert client is context._client
 
-                # After exit, ref_count should be 0 and client closed (lines 234-238)
-                assert context._client is None
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            # After exit, ref_count should be 0 and client closed (lines 234-238)
+            assert context._client is None
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_aexit_keeps_client_open_with_active_refs(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test __aexit__ keeps client open when other refs are active.
 
@@ -663,88 +647,85 @@ class TestStashContextAsyncContextManager:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
+        try:
+            async with context:
                 async with context:
-                    async with context:
-                        assert context.ref_count == 2
+                    assert context.ref_count == 2
 
-                    # First exit, but ref_count is still 1 (line 240-242)
-                    assert context.ref_count == 1
-                    assert context._client is not None  # Client should still be open
+                # First exit, but ref_count is still 1 (line 240-242)
+                assert context.ref_count == 1
+                assert context._client is not None  # Client should still be open
 
-                # Now client should be closed
-                assert context._client is None
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            # Now client should be closed
+            assert context._client is None
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_concurrent_context_managers(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test multiple concurrent context managers share the same client."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
+        try:
 
-                async def use_context() -> StashClient:
-                    async with context as client:
-                        await asyncio.sleep(0.01)
-                        return client
+            async def use_context() -> StashClient:
+                async with context as client:
+                    await asyncio.sleep(0.01)
+                    return client
 
-                clients = await asyncio.gather(use_context(), use_context())
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            clients = await asyncio.gather(use_context(), use_context())
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Both should have gotten the same client instance
-            assert clients[0] is clients[1]
-            assert context.ref_count == 0
+        # Both should have gotten the same client instance
+        assert clients[0] is clients[1]
+        assert context.ref_count == 0
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_nested_context_managers(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test nested context managers properly increment/decrement ref count."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context ref_count
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
+        try:
+            async with context:
+                assert context.ref_count == 1
+
                 async with context:
-                    assert context.ref_count == 1
+                    assert context.ref_count == 2
 
                     async with context:
-                        assert context.ref_count == 2
+                        assert context.ref_count == 3
 
-                        async with context:
-                            assert context.ref_count == 3
+                    assert context.ref_count == 2
 
-                        assert context.ref_count == 2
+                assert context.ref_count == 1
 
-                    assert context.ref_count == 1
-
-                assert context.ref_count == 0
-                assert context._client is None
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+            assert context.ref_count == 0
+            assert context._client is None
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
 
 class TestStashContextInterfaceProperty:
@@ -753,44 +734,42 @@ class TestStashContextInterfaceProperty:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_interface_returns_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test interface property returns client after initialization."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert context.interface is client
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert context.interface is client
 
-            await context.close()
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_client_property_returns_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test client property returns client after initialization."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                initialized_client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert context.client is initialized_client
+        try:
+            initialized_client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert context.client is initialized_client
 
-            await context.close()
+        await context.close()
 
 
 class TestStashContextEdgeCases:
@@ -799,30 +778,29 @@ class TestStashContextEdgeCases:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_multiple_close_calls_safe(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test that calling close multiple times is safe."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            await context.close()
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        await context.close()
 
-            # Second close should be safe (no client to close)
-            await context.close()
-            assert context._client is None
+        # Second close should be safe (no client to close)
+        await context.close()
+        assert context._client is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_with_only_store_no_client(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test close when store exists but client is None.
 
@@ -830,75 +808,72 @@ class TestStashContextEdgeCases:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Manually set client to None but keep store
-            context._client = None
+        # Manually set client to None but keep store
+        context._client = None
 
-            # Close should still clean up store
-            await context.close()
-            assert context._store is None
+        # Close should still clean up store
+        await context.close()
+        assert context._store is None
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_context_manager_with_exception(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test that context manager properly cleans up even when exception occurs."""
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post(
+        graphql_route = (
+            respx.post(  # CCH:NO-DUMP  # asserts check live in-context client state
                 "http://localhost:9999/graphql"
-            ).mock(  # CCH:NO-DUMP  # asserts check live in-context ref_count
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+            ).mock(side_effect=[httpx.Response(200, json={"data": {}})])
+        )
 
-            try:
-                # Verify client is initialized and exception is raised
+        try:
+            # Verify client is initialized and exception is raised
+            async with context:
+                assert context._client is not None
+
+            # Now test exception handling
+            with pytest.raises(ValueError, match="Test error"):
                 async with context:
-                    assert context._client is not None
+                    raise ValueError("Test error")
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-                # Now test exception handling
-                with pytest.raises(ValueError, match="Test error"):
-                    async with context:
-                        raise ValueError("Test error")
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-
-            # Client should still be cleaned up after exception
-            assert context._client is None
-            assert context.ref_count == 0
+        # Client should still be cleaned up after exception
+        assert context._client is None
+        assert context.ref_count == 0
 
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_get_client_with_none_conn(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test get_client works with None connection dict."""
         context = StashContext(conn=None)
 
-        with respx.mock:
-            # Default URL when no conn is provided
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        # Default URL when no conn is provided
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                client = await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            assert isinstance(client, StashClient)
+        try:
+            client = await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        assert isinstance(client, StashClient)
 
-            await context.close()
+        await context.close()
 
     @pytest.mark.asyncio
     @pytest.mark.unit
@@ -919,7 +894,7 @@ class TestStashContextEdgeCases:
     @pytest.mark.asyncio
     @pytest.mark.unit
     async def test_close_manual_with_no_store(
-        self, mock_ws_transport, mock_gql_ws_connect
+        self, mock_ws_transport, mock_gql_ws_connect, respx_mock
     ) -> None:
         """Test manual close when store is None but client exists.
 
@@ -927,19 +902,18 @@ class TestStashContextEdgeCases:
         """
         context = StashContext(conn={"Host": "localhost", "Port": 9999})
 
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(200, json={"data": {}})]
-            )
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(200, json={"data": {}})]
+        )
 
-            try:
-                await context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        try:
+            await context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
-            # Manually set store to None
-            context._store = None
+        # Manually set store to None
+        context._store = None
 
-            # Close should still work (only closes client)
-            await context.close()
-            assert context._client is None
+        # Close should still work (only closes client)
+        await context.close()
+        assert context._client is None

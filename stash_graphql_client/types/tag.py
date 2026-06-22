@@ -19,6 +19,7 @@ from .base import (
     has_many,
 )
 from .files import StashID, StashIDInput
+from .json import expect_dict, expect_list, str_or_none
 from .metadata import CustomFieldsInput
 from .scalars import Map
 from .unset import UNSET, UnsetType, is_set
@@ -415,10 +416,11 @@ class Tag(StashObject):
                     "tag_filter": {"name": {"value": name, "modifier": "EQUALS"}},
                 },
             )
-            tags_data = (result.get("findTags") or {}).get("tags") or []
+            find_tags = expect_dict(result.get("findTags") or {}, "findTags")
+            tags_data = expect_list(find_tags.get("tags") or [], "tags")
             if tags_data:
                 logger.debug(f"Found tag by exact match: {name}")
-                return cls(**tags_data[0])
+                return cls(**expect_dict(tags_data[0], "tag"))
 
             # If no exact match, try case-insensitive search with INCLUDES
             # This handles cases where Stash has "diva" but we're searching for "Diva"
@@ -429,12 +431,14 @@ class Tag(StashObject):
                     "tag_filter": {"name": {"value": name, "modifier": "INCLUDES"}},
                 },
             )
-            tags_data = (result.get("findTags") or {}).get("tags") or []
+            find_tags = expect_dict(result.get("findTags") or {}, "findTags")
+            tags_data = expect_list(find_tags.get("tags") or [], "tags")
 
             # Filter results to find case-insensitive exact match
             name_lower = name.lower()
-            for tag_data in tags_data:
-                if tag_data.get("name", "").lower() == name_lower:
+            for tag_value in tags_data:
+                tag_data = expect_dict(tag_value, "tag")
+                if (str_or_none(tag_data.get("name")) or "").lower() == name_lower:
                     logger.debug(
                         f"Found tag by case-insensitive match: {name} -> {tag_data.get('name')}"
                     )

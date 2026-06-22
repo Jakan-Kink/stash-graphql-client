@@ -21,7 +21,7 @@ class TestStashInputDeprecationWarnings:
         """Unknown field should emit DeprecationWarning with helpful message."""
         with pytest.warns(DeprecationWarning, match=r"v0\.13\.0.*tag_id"):
             # Common typo: singular instead of plural
-            BulkSceneMarkerUpdateInput(
+            BulkSceneMarkerUpdateInput(  # type: ignore[call-arg]
                 ids=["1", "2"],
                 primary_tag_id="123",
                 tag_id="456",  # ❌ Typo! Should be "tag_ids" (plural)
@@ -32,7 +32,7 @@ class TestStashInputDeprecationWarnings:
         with pytest.warns(
             DeprecationWarning, match="typo_field_1.*typo_field_2"
         ) as warning_list:
-            SceneUpdateInput(
+            SceneUpdateInput(  # type: ignore[call-arg]
                 id="123",
                 title="Valid field",
                 typo_field_1="bad",  # Unknown field 1
@@ -68,7 +68,7 @@ class TestStashInputDeprecationWarnings:
     def test_warning_suggests_common_fixes(self):
         """Warning message should include helpful suggestions for common typos."""
         with pytest.warns(DeprecationWarning, match="tag_id") as warning_list:
-            BulkSceneMarkerUpdateInput(
+            BulkSceneMarkerUpdateInput(  # type: ignore[call-arg]
                 ids=["1"],
                 tag_id="typo",  # Common mistake: singular instead of plural
             )
@@ -82,15 +82,15 @@ class TestStashInputDeprecationWarnings:
     def test_warning_includes_class_name(self):
         """Warning should identify which Input class has the problem."""
         with pytest.warns(DeprecationWarning, match="BulkSceneMarkerUpdateInput"):
-            BulkSceneMarkerUpdateInput(ids=["1"], unknown_field="bad")
+            BulkSceneMarkerUpdateInput(ids=["1"], unknown_field="bad")  # type: ignore[call-arg]
 
         with pytest.warns(DeprecationWarning, match="SceneUpdateInput"):
-            SceneUpdateInput(id="123", another_unknown="bad")
+            SceneUpdateInput(id="123", another_unknown="bad")  # type: ignore[call-arg]
 
     def test_dict_input_still_works_with_warning(self):
         """Extra fields should still be accepted (just warned), not rejected."""
         with pytest.warns(DeprecationWarning, match="typo_field"):
-            obj = BulkSceneMarkerUpdateInput(
+            obj = BulkSceneMarkerUpdateInput(  # type: ignore[call-arg]
                 ids=["1", "2"],
                 primary_tag_id="123",
                 typo_field="this will be ignored but warned",
@@ -115,7 +115,7 @@ class TestStashInputDeprecationWarnings:
     def test_warning_stacklevel_points_to_user_code(self):
         """Warning should have correct stacklevel to point to user's code, not validator."""
         with pytest.warns(DeprecationWarning, match="bad_field") as warning_list:
-            BulkSceneMarkerUpdateInput(ids=["1"], bad_field="typo")
+            BulkSceneMarkerUpdateInput(ids=["1"], bad_field="typo")  # type: ignore[call-arg]
 
         # Check that stacklevel is set
         # Note: pytest wraps the call, so we just verify a warning was emitted
@@ -131,7 +131,7 @@ class TestDeprecationWarningIntegration:
         """Simulates user workflow: see warning, fix typo, warning disappears."""
         # Step 1: User has a typo and sees warning
         with pytest.warns(DeprecationWarning, match="tag_id"):
-            wrong_input = BulkSceneMarkerUpdateInput(
+            wrong_input = BulkSceneMarkerUpdateInput(  # type: ignore[call-arg]
                 ids=["1"],
                 tag_id="typo",  # ❌ Wrong
             )
@@ -152,9 +152,9 @@ class TestDeprecationWarningIntegration:
         """Each Input class with typos should emit its own warning."""
         with warnings.catch_warnings(record=True) as warning_list:
             warnings.simplefilter("always")
-            BulkSceneMarkerUpdateInput(ids=["1"], typo1="bad")
-            SceneUpdateInput(id="2", typo2="bad")
-            TagDestroyInput(id="3", typo3="bad")
+            BulkSceneMarkerUpdateInput(ids=["1"], typo1="bad")  # type: ignore[call-arg]
+            SceneUpdateInput(id="2", typo2="bad")  # type: ignore[call-arg]
+            TagDestroyInput(id="3", typo3="bad")  # type: ignore[call-arg]
 
         # Filter to just DeprecationWarnings
         dep_warnings = [

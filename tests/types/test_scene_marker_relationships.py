@@ -4,7 +4,7 @@ This module validates that SceneMarker uses RelationshipMetadata
 for all relationships and verifies the relationship configurations.
 """
 
-from stash_graphql_client.types import RelationshipMetadata, SceneMarker
+from stash_graphql_client.types import RelationshipMetadata, SceneMarker, present
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.tag import Tag
 
@@ -102,9 +102,9 @@ class TestSceneMarkerRelationshipUsage:
             id="marker-1", title="Climax", seconds=300.0, tags=[tag1, tag2]
         )
 
-        assert len(marker.tags) == 2
-        assert tag1 in marker.tags
-        assert tag2 in marker.tags
+        assert len(present(marker.tags)) == 2
+        assert tag1 in present(marker.tags)
+        assert tag2 in present(marker.tags)
 
 
 class TestSceneMarkerRelationshipValidation:

@@ -695,7 +695,7 @@ class TestAddRemoveWithoutInverseQueryField:
 
         await parent._add_to_relationship("items", child)
 
-        assert child in parent.items
+        assert child in parent.items  # type: ignore[attr-defined]  # items set via object.__setattr__
 
     @pytest.mark.asyncio
     async def test_remove_from_relationship_skips_inverse_when_no_inverse_field(self):
@@ -718,4 +718,4 @@ class TestAddRemoveWithoutInverseQueryField:
 
         await parent._remove_from_relationship("items", child)
 
-        assert child not in parent.items
+        assert child not in parent.items  # type: ignore[attr-defined]  # items set via object.__setattr__

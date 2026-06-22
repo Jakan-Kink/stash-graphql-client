@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **JSON value typing and runtime narrowing helpers (`stash_graphql_client.types`).** GraphQL responses are JSON, so the library now models response payloads with `JsonValue` / `JsonDict` instead of `dict[str, Any]`. `JsonValue` is **re-exported from Pydantic v2** — it is Pydantic's own type, surfaced here only so the JSON surface has a single import home alongside the helpers, not a new type — and `JsonDict = dict[str, JsonValue]` tightens it one level to an object (narrower than the full recursive `JsonValue`). Four helpers narrow a `JsonValue` to a concrete shape at runtime, raising a precise `TypeError` on a server-shape mismatch: `expect_dict`, `expect_list`, `expect_int`, and `str_or_none`. All six names (`JsonValue`, `JsonDict`, and the four helpers) are exported from `stash_graphql_client.types`.
+- **Type guards for three-state (`UnsetType`) fields: `is_present` and `present`.** A queried field can be in one of three states — `UNSET` (not queried), `None` (queried, null), or a concrete value — and narrowing all the way to "the value is really here" previously needed a compound `is_set(x) and x is not None` that both mypy and ruff dislike. `is_present(x)` is a `TypeGuard` that narrows `T | None | UnsetType` to `T` in a single check (asserting set *and* non-null); `present(x)` is the value-returning form, returning the concrete value or raising `ValueError` when the field is `UNSET` or `None`. Both complement the existing `is_set` (which only drops `UnsetType`) and are exported from `stash_graphql_client`, `stash_graphql_client.types`, and `stash_graphql_client.types.unset`.
+
+### Changed
+
+- **`execute()` now returns `JsonDict` instead of `dict[str, Any]`.** Indexing a query result (e.g. `result["findScene"]`) now yields a `JsonValue` rather than `Any`, so downstream code that type-checks with mypy may need to narrow a result field with the new `expect_*` helpers before using it as a `dict` / `list` / scalar. Runtime behavior is unchanged — this is purely a typing tightening. Internal response handling (`_decode_result`, the `StashEntityStore` find/fetch paths, and the entity `find_*` lookup helpers) was updated to narrow `JsonValue` through the helpers rather than rely on `Any`.
+
 ## [0.12.10] - 2026-06-13
 
 ### Added

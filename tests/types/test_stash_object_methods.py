@@ -304,22 +304,34 @@ class TestSaveMethod:
             assert not tag.is_dirty()
 
     @pytest.mark.asyncio
-    async def test_save_raises_when_operation_key_missing_from_response(
-        self, respx_stash_client, respx_entity_store
+    @pytest.mark.parametrize(
+        ("response_json", "error_match"),
+        [
+            # Operation key missing entirely (covers base.py: "Missing '...' in response")
+            (
+                {"data": {"wrong_key": {"id": "123"}}},
+                "Missing 'tagCreate' in response",
+            ),
+            # Operation present but the created object carries no id (covers base.py:2218)
+            (
+                {"data": {"tagCreate": {"id": None}}},
+                "Create operation returned no id",
+            ),
+        ],
+    )
+    async def test_save_raises_on_malformed_create_response(
+        self, respx_stash_client, respx_entity_store, response_json, error_match
     ) -> None:
-        """Test save() raises when operation key missing from response - covers lines 818."""
-        # Create a new tag
+        """Test save() raises on malformed create responses (missing key / null id)."""
+        # Create a new tag so the Create branch runs and a server id is required
         tag = Tag.new(name="Test")
 
-        # Mock response missing the operation key
         graphql_route = respx.post("http://localhost:9999/graphql").mock(
-            side_effect=[
-                httpx.Response(200, json={"data": {"wrong_key": {"id": "123"}}})
-            ]
+            side_effect=[httpx.Response(200, json=response_json)]
         )
 
         try:
-            with pytest.raises(ValueError, match="Missing 'tagCreate' in response"):
+            with pytest.raises(ValueError, match=error_match):
                 await tag.save(respx_stash_client)
         finally:
             dump_graphql_calls(graphql_route.calls)

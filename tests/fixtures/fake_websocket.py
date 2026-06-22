@@ -178,11 +178,27 @@ def get_fake_ws(client: Any) -> FakeSocket:
     return client._fake_ws
 
 
-def dump_ws_calls(fake: FakeSocket, label: str = "WebSocket frames") -> None:
-    """Print the client frames a ``FakeSocket`` recorded (mirrors dump_graphql_calls)."""
-    print(f"\n{'=' * 70}\n  {label} ({len(fake.sent)} total)\n{'=' * 70}")
-    for index, frame in enumerate(fake.sent):
-        print(f"  [{index}] {json.dumps(frame)}")
+def dump_ws_calls(source: Any, label: str = "WebSocket frames") -> None:
+    """Print WebSocket frames (mirrors dump_graphql_calls).
+
+    Accepts a ``FakeSocket`` (unit tests: dumps the client-sent frames) or a list
+    of captured frame dicts from ``capture_ws_calls`` (integration tests: dumps
+    the received subscription events).
+    """
+    if isinstance(source, FakeSocket):
+        print(f"\n{'=' * 70}\n  {label} ({len(source.sent)} total)\n{'=' * 70}")
+        for index, frame in enumerate(source.sent):
+            print(f"  [{index}] {json.dumps(frame)}")
+        print(f"{'=' * 70}\n")
+        return
+
+    print(f"\n{'=' * 70}\n  {label} ({len(source)} total)\n{'=' * 70}")
+    for index, frame in enumerate(source):
+        event = frame.get("event") if isinstance(frame, dict) else frame
+        keys = list(event.keys()) if isinstance(event, dict) else event
+        print(f"  [{index}] event: {keys}")
+        if isinstance(frame, dict) and frame.get("exception"):
+            print(f"      EXCEPTION: {frame['exception']}")
     print(f"{'=' * 70}\n")
 
 

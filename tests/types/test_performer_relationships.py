@@ -4,7 +4,7 @@ This module tests that Performer's __relationships__ dict properly defines
 RelationshipMetadata instances with complete bidirectional information.
 """
 
-from stash_graphql_client.types import RelationshipMetadata
+from stash_graphql_client.types import RelationshipMetadata, present
 from stash_graphql_client.types.files import StashID, StashIDInput
 from stash_graphql_client.types.performer import Performer
 
@@ -91,7 +91,7 @@ class TestPerformerStashIDsRelationship:
         mock_stash_id = StashID(endpoint="https://stashdb.org", stash_id="123abc")
 
         # Transform it
-        result = rel.transform(mock_stash_id)
+        result = present(rel.transform)(mock_stash_id)
 
         # Verify it's a StashIDInput
         assert isinstance(result, StashIDInput)

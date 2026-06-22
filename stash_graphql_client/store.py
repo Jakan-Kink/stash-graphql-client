@@ -23,6 +23,7 @@ from .fragments import fragment_store
 from .logging import client_logger as log
 from .types.base import RelationshipMetadata, StashObject
 from .types.files import BaseFile, BasicFile, GalleryFile, ImageFile, VideoFile
+from .types.json import expect_dict, expect_int, expect_list
 from .types.unset import UnsetType
 
 
@@ -2255,11 +2256,12 @@ class StashEntityStore:
             result = await self._client.execute(query, {"id": entity_id})
             data = result.get(query_name)
             if data:
+                data_dict = expect_dict(data, query_name)
                 # Handle polymorphic types - check __typename BEFORE sanitization
                 # (sanitize_model_data removes fields starting with _)
-                concrete_type = self._get_concrete_type(data, entity_type)
+                concrete_type = self._get_concrete_type(data_dict, entity_type)
 
-                clean = sanitize_model_data(data)
+                clean = sanitize_model_data(data_dict)
 
                 # Use Pydantic's from_graphql for deserialization (identity map via validator)
                 entity = concrete_type.from_graphql(clean)
@@ -2475,11 +2477,11 @@ class StashEntityStore:
                         "per_page": page_size,
                     },
                 )
-                data = result.get(operation_name) or {}
-                raw_items = data.get(items_key) or []
+                data = expect_dict(result.get(operation_name) or {}, operation_name)
+                raw_items = expect_list(data.get(items_key) or [], items_key)
 
                 for raw in raw_items:
-                    clean = sanitize_model_data(raw)
+                    clean = sanitize_model_data(expect_dict(raw, items_key))
                     items.append(entity_cls.from_graphql(clean))
 
                 if len(raw_items) < page_size:
@@ -2885,8 +2887,8 @@ class StashEntityStore:
         result = await self._client.execute(query, variables)
 
         # Parse result
-        data = result.get(result_key) or {}
-        count = data.get("count", 0)
+        data = expect_dict(result.get(result_key) or {}, result_key)
+        count = expect_int(data.get("count", 0), "count")
 
         # Get items key (pluralized type name, lowercase)
         items_key = type_name.lower() + "s"
@@ -2897,16 +2899,17 @@ class StashEntityStore:
         elif type_name == "BaseFile":
             items_key = "files"
 
-        raw_items = data.get(items_key) or []
+        raw_items = expect_list(data.get(items_key) or [], items_key)
 
         # Convert to entity objects using Pydantic's from_graphql (identity map via validator)
         items: list[T] = []
         for raw in raw_items:
+            raw_dict = expect_dict(raw, items_key)
             # Resolve polymorphic subtype from __typename BEFORE sanitization
             # (sanitize_model_data strips __-prefixed keys); for BaseFile this
             # yields the concrete VideoFile/ImageFile/GalleryFile class.
-            concrete_type = self._get_concrete_type(raw, entity_type)
-            clean = sanitize_model_data(raw)
+            concrete_type = self._get_concrete_type(raw_dict, entity_type)
+            clean = sanitize_model_data(raw_dict)
             entity = concrete_type.from_graphql(clean)
             # Cache the entity
             self._cache_entity(entity)

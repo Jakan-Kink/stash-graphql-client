@@ -9,7 +9,7 @@ import inspect
 
 import pytest
 
-from stash_graphql_client.types import UNSET, UnsetType, is_set
+from stash_graphql_client.types import UNSET, UnsetType, is_present
 from stash_graphql_client.types.markers import SceneMarker
 from stash_graphql_client.types.tag import Tag
 
@@ -28,7 +28,7 @@ class TestSceneMarkerHelperMethods:
         await marker.add_tag(tag)
 
         # Verify tag was added
-        assert is_set(marker.tags)
+        assert is_present(marker.tags)
         assert tag in marker.tags
 
     @pytest.mark.asyncio
@@ -42,7 +42,7 @@ class TestSceneMarkerHelperMethods:
         await marker.add_tag(tag)
 
         # Should only have one entry
-        assert is_set(marker.tags)
+        assert is_present(marker.tags)
         assert len(marker.tags) == 1
 
     @pytest.mark.asyncio
@@ -55,7 +55,7 @@ class TestSceneMarkerHelperMethods:
         await marker.remove_tag(tag)
 
         # Verify tag was removed
-        assert is_set(marker.tags)
+        assert is_present(marker.tags)
         assert tag not in marker.tags
 
     @pytest.mark.asyncio
@@ -67,7 +67,7 @@ class TestSceneMarkerHelperMethods:
         # Remove tag that's not in the list - should be no-op
         await marker.remove_tag(tag)
 
-        assert is_set(marker.tags)
+        assert is_present(marker.tags)
         assert tag not in marker.tags
 
     @pytest.mark.asyncio
@@ -86,7 +86,7 @@ class TestSceneMarkerHelperMethods:
         await marker.add_tag(tag)
 
         # Verify tags was initialized and tag was added
-        assert is_set(marker.tags)
+        assert is_present(marker.tags)
         assert isinstance(marker.tags, list)
         assert tag in marker.tags
 

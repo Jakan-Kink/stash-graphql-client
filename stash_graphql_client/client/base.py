@@ -25,6 +25,7 @@ from ..errors import (
 )
 from ..logging import client_logger
 from ..types.enums import SortDirectionEnum
+from ..types.json import JsonDict, JsonValue, expect_dict
 from ..types.unset import UnsetType
 from .batch import BatchOperation, BatchResult, build_batch_document
 from .utils import sanitize_model_data
@@ -272,7 +273,7 @@ class StashClientBase:
 
     async def _raw_execute(
         self, query: str, variables: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    ) -> JsonDict:
         """Execute a raw GraphQL query bypassing _ensure_initialized().
 
         Used during initialization (e.g. capability detection) when the session
@@ -300,14 +301,18 @@ class StashClientBase:
         return dict(result)
 
     @overload
-    def _decode_result(self, type_: type[T], data: dict[str, Any]) -> T:
-        """Decode GraphQL result dict to typed object (non-None data)."""
+    def _decode_result(self, type_: type[T], data: JsonDict) -> T:
+        """Decode GraphQL result dict to typed object (narrowed dict data)."""
 
     @overload
     def _decode_result(self, type_: type[T], data: None) -> None:
         """Decode GraphQL result dict to typed object (None data)."""
 
-    def _decode_result(self, type_: type[T], data: dict[str, Any] | None) -> T | None:
+    @overload
+    def _decode_result(self, type_: type[T], data: JsonValue | None) -> T | None:
+        """Decode GraphQL result value to typed object (raw JSON value)."""
+
+    def _decode_result(self, type_: type[T], data: JsonValue | None) -> T | None:
         """Decode GraphQL result dict to typed object, handling nested entities.
 
         This method automatically sanitizes GraphQL data and uses Pydantic's from_graphql()
@@ -316,10 +321,14 @@ class StashClientBase:
 
         Args:
             type_: The target type to decode to
-            data: Dictionary from GraphQL response (will be sanitized automatically)
+            data: JSON value from a GraphQL response, narrowed to an object before
+                decoding (None passes through as None)
 
         Returns:
             Typed instance with all nested entities properly constructed, or None if data is None
+
+        Raises:
+            TypeError: If data is neither None nor a JSON object.
 
         Example:
             result = await self.execute(FIND_GROUPS_QUERY, {...})
@@ -329,7 +338,7 @@ class StashClientBase:
             return None
 
         # Sanitize the data first (handles __typename removal, etc.)
-        clean_data = sanitize_model_data(data)
+        clean_data = sanitize_model_data(expect_dict(data, "GraphQL result"))
 
         # Use from_graphql() for StashObject types, model_validate() for others
         if hasattr(type_, "from_graphql"):
@@ -419,7 +428,7 @@ class StashClientBase:
         query: str,
         variables: dict[str, Any] | None = None,
         result_type: None = None,
-    ) -> dict[str, Any]: ...
+    ) -> JsonDict: ...
 
     @overload
     async def execute(
@@ -434,7 +443,7 @@ class StashClientBase:
         query: str,
         variables: dict[str, Any] | None = None,
         result_type: type[T] | None = None,
-    ) -> dict[str, Any] | T:
+    ) -> JsonDict | T:
         """Execute GraphQL query with proper initialization and error handling.
 
         Args:
@@ -535,7 +544,7 @@ class StashClientBase:
             for start in range(0, len(operations), max_batch_size)
         ]
 
-        aggregated_raw: dict[str, Any] = {}
+        aggregated_raw: JsonDict = {}
 
         for chunk_offset_base, chunk in zip(
             range(0, len(operations), max_batch_size), chunks, strict=True

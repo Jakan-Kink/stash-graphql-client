@@ -4,7 +4,7 @@ Tests the snapshot system that detects changes to tracked fields,
 including proper handling of mutable list fields.
 """
 
-from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag
+from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag, present
 from stash_graphql_client.types.unset import UNSET
 
 
@@ -26,7 +26,7 @@ class TestDirtyTrackingBasics:
         """Test changing a non-tracked field doesn't mark as dirty."""
         performer = Performer(id="1", name="Test", birthdate="2000-01-01")
         # created_at is not in __tracked_fields__
-        performer.created_at = "2024-01-01T00:00:00Z"
+        performer.created_at = "2024-01-01T00:00:00Z"  # type: ignore[assignment]
         assert not performer.is_dirty()
 
     def test_mark_clean_clears_dirty_state(self):
@@ -75,7 +75,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1"])
         assert not performer.is_dirty()
 
-        performer.urls.append("url2")
+        present(performer.urls).append("url2")
         assert performer.is_dirty()
         assert performer.urls == ["url1", "url2"]
 
@@ -84,7 +84,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1"])
         assert not performer.is_dirty()
 
-        performer.urls.extend(["url2", "url3"])
+        present(performer.urls).extend(["url2", "url3"])
         assert performer.is_dirty()
         assert performer.urls == ["url1", "url2", "url3"]
 
@@ -93,7 +93,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1", "url2"])
         assert not performer.is_dirty()
 
-        performer.urls.remove("url1")
+        present(performer.urls).remove("url1")
         assert performer.is_dirty()
         assert performer.urls == ["url2"]
 
@@ -102,7 +102,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1", "url2"])
         assert not performer.is_dirty()
 
-        performer.urls.pop()
+        present(performer.urls).pop()
         assert performer.is_dirty()
         assert performer.urls == ["url1"]
 
@@ -111,7 +111,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1", "url2"])
         assert not performer.is_dirty()
 
-        performer.urls.clear()
+        present(performer.urls).clear()
         assert performer.is_dirty()
         assert performer.urls == []
 
@@ -120,7 +120,7 @@ class TestListDirtyTracking:
         performer = Performer(id="1", name="Test", urls=["url1", "url2"])
         assert not performer.is_dirty()
 
-        performer.urls[0] = "new_url"
+        present(performer.urls)[0] = "new_url"
         assert performer.is_dirty()
         assert performer.urls == ["new_url", "url2"]
 
@@ -136,14 +136,14 @@ class TestListDirtyTracking:
     def test_list_mark_clean_resets_snapshot(self):
         """Test mark_clean() creates new snapshot of modified list."""
         performer = Performer(id="1", name="Test", urls=["url1"])
-        performer.urls.append("url2")
+        present(performer.urls).append("url2")
         assert performer.is_dirty()
 
         performer.mark_clean()
         assert not performer.is_dirty()
 
         # Further modifications should be detected
-        performer.urls.append("url3")
+        present(performer.urls).append("url3")
         assert performer.is_dirty()
 
     def test_empty_list_not_dirty(self):
@@ -171,25 +171,25 @@ class TestMultipleListFieldTypes:
     def test_studio_urls_list_modification(self):
         """Test Studio.urls list modification detected."""
         studio = Studio(id="1", name="Test Studio", urls=["url1"])
-        studio.urls.append("url2")
+        present(studio.urls).append("url2")
         assert studio.is_dirty()
 
     def test_studio_aliases_list_modification(self):
         """Test Studio.aliases list modification detected."""
         studio = Studio(id="1", name="Test Studio", aliases=["alias1"])
-        studio.aliases.append("alias2")
+        present(studio.aliases).append("alias2")
         assert studio.is_dirty()
 
     def test_tag_aliases_list_modification(self):
         """Test Tag.aliases list modification detected."""
         tag = Tag(id="1", name="Test Tag", aliases=["alias1"])
-        tag.aliases.append("alias2")
+        present(tag.aliases).append("alias2")
         assert tag.is_dirty()
 
     def test_performer_alias_list_modification(self):
         """Test Performer.alias_list modification detected."""
         performer = Performer(id="1", name="Test", alias_list=["alias1"])
-        performer.alias_list.append("alias2")
+        present(performer.alias_list).append("alias2")
         assert performer.is_dirty()
 
 
@@ -257,8 +257,8 @@ class TestEdgeCases:
         """Test multiple changes then mark_clean()."""
         performer = Performer(id="1", name="Test", urls=["url1"], alias_list=["a1"])
         performer.name = "Changed"
-        performer.urls.append("url2")
-        performer.alias_list.append("a2")
+        present(performer.urls).append("url2")
+        present(performer.alias_list).append("a2")
 
         assert performer.is_dirty()
         changed = performer.get_changed_fields()

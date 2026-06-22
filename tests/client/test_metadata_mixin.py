@@ -205,6 +205,53 @@ async def test_metadata_scan_with_flags_not_none(
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+async def test_metadata_scan_with_paths_none(
+    respx_stash_client: StashClient,
+) -> None:
+    """metadata_scan() with no paths defaults to [] (covers line 150)."""
+    defaults_data = {
+        "scan": {
+            "rescan": False,
+            "scanGenerateCovers": True,
+            "scanGeneratePreviews": True,
+            "scanGenerateImagePreviews": True,
+            "scanGenerateSprites": True,
+            "scanGeneratePhashes": True,
+            "scanGenerateThumbnails": True,
+            "scanGenerateClipPreviews": True,
+        },
+        "autoTag": {},
+        "generate": {},
+        "deleteFile": False,
+        "deleteGenerated": False,
+    }
+
+    graphql_route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json=create_graphql_response(
+                    "configuration", {"defaults": defaults_data}
+                ),
+            ),
+            httpx.Response(
+                200, json=create_graphql_response("metadataScan", "job-scan-none")
+            ),
+        ]
+    )
+
+    try:
+        job_id = await respx_stash_client.metadata_scan()
+    finally:
+        dump_graphql_calls(graphql_route.calls)
+
+    assert job_id == "job-scan-none"
+    scan_req = json.loads(graphql_route.calls[1].request.content)
+    assert scan_req["variables"]["input"]["paths"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_metadata_scan_with_paths_not_none(
     respx_stash_client: StashClient,
 ) -> None:

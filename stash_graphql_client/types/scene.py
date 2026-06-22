@@ -233,25 +233,6 @@ class Scene(StashObject):
         "custom_fields",  # sceneUpdate via CustomFieldsInput diff (appSchema >= 79)
     }
 
-    # Side mutations: fields persisted via separate GraphQL mutations.
-    # Shared lambda refs ensure save() deduplicates by identity (id()) when
-    # multiple fields map to the same handler (e.g., resume_time + play_duration).
-    _sm_activity = lambda client, obj: Scene._save_activity(client, obj)  # noqa: E731, PLW0108
-    _sm_o = lambda client, obj: Scene._save_o(client, obj)  # noqa: E731, PLW0108
-    _sm_play = lambda client, obj: Scene._save_play(client, obj)  # noqa: E731, PLW0108
-    __side_mutations__: ClassVar[dict] = {
-        "resume_time": _sm_activity,
-        "play_duration": _sm_activity,
-        "o_counter": _sm_o,
-        "o_history": _sm_o,
-        "play_count": _sm_play,
-        "play_history": _sm_play,
-        "custom_fields": StashObject._make_custom_fields_handler(
-            capability_attr="has_scene_custom_fields",
-            update_method_name="update_scene",
-        ),
-    }
-
     # Optional fields
     title: str | None | UnsetType = UNSET  # String
     code: str | None | UnsetType = UNSET  # String
@@ -426,6 +407,26 @@ class Scene(StashObject):
             scene.play_count = hmr.count
             scene.play_history = hmr.history
 
+    # Side-mutation registry — placed AFTER the _save_* handlers it references so the
+    # lambda forward-refs resolve for static type checkers regardless of module import
+    # order. The shared _sm_* lambdas keep save()'s id()-based dedup (resume_time +
+    # play_duration -> _sm_activity, etc.).
+    _sm_activity = lambda client, obj: Scene._save_activity(client, obj)  # noqa: E731, PLW0108
+    _sm_o = lambda client, obj: Scene._save_o(client, obj)  # noqa: E731, PLW0108
+    _sm_play = lambda client, obj: Scene._save_play(client, obj)  # noqa: E731, PLW0108
+    __side_mutations__: ClassVar[dict] = {
+        "resume_time": _sm_activity,
+        "play_duration": _sm_activity,
+        "o_counter": _sm_o,
+        "o_history": _sm_o,
+        "play_count": _sm_play,
+        "play_history": _sm_play,
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_scene_custom_fields",
+            update_method_name="update_scene",
+        ),
+    }
+
     # =========================================================================
     # Queued Side Operations
     # =========================================================================
@@ -433,7 +434,9 @@ class Scene(StashObject):
     def reset_play_count(self) -> None:
         """Queue resetting play count to 0. Call save() to persist."""
 
-        async def _op(client, obj) -> None:
+        async def _op(client: StashClient, obj: StashObject) -> None:
+            if not isinstance(obj, Scene):
+                raise TypeError(f"expected Scene, got {type(obj).__name__}")
             await client.scene_reset_play_count(obj.id)
             obj.play_count = 0
             obj.play_history = []
@@ -443,7 +446,9 @@ class Scene(StashObject):
     def reset_o(self) -> None:
         """Queue resetting o-counter to 0. Call save() to persist."""
 
-        async def _op(client, obj) -> None:
+        async def _op(client: StashClient, obj: StashObject) -> None:
+            if not isinstance(obj, Scene):
+                raise TypeError(f"expected Scene, got {type(obj).__name__}")
             await client.scene_reset_o(obj.id)
             obj.o_counter = 0
             obj.o_history = []
@@ -455,7 +460,9 @@ class Scene(StashObject):
     ) -> None:
         """Queue resetting activity data. Call save() to persist."""
 
-        async def _op(client, obj) -> None:
+        async def _op(client: StashClient, obj: StashObject) -> None:
+            if not isinstance(obj, Scene):
+                raise TypeError(f"expected Scene, got {type(obj).__name__}")
             await client.scene_reset_activity(
                 obj.id,
                 reset_resume=reset_resume,
@@ -471,7 +478,9 @@ class Scene(StashObject):
     def generate_screenshot(self, at: float | None = None) -> None:
         """Queue screenshot generation. Call save() to persist."""
 
-        async def _op(client, obj) -> None:
+        async def _op(client: StashClient, obj: StashObject) -> None:
+            if not isinstance(obj, Scene):
+                raise TypeError(f"expected Scene, got {type(obj).__name__}")
             await client.scene_generate_screenshot(obj.id, at=at)
 
         self._queue_side_op(_op)

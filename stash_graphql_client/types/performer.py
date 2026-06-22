@@ -22,6 +22,7 @@ from .base import (
 )
 from .enums import CircumcisedEnum, GenderEnum
 from .files import StashID, StashIDInput
+from .json import expect_dict, expect_list
 from .metadata import CustomFieldsInput
 from .scalars import Map
 from .unset import UNSET, UnsetType
@@ -488,11 +489,14 @@ class Performer(StashObject):
                     "performer_filter": {"name": {"value": name, "modifier": "EQUALS"}},
                 },
             )
-            performers_data = (result.get("findPerformers") or {}).get(
-                "performers"
-            ) or []
+            find_performers = expect_dict(
+                result.get("findPerformers") or {}, "findPerformers"
+            )
+            performers_data = expect_list(
+                find_performers.get("performers") or [], "performers"
+            )
             if performers_data:
-                return cls(**performers_data[0])
+                return cls(**expect_dict(performers_data[0], "performer"))
             return None
         except Exception:
             return None

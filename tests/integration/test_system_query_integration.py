@@ -31,9 +31,13 @@ from tests.fixtures import capture_graphql_calls, dump_graphql_calls
 @pytest.mark.asyncio
 async def test_get_system_status(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test getting the Stash system status."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             status = await stash_client.get_system_status()
         finally:
@@ -57,9 +61,13 @@ async def test_get_system_status(
 @pytest.mark.asyncio
 async def test_check_system_ready_when_ok(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test check_system_ready when system is in OK status."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # This should not raise an exception when system is OK
         try:
             await stash_client.check_system_ready()
@@ -80,9 +88,12 @@ async def test_check_system_ready_when_ok(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_stats(stash_client: StashClient) -> None:
+async def test_stats(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test getting system statistics."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             stats = await stash_client.stats()
         finally:
@@ -115,9 +126,12 @@ async def test_stats(stash_client: StashClient) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_logs(stash_client: StashClient) -> None:
+async def test_logs(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test retrieving system logs."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             logs = await stash_client.logs()
         finally:
@@ -150,9 +164,12 @@ async def test_logs(stash_client: StashClient) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_dlna_status(stash_client: StashClient) -> None:
+async def test_dlna_status(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test getting DLNA server status."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             dlna_status = await stash_client.dlna_status()
         finally:
@@ -182,9 +199,12 @@ async def test_dlna_status(stash_client: StashClient) -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_directory_root(stash_client: StashClient) -> None:
+async def test_directory_root(stash_client: StashClient, stash_cleanup_tracker) -> None:
     """Test browsing root directories."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             dir_info = await stash_client.directory()
         finally:
@@ -210,9 +230,13 @@ async def test_directory_root(stash_client: StashClient) -> None:
 @pytest.mark.asyncio
 async def test_directory_with_locale(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test directory browsing with custom locale."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         try:
             dir_info = await stash_client.directory(locale="pt-BR")
         finally:
@@ -234,9 +258,13 @@ async def test_directory_with_locale(
 @pytest.mark.asyncio
 async def test_directory_with_path(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test directory browsing with specific path."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Try to browse a common path
         try:
             dir_info = await stash_client.directory(path="/")
@@ -265,9 +293,13 @@ async def test_directory_with_path(
 @pytest.mark.asyncio
 async def test_sql_query_simple_select(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test executing a simple SQL SELECT query."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Simple query to get count of scenes (read-only)
         try:
             result = await stash_client.sql_query(
@@ -296,9 +328,13 @@ async def test_sql_query_simple_select(
 @pytest.mark.asyncio
 async def test_sql_query_with_args(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test SQL query with parameter arguments."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Query with parameters
         try:
             result = await stash_client.sql_query(
@@ -325,9 +361,13 @@ async def test_sql_query_with_args(
 @pytest.mark.asyncio
 async def test_sql_query_with_multiple_args(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test SQL query with multiple parameter arguments."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Query with multiple parameters
         try:
             result = await stash_client.sql_query(
@@ -365,13 +405,17 @@ async def test_sql_query_with_multiple_args(
 @pytest.mark.asyncio
 async def test_sql_exec_count_affected_rows(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test SQL exec returns proper result structure with affected rows count.
 
     NOTE: This test executes a no-op UPDATE to verify the response structure
     without actually modifying data.
     """
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Execute a no-op UPDATE (WHERE condition false) to verify response structure
         try:
             result = await stash_client.sql_exec(
@@ -404,9 +448,13 @@ async def test_sql_exec_count_affected_rows(
 @pytest.mark.asyncio
 async def test_sql_exec_with_no_args(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test SQL exec without arguments."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Execute a no-op query to verify structure
         try:
             result = await stash_client.sql_exec(
@@ -432,9 +480,13 @@ async def test_sql_exec_with_no_args(
 @pytest.mark.asyncio
 async def test_sql_exec_last_insert_id(
     stash_client: StashClient,
+    stash_cleanup_tracker,
 ) -> None:
     """Test SQL exec result includes last_insert_id field."""
-    async with capture_graphql_calls(stash_client) as calls:
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Execute a query that won't insert but will return last_insert_id
         try:
             result = await stash_client.sql_exec(

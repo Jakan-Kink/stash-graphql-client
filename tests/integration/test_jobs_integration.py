@@ -237,9 +237,15 @@ async def test_wait_for_job_nonexistent_raises_error(
     The wait_for_job method should raise a ValueError if the job
     cannot be found after the first check.
     """
-    async with stash_cleanup_tracker(stash_client):
-        with pytest.raises(ValueError, match="Job 999999 not found"):
-            await stash_client.wait_for_job("999999", timeout=1.0)
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            with pytest.raises(ValueError, match="Job 999999 not found"):
+                await stash_client.wait_for_job("999999", timeout=1.0)
+        finally:
+            dump_graphql_calls(calls, "wait_for_job")
 
 
 @pytest.mark.integration
@@ -256,32 +262,48 @@ async def test_wait_for_job_timeout_raises_error(
 
     Both outcomes are valid depending on system load and job duration.
     """
-    async with stash_cleanup_tracker(stash_client):
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Trigger a job that won't reach STOPPING status
-        job_id = await stash_client.metadata_scan()
-
         try:
-            # Use STOPPING as an unreachable target status
-            # Job will either: finish (return False) or timeout (raise TimeoutError)
-            result = await stash_client.wait_for_job(
-                str(job_id),
-                status=JobStatus.STOPPING,
-                period=0.5,
-                timeout=2.0,  # Short timeout to force timeout scenario
-            )
+            job_id = await stash_client.metadata_scan()
+        finally:
+            dump_graphql_calls(calls, "metadata_scan")
 
-            # If we get here, job finished with different status
-            assert isinstance(result, bool), "wait_for_job should return boolean"
-            assert result is False, "Job finished with different status than STOPPING"
-        except TimeoutError as e:
-            # Timeout was reached - also valid outcome -- the noqa is because we ARE catching it
-            # not expecting it like pytest.raises would.
-            assert "Timeout waiting for job" in str(e), (  # noqa: PT017
+        # Use STOPPING as an unreachable target status.
+        # Job will either: finish (return False) or timeout (raise TimeoutError).
+        result: bool | None = None
+        timeout_error: TimeoutError | None = None
+        try:
+            try:
+                result = await stash_client.wait_for_job(
+                    str(job_id),
+                    status=JobStatus.STOPPING,
+                    period=0.5,
+                    timeout=2.0,  # Short timeout to force timeout scenario
+                )
+            except TimeoutError as e:
+                timeout_error = e
+        finally:
+            dump_graphql_calls(calls, "wait_for_job")
+
+        # Clean up
+        try:
+            await stash_client.stop_job(str(job_id))
+        finally:
+            dump_graphql_calls(calls, "stop_job")
+
+        if timeout_error is not None:
+            # Timeout was reached - also a valid outcome.
+            assert "Timeout waiting for job" in str(timeout_error), (
                 "TimeoutError should mention timeout and job ID"
             )
-        finally:
-            # Clean up
-            await stash_client.stop_job(str(job_id))
+        else:
+            # Job finished with a different status than STOPPING.
+            assert isinstance(result, bool), "wait_for_job should return boolean"
+            assert result is False, "Job finished with different status than STOPPING"
 
 
 @pytest.mark.integration
@@ -321,37 +343,56 @@ async def test_wait_for_job_completion(
     This test triggers a quick metadata operation and waits for it to
     reach FINISHED or CANCELLED status, verifying the polling mechanism works.
     """
-    async with stash_cleanup_tracker(stash_client):
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
         # Trigger a fast operation
-        job_id = await stash_client.metadata_clean({"dryRun": True})
+        try:
+            job_id = await stash_client.metadata_clean({"dryRun": True})
+        finally:
+            dump_graphql_calls(calls, "metadata_clean")
         assert job_id is not None, "metadata_clean should return a job ID"
 
         # Wait for job to finish with reasonable timeout
+        result: bool | None = None
+        timed_out = False
         try:
-            result = await stash_client.wait_for_job(
-                str(job_id),
-                status=JobStatus.FINISHED,
-                period=1.0,  # Check every 1 second
-                timeout=30.0,  # Wait up to 30 seconds
-            )
+            try:
+                result = await stash_client.wait_for_job(
+                    str(job_id),
+                    status=JobStatus.FINISHED,
+                    period=1.0,  # Check every 1 second
+                    timeout=30.0,  # Wait up to 30 seconds
+                )
+            except TimeoutError:
+                timed_out = True
+        finally:
+            dump_graphql_calls(calls, "wait_for_job")
 
+        if not timed_out:
             # Result should indicate job status
             assert isinstance(result, (bool, type(None))), (
                 "wait_for_job should return bool or None"
             )
 
-            # If we got True, the job finished successfully
-            if result is True:
-                # Verify job actually finished
+        if not timed_out and result is True:
+            # If we got True, the job finished successfully — verify it.
+            try:
                 job = await stash_client.find_job(str(job_id))
-                if job:
-                    assert job.status == JobStatus.FINISHED, (
-                        "Job should be in FINISHED status"
-                    )
-        except TimeoutError:
-            # It's acceptable if the job takes longer than expected
-            # Just verify it exists and hasn't errored
-            job = await stash_client.find_job(str(job_id))
+            finally:
+                dump_graphql_calls(calls, "find_job")
+            if job:
+                assert job.status == JobStatus.FINISHED, (
+                    "Job should be in FINISHED status"
+                )
+        elif timed_out:
+            # It's acceptable if the job takes longer than expected.
+            # Just verify it exists and hasn't errored.
+            try:
+                job = await stash_client.find_job(str(job_id))
+            finally:
+                dump_graphql_calls(calls, "find_job_after_timeout")
             if job:
                 assert job.status in [
                     JobStatus.RUNNING,

@@ -340,3 +340,21 @@ show_contexts = true
 [tool.coverage.xml]
 output = "coverage.xml"
 package_depth = 2
+
+[tool.mypy]
+python_version = "3.13"
+# Keep these basic checks
+warn_unused_configs = true
+warn_redundant_casts = true
+check_untyped_defs = true
+
+# RELAX these from strict mode:
+strict = false  # Turn off blanket strict mode
+disallow_incomplete_defs = true  # Still check partial type hints
+no_implicit_reexport = true  # Good practice
+strict_equality = true  # Catches bugs
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false  # Too aggressive for this codebase
+disallow_incomplete_defs = false  # Too aggressive for the tests in this codebase

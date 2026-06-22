@@ -189,6 +189,14 @@ from .image import (
     ImageUpdateInput,
 )
 from .job import FindJobInput, Job, JobStatus, JobStatusUpdate
+from .json import (  # JsonValue re-exported for ergonomics (Pydantic v2 type)
+    JsonDict,
+    JsonValue,
+    expect_dict,
+    expect_int,
+    expect_list,
+    str_or_none,
+)
 from .logging import LogEntry, LogLevel
 from .markers import (
     BulkSceneMarkerUpdateInput,
@@ -251,7 +259,7 @@ from .plugin import (
     PluginTask,
     PluginValueInput,
 )
-from .scalars import Any, BoolMap, Int64, Map, PluginConfigMap, Time, Timestamp
+from .scalars import BoolMap, Int64, Map, PluginConfigMap, Time, Timestamp
 from .scene import (
     BulkSceneUpdateInput,
     FindScenesResultType,
@@ -338,7 +346,7 @@ from .tag import (
     TagsMergeInput,
     TagUpdateInput,
 )
-from .unset import UNSET, UnsetType, is_set
+from .unset import UNSET, UnsetType, is_present, is_set, present
 from .version import LatestVersion, Version
 
 
@@ -347,7 +355,6 @@ __all__: list[str] = [
     "UNSET",
     "AddTempDLNAIPInput",
     "AnonymiseDatabaseInput",
-    "Any",
     "AssignSceneFileInput",
     "AutoTagMetadataInput",
     "AutoTagMetadataOptions",
@@ -486,6 +493,8 @@ __all__: list[str] = [
     "JobStatus",
     "JobStatusUpdate",
     "JobStatusUpdateType",
+    "JsonDict",
+    "JsonValue",
     "LatestVersion",
     "LogEntry",
     "LogLevel",
@@ -639,13 +648,19 @@ __all__: list[str] = [
     "VideoFileFilterInput",
     "VisualFile",
     "belongs_to",
+    "expect_dict",
+    "expect_int",
+    "expect_list",
     "fingerprint_resolver",
     "habtm",
     "has_many",
     "has_many_through",
+    "is_present",
     "is_set",
     "normalize_date",
     "parse_date_precision",
+    "present",
+    "str_or_none",
     "validate_fuzzy_date",
 ]
 

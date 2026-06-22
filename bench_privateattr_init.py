@@ -5,12 +5,13 @@ from __future__ import annotations
 import gc
 import time
 import tracemalloc
+from collections.abc import Callable
 
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.tag import Tag
 
 
-def measure(label: str, fn, n: int) -> None:
+def measure(label: str, fn: Callable[[int], object], n: int) -> None:
     """Run fn() n times, report peak + retained allocations."""
     # Warm up: import-time / class-init allocations should not be charged
     fn(0)

@@ -15,6 +15,7 @@ from stash_graphql_client.types import (
     Image,
     ImageFile,
     VideoFile,
+    present,
 )
 
 
@@ -286,9 +287,9 @@ def test_image_visual_files_discriminates_image_file():
 
     image = Image.model_validate(data)
 
-    assert len(image.visual_files) == 1
-    assert isinstance(image.visual_files[0], ImageFile)
-    assert image.visual_files[0].format == "jpg"
+    assert len(present(image.visual_files)) == 1
+    assert isinstance(present(image.visual_files)[0], ImageFile)
+    assert present(image.visual_files)[0].format == "jpg"
 
 
 def test_image_visual_files_discriminates_video_file():
@@ -330,10 +331,12 @@ def test_image_visual_files_discriminates_video_file():
 
     image = Image.model_validate(data)
 
-    assert len(image.visual_files) == 1
-    assert isinstance(image.visual_files[0], VideoFile)
-    assert image.visual_files[0].format == "gif"
-    assert image.visual_files[0].duration == 5.0
+    files = present(image.visual_files)
+    assert len(files) == 1
+    video_file = files[0]
+    assert isinstance(video_file, VideoFile)
+    assert video_file.format == "gif"
+    assert video_file.duration == 5.0
 
 
 def test_image_visual_files_handles_mixed_types():
@@ -391,9 +394,9 @@ def test_image_visual_files_handles_mixed_types():
 
     image = Image.model_validate(data)
 
-    assert len(image.visual_files) == 2
-    assert isinstance(image.visual_files[0], ImageFile)
-    assert isinstance(image.visual_files[1], VideoFile)
+    assert len(present(image.visual_files)) == 2
+    assert isinstance(present(image.visual_files)[0], ImageFile)
+    assert isinstance(present(image.visual_files)[1], VideoFile)
 
 
 def test_image_visual_files_handles_empty_list():
@@ -413,7 +416,7 @@ def test_image_visual_files_handles_empty_list():
 
     image = Image.model_validate(data)
 
-    assert len(image.visual_files) == 0
+    assert len(present(image.visual_files)) == 0
 
 
 @pytest.mark.unit

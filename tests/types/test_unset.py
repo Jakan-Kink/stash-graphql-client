@@ -2,7 +2,14 @@
 
 import pytest
 
-from stash_graphql_client.types import UNSET, Scene, UnsetType, is_set
+from stash_graphql_client.types import (
+    UNSET,
+    Scene,
+    UnsetType,
+    is_present,
+    is_set,
+    present,
+)
 
 
 class TestUnsetType:
@@ -65,7 +72,7 @@ class TestIsSetTypeGuard:
 
     def test_is_set_equivalent_to_is_not_unset(self):
         """Test that is_set(value) is equivalent to value is not UNSET."""
-        values = [UNSET, None, "", 0, False, [], {}, "value", 42]
+        values: list[object] = [UNSET, None, "", 0, False, [], {}, "value", 42]
 
         for value in values:
             assert is_set(value) == (not isinstance(value, UnsetType))
@@ -103,3 +110,37 @@ class TestIsSetTypeGuard:
         else:
             # This branch is taken
             assert isinstance(scene2.tags, UnsetType)
+
+
+class TestIsPresentAndPresent:
+    """Test is_present() guard and present() unwrap (narrow away both UNSET and None)."""
+
+    def test_is_present_true_for_value(self):
+        """is_present is True for real values."""
+        assert is_present("value") is True
+        assert is_present([]) is True
+        assert is_present(0) is True
+
+    def test_is_present_false_for_unset(self):
+        """is_present is False for UNSET (first condition short-circuits)."""
+        assert is_present(UNSET) is False
+
+    def test_is_present_false_for_none(self):
+        """is_present is False for None (second condition fails)."""
+        assert is_present(None) is False
+
+    def test_present_returns_value(self):
+        """present returns the value unchanged (same object) when set and non-null."""
+        items = [1, 2]
+        assert present(items) is items
+        assert present("value") == "value"
+
+    def test_present_raises_on_unset(self):
+        """present raises ValueError for UNSET."""
+        with pytest.raises(ValueError, match="UNSET"):
+            present(UNSET)
+
+    def test_present_raises_on_none(self):
+        """present raises ValueError for None."""
+        with pytest.raises(ValueError, match="None"):
+            present(None)

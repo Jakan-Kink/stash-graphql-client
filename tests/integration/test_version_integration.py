@@ -142,7 +142,7 @@ async def test_version_and_latestversion_compatibility(
             }
         }
 
-        with respx.mock:
+        with respx.mock:  # CCH:respx-mock  # partial mock: real version() ran above; mock only latestversion() to avoid the external GitHub-backed call
             respx.post("http://localhost:9999/graphql").mock(
                 side_effect=[httpx.Response(200, json=mock_latest_response)]
             )

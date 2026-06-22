@@ -139,15 +139,6 @@ class Image(StashObject):
         "custom_fields",  # imageUpdate via CustomFieldsInput diff (appSchema >= 83)
     }
 
-    # Side mutations: o_counter is managed via increment/decrement/reset mutations
-    __side_mutations__: ClassVar[dict] = {
-        "o_counter": lambda client, obj: Image._save_o_counter(client, obj),  # noqa: PLW0108
-        "custom_fields": StashObject._make_custom_fields_handler(
-            capability_attr="has_image_custom_fields",
-            update_method_name="update_image",
-        ),
-    }
-
     # Optional fields
     title: str | None | UnsetType = UNSET  # String
     code: str | None | UnsetType = UNSET  # String
@@ -255,6 +246,17 @@ class Image(StashObject):
             for _ in range(abs(delta)):
                 new_count = await client.image_decrement_o(image.id)
             image.o_counter = new_count
+
+    # Side-mutation registry — placed AFTER the _save_* handlers it references so the
+    # lambda forward-refs resolve for static type checkers regardless of module import
+    # order. Shared handler objects preserve save()'s id()-based dedup.
+    __side_mutations__: ClassVar[dict] = {
+        "o_counter": lambda client, obj: Image._save_o_counter(client, obj),  # noqa: PLW0108
+        "custom_fields": StashObject._make_custom_fields_handler(
+            capability_attr="has_image_custom_fields",
+            update_method_name="update_image",
+        ),
+    }
 
     async def add_performer(self, performer: Performer) -> None:
         """Add performer (syncs inverse automatically, call save() to persist)."""

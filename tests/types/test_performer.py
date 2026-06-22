@@ -51,42 +51,39 @@ async def test_performer_update_avatar_success(respx_stash_client) -> None:
         # Mock the performerUpdate mutation response
         performer_data = create_performer_dict(id="123", name="Test Performer")
 
-        with respx.mock:
-            route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200, json={"data": {"performerUpdate": performer_data}}
-                    )
-                ]
-            )
+        route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(200, json={"data": {"performerUpdate": performer_data}})
+            ]
+        )
 
-            # Call update_avatar with real client
-            try:
-                result = await performer.update_avatar(respx_stash_client, tmp_path)
-            finally:
-                dump_graphql_calls(route.calls)
+        # Call update_avatar with real client
+        try:
+            result = await performer.update_avatar(respx_stash_client, tmp_path)
+        finally:
+            dump_graphql_calls(route.calls)
 
-            # Verify GraphQL call was made
-            assert len(route.calls) == 1
-            request = route.calls[0].request
+        # Verify GraphQL call was made
+        assert len(route.calls) == 1
+        request = route.calls[0].request
 
-            # Verify mutation and variables
-            body = json.loads(request.content)
-            assert "performerUpdate" in body["query"]
-            assert body["variables"]["input"]["id"] == "123"
+        # Verify mutation and variables
+        body = json.loads(request.content)
+        assert "performerUpdate" in body["query"]
+        assert body["variables"]["input"]["id"] == "123"
 
-            # Verify image was base64 encoded in data URL
-            image_url = body["variables"]["input"]["image"]
-            assert image_url.startswith("data:image/jpeg;base64,")
+        # Verify image was base64 encoded in data URL
+        image_url = body["variables"]["input"]["image"]
+        assert image_url.startswith("data:image/jpeg;base64,")
 
-            # Decode and verify content
-            encoded_part = image_url.split(",")[1]
-            decoded = base64.b64decode(encoded_part)
-            assert decoded == b"fake_image_data"
+        # Decode and verify content
+        encoded_part = image_url.split(",")[1]
+        decoded = base64.b64decode(encoded_part)
+        assert decoded == b"fake_image_data"
 
-            # Verify result
-            assert result.id == "123"
-            assert result.name == "Test Performer"
+        # Verify result
+        assert result.id == "123"
+        assert result.name == "Test Performer"
 
     finally:
         # Clean up temp file
@@ -127,26 +124,23 @@ async def test_performer_update_avatar_with_png(respx_stash_client) -> None:
         # Mock the performerUpdate mutation response
         performer_data = create_performer_dict(id="123", name="Test Performer")
 
-        with respx.mock:
-            route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200, json={"data": {"performerUpdate": performer_data}}
-                    )
-                ]
-            )
+        route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(200, json={"data": {"performerUpdate": performer_data}})
+            ]
+        )
 
-            # Call update_avatar
-            try:
-                await performer.update_avatar(respx_stash_client, tmp_path)
-            finally:
-                dump_graphql_calls(route.calls)
+        # Call update_avatar
+        try:
+            await performer.update_avatar(respx_stash_client, tmp_path)
+        finally:
+            dump_graphql_calls(route.calls)
 
-            # Verify MIME type is image/png
-            assert len(route.calls) == 1
-            body = json.loads(route.calls[0].request.content)
-            image_url = body["variables"]["input"]["image"]
-            assert image_url.startswith("data:image/png;base64,")
+        # Verify MIME type is image/png
+        assert len(route.calls) == 1
+        body = json.loads(route.calls[0].request.content)
+        image_url = body["variables"]["input"]["image"]
+        assert image_url.startswith("data:image/png;base64,")
 
     finally:
         # Clean up temp file
@@ -192,25 +186,24 @@ async def test_performer_update_avatar_client_error(respx_stash_client) -> None:
         performer = Performer(id="123", name="Test Performer")
 
         # Mock GraphQL error response
-        with respx.mock:
-            route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200,
-                        json={"errors": [{"message": "GraphQL error"}]},
-                    )
-                ]
-            )
+        route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json={"errors": [{"message": "GraphQL error"}]},
+                )
+            ]
+        )
 
-            # Call should re-raise as ValueError
-            try:
-                with pytest.raises(ValueError, match="Failed to update avatar"):
-                    await performer.update_avatar(respx_stash_client, tmp_path)
-            finally:
-                dump_graphql_calls(route.calls)
+        # Call should re-raise as ValueError
+        try:
+            with pytest.raises(ValueError, match="Failed to update avatar"):
+                await performer.update_avatar(respx_stash_client, tmp_path)
+        finally:
+            dump_graphql_calls(route.calls)
 
-            # Verify GraphQL call was attempted
-            assert len(route.calls) == 1
+        # Verify GraphQL call was attempted
+        assert len(route.calls) == 1
 
     finally:
         # Clean up temp file
@@ -228,32 +221,31 @@ async def test_performer_find_by_name_found(respx_stash_client) -> None:
     performer_data = create_performer_dict(id="456", name="Jane Doe", gender="FEMALE")
     find_result = create_find_performers_result(count=1, performers=[performer_data])
 
-    with respx.mock:
-        route = respx.post("http://localhost:9999/graphql").mock(
-            side_effect=[
-                httpx.Response(200, json={"data": {"findPerformers": find_result}})
-            ]
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json={"data": {"findPerformers": find_result}})
+        ]
+    )
 
-        # Call find_by_name with real client
-        try:
-            result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
-        finally:
-            dump_graphql_calls(route.calls)
+    # Call find_by_name with real client
+    try:
+        result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+    finally:
+        dump_graphql_calls(route.calls)
 
-        # Verify GraphQL call was made
-        assert len(route.calls) == 1
+    # Verify GraphQL call was made
+    assert len(route.calls) == 1
 
-        # Verify query and variables
-        body = json.loads(route.calls[0].request.content)
-        assert "findPerformers" in body["query"]
-        assert body["variables"]["performer_filter"]["name"]["value"] == "Jane Doe"
-        assert body["variables"]["performer_filter"]["name"]["modifier"] == "EQUALS"
+    # Verify query and variables
+    body = json.loads(route.calls[0].request.content)
+    assert "findPerformers" in body["query"]
+    assert body["variables"]["performer_filter"]["name"]["value"] == "Jane Doe"
+    assert body["variables"]["performer_filter"]["name"]["modifier"] == "EQUALS"
 
-        # Verify result
-        assert isinstance(result, Performer)
-        assert result.id == "456"
-        assert result.name == "Jane Doe"
+    # Verify result
+    assert isinstance(result, Performer)
+    assert result.id == "456"
+    assert result.name == "Jane Doe"
 
 
 @pytest.mark.unit
@@ -266,24 +258,23 @@ async def test_performer_find_by_name_not_found(respx_stash_client) -> None:
     # Mock empty results
     find_result = create_find_performers_result(count=0, performers=[])
 
-    with respx.mock:
-        route = respx.post("http://localhost:9999/graphql").mock(
-            side_effect=[
-                httpx.Response(200, json={"data": {"findPerformers": find_result}})
-            ]
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=[
+            httpx.Response(200, json={"data": {"findPerformers": find_result}})
+        ]
+    )
 
-        # Call find_by_name
-        try:
-            result = await Performer.find_by_name(respx_stash_client, "Unknown Person")
-        finally:
-            dump_graphql_calls(route.calls)
+    # Call find_by_name
+    try:
+        result = await Performer.find_by_name(respx_stash_client, "Unknown Person")
+    finally:
+        dump_graphql_calls(route.calls)
 
-        # Verify GraphQL call was made
-        assert len(route.calls) == 1
+    # Verify GraphQL call was made
+    assert len(route.calls) == 1
 
-        # Should return None
-        assert result is None
+    # Should return None
+    assert result is None
 
 
 @pytest.mark.unit
@@ -294,22 +285,21 @@ async def test_performer_find_by_name_exception(respx_stash_client) -> None:
     This covers line 374-375 in performer.py - the exception handling.
     """
     # Mock HTTP error
-    with respx.mock:
-        route = respx.post("http://localhost:9999/graphql").mock(
-            side_effect=httpx.ConnectError("Connection failed")
-        )
+    route = respx.post("http://localhost:9999/graphql").mock(
+        side_effect=httpx.ConnectError("Connection failed")
+    )
 
-        # Call find_by_name
-        try:
-            result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
-        finally:
-            dump_graphql_calls(route.calls)
+    # Call find_by_name
+    try:
+        result = await Performer.find_by_name(respx_stash_client, "Jane Doe")
+    finally:
+        dump_graphql_calls(route.calls)
 
-        # Verify GraphQL call was attempted
-        assert len(route.calls) == 1
+    # Verify GraphQL call was attempted
+    assert len(route.calls) == 1
 
-        # Should return None (not raise)
-        assert result is None
+    # Should return None (not raise)
+    assert result is None
 
 
 # ============================================================================

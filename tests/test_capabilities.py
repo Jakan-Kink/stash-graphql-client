@@ -15,6 +15,7 @@ from stash_graphql_client.capabilities import (
     MIN_SUPPORTED_APP_SCHEMA,
     ServerCapabilities,
 )
+from stash_graphql_client.context import StashContext
 from stash_graphql_client.errors import StashError, StashVersionError
 from tests.fixtures import dump_graphql_calls
 from tests.fixtures.stash.graphql_responses import (
@@ -287,139 +288,147 @@ class TestDetectCapabilitiesViaClient:
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_detection_minimum_server(self, stash_context) -> None:
+    async def test_detection_minimum_server(
+        self, stash_context, respx_mock_boundary
+    ) -> None:
         """Client initialises successfully against minimum-version server."""
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200,
-                        json=create_capability_response(
-                            app_schema=75,
-                            version="v0.30.0",
-                        ),
-                    )
-                ]
-            )
-            try:
-                client = await stash_context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            try:
-                assert client._capabilities is not None
-                assert client._capabilities.app_schema == 75
-                assert client._capabilities.version_string == "v0.30.0"
-                assert not client._capabilities.has_type("DuplicationCriterionInput")
-            finally:
-                await client.close()
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_capability_response(
+                        app_schema=75,
+                        version="v0.30.0",
+                    ),
+                )
+            ]
+        )
+        try:
+            client = await stash_context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        try:
+            assert client._capabilities is not None
+            assert client._capabilities.app_schema == 75
+            assert client._capabilities.version_string == "v0.30.0"
+            assert not client._capabilities.has_type("DuplicationCriterionInput")
+        finally:
+            await client.close()
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_detection_latest_develop(self, stash_context) -> None:
+    async def test_detection_latest_develop(
+        self, stash_context, respx_mock_boundary
+    ) -> None:
         """Client detects capabilities on latest develop build."""
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200,
-                        json=create_capability_response(
-                            app_schema=84,
-                            version="v0.30.1-98-gc874bd56",
-                            type_names={"DuplicationCriterionInput"},
-                        ),
-                    )
-                ]
-            )
-            try:
-                client = await stash_context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            try:
-                caps = client._capabilities
-                assert caps is not None
-                assert caps.app_schema == 84
-                assert caps.version_string == "v0.30.1-98-gc874bd56"
-                assert caps.has_type("DuplicationCriterionInput")
-                assert caps.has_folder_basename
-                assert caps.uses_new_duplication_type
-            finally:
-                await client.close()
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_capability_response(
+                        app_schema=84,
+                        version="v0.30.1-98-gc874bd56",
+                        type_names={"DuplicationCriterionInput"},
+                    ),
+                )
+            ]
+        )
+        try:
+            client = await stash_context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        try:
+            caps = client._capabilities
+            assert caps is not None
+            assert caps.app_schema == 84
+            assert caps.version_string == "v0.30.1-98-gc874bd56"
+            assert caps.has_type("DuplicationCriterionInput")
+            assert caps.has_folder_basename
+            assert caps.uses_new_duplication_type
+        finally:
+            await client.close()
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_version_too_old_raises(self, stash_context) -> None:
+    async def test_version_too_old_raises(
+        self, stash_context, respx_mock_boundary
+    ) -> None:
         """Client raises RuntimeError wrapping StashVersionError for appSchema < 75.
 
         The StashVersionError is raised by detect_capabilities() but gets
         caught and re-wrapped by StashContext.get_client() as RuntimeError.
         """
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200,
-                        json=create_capability_response(
-                            app_schema=74,
-                            version="v0.29.0",
-                        ),
-                    )
-                ]
-            )
-            try:
-                with pytest.raises(RuntimeError, match="below minimum supported"):
-                    await stash_context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_capability_response(
+                        app_schema=74,
+                        version="v0.29.0",
+                    ),
+                )
+            ]
+        )
+        try:
+            with pytest.raises(RuntimeError, match="below minimum supported"):
+                await stash_context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_server_error_during_detection(self, stash_context) -> None:
+    async def test_server_error_during_detection(
+        self, stash_context, respx_mock_boundary
+    ) -> None:
         """Server errors during detection bubble up through client init."""
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[httpx.Response(500, text="Internal Server Error")]
-            )
-            try:
-                with pytest.raises(RuntimeError, match="Failed to initialize"):
-                    await stash_context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[httpx.Response(500, text="Internal Server Error")]
+        )
+        try:
+            with pytest.raises(RuntimeError, match="Failed to initialize"):
+                await stash_context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
-    async def test_capabilities_exposed_on_context(self, stash_context) -> None:
+    async def test_capabilities_exposed_on_context(
+        self, stash_context, respx_mock_boundary
+    ) -> None:
         """StashContext.capabilities returns detected capabilities after init."""
-        with respx.mock:
-            graphql_route = respx.post("http://localhost:9999/graphql").mock(
-                side_effect=[
-                    httpx.Response(
-                        200,
-                        json=create_capability_response(
-                            app_schema=80,
-                            version="v0.30.1",
-                        ),
-                    )
-                ]
-            )
-            try:
-                client = await stash_context.get_client()
-            finally:
-                dump_graphql_calls(graphql_route.calls)
-            try:
-                caps = stash_context.capabilities
-                assert isinstance(caps, ServerCapabilities)
-                assert caps.app_schema == 80
-                assert caps.has_studio_organized
-                assert not caps.has_gallery_custom_fields
-            finally:
-                await client.close()
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_capability_response(
+                        app_schema=80,
+                        version="v0.30.1",
+                    ),
+                )
+            ]
+        )
+        try:
+            client = await stash_context.get_client()
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+        try:
+            caps = stash_context.capabilities
+            assert isinstance(caps, ServerCapabilities)
+            assert caps.app_schema == 80
+            assert caps.has_studio_organized
+            assert not caps.has_gallery_custom_fields
+        finally:
+            await client.close()
 
     @pytest.mark.unit
-    @pytest.mark.asyncio
-    async def test_capabilities_not_available_before_init(self, stash_context) -> None:
-        """StashContext.capabilities raises before client init."""
+    def test_capabilities_not_available_before_init(self) -> None:
+        """StashContext.capabilities raises before client init (no connection made)."""
+        context = StashContext(
+            conn={"Scheme": "http", "Host": "localhost", "Port": 9999},
+            verify_ssl=False,
+        )
         with pytest.raises(RuntimeError, match="Capabilities not available"):
-            _ = stash_context.capabilities
+            _ = context.capabilities
 
 
 # ---------------------------------------------------------------------------

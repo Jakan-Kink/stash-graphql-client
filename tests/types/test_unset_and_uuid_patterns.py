@@ -41,7 +41,7 @@ class TestUnsetSentinel:
         assert UNSET is not None
         assert UNSET != ""
         assert UNSET != 0
-        assert UNSET is not False
+        assert UNSET is not False  # type: ignore[comparison-overlap]  # intentional: UNSET must be distinct from False
 
     def test_unset_identity_check(self):
         """Identity check (is) should work for UNSET."""

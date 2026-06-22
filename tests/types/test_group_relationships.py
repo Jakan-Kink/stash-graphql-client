@@ -9,7 +9,7 @@ This module tests the Group type's relationship metadata, including:
 Special focus on self-referential relationships (containing_groups ↔ sub_groups).
 """
 
-from stash_graphql_client.types import RelationshipMetadata
+from stash_graphql_client.types import RelationshipMetadata, present
 from stash_graphql_client.types.group import (
     Group,
     GroupDescription,
@@ -107,7 +107,7 @@ class TestGroupContainingGroupsRelationship:
         mock_desc = GroupDescription(group=mock_group, description="Parent group")
 
         # Apply transform
-        result = rel.transform(mock_desc)
+        result = present(rel.transform)(mock_desc)
 
         # Should produce GroupDescriptionInput
         assert isinstance(result, GroupDescriptionInput)
@@ -141,7 +141,7 @@ class TestGroupSubGroupsRelationship:
         mock_desc = GroupDescription(group=mock_group, description="Child description")
 
         # Apply transform
-        result = rel.transform(mock_desc)
+        result = present(rel.transform)(mock_desc)
 
         # Should produce GroupDescriptionInput
         assert isinstance(result, GroupDescriptionInput)

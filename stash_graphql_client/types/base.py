@@ -62,6 +62,7 @@ from stash_graphql_client.errors import (
 )
 from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.logging import client_logger as log
+from stash_graphql_client.types.json import expect_dict, str_or_none
 from stash_graphql_client.types.scalars import Time
 from stash_graphql_client.types.unset import UNSET, UnsetType, is_set
 
@@ -2138,7 +2139,7 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
         try:
             result = await client.execute(query, {"id": id})
             data = result[f"find{cls.__type_name__}"]
-            return cls.from_graphql(data) if data else None
+            return cls.from_graphql(expect_dict(data, "find result")) if data else None
         except Exception:
             return None
 
@@ -2211,7 +2212,11 @@ class StashObject(FromGraphQLMixin, BaseModel, metaclass=_StashObjectMeta):
 
                 # Update ID for new objects using the dedicated method
                 if not is_update:
-                    self.update_id(operation_result["id"])
+                    op_dict = expect_dict(operation_result, operation_key)
+                    new_id = str_or_none(op_dict["id"])
+                    if new_id is None:
+                        raise ValueError(f"{operation} operation returned no id")
+                    self.update_id(new_id)
 
             # --- Field-based side mutations (fire AFTER main mutation so ID is real) ---
             # Deduplicate handlers: multiple fields may map to the same handler

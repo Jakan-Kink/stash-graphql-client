@@ -992,6 +992,24 @@ class TestSideMutations:
         assert "sceneGenerateScreenshot" in req["query"]
         assert req["variables"]["at"] == 30.5
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "queue_method",
+        ["reset_play_count", "reset_o", "reset_activity", "generate_screenshot"],
+    )
+    async def test_scene_queued_op_rejects_non_scene(
+        self, queue_method, respx_stash_client, respx_entity_store
+    ) -> None:
+        """Each Scene queued-op guard raises TypeError when handed a non-Scene."""
+        scene = Scene.from_graphql({"id": "350", "title": "T"})
+        scene.mark_clean()
+        getattr(scene, queue_method)()
+        op = scene._pending_side_ops[-1]
+
+        not_a_scene = Tag.from_graphql({"id": "1", "name": "x"})
+        with pytest.raises(TypeError, match="expected Scene"):
+            await op(respx_stash_client, not_a_scene)
+
     # ── Image._save_o_counter edge cases ───────────────────────────
 
     @pytest.mark.asyncio

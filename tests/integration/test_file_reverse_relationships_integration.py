@@ -146,23 +146,30 @@ async def test_adaptive_populate_file_reverse(
     direct_field resolver or the path-filter fallback, whichever the server
     supports."""
     finder = getattr(stash_client, case.finder)
-    async with stash_cleanup_tracker(stash_client):
-        result = await finder(filter_={"per_page": 25})
-        entity, file = _first_with_file(
-            getattr(result, case.result_attr), case.file_accessor, case.file_type
-        )
-        if entity is None:
-            pytest.skip(
-                f"No {case.result_attr} with a {case.file_type.__name__} + path "
-                "in test Stash instance"
+    async with (
+        stash_cleanup_tracker(stash_client),
+        capture_graphql_calls(stash_client) as calls,
+    ):
+        try:
+            result = await finder(filter_={"per_page": 25})
+            entity, file = _first_with_file(
+                getattr(result, case.result_attr), case.file_accessor, case.file_type
             )
+            if entity is None:
+                pytest.skip(
+                    f"No {case.result_attr} with a {case.file_type.__name__} + path "
+                    "in test Stash instance"
+                )
 
-        store = file._store
-        assert store is not None, "store should be initialized on the client"
+            store = file._store
+            if store is None:
+                pytest.fail("store should be initialized on the client")
 
-        # The reverse field is unqueried (UNSET) on the file from the entity
-        # fragment; the adaptive populate must fill it via resolver or fallback.
-        populated = await store.populate(file, fields=[case.reverse_field])
+            # The reverse field is unqueried (UNSET) on the file from the entity
+            # fragment; the adaptive populate must fill it via resolver or fallback.
+            populated = await store.populate(file, fields=[case.reverse_field])
+        finally:
+            dump_graphql_calls(calls, case.finder)
 
         reverse = getattr(populated, case.reverse_field)
         assert is_set(reverse)

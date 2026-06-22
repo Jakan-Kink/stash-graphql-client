@@ -19,6 +19,7 @@ from stash_graphql_client.types.metadata import (
     CustomFieldsInput,
     _validate_custom_field_name,
 )
+from stash_graphql_client.types.performer import Performer
 from stash_graphql_client.types.scene import Scene
 from stash_graphql_client.types.unset import UNSET, is_set
 from tests.fixtures import create_graphql_response, dump_graphql_calls
@@ -411,3 +412,34 @@ class TestCustomFieldsSideMutation:
 
         # No HTTP call — the handler short-circuited on cfi=None.
         assert len(graphql_route.calls) == 0
+
+    @pytest.mark.asyncio
+    async def test_save_fires_for_performer_without_capability_gate(
+        self, respx_stash_client, respx_entity_store
+    ) -> None:
+        """Performer custom_fields are ungated (capability_attr=None): the handler
+        fires even on an old server that would block Scene's gated handler."""
+        respx_stash_client._capabilities = make_server_capabilities(75)  # < 79
+
+        performer = Performer(id="7", custom_fields={"existing": "v0"})
+        performer.mark_clean()
+        performer.custom_fields = {"existing": "v0", "_mm_d": "watermark"}
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200, json=create_graphql_response("performerUpdate", {"id": "7"})
+                )
+            ]
+        )
+
+        try:
+            await performer.save(respx_stash_client)
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert len(graphql_route.calls) == 1
+        req = json.loads(graphql_route.calls[0].request.content)
+        assert "performerUpdate" in req["query"]
+        cf_payload = req["variables"]["input"]["custom_fields"]
+        assert cf_payload.get("partial") == {"_mm_d": "watermark"}

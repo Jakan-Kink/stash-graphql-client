@@ -5,7 +5,7 @@ the inverse relationship is automatically updated on related objects
 in the same identity map.
 """
 
-from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag
+from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag, present
 from stash_graphql_client.types.base import RelationshipMetadata
 from stash_graphql_client.types.unset import UNSET, UnsetType
 
@@ -25,16 +25,16 @@ class TestTagSelfReferentialSync:
         tag_base.children = [tag_child]
 
         # Verify inverse relationships were auto-synced
-        assert tag_base in tag_parent.children, (
+        assert tag_base in present(tag_parent.children), (
             "tag_parent.children should include tag_base"
         )
-        assert tag_base in tag_child.parents, (
+        assert tag_base in present(tag_child.parents), (
             "tag_child.parents should include tag_base"
         )
 
         # Verify the traversal works
-        assert tag_parent.children[0] == tag_base
-        assert tag_parent.children[0].children[0] == tag_child
+        assert present(tag_parent.children)[0] == tag_base
+        assert present(present(tag_parent.children)[0].children)[0] == tag_child
 
     def test_add_parent_syncs_inverse(self):
         """Test that setting parents automatically updates parent.children."""
@@ -45,7 +45,7 @@ class TestTagSelfReferentialSync:
         child.parents = [parent]
 
         # Verify parent's children includes child
-        assert child in parent.children
+        assert child in present(parent.children)
 
     def test_add_child_syncs_inverse(self):
         """Test that setting children automatically updates child.parents."""
@@ -56,7 +56,7 @@ class TestTagSelfReferentialSync:
         parent.children = [child]
 
         # Verify child's parents includes parent
-        assert parent in child.parents
+        assert parent in present(child.parents)
 
     def test_multiple_parents(self):
         """Test syncing with multiple parents."""
@@ -68,8 +68,8 @@ class TestTagSelfReferentialSync:
         child.parents = [parent1, parent2]
 
         # Verify both parents have child
-        assert child in parent1.children
-        assert child in parent2.children
+        assert child in present(parent1.children)
+        assert child in present(parent2.children)
 
     def test_multiple_children(self):
         """Test syncing with multiple children."""
@@ -81,8 +81,8 @@ class TestTagSelfReferentialSync:
         parent.children = [child1, child2]
 
         # Verify both children have parent
-        assert parent in child1.parents
-        assert parent in child2.parents
+        assert parent in present(child1.parents)
+        assert parent in present(child2.parents)
 
     def test_deep_hierarchy(self):
         """Test syncing in a deep tag hierarchy."""
@@ -97,14 +97,20 @@ class TestTagSelfReferentialSync:
         grandchild.parents = [child]
 
         # Verify entire chain
-        assert grandparent.children[0] == parent
-        assert grandparent.children[0].children[0] == child
-        assert grandparent.children[0].children[0].children[0] == grandchild
+        assert present(grandparent.children)[0] == parent
+        assert present(present(grandparent.children)[0].children)[0] == child
+        assert (
+            present(present(present(grandparent.children)[0].children)[0].children)[0]
+            == grandchild
+        )
 
         # Verify inverse chain
-        assert grandchild.parents[0] == child
-        assert grandchild.parents[0].parents[0] == parent
-        assert grandchild.parents[0].parents[0].parents[0] == grandparent
+        assert present(grandchild.parents)[0] == child
+        assert present(present(grandchild.parents)[0].parents)[0] == parent
+        assert (
+            present(present(present(grandchild.parents)[0].parents)[0].parents)[0]
+            == grandparent
+        )
 
     def test_unset_list_relationships_auto_initialized_on_sync(self):
         """Test that UNSET list relationships are auto-initialized during sync.
@@ -135,8 +141,8 @@ class TestTagSelfReferentialSync:
         child.parents = [parent]  # Set again
 
         # Should only have one entry
-        assert len(parent.children) == 1
-        assert parent.children[0] == child
+        assert len(present(parent.children)) == 1
+        assert present(parent.children)[0] == child
 
 
 class TestSceneRelationshipSync:
@@ -151,7 +157,7 @@ class TestSceneRelationshipSync:
         scene.galleries = [gallery]
 
         # Verify inverse
-        assert scene in gallery.scenes
+        assert scene in present(gallery.scenes)
 
     def test_scene_performer_sync(self):
         """Test that setting scene.performers updates performer.scenes."""
@@ -162,7 +168,7 @@ class TestSceneRelationshipSync:
         scene.performers = [performer]
 
         # Verify inverse
-        assert scene in performer.scenes
+        assert scene in present(performer.scenes)
 
 
 class TestSingleObjectRelationshipSync:
@@ -223,7 +229,7 @@ class TestInverseSyncEdgeCases:
 
         # Child should have tag_with_mixed as parent (inverse synced for valid object)
         # String and int should have been skipped (line 505 continue)
-        assert tag_with_mixed in child.parents
+        assert tag_with_mixed in present(child.parents)
 
     def test_sync_single_object_relationship(self):
         """Test syncing single object relationships (not lists).
@@ -263,7 +269,7 @@ class TestInverseSyncEdgeCases:
 
             # This should trigger lines 509-510 (elif branch for single objects)
             # Gallery.scenes should now contain scene
-            assert scene in gallery.scenes
+            assert scene in present(gallery.scenes)
 
         finally:
             # Restore original metadata
@@ -340,7 +346,7 @@ class TestInverseSyncEdgeCases:
             scene._sync_inverse_relationship("galleries", None)
 
             # Gallery.scenes should remain empty (no inverse sync happened)
-            assert scene not in gallery.scenes
+            assert scene not in present(gallery.scenes)
 
         finally:
             # Restore original metadata
@@ -362,11 +368,11 @@ class TestInverseSyncEdgeCases:
         try:
             # Replace a relationship with a non-RelationshipMetadata object (e.g., tuple or string)
             # This simulates legacy code or an invalid relationship definition
-            tag.__relationships__["parents"] = (
+            tag.__relationships__["parents"] = (  # type: ignore[assignment]
                 "parent_ids",
                 True,
                 None,
-            )  # Legacy tuple format
+            )  # Legacy tuple format (intentionally not RelationshipMetadata)
 
             # Create another tag to attempt sync with
             parent = Tag(name="Parent Tag", parents=[], children=[])
@@ -376,7 +382,7 @@ class TestInverseSyncEdgeCases:
 
             # No inverse sync should occur because the mapping is not RelationshipMetadata
             # parent.children should still be empty
-            assert len(parent.children) == 0
+            assert len(present(parent.children)) == 0
 
         finally:
             # Restore original relationships

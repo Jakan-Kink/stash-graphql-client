@@ -5,7 +5,7 @@ RelationshipMetadata instances with complete bidirectional information,
 including the self-referential parent_studio relationship.
 """
 
-from stash_graphql_client.types import RelationshipMetadata
+from stash_graphql_client.types import RelationshipMetadata, present
 from stash_graphql_client.types.files import StashID, StashIDInput
 from stash_graphql_client.types.studio import Studio
 
@@ -123,7 +123,7 @@ class TestStudioStashIDsRelationship:
         """Test that transform converts StashID to StashIDInput."""
         rel = Studio.__relationships__["stash_ids"]
         mock_stash_id = StashID(endpoint="https://stashdb.org", stash_id="456def")
-        result = rel.transform(mock_stash_id)
+        result = present(rel.transform)(mock_stash_id)
 
         assert isinstance(result, StashIDInput)
         assert result.endpoint == "https://stashdb.org"

@@ -10,7 +10,7 @@ import inspect
 
 import pytest
 
-from stash_graphql_client.types import UNSET, Tag
+from stash_graphql_client.types import UNSET, Tag, present
 
 
 @pytest.mark.usefixtures("mock_entity_store")
@@ -27,8 +27,8 @@ class TestTagHelperMethods:
         await child.add_parent(parent)
 
         # Verify bidirectional consistency
-        assert parent in child.parents
-        assert child in parent.children
+        assert parent in present(child.parents)
+        assert child in present(parent.children)
 
     @pytest.mark.asyncio
     async def test_add_parent_deduplication(self):
@@ -41,8 +41,8 @@ class TestTagHelperMethods:
         await child.add_parent(parent)
 
         # Should only have one entry on both sides
-        assert len(child.parents) == 1
-        assert len(parent.children) == 1
+        assert len(present(child.parents)) == 1
+        assert len(present(parent.children)) == 1
 
     @pytest.mark.asyncio
     async def test_remove_parent_maintains_bidirectional_consistency(self):
@@ -57,8 +57,8 @@ class TestTagHelperMethods:
         await child.remove_parent(parent)
 
         # Verify bidirectional consistency
-        assert parent not in child.parents
-        assert child not in parent.children
+        assert parent not in present(child.parents)
+        assert child not in present(parent.children)
 
     @pytest.mark.asyncio
     async def test_remove_parent_noop_if_not_present(self):
@@ -69,8 +69,8 @@ class TestTagHelperMethods:
         # Remove parent that's not in the list - should be no-op
         await child.remove_parent(parent)
 
-        assert parent not in child.parents
-        assert child not in parent.children
+        assert parent not in present(child.parents)
+        assert child not in present(parent.children)
 
     @pytest.mark.asyncio
     async def test_add_child_maintains_bidirectional_consistency(self):
@@ -82,8 +82,8 @@ class TestTagHelperMethods:
         await parent.add_child(child)
 
         # Verify bidirectional consistency
-        assert child in parent.children
-        assert parent in child.parents
+        assert child in present(parent.children)
+        assert parent in present(child.parents)
 
     @pytest.mark.asyncio
     async def test_add_child_deduplication(self):
@@ -96,8 +96,8 @@ class TestTagHelperMethods:
         await parent.add_child(child)
 
         # Should only have one entry on both sides
-        assert len(parent.children) == 1
-        assert len(child.parents) == 1
+        assert len(present(parent.children)) == 1
+        assert len(present(child.parents)) == 1
 
     @pytest.mark.asyncio
     async def test_remove_child_maintains_bidirectional_consistency(self):
@@ -112,8 +112,8 @@ class TestTagHelperMethods:
         await parent.remove_child(child)
 
         # Verify bidirectional consistency
-        assert child not in parent.children
-        assert parent not in child.parents
+        assert child not in present(parent.children)
+        assert parent not in present(child.parents)
 
     @pytest.mark.asyncio
     async def test_remove_child_noop_if_not_present(self):
@@ -124,8 +124,8 @@ class TestTagHelperMethods:
         # Remove child that's not in the list - should be no-op
         await parent.remove_child(child)
 
-        assert child not in parent.children
-        assert parent not in child.parents
+        assert child not in present(parent.children)
+        assert parent not in present(child.parents)
 
     @pytest.mark.asyncio
     async def test_helper_methods_with_multi_level_hierarchy(self):
@@ -139,8 +139,8 @@ class TestTagHelperMethods:
         await child.add_parent(parent)
 
         # Verify multi-level traversal works
-        assert grandparent.children[0].children[0] == child
-        assert child.parents[0].parents[0] == grandparent
+        assert present(present(grandparent.children)[0].children)[0] == child
+        assert present(present(child.parents)[0].parents)[0] == grandparent
 
     def test_helpers_are_async_not_sync(self):
         """Test that helper methods are now async coroutines (use generic machinery)."""
@@ -160,16 +160,16 @@ class TestTagHelperMethods:
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Manually set up inverse relationship first
-        parent.children.append(child)
+        present(parent.children).append(child)
 
         # Now call add_parent - should only update child.parents
         await child.add_parent(parent)
 
         # Both sides should be set
-        assert parent in child.parents
-        assert child in parent.children
+        assert parent in present(child.parents)
+        assert child in present(parent.children)
         # Should not have duplicates
-        assert len(parent.children) == 1
+        assert len(present(parent.children)) == 1
 
     @pytest.mark.asyncio
     async def test_remove_parent_when_inverse_not_exists(self):
@@ -182,8 +182,8 @@ class TestTagHelperMethods:
         await child.remove_parent(parent)
 
         # Should still remove from child.parents
-        assert parent not in child.parents
-        assert child not in parent.children
+        assert parent not in present(child.parents)
+        assert child not in present(parent.children)
 
     @pytest.mark.asyncio
     async def test_add_child_when_inverse_already_exists(self):
@@ -192,16 +192,16 @@ class TestTagHelperMethods:
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Manually set up inverse relationship first
-        child.parents.append(parent)
+        present(child.parents).append(parent)
 
         # Now call add_child - should only update parent.children
         await parent.add_child(child)
 
         # Both sides should be set
-        assert child in parent.children
-        assert parent in child.parents
+        assert child in present(parent.children)
+        assert parent in present(child.parents)
         # Should not have duplicates
-        assert len(child.parents) == 1
+        assert len(present(child.parents)) == 1
 
     @pytest.mark.asyncio
     async def test_remove_child_when_inverse_not_exists(self):
@@ -210,15 +210,15 @@ class TestTagHelperMethods:
         child = Tag(id="2", name="Child", parents=[], children=[])
 
         # Manually set up only parent.children
-        parent.children.append(child)
+        present(parent.children).append(child)
 
         # child.parents is empty (no inverse)
         # Call remove_child
         await parent.remove_child(child)
 
         # Should still remove from parent.children
-        assert child not in parent.children
-        assert parent not in child.parents
+        assert child not in present(parent.children)
+        assert parent not in present(child.parents)
 
 
 @pytest.mark.usefixtures("mock_entity_store")

@@ -9,16 +9,20 @@ from pydantic import BeforeValidator, PlainSerializer
 
 from stash_graphql_client.errors import StashIntegrationError
 
+from .json import JsonDict
 
-# Type aliases for simple scalars
-Map = dict[str, Any]
+
+# Type aliases for simple scalars. The GraphQL Map / Any scalars are gqlgen
+# built-ins that marshal as arbitrary JSON, so their values are JsonValue (not
+# typing.Any). Map[str, <json value>] is exactly JsonDict.
+Map = JsonDict
 BoolMap = dict[str, bool]
 # Outer key: plugin ID. Inner dict: that plugin's configuration (arbitrary settings).
-PluginConfigMap = dict[str, dict[str, Any]]
+PluginConfigMap = dict[str, JsonDict]
 Int64 = int
 
-# Any scalar - uses typing.Any (already imported)
-# The GraphQL 'Any' scalar is mapped directly to Python's typing.Any
+# The GraphQL 'Any' scalar marshals as an arbitrary JSON value (JsonValue); it is
+# not re-exported as a public scalar here (use JsonValue directly).
 
 # Upload scalar - represents a multipart file upload
 # In practice, this is handled by the HTTP transport layer and client code

@@ -4,7 +4,8 @@ These tests verify that GalleryChapter has migrated from tuple-based relationshi
 mappings to RelationshipMetadata objects while maintaining backward compatibility.
 """
 
-from stash_graphql_client.types.gallery import GalleryChapter, RelationshipMetadata
+from stash_graphql_client.types.base import RelationshipMetadata
+from stash_graphql_client.types.gallery import GalleryChapter
 
 
 class TestGalleryChapterRelationshipMetadata:

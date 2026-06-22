@@ -15,7 +15,7 @@ from stash_graphql_client import StashClient, StashEntityStore
 from stash_graphql_client.context import StashContext
 from stash_graphql_client.fragments import fragment_store
 from stash_graphql_client.types.scene import Scene, SceneCreateInput
-from tests.fixtures.fake_websocket import fake_ws_connection
+from tests.fixtures.fake_websocket import FakeSocket, fake_ws_connection
 from tests.fixtures.stash.graphql_responses import (
     create_capability_response,
     make_server_capabilities,
@@ -266,6 +266,30 @@ async def respx_stash_client(
 
 
 @pytest_asyncio.fixture
+async def respx_mock_boundary() -> AsyncGenerator[FakeSocket, None]:
+    """Activate respx HTTP mocking + an in-process fake WebSocket, creating no
+    client/context/store.
+
+    For tests that must construct and initialize their OWN StashClient/StashContext
+    inside a controlled HTTP boundary — capability-detection scenarios with varied
+    mocked responses, context-lifecycle tests, etc. respx_stash_client pre-initializes
+    a client with a fixed capability response and so cannot serve those; this fixture
+    yields only the mocked HTTP + WS boundary, leaving the test to own get_client().
+
+    Yields:
+        FakeSocket: the in-process WebSocket, so a test can script events / inspect frames.
+    """
+    with respx.mock, fake_ws_connection() as fake_ws:
+        # Catch-all sentinel: unmatched GraphQL requests get an empty response. A
+        # test re-mocking this same `respx.post` route (e.g. with its own capability
+        # detection `side_effect`) overrides the sentinel for what it exercises.
+        respx.post("http://localhost:9999/graphql").mock(
+            return_value=httpx.Response(200, json={"data": {}})
+        )
+        yield fake_ws
+
+
+@pytest_asyncio.fixture
 async def respx_entity_store(
     stash_context: StashContext,
     respx_stash_client: StashClient,
@@ -495,78 +519,84 @@ async def stash_cleanup_tracker():
             assert client._session is not None
             original_execute = client._session.execute
 
+            # Create-mutation field name -> cleanup bucket. saveFilter is an
+            # upsert (no "Create" in its key) but is tracked the same way.
+            field_to_bucket = {
+                "sceneCreate": "scenes",
+                "performerCreate": "performers",
+                "studioCreate": "studios",
+                "tagCreate": "tags",
+                "galleryCreate": "galleries",
+                "sceneMarkerCreate": "markers",
+                "groupCreate": "groups",
+                "saveFilter": "saved_filters",
+            }
+
+            def capture(field_name, obj_data):
+                """Record a created object's id under its cleanup bucket."""
+                bucket = field_to_bucket.get(field_name)
+                if bucket is None or not obj_data:
+                    return
+                obj_id = obj_data.get("id")
+                if obj_id and obj_id not in created_objects[bucket]:
+                    created_objects[bucket].append(obj_id)
+
+            def aliased_create_fields(document):
+                """Map alias -> mutation field name for aliased selections.
+
+                execute_batch keys batched responses by alias (op0/op1/...), so
+                the field name behind each payload is only recoverable from the
+                request document. Unaliased single mutations are not returned.
+                """
+                # gql() yields a GraphQLRequest wrapping the DocumentNode; unwrap
+                # to reach .definitions (a raw DocumentNode passes through).
+                document = getattr(document, "document", document)
+                mapping = {}
+                for defn in getattr(document, "definitions", ()) or ():
+                    selection_set = getattr(defn, "selection_set", None)
+                    if selection_set is None:
+                        continue
+                    for sel in selection_set.selections:
+                        alias = getattr(sel, "alias", None)
+                        name = getattr(sel, "name", None)
+                        if alias is not None and name is not None:
+                            mapping[alias.value] = name.value
+                return mapping
+
             async def execute_with_capture(document, *args, **kwargs):
-                """Execute GraphQL and auto-capture created object IDs."""
+                """Execute GraphQL and auto-capture created object IDs.
+
+                Handles unaliased single mutations (response keyed by field
+                name) and execute_batch's aliased ops (keyed op0/op1/...).
+                """
                 result = await original_execute(document, *args, **kwargs)
 
                 # Quick check - only process if result is a dict and has data
                 if not (result and isinstance(result, dict)):
                     return result
 
-                # Fast string check: only inspect if result contains "Create" mutations
-                # or the saveFilter upsert (which has no "Create" in its key)
                 result_keys = result.keys()
-                has_create = any(
+                has_direct = any(
                     "Create" in key or key == "saveFilter" for key in result_keys
                 )
-                if not has_create:
+                has_batch = any(
+                    key[:2] == "op" and key[2:].isdigit() for key in result_keys
+                )
+                if not (has_direct or has_batch):
                     return result
 
-                # Check specific create mutations
-                if "sceneCreate" in result:
-                    if (
-                        (obj_data := result["sceneCreate"])
-                        and (scene_id := obj_data.get("id"))
-                        and scene_id not in created_objects["scenes"]
-                    ):
-                        created_objects["scenes"].append(scene_id)
-                elif "performerCreate" in result:
-                    if (
-                        (obj_data := result["performerCreate"])
-                        and (performer_id := obj_data.get("id"))
-                        and performer_id not in created_objects["performers"]
-                    ):
-                        created_objects["performers"].append(performer_id)
-                elif "studioCreate" in result:
-                    if (
-                        (obj_data := result["studioCreate"])
-                        and (studio_id := obj_data.get("id"))
-                        and studio_id not in created_objects["studios"]
-                    ):
-                        created_objects["studios"].append(studio_id)
-                elif "tagCreate" in result:
-                    if (
-                        (obj_data := result["tagCreate"])
-                        and (tag_id := obj_data.get("id"))
-                        and tag_id not in created_objects["tags"]
-                    ):
-                        created_objects["tags"].append(tag_id)
-                elif "galleryCreate" in result:
-                    if (
-                        (obj_data := result["galleryCreate"])
-                        and (gallery_id := obj_data.get("id"))
-                        and gallery_id not in created_objects["galleries"]
-                    ):
-                        created_objects["galleries"].append(gallery_id)
-                elif "sceneMarkerCreate" in result:
-                    if (
-                        (obj_data := result["sceneMarkerCreate"])
-                        and (marker_id := obj_data.get("id"))
-                        and marker_id not in created_objects["markers"]
-                    ):
-                        created_objects["markers"].append(marker_id)
-                elif "groupCreate" in result and (
-                    (obj_data := result["groupCreate"])
-                    and (group_id := obj_data.get("id"))
-                    and group_id not in created_objects["groups"]
-                ):
-                    created_objects["groups"].append(group_id)
-                elif "saveFilter" in result and (
-                    (obj_data := result["saveFilter"])
-                    and (filter_id := obj_data.get("id"))
-                    and filter_id not in created_objects["saved_filters"]
-                ):
-                    created_objects["saved_filters"].append(filter_id)
+                # Unaliased single mutations: the response key is the field name.
+                if has_direct:
+                    for field_name in field_to_bucket:
+                        if field_name in result:
+                            capture(field_name, result[field_name])
+
+                # Batched mutations: recover each alias's field name from the
+                # request document, then capture the aliased payloads.
+                if has_batch:
+                    for alias, field_name in aliased_create_fields(document).items():
+                        if alias in result:
+                            capture(field_name, result[alias])
 
                 return result
 
@@ -939,3 +969,63 @@ async def capture_graphql_calls(
         stash_client._session, "execute", side_effect=capture_session_execute
     ):
         yield calls
+
+
+@contextlib.asynccontextmanager
+async def capture_ws_calls(
+    stash_client: StashClient,
+) -> AsyncIterator[list[dict]]:
+    """Capture WebSocket subscription events in integration tests.
+
+    The subscription analog of capture_graphql_calls: patches
+    stash_client._ws_session.subscribe to record every event each subscription
+    generator yields (and any exception) while the real WS stream still flows.
+    Subscription events travel over the WS transport, so capture_graphql_calls
+    (an HTTP execute spy) never sees them; this captures that side.
+
+    Args:
+        stash_client: The StashClient instance to monitor
+
+    Yields:
+        list: dicts with 'query', 'variables', 'event', and 'exception' per frame
+    """
+    frames: list[dict] = []
+    assert stash_client._ws_session is not None
+    original_subscribe = stash_client._ws_session.subscribe
+
+    def capture_subscribe(document, *args, **kwargs):
+        variable_values = kwargs.get("variable_values")
+        inner = original_subscribe(document, *args, **kwargs)
+
+        async def _wrapped():
+            try:
+                async for event in inner:
+                    frames.append(
+                        {
+                            "query": str(document),
+                            "variables": variable_values,
+                            "event": event,
+                            "exception": None,
+                        }
+                    )
+                    yield event
+            except Exception as e:
+                frames.append(
+                    {
+                        "query": str(document),
+                        "variables": variable_values,
+                        "event": None,
+                        "exception": e,
+                    }
+                )
+                raise
+            finally:
+                with contextlib.suppress(Exception):
+                    await inner.aclose()
+
+        return _wrapped()
+
+    with patch.object(
+        stash_client._ws_session, "subscribe", side_effect=capture_subscribe
+    ):
+        yield frames

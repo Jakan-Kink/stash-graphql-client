@@ -11,7 +11,7 @@ import pytest
 import respx
 
 from stash_graphql_client import StashClient
-from stash_graphql_client.types import PackageType
+from stash_graphql_client.types import PackageType, expect_list
 from stash_graphql_client.types.unset import is_set
 from tests.fixtures import create_graphql_response, dump_graphql_calls
 
@@ -281,7 +281,7 @@ async def test_installed_packages_with_metadata(
     assert packages[0].package_id == "pkg-meta"
     assert is_set(packages[0].metadata)
     assert packages[0].metadata["author"] == "Test Author"
-    assert "test" in packages[0].metadata["tags"]
+    assert "test" in expect_list(packages[0].metadata["tags"], "metadata tags")
 
     assert len(graphql_route.calls) == 1
 

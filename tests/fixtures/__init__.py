@@ -13,6 +13,7 @@ Fixture Organization:
 
 from tests.fixtures.client import (
     capture_graphql_calls,
+    capture_ws_calls,
     dump_graphql_calls,
     live_entity_store,
     mock_entity_store,
@@ -20,6 +21,7 @@ from tests.fixtures.client import (
     mock_ws_transport,
     respx_entity_store,
     respx_entity_store_with_file_reverse_caps,
+    respx_mock_boundary,
     respx_stash_client,
     stash_cleanup_tracker,
     stash_client,
@@ -89,12 +91,16 @@ from tests.fixtures.stash import (
     mock_tag,
     mock_video_file,
 )
-from tests.fixtures.utils import assert_query_fragments_resolve
+from tests.fixtures.utils import (
+    assert_query_fragments_resolve,
+    introspection_field_names,
+)
 
 
 __all__ = [
     # Cross-cutting utils
     "assert_query_fragments_resolve",
+    "introspection_field_names",
     # WebSocket fakes
     "FakeSocket",
     "dump_ws_calls",
@@ -105,6 +111,7 @@ __all__ = [
     "make_server_capabilities",
     # Client Fixtures
     "capture_graphql_calls",
+    "capture_ws_calls",
     "dump_graphql_calls",
     "enable_scene_creation",
     "live_entity_store",
@@ -113,6 +120,7 @@ __all__ = [
     "mock_ws_transport",
     "respx_entity_store",
     "respx_entity_store_with_file_reverse_caps",
+    "respx_mock_boundary",
     "respx_stash_client",
     "stash_cleanup_tracker",
     "stash_client",

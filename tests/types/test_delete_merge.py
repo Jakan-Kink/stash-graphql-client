@@ -25,6 +25,7 @@ from tests.fixtures.stash import (
     SceneFactory,
     TagFactory,
     create_graphql_response,
+    create_scene_dict,
     create_tag_dict,
 )
 
@@ -331,6 +332,32 @@ class TestBulkDestroy:
 
 class TestMerge:
     """Tests for StashObject.merge() classmethod."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.unit
+    async def test_merge_scenes(self, respx_stash_client) -> None:
+        """Test Scene.merge() sends sceneMerge and returns the merged entity."""
+        merged_scene_data = create_scene_dict(id="3", title="Merged Scene")
+
+        graphql_route = respx.post("http://localhost:9999/graphql").mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=create_graphql_response("sceneMerge", merged_scene_data),
+                )
+            ]
+        )
+
+        try:
+            result = await Scene.merge(
+                respx_stash_client, source_ids=["1", "2"], destination_id="3"
+            )
+        finally:
+            dump_graphql_calls(graphql_route.calls)
+
+        assert result is not None
+        assert result.id == "3"
+        assert len(graphql_route.calls) == 1
 
     @pytest.mark.asyncio
     @pytest.mark.unit

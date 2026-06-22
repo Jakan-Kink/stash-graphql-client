@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from graphql import FragmentDefinitionNode, Visitor, parse, visit
 
+from stash_graphql_client.types import JsonDict, expect_dict, expect_list
+
 
 class _SpreadCollector(Visitor):
     """Collect every ``...FragmentName`` spread name in a parsed document."""
@@ -48,3 +50,21 @@ def assert_query_fragments_resolve(query: str) -> None:
     visit(document, collector)
     unresolved = sorted(set(collector.names) - set(defined))
     assert not unresolved, f"fragment spreads with no definition: {unresolved}"
+
+
+def introspection_field_names(result: JsonDict, type_key: str) -> set[str]:
+    """Field names from a ``__type`` introspection result keyed under ``type_key``.
+
+    Narrows the JSON response (``execute()`` returns ``JsonDict``) to the
+    ``fields`` array and collects each field's ``name``.
+
+    Args:
+        result: The ``execute()`` response, e.g. ``{"_mutations": {"fields": [...]}}``.
+        type_key: The aliased ``__type`` key to read (e.g. ``"_mutations"``).
+
+    Returns:
+        The set of field-name strings under ``result[type_key]["fields"]``.
+    """
+    container = expect_dict(result.get(type_key) or {}, type_key)
+    fields = expect_list(container.get("fields") or [], "fields")
+    return {str(expect_dict(field, "field")["name"]) for field in fields}

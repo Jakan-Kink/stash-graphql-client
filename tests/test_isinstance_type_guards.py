@@ -10,6 +10,7 @@ from stash_graphql_client.types import (
     FindFilesResultType,
     ImageFile,
     VideoFile,
+    present,
 )
 
 
@@ -153,11 +154,11 @@ def test_type_narrowing_with_polymorphic_handling():
         if isinstance(file, VideoFile):
             # Handle video-specific logic
             assert hasattr(file, "duration")
-            assert file.duration > 0
+            assert present(file.duration) > 0
         elif isinstance(file, ImageFile):
             # Handle image-specific logic
             assert hasattr(file, "width")
-            assert file.width > 0
+            assert present(file.width) > 0
 
 
 def test_isinstance_returns_false_for_wrong_type():
