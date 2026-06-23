@@ -1,6 +1,6 @@
 [project]
 name = "stash-graphql-client"
-version = "0.12.11"
+version = "0.12.12"
 description = "Async Python client for Stash GraphQL API"
 authors = [
     {name = "Jakan",email = "github@jakan.co"}
@@ -40,7 +40,8 @@ dependencies = [
     "pydantic (>=2.6.4)",
     "pydantic-extra-types (>=2.10.6)",
     "multidict (>=6.7.0)",
-    "loguru (>=0.7.3,<0.8.0)"
+    "loguru (>=0.7.3,<0.8.0)",
+    "typing-extensions (>=4.10) ; python_version < \"3.13\""
 ]
 
 [project.urls]
@@ -342,7 +343,9 @@ output = "coverage.xml"
 package_depth = 2
 
 [tool.mypy]
-python_version = "3.13"
+# Type-check at the supported floor (matches requires-python >=3.12) so
+# 3.12-incompatible typing (e.g. 3.13-only stdlib symbols) is caught in CI.
+python_version = "3.12"
 # Keep these basic checks
 warn_unused_configs = true
 warn_redundant_casts = true

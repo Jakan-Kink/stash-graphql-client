@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.12] - 2026-06-23
+
+### Changed
+
+- **Type-checking now targets the 3.12 floor.** mypy's `python_version` was pinned to `3.13`, so the supported `>=3.12` floor was never validated in CI — which is how the 0.12.11 `TypeIs` regression slipped through. Lowered to `3.12`; the package and tests type-check clean at the floor. No runtime or public-API impact.
+
+### Fixed
+
+- **`TypeIs` import broke type-checking for consumers on Python 3.12 (regression in 0.12.11).** The 0.12.11 guard migration imported `TypeIs` under `if TYPE_CHECKING: from typing import TypeIs`, but `typing.TypeIs` is stdlib only from 3.13 — so any downstream project running mypy/pyright configured for the supported 3.12 floor hit `Module "typing" has no attribute "TypeIs"`. The import is now version-split to `typing_extensions` below 3.13, and `typing-extensions (>=4.10)` is declared as a dependency for `python_version < "3.13"`. `TypeIs` is still referenced only in stringized annotations, so nothing is imported at runtime.
+
 ## [0.12.11] - 2026-06-23
 
 ### Added
@@ -813,7 +823,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.11...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.12...HEAD
+[0.12.12]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.11...v0.12.12
 [0.12.11]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.10...v0.12.11
 [0.12.10]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...v0.12.9

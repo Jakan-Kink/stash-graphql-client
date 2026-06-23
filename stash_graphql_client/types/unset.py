@@ -32,9 +32,16 @@ from pydantic_core import core_schema
 
 
 if TYPE_CHECKING:
-    # TypeIs is stdlib from 3.13; only referenced in (stringized) annotations,
-    # so it is never imported at runtime and the 3.12 floor stays satisfied.
-    from typing import TypeIs
+    import sys
+
+    # TypeIs is stdlib from 3.13 and in typing_extensions before that. It is only
+    # referenced in (stringized) annotations, so it is never imported at runtime;
+    # the version split keeps type-checkers correct whether a consumer configures
+    # them for 3.12 (the floor) or 3.13+.
+    if sys.version_info >= (3, 13):
+        from typing import TypeIs
+    else:
+        from typing_extensions import TypeIs
 
 
 class UnsetType:
