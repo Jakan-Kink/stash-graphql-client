@@ -42,25 +42,26 @@ def filter_strict(
 ```python
 from stash_graphql_client import StashContext, Performer
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Pre-populate cache with find()
-    await store.find(Performer, favorite=True)
+# Pre-populate cache with find()
+await store.find(Performer, favorite=True)
 
-    # Strict filtering - raises if any performer missing rating100
-    try:
-        high_rated = store.filter_strict(
-            Performer,
-            required_fields=['rating100', 'favorite'],
-            predicate=lambda p: p.rating100 >= 80 and p.favorite
-        )
-        print(f"Found {len(high_rated)} high-rated favorites")
-    except ValueError as e:
-        # "Performer 123 is missing required fields: {'rating100'}"
-        print(f"Cache incomplete: {e}")
-        # Fix: warm cache with missing fields
-        await store.find(Performer, favorite=True)  # Re-fetch with all fields
+# Strict filtering - raises if any performer missing rating100
+try:
+    high_rated = store.filter_strict(
+        Performer,
+        required_fields=['rating100', 'favorite'],
+        predicate=lambda p: p.rating100 >= 80 and p.favorite
+    )
+    print(f"Found {len(high_rated)} high-rated favorites")
+except ValueError as e:
+    # "Performer 123 is missing required fields: {'rating100'}"
+    print(f"Cache incomplete: {e}")
+    # Fix: warm cache with missing fields
+    await store.find(Performer, favorite=True)  # Re-fetch with all fields
 ```
 
 ### When to Use
@@ -90,24 +91,25 @@ async def filter_and_populate(
 ```python
 from stash_graphql_client import StashContext, Performer
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Day 1: User browses performers (basic info only)
-    async for performer in store.find_iter(Performer, query_batch=100):
-        # Cache now has 5000 performers with: id, name, gender
-        # But rating100, favorite, scenes are UNSET
-        display_in_ui(performer)
+# Day 1: User browses performers (basic info only)
+async for performer in store.find_iter(Performer, query_batch=100):
+    # Cache now has 5000 performers with: id, name, gender
+    # But rating100, favorite, scenes are UNSET
+    display_in_ui(performer)
 
-    # Day 2: User wants to filter by rating (cache is partial)
-    high_rated = await store.filter_and_populate(
-        Performer,
-        required_fields=['rating100', 'favorite'],
-        predicate=lambda p: p.rating100 >= 80 and p.favorite
-    )
-    # ✓ Only fetches rating100+favorite for the 5000 performers
-    # ✓ Much smaller payload than re-fetching full performer data
-    # ✓ Results: All matching performers with complete data
+# Day 2: User wants to filter by rating (cache is partial)
+high_rated = await store.filter_and_populate(
+    Performer,
+    required_fields=['rating100', 'favorite'],
+    predicate=lambda p: p.rating100 >= 80 and p.favorite
+)
+# ✓ Only fetches rating100+favorite for the 5000 performers
+# ✓ Much smaller payload than re-fetching full performer data
+# ✓ Results: All matching performers with complete data
 ```
 
 ### Performance Benefits
@@ -162,27 +164,28 @@ async def filter_and_populate_with_stats(
 ```python
 from stash_graphql_client import StashContext, Performer
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Filter with statistics
-    results, stats = await store.filter_and_populate_with_stats(
-        Performer,
-        required_fields=['rating100', 'favorite'],
-        predicate=lambda p: p.rating100 >= 80 and p.favorite
-    )
+# Filter with statistics
+results, stats = await store.filter_and_populate_with_stats(
+    Performer,
+    required_fields=['rating100', 'favorite'],
+    predicate=lambda p: p.rating100 >= 80 and p.favorite
+)
 
-    # Analyze cache performance
-    print(f"Total cached: {stats['total_cached']}")
-    print(f"Needed population: {stats['needed_population']}")
-    print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
-    print(f"Found matches: {stats['matches']}")
+# Analyze cache performance
+print(f"Total cached: {stats['total_cached']}")
+print(f"Needed population: {stats['needed_population']}")
+print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
+print(f"Found matches: {stats['matches']}")
 
-    # Example output:
-    # Total cached: 1000
-    # Needed population: 500
-    # Cache hit rate: 50.0%
-    # Found matches: 237
+# Example output:
+# Total cached: 1000
+# Needed population: 500
+# Cache hit rate: 50.0%
+# Found matches: 237
 ```
 
 ### Statistics Dictionary
@@ -225,25 +228,26 @@ async def populated_filter_iter(
 ```python
 from stash_graphql_client import StashContext, Performer
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Find first 10 high-rated performers from 10,000 cached
-    count = 0
-    async for performer in store.populated_filter_iter(
-        Performer,
-        required_fields=['rating100', 'scenes'],
-        predicate=lambda p: p.rating100 >= 90 and len(p.scenes) > 100,
-        populate_batch=50,   # Fetch 50 at a time
-        yield_batch=10       # Yield after processing each 10
-    ):
-        # Start processing immediately as matches are found
-        await expensive_operation(performer)
-        count += 1
+# Find first 10 high-rated performers from 10,000 cached
+count = 0
+async for performer in store.populated_filter_iter(
+    Performer,
+    required_fields=['rating100', 'scenes'],
+    predicate=lambda p: p.rating100 >= 90 and len(p.scenes) > 100,
+    populate_batch=50,   # Fetch 50 at a time
+    yield_batch=10       # Yield after processing each 10
+):
+    # Start processing immediately as matches are found
+    await expensive_operation(performer)
+    count += 1
 
-        # Early exit - don't process all 10,000
-        if count >= 10:
-            break  # Only processed ~100-200 performers
+    # Early exit - don't process all 10,000
+    if count >= 10:
+        break  # Only processed ~100-200 performers
 ```
 
 ### Example: Incremental Processing
@@ -251,25 +255,26 @@ async with StashContext(conn=conn) as context:
 ```python
 from stash_graphql_client import StashContext, Scene
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Process large dataset incrementally
-    processed = 0
-    async for scene in store.populated_filter_iter(
-        Scene,
-        required_fields=['file', 'performers'],
-        predicate=lambda s: s.file.size > 1_000_000_000,  # > 1GB
-        populate_batch=50,
-        yield_batch=10
-    ):
-        # Yields results as they're ready (doesn't wait for all)
-        await process_large_scene(scene)
-        processed += 1
+# Process large dataset incrementally
+processed = 0
+async for scene in store.populated_filter_iter(
+    Scene,
+    required_fields=['file', 'performers'],
+    predicate=lambda s: s.file.size > 1_000_000_000,  # > 1GB
+    populate_batch=50,
+    yield_batch=10
+):
+    # Yields results as they're ready (doesn't wait for all)
+    await process_large_scene(scene)
+    processed += 1
 
-        # Update progress bar
-        if processed % 10 == 0:
-            print(f"Processed {processed} large scenes...")
+    # Update progress bar
+    if processed % 10 == 0:
+        print(f"Processed {processed} large scenes...")
 ```
 
 ### Batch Parameters
@@ -300,43 +305,44 @@ async for item in store.populated_filter_iter(
 ```python
 from stash_graphql_client import StashContext, Performer
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Step 1: Initial cache population (lightweight)
-    print("Loading performers...")
-    async for performer in store.find_iter(Performer, query_batch=100):
-        # Loads: id, name, gender (minimal fields)
-        cache_performer(performer)
-    print(f"Cached {len(store.all_cached(Performer))} performers")
+# Step 1: Initial cache population (lightweight)
+print("Loading performers...")
+async for performer in store.find_iter(Performer, query_batch=100):
+    # Loads: id, name, gender (minimal fields)
+    cache_performer(performer)
+print(f"Cached {len(store.all_cached(Performer))} performers")
 
-    # Step 2: User filters by rating (partial data in cache)
-    print("\nFinding high-rated performers...")
-    results, stats = await store.filter_and_populate_with_stats(
+# Step 2: User filters by rating (partial data in cache)
+print("\nFinding high-rated performers...")
+results, stats = await store.filter_and_populate_with_stats(
+    Performer,
+    required_fields=['rating100', 'favorite'],
+    predicate=lambda p: p.rating100 >= 80 and p.favorite
+)
+
+print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
+print(f"Fetched fields for: {stats['needed_population']} performers")
+print(f"Found: {len(results)} matches")
+
+# Step 3: Verify cache before expensive operation
+try:
+    verified = store.filter_strict(
         Performer,
-        required_fields=['rating100', 'favorite'],
-        predicate=lambda p: p.rating100 >= 80 and p.favorite
+        required_fields=['rating100', 'favorite', 'scenes'],
+        predicate=lambda p: p in results
     )
-
-    print(f"Cache hit rate: {stats['cache_hit_rate']:.1%}")
-    print(f"Fetched fields for: {stats['needed_population']} performers")
-    print(f"Found: {len(results)} matches")
-
-    # Step 3: Verify cache before expensive operation
-    try:
-        verified = store.filter_strict(
-            Performer,
-            required_fields=['rating100', 'favorite', 'scenes'],
-            predicate=lambda p: p in results
-        )
-        # All performers now guaranteed to have scenes field
-        for performer in verified:
-            process_with_scenes(performer)
-    except ValueError:
-        # Some performers missing 'scenes' field - populate it
-        for performer in results:
-            if not store.has_fields(performer, 'scenes'):
-                await store.populate(performer, fields=['scenes'])
+    # All performers now guaranteed to have scenes field
+    for performer in verified:
+        process_with_scenes(performer)
+except ValueError:
+    # Some performers missing 'scenes' field - populate it
+    for performer in results:
+        if not store.has_fields(performer, 'scenes'):
+            await store.populate(performer, fields=['scenes'])
 ```
 
 ## Best Practices
@@ -441,25 +447,26 @@ All advanced filter methods support Django-style nested field specifications usi
 ```python
 from stash_graphql_client import StashContext, Image
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Filter images by nested file properties
-    large_images = await store.filter_and_populate(
-        Image,
-        required_fields=['files__path', 'files__size'],
-        predicate=lambda img: any(
-            f.size > 10_000_000  # 10MB
-            for f in img.files
-            if f.size is not None
-        )
+# Filter images by nested file properties
+large_images = await store.filter_and_populate(
+    Image,
+    required_fields=['files__path', 'files__size'],
+    predicate=lambda img: any(
+        f.size > 10_000_000  # 10MB
+        for f in img.files
+        if f.size is not None
     )
+)
 
-    print(f"Found {len(large_images)} images with files > 10MB")
-    for image in large_images:
-        for file in image.files:
-            if file.size > 10_000_000:
-                print(f"  {file.path}: {file.size / 1_000_000:.1f}MB")
+print(f"Found {len(large_images)} images with files > 10MB")
+for image in large_images:
+    for file in image.files:
+        if file.size > 10_000_000:
+            print(f"  {file.path}: {file.size / 1_000_000:.1f}MB")
 ```
 
 ### Example: Filter by Studio Hierarchy
@@ -467,21 +474,22 @@ async with StashContext(conn=conn) as context:
 ```python
 from stash_graphql_client import StashContext, Scene
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # Filter scenes by studio's parent studio
-    acme_network_scenes = await store.filter_and_populate(
-        Scene,
-        required_fields=['studio__parent__name', 'title'],
-        predicate=lambda s: (
-            s.studio is not None and
-            s.studio.parent is not None and
-            s.studio.parent.name == "Acme Network"
-        )
+# Filter scenes by studio's parent studio
+acme_network_scenes = await store.filter_and_populate(
+    Scene,
+    required_fields=['studio__parent__name', 'title'],
+    predicate=lambda s: (
+        s.studio is not None and
+        s.studio.parent is not None and
+        s.studio.parent.name == "Acme Network"
     )
+)
 
-    print(f"Found {len(acme_network_scenes)} scenes from Acme Network subsidiaries")
+print(f"Found {len(acme_network_scenes)} scenes from Acme Network subsidiaries")
 ```
 
 ### How It Works
@@ -537,19 +545,20 @@ us_studios = await store.filter_and_populate(
 ```python
 from stash_graphql_client import StashContext, Image
 
-async with StashContext(conn=conn) as context:
-    store = context.store
+context = StashContext(conn=conn)
+await context.get_client()  # initializes store + wires identity map
+store = context.store
 
-    # This raises ValueError if ANY image has incomplete file data
-    try:
-        large_images = store.filter_strict(
-            Image,
-            required_fields=['files__path', 'files__size'],
-            predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
-        )
-    except ValueError as e:
-        print(f"Cache incomplete: {e}")
-        # Use filter_and_populate instead
+# This raises ValueError if ANY image has incomplete file data
+try:
+    large_images = store.filter_strict(
+        Image,
+        required_fields=['files__path', 'files__size'],
+        predicate=lambda i: any(f.size > 10_000_000 for f in i.files)
+    )
+except ValueError as e:
+    print(f"Cache incomplete: {e}")
+    # Use filter_and_populate instead
 ```
 
 ### Performance Tip

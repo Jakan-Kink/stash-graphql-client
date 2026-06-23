@@ -128,6 +128,7 @@ class Image(StashObject):
         "date",  # ImageUpdateInput
         "details",  # ImageUpdateInput
         "photographer",  # ImageUpdateInput
+        "rating100",  # ImageUpdateInput
         "studio",  # mapped to studio_id
         "organized",  # ImageUpdateInput
         "primary_file_id",  # ImageUpdateInput.primary_file_id (update only)

@@ -4,7 +4,18 @@ Tests the snapshot system that detects changes to tracked fields,
 including proper handling of mutable list fields.
 """
 
-from stash_graphql_client.types import Gallery, Performer, Scene, Studio, Tag, present
+import pytest
+
+from stash_graphql_client.types import (
+    Gallery,
+    Group,
+    Image,
+    Performer,
+    Scene,
+    Studio,
+    Tag,
+    present,
+)
 from stash_graphql_client.types.unset import UNSET
 
 
@@ -458,3 +469,24 @@ class TestPrivateAttrSurvival:
         assert not performer.is_new(), (
             "_is_new changed from False after field assignment"
         )
+
+
+class TestRating100Tracking:
+    """Setting rating100 on a clean existing Scene/Image/Group marks it dirty."""
+
+    @pytest.mark.parametrize(
+        ("entity_type", "data"),
+        [
+            (Scene, {"id": "1", "title": "T"}),
+            (Image, {"id": "1", "title": "T"}),
+            (Group, {"id": "1", "name": "T"}),
+        ],
+    )
+    def test_rating100_change_is_tracked(self, entity_type, data):
+        obj = entity_type.from_graphql(data)
+        obj.mark_clean()
+        assert not obj.is_dirty()
+
+        obj.rating100 = 90
+        assert obj.is_dirty()
+        assert "rating100" in obj.get_changed_fields()

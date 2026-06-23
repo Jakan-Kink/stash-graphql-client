@@ -132,6 +132,7 @@ class Group(StashObject):
         "date",  # GroupCreateInput/GroupUpdateInput
         "studio",  # mapped to studio_id
         "director",  # GroupCreateInput/GroupUpdateInput
+        "rating100",  # GroupCreateInput/GroupUpdateInput
         "synopsis",  # GroupCreateInput/GroupUpdateInput
         "custom_fields",  # groupUpdate via CustomFieldsInput diff (appSchema >= 82)
     }

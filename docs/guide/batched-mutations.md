@@ -90,8 +90,9 @@ Saves a list of dirty `StashObject` instances through the entity store, with ful
 ```python
 from stash_graphql_client import StashContext
 
-async with StashContext(conn={...}) as client:
-    store = client.store
+context = StashContext(conn={...})
+async with context as client:
+    store = context.store
 
     # Modify some entities
     scene1 = await client.find_scene("1")

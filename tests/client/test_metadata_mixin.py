@@ -1235,7 +1235,7 @@ async def test_download_ffmpeg_success(respx_stash_client: StashClient) -> None:
     graphql_route = respx.post("http://localhost:9999/graphql").mock(
         side_effect=[
             httpx.Response(
-                200, json=create_graphql_response("downloadFFMPEG", "ffmpeg-job-123")
+                200, json=create_graphql_response("downloadFFMpeg", "ffmpeg-job-123")
             )
         ]
     )

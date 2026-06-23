@@ -214,6 +214,7 @@ class Scene(StashObject):
         "details",  # SceneUpdateInput
         "director",  # SceneUpdateInput
         "date",  # SceneUpdateInput
+        "rating100",  # SceneUpdateInput
         "studio",  # mapped to studio_id
         "urls",  # SceneUpdateInput
         "organized",  # SceneUpdateInput

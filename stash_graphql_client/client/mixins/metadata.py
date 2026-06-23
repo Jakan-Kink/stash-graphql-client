@@ -955,7 +955,7 @@ class MetadataClientMixin(StashClientProtocol):
         """
         try:
             result = await self.execute(fragments.DOWNLOAD_FFMPEG_MUTATION, {})
-            return str(result.get("downloadFFMPEG", ""))
+            return str(result.get("downloadFFMpeg", ""))
         except Exception as e:
             self.log.error(f"Failed to download FFmpeg: {e}")
             raise

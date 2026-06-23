@@ -42,17 +42,16 @@ from stash_graphql_client.types import UNSET, Scene
 
 async def main():
     context = StashContext(conn={"Host": "localhost", "Port": 9999})
-    client = context.client
+    async with context as client:
+        # Find and update a scene
+        scene = await client.find_scene("scene-id")
+        scene.rating100 = 95
+        # scene.details stays UNSET (no data loaded for it, won't be sent)
+        await scene.save(client)  # Only sends rating100
 
-    # Find and update a scene
-    scene = await client.find_scene("scene-id")
-    scene.rating100 = 95
-    # scene.details stays UNSET (no data loaded for it, won't be sent)
-    await scene.save(client)  # Only sends rating100
-
-    # Django-style filtering via the context's store
-    store = context.store
-    top_rated = await store.find(Scene, rating100__gte=90)
+        # Django-style filtering via the context's store
+        store = context.store
+        top_rated = await store.find(Scene, rating100__gte=90)
 
 
 asyncio.run(main())
