@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.12.11] - 2026-06-23
+
 ### Added
 
 - **JSON value typing and runtime narrowing helpers (`stash_graphql_client.types`).** GraphQL responses are JSON, so the library now models response payloads with `JsonValue` / `JsonDict` instead of `dict[str, Any]`. `JsonValue` is **re-exported from Pydantic v2** — it is Pydantic's own type, surfaced here only so the JSON surface has a single import home alongside the helpers, not a new type — and `JsonDict = dict[str, JsonValue]` tightens it one level to an object (narrower than the full recursive `JsonValue`). Four helpers narrow a `JsonValue` to a concrete shape at runtime, raising a precise `TypeError` on a server-shape mismatch: `expect_dict`, `expect_list`, `expect_int`, and `str_or_none`. All six names (`JsonValue`, `JsonDict`, and the four helpers) are exported from `stash_graphql_client.types`.
@@ -811,7 +813,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Factory-based test fixtures with Faker integration; respx for GraphQL HTTP mocking
 - 70%+ test coverage requirement
 
-[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.10...HEAD
+[Unreleased]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.11...HEAD
+[0.12.11]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.10...v0.12.11
 [0.12.10]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.9...v0.12.10
 [0.12.9]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.8...v0.12.9
 [0.12.8]: https://github.com/Jakan-Kink/stash-graphql-client/compare/v0.12.7...v0.12.8
