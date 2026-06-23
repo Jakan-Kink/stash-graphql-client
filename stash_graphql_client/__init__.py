@@ -71,6 +71,7 @@ from stash_graphql_client.types import (  # Base types; Core types; Metadata typ
     UnsetType,
     is_present,
     is_set,
+    is_unset,
     present,
 )
 
@@ -135,6 +136,7 @@ __all__ = [
     "UnsetType",
     "is_present",
     "is_set",
+    "is_unset",
     "present",
     # Metadata types
     "GenerateMetadataInput",

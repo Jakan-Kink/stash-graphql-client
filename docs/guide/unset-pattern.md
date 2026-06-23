@@ -253,6 +253,43 @@ if not scene.title:  # This is True for UNSET, None, and empty string!
     print("Ambiguous - could be UNSET, None, or empty")
 ```
 
+### Type Guards: `is_set`, `is_unset`, `is_present`, and `present`
+
+Raw `is UNSET` checks work at runtime, but a type checker won't always narrow the value afterward — so passing a three-state field into something that expects a plain `str` (e.g. `PurePath(scene.path)`) trips a `str | UnsetType` error. The library exports four helpers (from `stash_graphql_client`, `stash_graphql_client.types`, and `stash_graphql_client.types.unset`) that narrow the type for you:
+
+| Helper | Signature | `if` branch narrows to | `else` branch narrows to |
+| --- | --- | --- | --- |
+| `is_set(x)` | `[T](T \| UnsetType) -> TypeIs[T]` | `T` (drops `UnsetType`) | `UnsetType` |
+| `is_unset(x)` | `[T](T \| UnsetType) -> TypeIs[UnsetType]` | `UnsetType` | `T` |
+| `is_present(x)` | `[T](T \| None \| UnsetType) -> TypeIs[T]` | `T` (drops `UnsetType` and `None`) | `None \| UnsetType` |
+| `present(x)` | `[T](T \| None \| UnsetType) -> T` | n/a (returns the value, raises `ValueError` if `UNSET`/`None`) | n/a |
+
+All three guards are [`TypeIs`](https://typing.readthedocs.io/en/latest/spec/narrowing.html#typeis) (PEP 742), not `TypeGuard`, so they narrow **both** branches — the `else` of `is_set` is `UnsetType`, and the value after an `is_unset` early return is the concrete `T`:
+
+```python
+from stash_graphql_client import is_set, is_unset, is_present, present
+
+# Branch on set/unset — both branches narrow
+if is_set(scene.title):
+    scene.title.upper()        # str
+else:
+    reveal_type(scene.title)   # UnsetType
+
+# Guard-clause / early-return style (is_unset) — no wrapper on the later access
+if is_unset(scene.path):
+    raise ValueError("path not queried")
+PurePath(scene.path)           # str — UnsetType removed in the fall-through
+
+# Narrow away UNSET *and* None in one check
+if is_present(scene.rating100):
+    scene.rating100 + 1        # int
+
+# Inline value access when you know it is set — raises if not
+PurePath(present(scene.path))  # str
+```
+
+Use `is_set`/`is_unset` for `T | UnsetType` fields and `is_present`/`present` for `T | None | UnsetType` fields. `present()` is the value-returning form — reach for it when you want the concrete value inline rather than a branch, and let it raise if the field was never queried.
+
 ## Field Tracking with \_received_fields
 
 ### The Problem
@@ -787,15 +824,15 @@ print(scene1.details)  # "Details from server" (no longer UNSET)
 
 ### Type Checking with mypy
 
-The UNSET pattern is fully type-safe with mypy:
+The UNSET pattern is fully type-safe with mypy. Use the `is_set` / `is_present` guards (see [Type Guards](#type-guards-is_set-is_unset-is_present-and-present) above) for reliable narrowing — they are `TypeIs`, so they narrow both branches:
 
 ```python
 scene = Scene(title="Test")
 
-# mypy knows title could be str or UnsetType
-if scene.title is not UNSET:
-    # In this block, mypy narrows type to just str
-    print(scene.title.upper())  # ✅ OK - mypy knows it's str
+if is_set(scene.title):
+    print(scene.title.upper())  # ✅ OK - mypy narrows to str
+else:
+    reveal_type(scene.title)    # UnsetType
 
 # mypy error if you don't check first
 print(scene.title.upper())  # ❌ Error - UnsetType has no attribute 'upper'
@@ -871,40 +908,6 @@ def test_value_field_included():
 
     assert "rating100" in input_dict
     assert input_dict["rating100"] == 85
-```
-
-## Future Enhancements
-
-### Pydantic v2 Serialization
-
-When fully migrated to Pydantic v2, we can use custom serializers:
-
-```python
-from pydantic import field_serializer
-
-class Scene(StashObject):
-    title: str | UnsetType = UNSET
-
-    @field_serializer("title", when_used="json")
-    def serialize_title(self, value):
-        if value is UNSET:
-            raise ValueError("UNSET should be excluded")
-        return value
-```
-
-### msgspec Migration
-
-For msgspec migration, UNSET integrates with `dec_hook`:
-
-```python
-import msgspec
-
-def dec_hook(type, obj):
-    """Custom decoder hook for msgspec."""
-    if isinstance(obj, dict) and "id" in obj:
-        # Check cache, return cached instance or construct new
-        # UNSET is preserved for fields not in response
-        pass
 ```
 
 ## Summary

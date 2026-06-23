@@ -26,13 +26,15 @@ Example:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeGuard
+from typing import TYPE_CHECKING, Any
 
 from pydantic_core import core_schema
 
 
 if TYPE_CHECKING:
-    pass
+    # TypeIs is stdlib from 3.13; only referenced in (stringized) annotations,
+    # so it is never imported at runtime and the 3.12 floor stays satisfied.
+    from typing import TypeIs
 
 
 class UnsetType:
@@ -104,44 +106,63 @@ class UnsetType:
 UNSET = UnsetType()
 
 
-def is_set[T](value: T | UnsetType) -> TypeGuard[T]:
-    """Type guard to narrow types when checking if a value is set (not UNSET).
+def is_set[T](value: T | UnsetType) -> TypeIs[T]:
+    """Type guard narrowing away ``UNSET``, leaving the concrete (possibly null) value.
 
-    This function helps type checkers like Pylance understand that after checking
-    `is_set(value)`, the value is definitively not UNSET and can be treated as type T.
+    A ``TypeIs`` guard, so it narrows *both* branches: after ``if is_set(value)`` the
+    value is type ``T`` (``UnsetType`` removed); in the ``else`` branch it is
+    ``UnsetType``. Use :func:`is_present` to also exclude ``None``.
 
     Args:
-        value: A value that might be UNSET or an actual value of type T
+        value: A value that might be UNSET or an actual value of type T.
 
     Returns:
-        True if value is not UNSET, False if value is UNSET
+        True if value is not UNSET, False if value is UNSET.
 
     Example:
-        >>> from stash_graphql_client.types import Scene, UNSET, is_set
+        >>> from stash_graphql_client.types import Scene, is_set
         >>> scene = Scene(id="1", title="Test", scenes=[])
-        >>>
-        >>> # Without type guard - Pylance shows error
-        >>> if scene.scenes is not UNSET:
-        ...     scene_obj in scene.scenes  # Error: "in" not supported for UnsetType
-        >>>
-        >>> # With type guard - Pylance understands the type
         >>> if is_set(scene.scenes):
-        ...     scene_obj in scene.scenes  # OK! Pylance knows scenes is list[Scene]
+        ...     scene_obj in scene.scenes  # type checker knows scenes is list[Scene]
 
     Note:
-        This is a type guard function - it provides type narrowing information
-        to static type checkers. At runtime, it's equivalent to `value is not UNSET`.
+        At runtime this is equivalent to ``value is not UNSET``.
     """
     return value is not UNSET
 
 
-def is_present[T](value: T | None | UnsetType) -> TypeGuard[T]:
+def is_unset[T](value: T | UnsetType) -> TypeIs[UnsetType]:
+    """Type guard narrowing to ``UnsetType`` - the dual of :func:`is_set`.
+
+    A ``TypeIs`` guard, so the ``else`` branch narrows too: after
+    ``if is_unset(value): ...`` the value is ``UnsetType``; past an early return the
+    value is type ``T``. This enables a guard-clause style without wrapping each later
+    access::
+
+        if is_unset(scene.path):
+            return
+        PurePath(scene.path)  # narrowed to str - no is_set/present wrapper needed
+
+    Args:
+        value: A value that might be UNSET or an actual value of type T.
+
+    Returns:
+        True if value is UNSET, False otherwise.
+
+    Note:
+        At runtime this is equivalent to ``value is UNSET``.
+    """
+    return value is UNSET
+
+
+def is_present[T](value: T | None | UnsetType) -> TypeIs[T]:
     """Type guard narrowing a three-state field to a concrete, non-null value.
 
     Like :func:`is_set`, but also excludes ``None``: after ``is_present(value)`` a
     static type checker knows the value is neither ``UNSET`` nor ``None`` and can be
-    treated as type ``T``. Useful for the ``T | None | UnsetType`` entity fields where
-    a single ``assert is_present(field)`` replaces a two-step
+    treated as type ``T``. As a ``TypeIs`` guard it also narrows the ``else`` branch
+    (to ``None | UnsetType``). Useful for the ``T | None | UnsetType`` entity fields
+    where a single ``assert is_present(field)`` replaces a two-step
     ``is_set(field)`` + ``field is not None`` narrowing.
 
     Args:
@@ -185,4 +206,4 @@ def present[T](value: T | None | UnsetType) -> T:
     return value
 
 
-__all__ = ["UNSET", "UnsetType", "is_present", "is_set", "present"]
+__all__ = ["UNSET", "UnsetType", "is_present", "is_set", "is_unset", "present"]

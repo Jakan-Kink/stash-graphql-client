@@ -1,4 +1,6 @@
-"""Tests for UNSET sentinel and is_set TypeGuard."""
+"""Tests for UNSET sentinel and the is_set / is_present / is_unset TypeIs guards."""
+
+from typing import assert_type
 
 import pytest
 
@@ -8,6 +10,7 @@ from stash_graphql_client.types import (
     UnsetType,
     is_present,
     is_set,
+    is_unset,
     present,
 )
 
@@ -144,3 +147,64 @@ class TestIsPresentAndPresent:
         """present raises ValueError for None."""
         with pytest.raises(ValueError, match="None"):
             present(None)
+
+
+class TestIsUnsetTypeGuard:
+    """Test is_unset() TypeIs guard - the dual of is_set()."""
+
+    def test_is_unset_true_for_unset(self):
+        """is_unset is True for UNSET."""
+        assert is_unset(UNSET) is True
+
+    def test_is_unset_false_for_none(self):
+        """is_unset is False for None (None is a set value)."""
+        assert is_unset(None) is False
+
+    def test_is_unset_false_for_values(self):
+        """is_unset is False for actual values, including falsy ones."""
+        assert is_unset("value") is False
+        assert is_unset(0) is False
+        assert is_unset(False) is False
+        assert is_unset([]) is False
+        assert is_unset({}) is False
+
+    def test_is_unset_is_negation_of_is_set(self):
+        """is_unset(value) is always the boolean negation of is_set(value)."""
+        values: list[object] = [UNSET, None, "", 0, False, [], {}, "value", 42]
+
+        for value in values:
+            assert is_unset(value) is (not is_set(value))
+
+    def test_is_unset_with_list_field(self):
+        """is_unset with list fields (common pattern in types)."""
+        scene_unset = Scene.model_construct(id="1", title="Test", tags=UNSET)
+        assert is_unset(scene_unset.tags) is True
+
+        scene_set = Scene(id="2", title="Test", tags=[], organized=False, urls=[])
+        assert is_unset(scene_set.tags) is False
+
+
+def test_typeis_guards_narrow_both_branches():
+    """The guards narrow BOTH the if and else branches (static check).
+
+    ``assert_type`` is a runtime no-op; mypy verifies the narrowing statically.
+    These assertions fail under mypy if a guard regresses from ``TypeIs`` to
+    ``TypeGuard``, which leaves the else branch un-narrowed.
+    """
+    two_state: str | UnsetType = "x"
+    if is_set(two_state):
+        assert_type(two_state, str)
+    else:
+        assert_type(two_state, UnsetType)
+
+    untouched: str | UnsetType = UNSET
+    if is_unset(untouched):
+        assert_type(untouched, UnsetType)
+    else:
+        assert_type(untouched, str)
+
+    three_state: str | None | UnsetType = "x"
+    if is_present(three_state):
+        assert_type(three_state, str)
+    else:
+        assert_type(three_state, UnsetType | None)

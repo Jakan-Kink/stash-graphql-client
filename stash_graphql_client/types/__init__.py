@@ -346,7 +346,7 @@ from .tag import (
     TagsMergeInput,
     TagUpdateInput,
 )
-from .unset import UNSET, UnsetType, is_present, is_set, present
+from .unset import UNSET, UnsetType, is_present, is_set, is_unset, present
 from .version import LatestVersion, Version
 
 
@@ -657,6 +657,7 @@ __all__: list[str] = [
     "has_many_through",
     "is_present",
     "is_set",
+    "is_unset",
     "normalize_date",
     "parse_date_precision",
     "present",
