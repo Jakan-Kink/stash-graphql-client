@@ -97,6 +97,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
+          check-latest: true
 
       - name: Install Poetry via pipx
         run: |
@@ -262,6 +263,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
+          check-latest: true
 
       - name: Install Poetry via pipx
         run: |
