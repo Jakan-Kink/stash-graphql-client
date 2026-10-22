@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
+        id: setup-python
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -36,9 +37,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ runner.arch }}-py3.12-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ runner.arch }}-py3.12-
+            venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --with dev
@@ -122,9 +123,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-
+            venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --with dev
@@ -288,9 +289,9 @@ jobs:
         uses: actions/cache@v6
         with:
           path: .venv
-          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
           restore-keys: |
-            venv-${{ runner.os }}-${{ runner.arch }}-py${{ matrix.python-version }}-
+            venv-${{ runner.os }}-${{ runner.arch }}-py${{ steps.setup-python.outputs.python-version }}-
 
       - name: Install dependencies
         run: poetry install --no-interaction --with dev
