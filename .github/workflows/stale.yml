@@ -47,7 +47,7 @@ jobs:
 
           # Exempt labels - issues/PRs with these labels won't be marked stale
           exempt-issue-labels: "pinned,security,bug,help wanted"
-          exempt-pr-labels: "pinned,security,work-in-progress"
+          exempt-pr-labels: "pinned,security,work-in-progress,dependencies"
 
           # Don't close issues/PRs with these labels even if stale
           exempt-all-issue-assignees: true
